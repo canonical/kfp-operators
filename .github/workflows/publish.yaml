@@ -1,0 +1,33 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  charm:
+    name: Charm
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo snap install charm --classic
+        sudo pip3 install charmcraft
+
+    - name: Publish bundle
+      env:
+        CHARMSTORE_CREDENTIAL: ${{ secrets.CHARMSTORE_CREDENTIAL }}
+      run: |
+        set -eux
+        echo $CHARMSTORE_CREDENTIAL > ~/.go-cookies
+        juju bundle publish \
+            --url cs:~kubeflow-charmers/kubeflow-pipelines \
+            --publish-charms \
+            --publish-namespace kubeflow-charmers
+
+

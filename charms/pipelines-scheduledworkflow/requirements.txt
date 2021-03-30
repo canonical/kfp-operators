@@ -1,0 +1,2 @@
+ops==1.1.0
+git+https://github.com/juju-solutions/resource-oci-image@1964d748022b762b9dce6e8bb7bdf12835102c72

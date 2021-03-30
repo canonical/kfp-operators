@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install python3-pip
+        sudo pip3 install black flake8
+
+    - name: Check black
+      run: black --check .
+
+    - name: Check flake8
+      run: flake8
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v2
+
+    - uses: balchua/microk8s-actions@v0.2.2
+      with:
+        addons: '["dns", "storage", "rbac"]'
+
+    - name: Install dependencies
+      run: |
+        set -eux
+        sudo pip3 install charmcraft pytest
+        sudo snap install juju --classic
+        sudo snap install juju-wait --classic
+
+    - name: Bootstrap Juju
+      run: |
+        set -eux
+        sg microk8s -c 'juju bootstrap microk8s uk8s'
+        juju add-model ci-test
+
+    - name: Deploy bundle
+      run: |
+        set -eux
+        juju bundle deploy --build
+        juju wait -wvt 300
+
+    - name: Test bundle
+      run: |
+        set -eux
+        pytest -svv
+
+    - name: Get all
+      run: kubectl get all -A
+      if: failure()
+
+    - name: Get juju status
+      run: juju status
+      if: failure()
+
+    - name: Get workload logs
+      run: kubectl logs --tail 100 -nci-test -ljuju-app
+      if: failure()
+
+    - name: Get operator logs
+      run: kubectl logs --tail 100 -nci-test -ljuju-operator
+      if: failure()
+

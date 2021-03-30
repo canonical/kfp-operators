@@ -1,0 +1,26 @@
+name: pipelines-ui
+display-name: Kubeflow Pipelines UI
+summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
+description: |
+  Machine learning (ML) toolkit that is dedicated to making deployments
+  of ML workflows on Kubernetes simple, portable, and scalable.
+maintainers:
+  - "Dominik Fleischmann <dominik.fleischmann@canonical.com>"
+  - "Kenneth Koski <kenneth.koski@canonical.com>"
+tags: [ai, big-data, kubeflow, machine-learning, tensorflow]
+series: [kubernetes]
+resources:
+  oci-image:
+    type: oci-image
+    description: Backing OCI image
+    auto-fetch: true
+    upstream-source: gcr.io/ml-pipeline/frontend:1.5.0-rc.0
+requires:
+  minio:
+    interface: generic-ip-port-user-pass
+  pipelines-api:
+    interface: k8s-service
+provides:
+  pipelines-ui:
+    interface: k8s-service
+min-juju-version: 2.8.6

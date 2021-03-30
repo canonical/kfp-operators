@@ -1,0 +1,20 @@
+bundle: kubernetes
+applications:
+  argo-controller:              { charm: cs:argo-controller-50,          scale: 1 }
+  minio:                        { charm: cs:minio-49,                    scale: 1 }
+  pipelines-api:                { charm: cs:pipelines-api,               scale: 1 }
+  pipelines-db:                 { charm: cs:~charmed-osm/mariadb-k8s-35, scale: 1, options: { database: mlpipeline } }
+  pipelines-persistence:        { charm: cs:pipelines-persistence,       scale: 1 }
+  pipelines-scheduledworkflow:  { charm: cs:pipelines-scheduledworkflow, scale: 1 }
+  pipelines-ui:                 { charm: cs:pipelines-ui,                scale: 1 }
+  pipelines-viewer:             { charm: cs:pipelines-viewer,            scale: 1 }
+  pipelines-visualization:      { charm: cs:pipelines-visualization,     scale: 1 }
+relations:
+- [argo-controller, minio]
+- [pipelines-api, pipelines-db]
+# - [pipelines-api, pipelines-persistence]
+# - [pipelines-api:kubeflow-profiles, kubeflow-profiles:kubeflow-profiles]
+- [pipelines-api:minio, minio:minio]
+- [pipelines-api:pipelines-api, pipelines-ui:pipelines-api]
+- [pipelines-api:pipelines-visualization, pipelines-visualization:pipelines-visualization]
+- [pipelines-ui:minio, minio:minio]

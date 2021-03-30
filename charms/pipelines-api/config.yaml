@@ -1,0 +1,9 @@
+options:
+  grpc-port:
+    type: string
+    default: '8887'
+    description: GRPC port
+  http-port:
+    type: string
+    default: '8888'
+    description: HTTP port
