@@ -93,6 +93,44 @@ class Operator(CharmBase):
 
         healthz = f"http://localhost:{config['http-port']}/apis/v1beta1/healthz"
 
+        env = {
+            "ALLOW_CUSTOM_VISUALIZATIONS": str(
+                config["allow-custom-visualizations"]
+            ).lower(),
+            "ARGO_ARCHIVE_ARTIFACTORY": "minio",
+            "ARGO_ARCHIVE_BUCKETNAME": "mlpipeline",
+            "ARGO_ARCHIVE_LOGS": "false",
+            "ARGO_ARCHIVE_PREFIX": "logs",
+            "AWS_ACCESS_KEY_ID": "",
+            "AWS_SECRET_ACCESS_KEY": "",
+            "DEPLOYMENT": "KUBEFLOW",
+            "DISABLE_GKE_METADATA": "false",
+            "ENABLE_AUTHZ": "false",
+            "HIDE_SIDENAV": "",
+            "HTTP_AUTHORIZATION_DEFAULT_VALUE": "",
+            "HTTP_AUTHORIZATION_KEY": "",
+            "HTTP_BASE_URL": "",
+            "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
+            "KUBEFLOW_USERID_PREFIX": "",
+            "METADATA_ENVOY_SERVICE_SERVICE_HOST": "localhost",
+            "METADATA_ENVOY_SERVICE_SERVICE_PORT": "9090",
+            "MINIO_ACCESS_KEY": minio["user"],
+            "MINIO_HOST": minio["ip"],
+            "MINIO_NAMESPACE": self.model.name,
+            "MINIO_PORT": minio["port"],
+            "MINIO_SECRET_KEY": minio["password"],
+            "MINIO_SSL": "false",
+            "ML_PIPELINE_SERVICE_HOST": api["service"],
+            "ML_PIPELINE_SERVICE_PORT": api["port"],
+            "STREAM_LOGS_FROM_SERVER_API": "false",
+            "VIEWER_TENSORBOARD_POD_TEMPLATE_SPEC_PATH": "/etc/config/viewer-pod-template.json",
+            "VIEWER_TENSORBOARD_TF_IMAGE_NAME": "tensorflow/tensorflow",
+        }
+
+        config_json = json.dumps(
+            {"spec": {"serviceAccountName": "kubeflow-pipelines-viewer"}}
+        )
+
         self.model.unit.status = MaintenanceStatus("Setting pod spec")
         self.model.pod.set_spec(
             {
@@ -146,39 +184,7 @@ class Operator(CharmBase):
                                 "containerPort": int(config["http-port"]),
                             },
                         ],
-                        "envConfig": {
-                            "ALLOW_CUSTOM_VISUALIZATIONS": str(
-                                config["allow-custom-visualizations"]
-                            ).lower(),
-                            "ARGO_ARCHIVE_ARTIFACTORY": "minio",
-                            "ARGO_ARCHIVE_BUCKETNAME": "mlpipeline",
-                            "ARGO_ARCHIVE_LOGS": "false",
-                            "ARGO_ARCHIVE_PREFIX": "logs",
-                            "AWS_ACCESS_KEY_ID": "",
-                            "AWS_SECRET_ACCESS_KEY": "",
-                            "DEPLOYMENT": "KUBEFLOW",
-                            "DISABLE_GKE_METADATA": "false",
-                            "ENABLE_AUTHZ": "false",
-                            "HIDE_SIDENAV": "",
-                            "HTTP_AUTHORIZATION_DEFAULT_VALUE": "",
-                            "HTTP_AUTHORIZATION_KEY": "",
-                            "HTTP_BASE_URL": "",
-                            "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
-                            "KUBEFLOW_USERID_PREFIX": "",
-                            "METADATA_ENVOY_SERVICE_SERVICE_HOST": "localhost",
-                            "METADATA_ENVOY_SERVICE_SERVICE_PORT": "9090",
-                            "MINIO_ACCESS_KEY": minio["user"],
-                            "MINIO_HOST": minio["ip"],
-                            "MINIO_NAMESPACE": self.model.name,
-                            "MINIO_PORT": minio["port"],
-                            "MINIO_SECRET_KEY": minio["password"],
-                            "MINIO_SSL": "false",
-                            "ML_PIPELINE_SERVICE_HOST": api["service"],
-                            "ML_PIPELINE_SERVICE_PORT": api["port"],
-                            "STREAM_LOGS_FROM_SERVER_API": "false",
-                            "VIEWER_TENSORBOARD_POD_TEMPLATE_SPEC_PATH": "/etc/config/viewer-pod-template.json",
-                            "VIEWER_TENSORBOARD_TF_IMAGE_NAME": "tensorflow/tensorflow",
-                        },
+                        "envConfig": env,
                         "volumeConfig": [
                             {
                                 "name": "config",
@@ -186,13 +192,7 @@ class Operator(CharmBase):
                                 "files": [
                                     {
                                         "path": "config.json",
-                                        "content": json.dumps(
-                                            {
-                                                "spec": {
-                                                    "serviceAccountName": "kubeflow-pipelines-viewer"
-                                                }
-                                            }
-                                        ),
+                                        "content": config_json,
                                     },
                                 ],
                             },

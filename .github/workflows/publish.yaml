@@ -17,6 +17,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo snap install charm --classic
+        sudo snap install juju-helpers --classic
         sudo pip3 install charmcraft
 
     - name: Publish bundle
@@ -25,7 +26,7 @@ jobs:
       run: |
         set -eux
         echo $CHARMSTORE_CREDENTIAL > ~/.go-cookies
-        juju bundle publish \
+        juju-bundle publish \
             --url cs:~kubeflow-charmers/kubeflow-pipelines \
             --publish-charms \
             --publish-namespace kubeflow-charmers

@@ -37,7 +37,7 @@ def download_and_join(
     download1_task = gcs_download_op(url1)
     download2_task = gcs_download_op(url2)
 
-    echo_task = echo2_op(download1_task.output, download2_task.output)
+    echo2_op(download1_task.output, download2_task.output)
 
 
 def test_pipelines():

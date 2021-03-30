@@ -39,26 +39,27 @@ jobs:
     - name: Install dependencies
       run: |
         set -eux
-        sudo pip3 install charmcraft pytest
+        sudo pip3 install charmcraft pytest kfp
         sudo snap install juju --classic
+        sudo snap install juju-helpers --classic
         sudo snap install juju-wait --classic
 
     - name: Bootstrap Juju
       run: |
         set -eux
         sg microk8s -c 'juju bootstrap microk8s uk8s'
-        juju add-model ci-test
+        juju add-model kubeflow
 
     - name: Deploy bundle
       run: |
         set -eux
         juju bundle deploy --build
-        juju wait -wvt 300
+        juju wait -wvt 600
 
     - name: Test bundle
       run: |
         set -eux
-        pytest -svv
+        sg microk8s -c 'pytest -svv'
 
     - name: Get all
       run: kubectl get all -A

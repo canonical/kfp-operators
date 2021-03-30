@@ -102,64 +102,38 @@ class Operator(CharmBase):
             )
             return
 
-        config_volume = {
-            "name": "config",
-            "mountPath": "/config",
-            "files": [
-                {
-                    "path": "config.json",
-                    "content": json.dumps(
-                        {
-                            "DBConfig": {
-                                "DBName": mysql["database"],
-                                "DriverName": "mysql",
-                                # "ExtraParams": {},
-                                "GroupConcatMaxLen": "4194304",
-                                "Host": mysql["host"],
-                                "Password": mysql["root_password"],
-                                "Port": mysql["port"],
-                                "User": "root",
-                            },
-                            "ObjectStoreConfig": {
-                                "AccessKey": minio["user"],
-                                "BucketName": "mlpipeline",
-                                "Host": minio["ip"],
-                                "Multipart": {"Disable": "true"},
-                                "PipelinePath": "pipelines",
-                                "Port": minio["port"],
-                                "Region": "",
-                                "SecretAccessKey": minio["password"],
-                                "Secure": "false",
-                            },
-                            "ARCHIVE_CONFIG_LOG_FILE_NAME": "main.log",
-                            "ARCHIVE_CONFIG_LOG_PATH_PREFIX": "/artifacts",
-                            "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": "",
-                            "CACHE_IMAGE": "gcr.io/google-containers/busybox",
-                            "CRON_SCHEDULE_TIMEZONE": "UTC",
-                            "CacheEnabled": "true",
-                            # "DBCONFIG_DBNAME": mysql["database"],
-                            # "DBCONFIG_HOST": mysql["host"],
-                            # "DBCONFIG_PASSWORD": mysql["root_password"],
-                            # "DBCONFIG_PORT": mysql["port"],
-                            # "DBCONFIG_USER": "root",
-                            "DefaultPipelineRunnerServiceAccount": "pipeline-runner",
-                            "InitConnectionTimeout": "5s",
-                            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": viz[
-                                "service"
-                            ],
-                            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": viz["port"],
-                            # "OBJECTSTORECONFIG_ACCESSKEY": minio["user"],
-                            # "OBJECTSTORECONFIG_BUCKETNAME": "bucket-name",
-                            # "OBJECTSTORECONFIG_SECRETACCESSKEY": minio["password"],
-                            # "OBJECTSTORECONFIG_SECURE": "false",
-                        }
-                    ),
-                },
-                {
-                    "path": "sample_config.json",
-                    "content": Path("src/sample_config.json").read_text(),
-                },
+        config_json = {
+            "DBConfig": {
+                "DBName": mysql["database"],
+                "DriverName": "mysql",
+                "GroupConcatMaxLen": "4194304",
+                "Host": mysql["host"],
+                "Password": mysql["root_password"],
+                "Port": mysql["port"],
+                "User": "root",
+            },
+            "ObjectStoreConfig": {
+                "AccessKey": minio["user"],
+                "BucketName": "mlpipeline",
+                "Host": minio["ip"],
+                "Multipart": {"Disable": "true"},
+                "PipelinePath": "pipelines",
+                "Port": minio["port"],
+                "Region": "",
+                "SecretAccessKey": minio["password"],
+                "Secure": "false",
+            },
+            "ARCHIVE_CONFIG_LOG_FILE_NAME": config["log-archive-filename"],
+            "ARCHIVE_CONFIG_LOG_PATH_PREFIX": config["log-archive-prefix"],
+            "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": config[
+                "auto-update-default-version"
             ],
+            "CACHE_IMAGE": config["cache-image"],
+            "CacheEnabled": str(config["cache-enabled"]).lower(),
+            "DefaultPipelineRunnerServiceAccount": config["runner-sa"],
+            "InitConnectionTimeout": config["init-connection-timeout"],
+            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": viz["service"],
+            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": viz["port"],
         }
 
         healthz = f"http://localhost:{config['http-port']}/apis/v1beta1/healthz"
@@ -233,7 +207,24 @@ class Operator(CharmBase):
                         "envConfig": {
                             "POD_NAMESPACE": self.model.name,
                         },
-                        "volumeConfig": [config_volume],
+                        "volumeConfig": [
+                            {
+                                "name": "config",
+                                "mountPath": "/config",
+                                "files": [
+                                    {
+                                        "path": "config.json",
+                                        "content": json.dumps(config_json),
+                                    },
+                                    {
+                                        "path": "sample_config.json",
+                                        "content": Path(
+                                            "src/sample_config.json"
+                                        ).read_text(),
+                                    },
+                                ],
+                            }
+                        ],
                         "kubernetes": {
                             "readinessProbe": {
                                 "exec": {
