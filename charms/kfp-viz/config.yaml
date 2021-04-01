@@ -1,0 +1,5 @@
+options:
+  http-port:
+    type: string
+    default: '8888'
+    description: HTTP port

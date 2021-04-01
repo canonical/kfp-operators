@@ -1,0 +1,5 @@
+options:
+  timezone:
+    type: string
+    default: 'UTC'
+    description: Cron schedule timezone
