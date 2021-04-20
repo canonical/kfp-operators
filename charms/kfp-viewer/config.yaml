@@ -1,0 +1,5 @@
+options:
+  max-num-viewers:
+    type: int
+    default: 50
+    description: Maximum number of viewers

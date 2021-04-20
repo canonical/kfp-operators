@@ -1,0 +1,9 @@
+options:
+  http-port:
+    type: string
+    default: '3000'
+    description: HTTP port
+  allow-custom-visualizations:
+    type: boolean
+    default: true
+    description: Allow custom visualizations

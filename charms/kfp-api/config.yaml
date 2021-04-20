@@ -1,0 +1,43 @@
+options:
+  grpc-port:
+    type: string
+    default: '8887'
+    description: GRPC port
+  http-port:
+    type: string
+    default: '8888'
+    description: HTTP port
+  log-archive-filename:
+    type: string
+    default: 'main.log'
+    description: Name of log file in object storage
+  log-archive-prefix:
+    type: string
+    default: '/artifacts'
+    description: Prefix for log file in object storage
+  auto-update-default-version:
+    type: boolean
+    default: true
+    description: |
+      If true, the default pipeline version will be updated
+      when uploading a new version of a pipeline
+  cache-image:
+    type: string
+    default: "gcr.io/google-containers/busybox"
+    description: Which image to list as the backing image for a pipeline run step pulled from cache
+  cache-enabled:
+    type: boolean
+    default: true
+    description: If true, pipeline run steps can be cached instead of re-run
+  runner-sa:
+    type: string
+    default: "pipeline-runner"
+    description: |
+      Default pipeline runner service account.
+      Used if service account is left unspecified when creating a run
+  init-connection-timeout:
+    type: string
+    default: '5s'
+    description: |
+      Connection timeout used when initializing clients for related services.
+      The format used can be anything accepted by `time.ParseDuration`.
