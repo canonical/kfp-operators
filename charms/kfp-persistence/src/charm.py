@@ -4,9 +4,14 @@ import logging
 
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import ActiveStatus, MaintenanceStatus
+from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus, BlockedStatus
 
 from oci_image import OCIImageResource, OCIImageResourceError
+from serialized_data_interface import (
+    NoCompatibleVersions,
+    NoVersionsListed,
+    get_interfaces,
+)
 
 log = logging.getLogger()
 
@@ -20,10 +25,20 @@ class Operator(CharmBase):
             self.model.unit.status = ActiveStatus()
             return
 
+        try:
+            self.interfaces = get_interfaces(self)
+        except NoVersionsListed as err:
+            self.model.unit.status = WaitingStatus(str(err))
+            return
+        except NoCompatibleVersions as err:
+            self.model.unit.status = BlockedStatus(str(err))
+            return
+
         self.image = OCIImageResource(self, "oci-image")
         self.framework.observe(self.on.install, self.set_pod_spec)
         self.framework.observe(self.on.upgrade_charm, self.set_pod_spec)
         self.framework.observe(self.on.config_changed, self.set_pod_spec)
+        self.framework.observe(self.on["kfp-api"].relation_changed, self.set_pod_spec)
 
     def set_pod_spec(self, event):
         try:
@@ -32,6 +47,11 @@ class Operator(CharmBase):
             self.model.unit.status = e.status
             log.info(e)
             return
+
+        if not ((api := self.interfaces["kfp-api"]) and api.get_data()):
+            self.model.unit.status = WaitingStatus("Waiting for api relation data")
+            return
+        api = list(api.get_data().values())[0]
 
         self.model.unit.status = MaintenanceStatus("Setting pod spec")
         self.model.pod.set_spec(
@@ -59,11 +79,14 @@ class Operator(CharmBase):
                     {
                         "name": "ml-pipeline-persistenceagent",
                         "imageDetails": image_details,
-                        "envConfig": {
-                            "NAMESPACE": self.model.name,
-                            "TTL_SECONDS_AFTER_WORKFLOW_FINISH": 86400,
-                            "NUM_WORKERS": 2,
-                        },
+                        "command": [
+                            "persistence_agent",
+                            "--logtostderr=true",
+                            f"--namespace={self.model.name}",
+                            "--ttlSecondsAfterWorkflowFinish=86400",
+                            "--numWorker=2",
+                            f"--mlPipelineAPIServerName={api['service-name']}",
+                        ],
                     }
                 ],
             },

@@ -12,7 +12,8 @@ applications:
 relations:
 - [argo-controller:object-storage, minio:object-storage]
 - [kfp-api, kfp-db]
-- [kfp-api:object-storage, minio:object-storage]
+- [kfp-api:kfp-api, kfp-persistence:kfp-api]
 - [kfp-api:kfp-api, kfp-ui:kfp-api]
 - [kfp-api:kfp-viz, kfp-viz:kfp-viz]
+- [kfp-api:object-storage, minio:object-storage]
 - [kfp-ui:object-storage, minio:object-storage]

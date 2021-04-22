@@ -48,10 +48,17 @@ jobs:
         sg microk8s -c 'juju bootstrap microk8s uk8s'
         juju add-model kubeflow
 
+    - name: Deploy istio-pilot
+      run: |
+        set -eux
+        juju deploy cs:istio-pilot
+        juju wait -wvt 300
+
     - name: Deploy bundle
       run: |
         set -eux
         juju bundle deploy --build
+        juju relate istio-pilot:ingress kfp-ui:ingress
         juju wait -wvt 600
 
     - name: Test bundle

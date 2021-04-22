@@ -49,6 +49,20 @@ class Operator(CharmBase):
             self.framework.observe(event, self.set_pod_spec)
 
         self.framework.observe(self.on["kfp-ui"].relation_changed, self.send_info)
+        self.framework.observe(
+            self.on["ingress"].relation_changed, self.configure_ingress
+        )
+
+    def configure_ingress(self, event):
+        if self.interfaces["ingress"]:
+            self.interfaces["ingress"].send_data(
+                {
+                    "prefix": "/pipeline",
+                    "rewrite": "/pipeline",
+                    "service": self.model.app.name,
+                    "port": int(self.model.config["http-port"]),
+                }
+            )
 
     def send_info(self, event):
         if self.interfaces["kfp-ui"]:
