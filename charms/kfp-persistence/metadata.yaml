@@ -15,6 +15,11 @@ resources:
     description: Backing OCI image
     auto-fetch: true
     upstream-source: gcr.io/ml-pipeline/persistenceagent:1.5.0-rc.0
+requires:
+  kfp-api:
+    interface: k8s-service
+    schema: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
+    versions: [v1]
 deployment:
   type: stateless
   service: omit
