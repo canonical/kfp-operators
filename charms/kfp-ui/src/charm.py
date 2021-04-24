@@ -37,21 +37,23 @@ class Operator(CharmBase):
             self.model.unit.status = BlockedStatus(str(err))
             return
 
-        change_events = [
-            self.on.install,
-            self.on.upgrade_charm,
-            self.on.config_changed,
-            self.on["object-storage"].relation_changed,
-            self.on["kfp-api"].relation_changed,
-        ]
+        self.framework.observe(self.on.install, self.set_pod_spec)
+        self.framework.observe(self.on.upgrade_charm, self.set_pod_spec)
+        self.framework.observe(self.on.config_changed, self.set_pod_spec)
 
-        for event in change_events:
-            self.framework.observe(event, self.set_pod_spec)
-
-        self.framework.observe(self.on["kfp-ui"].relation_changed, self.send_info)
-        self.framework.observe(
-            self.on["ingress"].relation_changed, self.configure_ingress
-        )
+        for relation in self.interfaces.keys():
+            self.framework.observe(
+                self.on[relation].relation_changed,
+                self.set_pod_spec,
+            )
+            self.framework.observe(
+                self.on[relation].relation_changed,
+                self.send_info,
+            )
+            self.framework.observe(
+                self.on[relation].relation_changed,
+                self.configure_ingress,
+            )
 
     def configure_ingress(self, event):
         if self.interfaces["ingress"]:

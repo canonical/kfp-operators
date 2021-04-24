@@ -2,11 +2,10 @@
 
 import logging
 
+from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus, BlockedStatus
-
-from oci_image import OCIImageResource, OCIImageResourceError
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from serialized_data_interface import (
     NoCompatibleVersions,
     NoVersionsListed,
@@ -39,7 +38,15 @@ class Operator(CharmBase):
         self.framework.observe(self.on.upgrade_charm, self.set_pod_spec)
         self.framework.observe(self.on.config_changed, self.set_pod_spec)
 
-        self.framework.observe(self.on["kfp-viz"].relation_changed, self.send_info)
+        for relation in self.interfaces.keys():
+            self.framework.observe(
+                self.on[relation].relation_changed,
+                self.set_pod_spec,
+            )
+            self.framework.observe(
+                self.on[relation].relation_changed,
+                self.send_info,
+            )
 
     def send_info(self, event):
         if self.interfaces["kfp-viz"]:
