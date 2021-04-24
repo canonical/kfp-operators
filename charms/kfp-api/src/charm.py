@@ -48,14 +48,20 @@ class Operator(CharmBase):
             self.on.upgrade_charm,
             self.on.config_changed,
             self.on["mysql"].relation_changed,
-            self.on["object-storage"].relation_changed,
-            self.on["kfp-viz"].relation_changed,
         ]
 
         for event in change_events:
             self.framework.observe(event, self.set_pod_spec)
 
-        self.framework.observe(self.on["kfp-api"].relation_changed, self.send_info)
+        for relation in self.interfaces.keys():
+            self.framework.observe(
+                self.on[relation].relation_changed,
+                self.set_pod_spec,
+            )
+            self.framework.observe(
+                self.on[relation].relation_changed,
+                self.send_info,
+            )
 
     def send_info(self, event):
         if self.interfaces["kfp-api"]:

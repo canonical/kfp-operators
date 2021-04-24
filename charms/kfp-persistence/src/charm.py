@@ -38,7 +38,12 @@ class Operator(CharmBase):
         self.framework.observe(self.on.install, self.set_pod_spec)
         self.framework.observe(self.on.upgrade_charm, self.set_pod_spec)
         self.framework.observe(self.on.config_changed, self.set_pod_spec)
-        self.framework.observe(self.on["kfp-api"].relation_changed, self.set_pod_spec)
+
+        for relation in self.interfaces.keys():
+            self.framework.observe(
+                self.on[relation].relation_changed,
+                self.set_pod_spec,
+            )
 
     def set_pod_spec(self, event):
         try:
