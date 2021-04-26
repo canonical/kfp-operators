@@ -32,6 +32,8 @@ class Operator(CharmBase):
         except NoCompatibleVersions as err:
             self.model.unit.status = BlockedStatus(str(err))
             return
+        else:
+            self.model.unit.status = ActiveStatus()
 
         self.image = OCIImageResource(self, "oci-image")
         self.framework.observe(self.on.install, self.set_pod_spec)

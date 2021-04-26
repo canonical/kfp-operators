@@ -2,11 +2,10 @@
 
 import logging
 
+from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus, BlockedStatus
-
-from oci_image import OCIImageResource, OCIImageResourceError
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from serialized_data_interface import (
     NoCompatibleVersions,
     NoVersionsListed,
@@ -33,6 +32,8 @@ class Operator(CharmBase):
         except NoCompatibleVersions as err:
             self.model.unit.status = BlockedStatus(str(err))
             return
+        else:
+            self.model.unit.status = ActiveStatus()
 
         self.image = OCIImageResource(self, "oci-image")
         self.framework.observe(self.on.install, self.set_pod_spec)
