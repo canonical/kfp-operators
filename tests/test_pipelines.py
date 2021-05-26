@@ -54,7 +54,7 @@ def test_pipelines():
         ).decode("utf-8")
     )
     ip = status["spec"]["clusterIP"]
-    client = Client(f"{ip}:8888")
+    client = Client(f"http://{ip}:8888")
     run = client.create_run_from_pipeline_func(
         download_and_join,
         arguments={
