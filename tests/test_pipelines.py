@@ -47,7 +47,7 @@ def test_pipelines():
                 "microk8s",
                 "kubectl",
                 "get",
-                "services/kfp-api",
+                "services/ml-pipeline",
                 "-nkubeflow",
                 "-ojson",
             ]
