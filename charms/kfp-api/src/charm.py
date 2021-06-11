@@ -258,7 +258,9 @@ class Operator(CharmBase):
                         {
                             "name": "ml-pipeline",
                             "spec": {
-                                "selector": {"juju-app": self.model.app.name},
+                                "selector": {
+                                    "app.kubernetes.io/name": self.model.app.name
+                                },
                                 "ports": [
                                     {
                                         "name": "grpc",
