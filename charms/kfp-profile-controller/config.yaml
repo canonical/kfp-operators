@@ -1,0 +1,6 @@
+options:
+  http-port:
+    # TODO: This is ignored.  See note on CONTAINER_PORT in charm.py
+    type: string
+    default: '80'
+    description: kubeflow-pipelines-profile-controller deployment port
