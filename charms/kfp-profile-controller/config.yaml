@@ -1,0 +1,5 @@
+options:
+  http-port:
+    type: string
+    default: '8080'
+    description: kubeflow-pipelines-profile-controller deployment port
