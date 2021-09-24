@@ -14,6 +14,11 @@ from serialized_data_interface import (
 )
 
 
+# This must be hard-coded to port 80 because the metacontroller webhook that talks to this port only
+# communicates over port 80.  Upstream uses the service to map 80->8080 but we cannot via podspec.
+CONTAINER_PORT = 80
+
+
 class Operator(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
@@ -96,6 +101,7 @@ class Operator(CharmBase):
             "KFP_VERSION": "1.7.0-rc.3",
             "KFP_DEFAULT_PIPELINE_ROOT": "",
             "DISABLE_ISTIO_SIDECAR": "false",
+            "CONTAINER_PORT": CONTAINER_PORT,
         }
 
         self.model.pod.set_spec(
@@ -112,8 +118,7 @@ class Operator(CharmBase):
                         "ports": [
                             {
                                 "name": "http",
-                                # TODO: Upstream maps kubeflow maps 80->8080.  This this is fine?
-                                "containerPort": int(config["http-port"]),
+                                "containerPort": CONTAINER_PORT,
                                 "protocol": "TCP",
                             },
                         ],
