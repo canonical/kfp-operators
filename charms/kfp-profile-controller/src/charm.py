@@ -212,6 +212,8 @@ class Operator(CharmBase):
         )
         self.model.unit.status = ActiveStatus()
 
+# TODO: Restore the readiness probes?
+
 
 if __name__ == "__main__":
     main(Operator)
