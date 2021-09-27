@@ -100,7 +100,8 @@ class Operator(CharmBase):
             "MINIO_ACCESS_KEY": os["access-key"],
             "MINIO_SECRET_KEY": os["secret-key"],
             # TODO: This sets the version of the images used in each namespace, coming from the
-            #  configMap pipeline-install-config's appVersion entry.  Should this be a config option?  It'll be updated whenever we update the charm
+            #  configMap pipeline-install-config's appVersion entry.  Should this be a config option?
+            #  It'll be updated whenever we update the charm.  Probably should just read it from tag
             "KFP_VERSION": "1.7.0-rc.3",
             "KFP_DEFAULT_PIPELINE_ROOT": "",
             "DISABLE_ISTIO_SIDECAR": "false",

@@ -108,15 +108,22 @@ class Operator(CharmBase):
             "ARGO_ARCHIVE_BUCKETNAME": "mlpipeline",
             "ARGO_ARCHIVE_LOGS": "false",
             "ARGO_ARCHIVE_PREFIX": "logs",
+            # TODO: This should come from relation to kfp-profile-controller.  It is the name/port
+            #  of the user-specific artifact accessor
+            "ARTIFACTS_SERVICE_PROXY_NAME": "ml-pipeline-ui-artifact",
+            "ARTIFACTS_SERVICE_PROXY_PORT": "80",
+            "ARTIFACTS_SERVICE_PROXY_ENABLED": "true",
             "AWS_ACCESS_KEY_ID": "",
             "AWS_SECRET_ACCESS_KEY": "",
             "DISABLE_GKE_METADATA": "false",
-            "ENABLE_AUTHZ": "false",
+            "ENABLE_AUTHZ": "true",   # TODO: Working?  Does it work if this is off?
             "DEPLOYMENT": "KUBEFLOW",
             "HIDE_SIDENAV": str(config["hide-sidenav"]).lower(),
             "HTTP_AUTHORIZATION_DEFAULT_VALUE": "",
             "HTTP_AUTHORIZATION_KEY": "",
             "HTTP_BASE_URL": "",
+            "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
+            "KUBEFLOW_USERID_PREFIX": "",
             "METADATA_ENVOY_SERVICE_SERVICE_HOST": "localhost",
             "METADATA_ENVOY_SERVICE_SERVICE_PORT": "9090",
             "MINIO_ACCESS_KEY": os["access-key"],
@@ -128,6 +135,8 @@ class Operator(CharmBase):
             "ML_PIPELINE_SERVICE_HOST": api["service-name"],
             "ML_PIPELINE_SERVICE_PORT": api["service-port"],
             "STREAM_LOGS_FROM_SERVER_API": "false",
+            # TODO: Think there's a file here we should copy in.  Workload's logs show an error on
+            #  start for this
             "VIEWER_TENSORBOARD_POD_TEMPLATE_SPEC_PATH": "/etc/config/viewer-pod-template.json",
             "VIEWER_TENSORBOARD_TF_IMAGE_NAME": "tensorflow/tensorflow",
         }
@@ -143,6 +152,7 @@ class Operator(CharmBase):
                 "serviceAccount": {
                     "roles": [
                         {
+                            "global": True,
                             "rules": [
                                 {
                                     "apiGroups": [""],

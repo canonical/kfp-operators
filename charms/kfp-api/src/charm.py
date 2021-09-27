@@ -110,6 +110,7 @@ class Operator(CharmBase):
 
         config_json = {
             "DBConfig": {
+                "ConMaxLifeTimeSec": "120",
                 "DBName": mysql["database"],
                 "DriverName": "mysql",
                 "GroupConcatMaxLen": "4194304",
@@ -135,9 +136,16 @@ class Operator(CharmBase):
                 "auto-update-default-version"
             ],
             "CACHE_IMAGE": config["cache-image"],
+            "CACHE_NODE_RESTRICTIONS": "false",
             "CacheEnabled": str(config["cache-enabled"]).lower(),
+            # TODO: Default runner service account depends on multi-user (default-editor) vs single-user
+            #  (pipeline-runner).  Do we need a config for this exposed to user?
             "DefaultPipelineRunnerServiceAccount": config["runner-sa"],
             "InitConnectionTimeout": config["init-connection-timeout"],
+            "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
+            "KUBEFLOW_USERID_PREFIX": "",
+            # TODO: Add multi-user/single-user toggle
+            "MULTIUSER": "true",
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": viz["service-name"],
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": viz["service-port"],
         }
@@ -151,6 +159,7 @@ class Operator(CharmBase):
                 "serviceAccount": {
                     "roles": [
                         {
+                            "global": True,
                             "rules": [
                                 {
                                     "apiGroups": [""],
@@ -279,6 +288,17 @@ class Operator(CharmBase):
                         }
                     ],
                     "serviceAccounts": [
+                        # TODO: Is this used in multi-user pipelines?  If not, we can disable if MU.
+                        #  I think this is the SA that enabled pipelines to run globally (SU) in the
+                        #  kubeflow namespace, but that MU instead uses the `default-editor` SA that
+                        #  is created by kubeflow-profiles in each individual namespace, thus this
+                        #  SA is not needed.  Searching through KFP codebase, we see this
+                        #  pipeline-runnner SA is not used directly in any of the SU or MU
+                        #  manifests but I think it is used by the kfp-api workload (the operator
+                        #  that actually runs kfp jobs)?
+                        # TODO: Confirm above by making a kfp run and checking the service account
+                        #  on the pod.  This would be called out by the default service account
+                        #  args passed to kfp-api above.
                         {
                             "name": "pipeline-runner",
                             "roles": [
