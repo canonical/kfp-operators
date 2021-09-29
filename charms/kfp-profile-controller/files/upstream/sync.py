@@ -16,11 +16,21 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
 import base64
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def main():
+    logger.info("Profile syncer starting")
     settings = get_settings_from_env()
+    safe_settings = dict(settings)
+    for k in ["MINIO_ACCESS_KEY", "MINIO_SECRET_KEY"]:
+        if k in safe_settings:
+            safe_settings[k] = "REDACTED"
+    logger.info(f"Serrings = {settings}")
     server = server_factory(**settings)
+    logger.info("Serving forever")
     server.serve_forever()
 
 
@@ -100,6 +110,8 @@ def server_factory(visualization_server_image,
     """
     class Controller(BaseHTTPRequestHandler):
         def sync(self, parent, children):
+            logger.info("Got new request")
+
             # parent is a namespace
             namespace = parent.get("metadata", {}).get("name")
 
@@ -107,6 +119,7 @@ def server_factory(visualization_server_image,
                 "labels", {}).get("pipelines.kubeflow.org/enabled")
 
             if pipeline_enabled != "true":
+                logger.info(f"Namespace not in scope, no action taken (metadata.labels.pipelines.kubeflow.org/enabled = {pipeline_enabled}, must be 'true')")
                 return {"status": {}, "children": []}
 
             desired_configmap_count = 1
@@ -133,8 +146,9 @@ def server_factory(visualization_server_image,
                     len(children["ConfigMap.v1"]) == desired_configmap_count and
                     len(children["Deployment.apps/v1"]) == 2 and
                     len(children["Service.v1"]) == 2 and
-                    len(children["DestinationRule.networking.istio.io/v1alpha3"]) == 1 and
-                    len(children["AuthorizationPolicy.security.istio.io/v1beta1"]) == 1 and
+                    # TODO CANONICAL: This only works if istio is available.  Disabled for now
+                    # len(children["DestinationRule.networking.istio.io/v1alpha3"]) == 1 and
+                    # len(children["AuthorizationPolicy.security.istio.io/v1beta1"]) == 1 and
                     "True" or "False"
             }
 
@@ -206,44 +220,45 @@ def server_factory(visualization_server_image,
                         },
                     },
                 },
-                {
-                    "apiVersion": "networking.istio.io/v1alpha3",
-                    "kind": "DestinationRule",
-                    "metadata": {
-                        "name": "ml-pipeline-visualizationserver",
-                        "namespace": namespace,
-                    },
-                    "spec": {
-                        "host": "ml-pipeline-visualizationserver",
-                        "trafficPolicy": {
-                            "tls": {
-                                "mode": "ISTIO_MUTUAL"
-                            }
-                        }
-                    }
-                },
-                {
-                    "apiVersion": "security.istio.io/v1beta1",
-                    "kind": "AuthorizationPolicy",
-                    "metadata": {
-                        "name": "ml-pipeline-visualizationserver",
-                        "namespace": namespace,
-                    },
-                    "spec": {
-                        "selector": {
-                            "matchLabels": {
-                                "app": "ml-pipeline-visualizationserver"
-                            }
-                        },
-                        "rules": [{
-                            "from": [{
-                                "source": {
-                                    "principals": ["cluster.local/ns/kubeflow/sa/ml-pipeline"]
-                                }
-                            }]
-                        }]
-                    }
-                },
+                # TODO CANONICAL: This only works if istio is available.  Disabled for now
+                # {
+                #     "apiVersion": "networking.istio.io/v1alpha3",
+                #     "kind": "DestinationRule",
+                #     "metadata": {
+                #         "name": "ml-pipeline-visualizationserver",
+                #         "namespace": namespace,
+                #     },
+                #     "spec": {
+                #         "host": "ml-pipeline-visualizationserver",
+                #         "trafficPolicy": {
+                #             "tls": {
+                #                 "mode": "ISTIO_MUTUAL"
+                #             }
+                #         }
+                #     }
+                # },
+                # {
+                #     "apiVersion": "security.istio.io/v1beta1",
+                #     "kind": "AuthorizationPolicy",
+                #     "metadata": {
+                #         "name": "ml-pipeline-visualizationserver",
+                #         "namespace": namespace,
+                #     },
+                #     "spec": {
+                #         "selector": {
+                #             "matchLabels": {
+                #                 "app": "ml-pipeline-visualizationserver"
+                #             }
+                #         },
+                #         "rules": [{
+                #             "from": [{
+                #                 "source": {
+                #                     "principals": ["cluster.local/ns/kubeflow/sa/ml-pipeline"]
+                #                 }
+                #             }]
+                #         }]
+                #     }
+                # },
                 {
                     "apiVersion": "v1",
                     "kind": "Service",

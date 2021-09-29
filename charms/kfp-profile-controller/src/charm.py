@@ -16,7 +16,10 @@ from serialized_data_interface import (
 
 # This must be hard-coded to port 80 because the metacontroller webhook that talks to this port only
 # communicates over port 80.  Upstream uses the service to map 80->8080 but we cannot via podspec.
-CONTAINER_PORT = 80
+CONTROLLER_PORT = 80
+
+# TODO: Istio destinationrule/auth manually disabled in sync.py.  Need a better solution for this.
+# TODO: If we start this without a relation to the object-storage, it sits in Active status.  Does it ever have warning about missing relation?
 
 
 class Operator(CharmBase):
@@ -101,7 +104,7 @@ class Operator(CharmBase):
             "KFP_VERSION": "1.7.0-rc.3",
             "KFP_DEFAULT_PIPELINE_ROOT": "",
             "DISABLE_ISTIO_SIDECAR": "false",
-            "CONTAINER_PORT": CONTAINER_PORT,
+            "CONTROLLER_PORT": CONTROLLER_PORT,
         }
 
         self.model.pod.set_spec(
@@ -118,7 +121,7 @@ class Operator(CharmBase):
                         "ports": [
                             {
                                 "name": "http",
-                                "containerPort": CONTAINER_PORT,
+                                "containerPort": CONTROLLER_PORT,
                                 "protocol": "TCP",
                             },
                         ],
@@ -174,22 +177,24 @@ class Operator(CharmBase):
                                             "resource": "services",
                                             "updateStrategy": {"method": "InPlace"},
                                         },
-                                        {
-                                            "apiVersion": "networking.istio.io/v1alpha3",
-                                            "resource": "destinationrules",
-                                            "updateStrategy": {"method": "InPlace"},
-                                        },
-                                        {
-                                            "apiVersion": "security.istio.io/v1beta1",
-                                            "resource": "authorizationpolicies",
-                                            "updateStrategy": {"method": "InPlace"},
-                                        },
+                                        # TODO: This only works if istio is available.  Disabled for now
+                                        # {
+                                        #     "apiVersion": "networking.istio.io/v1alpha3",
+                                        #     "resource": "destinationrules",
+                                        #     "updateStrategy": {"method": "InPlace"},
+                                        # },
+                                        # {
+                                        #     "apiVersion": "security.istio.io/v1beta1",
+                                        #     "resource": "authorizationpolicies",
+                                        #     "updateStrategy": {"method": "InPlace"},
+                                        # },
                                     ],
                                     "generateSelector": True,
                                     "hooks": {
                                         "sync": {
                                             "webhook": {
-                                                "url": "http://kubeflow-pipelines-profile-controller/sync"  # This needs to match the service juju makes for us
+                                                # TODO: This name must match the service Juju creates for our above workload, which matches the name given to the kfp-profile-controller app at deployment(?)
+                                                "url": "http://kfp-profile-controller/sync"
                                             }
                                         }
                                     },
