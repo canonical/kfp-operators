@@ -10,3 +10,4 @@ parts:
   charm:
     prime:
       - ./files/upstream/sync.py
+    charm-python-packages: [setuptools, pip]  # Fixes install of some packages
