@@ -22,22 +22,30 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    logger.info("Profile syncer starting")
+    logger.info("User profile sync service alive")
     settings = get_settings_from_env()
-    safe_settings = dict(settings)
-    for k in ["MINIO_ACCESS_KEY", "MINIO_SECRET_KEY"]:
-        if k in safe_settings:
-            safe_settings[k] = "REDACTED"
-    logger.info(f"Serrings = {settings}")
+    emit_settings_to_logs(settings)
     server = server_factory(**settings)
     logger.info("Serving forever")
     server.serve_forever()
 
 
+def emit_settings_to_logs(settings):
+    """Emits settings to logs, omitting secrets"""
+    safe_settings = dict(settings)
+    for k in ["MINIO_SECRET_KEY"]:
+        if k in safe_settings:
+            safe_settings[k] = "REDACTED"
+    logger.info(f"Settings = {safe_settings}")
+
+
 def get_settings_from_env(controller_port=None,
                           visualization_server_image=None, frontend_image=None,
-                          visualization_server_tag=None, frontend_tag=None, disable_istio_sidecar=None,
-                          minio_access_key=None, minio_secret_key=None, kfp_default_pipeline_root=None):
+                          visualization_server_tag=None, frontend_tag=None,
+                          disable_istio_sidecar=None, minio_access_key=None, minio_secret_key=None,
+                          minio_host=None, minio_port=None, minio_namespace=None,
+                          kfp_default_pipeline_root=None, metadata_grpc_service_host=None,
+                          metadata_grpc_service_port=None):
     """
     Returns a dict of settings from environment variables relevant to the controller
 
@@ -53,6 +61,11 @@ def get_settings_from_env(controller_port=None,
         disable_istio_sidecar: Required (no default)
         minio_access_key: Required (no default)
         minio_secret_key: Required (no default)
+        minio_host: minio
+        minio_port: 9000
+        minio_namespace: kubeflow
+        metadata_grpc_service_host: metadata-grpc-service.kubeflow
+        metadata_grpc_service_port: 8080
     """
     settings = dict()
     settings["controller_port"] = \
@@ -92,10 +105,30 @@ def get_settings_from_env(controller_port=None,
         minio_secret_key or \
         base64.b64encode(bytes(os.environ.get("MINIO_SECRET_KEY"), 'utf-8')).decode('utf-8')
 
+    settings["minio_host"] = \
+        minio_host or \
+        os.environ.get("MINIO_HOST", "minio")
+
+    settings["minio_port"] = \
+        minio_port or \
+        os.environ.get("MINIO_PORT", "9000")
+
+    settings["minio_namespace"] = \
+        minio_namespace or \
+        os.environ.get("MINIO_NAMESPACE", "kubeflow")
+
     # KFP_DEFAULT_PIPELINE_ROOT is optional
     settings["kfp_default_pipeline_root"] = \
         kfp_default_pipeline_root or \
         os.environ.get("KFP_DEFAULT_PIPELINE_ROOT")
+
+    settings["metadata_grpc_service_host"] = \
+        metadata_grpc_service_host or \
+        os.environ.get("METADATA_GRPC_SERVICE_HOST", "metadata-grpc-service.kubeflow")
+
+    settings["metadata_grpc_service_port"] = \
+        metadata_grpc_service_port or \
+        os.environ.get("METADATA_GRPC_SERVICE_PORT", "8080")
 
     return settings
 
@@ -103,8 +136,9 @@ def get_settings_from_env(controller_port=None,
 def server_factory(visualization_server_image,
                    visualization_server_tag, frontend_image, frontend_tag,
                    disable_istio_sidecar, minio_access_key,
-                   minio_secret_key, kfp_default_pipeline_root=None, 
-                   url="", controller_port=8080):
+                   minio_secret_key, minio_host, minio_namespace, minio_port,
+                   metadata_grpc_service_host, metadata_grpc_service_port,
+                   kfp_default_pipeline_root=None, url="", controller_port=8080):
     """
     Returns an HTTPServer populated with Handler with customized settings
     """
@@ -162,9 +196,8 @@ def server_factory(visualization_server_image,
                         "namespace": namespace,
                     },
                     "data": {
-                        "METADATA_GRPC_SERVICE_HOST":
-                            "metadata-grpc-service.kubeflow",
-                        "METADATA_GRPC_SERVICE_PORT": "8080",
+                        "METADATA_GRPC_SERVICE_HOST": metadata_grpc_service_host,
+                        "METADATA_GRPC_SERVICE_PORT": metadata_grpc_service_port,
                     },
                 },
                 # Visualization server related manifests below
@@ -314,6 +347,21 @@ def server_factory(visualization_server_image,
                                     "ports": [{
                                         "containerPort": 3000
                                     }],
+                                    "env": [
+                                        {'name': "MINIO_PORT", 'value': minio_port},
+                                        {'name': "MINIO_HOST", 'value': minio_host},
+                                        {'name': "MINIO_NAMESPACE", 'value': minio_namespace},
+                                        {'name': "MINIO_ACCESS_KEY", 'valueFrom':
+                                            {'secretKeyRef':
+                                                 {'key': "accesskey", 'name': 'mlpipeline-minio-artifact'}
+                                             }
+                                         },
+                                        {'name': "MINIO_SECRET_KEY", 'valueFrom':
+                                            {'secretKeyRef':
+                                                 {'key': "secretkey", 'name': 'mlpipeline-minio-artifact'}
+                                             }
+                                         },
+                                    ],
                                     "resources": {
                                         "requests": {
                                             "cpu": "10m",

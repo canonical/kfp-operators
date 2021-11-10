@@ -60,19 +60,6 @@ class Operator(CharmBase):
                 self.on[relation].relation_changed,
                 self.set_pod_spec,
             )
-            # self.framework.observe(
-                # self.on[relation].relation_changed,
-                # self.send_info,
-            # )
-
-    # def send_info(self, event):
-    #     if self.interfaces["kfp-api"]:
-    #         self.interfaces["kfp-api"].send_data(
-    #             {
-    #                 "service-name": self.model.app.name,
-    #                 "service-port": self.model.config["http-port"],
-    #             }
-    #         )
 
     def set_pod_spec(self, event):
         try:
@@ -99,6 +86,9 @@ class Operator(CharmBase):
         deployment_env = {
             "MINIO_ACCESS_KEY": os["access-key"],
             "MINIO_SECRET_KEY": os["secret-key"],
+            "MINIO_HOST": os["service"],
+            "MINIO_PORT": os["port"],
+            "MINIO_NAMESPACE": os["namespace"],
             # TODO: This sets the version of the images used in each namespace, coming from the
             #  configMap pipeline-install-config's appVersion entry.  Should this be a config option?
             #  It'll be updated whenever we update the charm.  Probably should just read it from tag
@@ -106,6 +96,8 @@ class Operator(CharmBase):
             "KFP_DEFAULT_PIPELINE_ROOT": "",
             "DISABLE_ISTIO_SIDECAR": "false",
             "CONTROLLER_PORT": CONTROLLER_PORT,
+            "METADATA_GRPC_SERVICE_HOST": "mlmd.kubeflow",  # TODO: Set using relation to kfp-api or mlmd
+            "METADATA_GRPC_SERVICE_PORT": "8080",  # TODO: Set using relation to kfp-api or mlmd
         }
 
         self.model.pod.set_spec(
