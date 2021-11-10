@@ -42,6 +42,7 @@ class Operator(CharmBase):
                 "serviceAccount": {
                     "roles": [
                         {
+                            "global": True,
                             "rules": [
                                 {
                                     "apiGroups": ["argoproj.io"],
@@ -83,7 +84,7 @@ class Operator(CharmBase):
                         "name": "ml-pipeline-scheduledworkflow",
                         "imageDetails": image_details,
                         "envConfig": {
-                            "NAMESPACE": self.model.name,
+                            "NAMESPACE": '',
                             "CRON_SCHEDULE_TIMEZONE": self.model.config["timezone"],
                         },
                     }
