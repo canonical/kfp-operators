@@ -66,6 +66,7 @@ class Operator(CharmBase):
                 "serviceAccount": {
                     "roles": [
                         {
+                            "global": True,
                             "rules": [
                                 {
                                     "apiGroups": ["argoproj.io"],
@@ -88,7 +89,7 @@ class Operator(CharmBase):
                         "command": [
                             "persistence_agent",
                             "--logtostderr=true",
-                            f"--namespace={self.model.name}",
+                            f'--namespace=',
                             "--ttlSecondsAfterWorkflowFinish=86400",
                             "--numWorker=2",
                             f"--mlPipelineAPIServerName={api['service-name']}",
