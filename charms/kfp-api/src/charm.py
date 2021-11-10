@@ -63,7 +63,7 @@ class Operator(CharmBase):
         if self.interfaces["kfp-api"]:
             self.interfaces["kfp-api"].send_data(
                 {
-                    "service-name": self.model.app.name,
+                    "service-name": f"{self.model.app.name}.{self.model.name}",
                     "service-port": self.model.config["http-port"],
                 }
             )
@@ -122,7 +122,7 @@ class Operator(CharmBase):
             "ObjectStoreConfig": {
                 "AccessKey": os["access-key"],
                 "BucketName": "mlpipeline",
-                "Host": os["service"],
+                "Host": f"{os['service']}.{os['namespace']}",
                 "Multipart": {"Disable": "true"},
                 "PipelinePath": "pipelines",
                 "Port": os["port"],
@@ -138,13 +138,10 @@ class Operator(CharmBase):
             "CACHE_IMAGE": config["cache-image"],
             "CACHE_NODE_RESTRICTIONS": "false",
             "CacheEnabled": str(config["cache-enabled"]).lower(),
-            # TODO: Default runner service account depends on multi-user (default-editor) vs single-user
-            #  (pipeline-runner).  Do we need a config for this exposed to user?
             "DefaultPipelineRunnerServiceAccount": config["runner-sa"],
             "InitConnectionTimeout": config["init-connection-timeout"],
             "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
             "KUBEFLOW_USERID_PREFIX": "",
-            # TODO: Add multi-user/single-user toggle
             "MULTIUSER": "true",
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": viz["service-name"],
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": viz["service-port"],
