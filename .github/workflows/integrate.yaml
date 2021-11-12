@@ -25,7 +25,7 @@ jobs:
       run: flake8 --extend-exclude charms/kfp-profile-controller/files/upstream/*
 
   test:
-    name: Test
+    name: Test charms not using pytest-operator
     runs-on: ubuntu-latest
 
     steps:
@@ -70,7 +70,46 @@ jobs:
         juju wait -wvt 600
 
     - name: Test bundle
-      run: sg microk8s -c 'pytest -svv'
+      run: sg microk8s -c 'pytest -svv --ignore charms/kfp-profile-controller'
+
+    - name: Get all
+      run: kubectl get all -A
+      if: failure()
+
+    - name: Get juju status
+      run: juju status
+      if: failure()
+
+    - name: Get workload logs
+      run: kubectl logs --tail 100 -nkubeflow -ljuju-app
+      if: failure()
+
+    - name: Get operator logs
+      run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
+      if: failure()
+
+  test-with-pytest-operator:
+    name: Test charms using pytest-operator
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup operator environment
+    - uses: charmed-kubernetes/actions-operator@main
+      with:
+        provider: microk8s
+        channel: 1.21
+
+    # TODO: Remove once the actions-operator does this automatically
+    - name: Configure kubectl
+      run: |
+        sg microk8s -c "microk8s config > ~/.kube/config"
+
+    - name: Run test
+      working-directory: ./charms/kfp-profile-controller
+      run: |
+        sg microk8s -c "tox -e integration -- --model kubeflow"
 
     - name: Get all
       run: kubectl get all -A
