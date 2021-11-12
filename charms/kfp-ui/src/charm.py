@@ -116,7 +116,7 @@ class Operator(CharmBase):
             "AWS_ACCESS_KEY_ID": "",
             "AWS_SECRET_ACCESS_KEY": "",
             "DISABLE_GKE_METADATA": "false",
-            "ENABLE_AUTHZ": "true",   # TODO: Working?  Does it work if this is off?
+            "ENABLE_AUTHZ": "true",
             "DEPLOYMENT": "KUBEFLOW",
             "HIDE_SIDENAV": str(config["hide-sidenav"]).lower(),
             "HTTP_AUTHORIZATION_DEFAULT_VALUE": "",
@@ -141,8 +141,13 @@ class Operator(CharmBase):
             "VIEWER_TENSORBOARD_TF_IMAGE_NAME": "tensorflow/tensorflow",
         }
 
+        # TODO: Not sure if this gets used.  I don't see it in regular pipeline manifests
         config_json = json.dumps(
             {"spec": {"serviceAccountName": "kubeflow-pipelines-viewer"}}
+        )
+
+        viewer_pod_template = json.dumps(
+            {"spec": {"serviceAccountName": "default-editor"}}
         )
 
         self.model.unit.status = MaintenanceStatus("Setting pod spec")
@@ -208,6 +213,16 @@ class Operator(CharmBase):
                                     {
                                         "path": "config.json",
                                         "content": config_json,
+                                    },
+                                ],
+                            },
+                            {
+                                "name": "viewer-pod-template",
+                                "mountPath": "/etc/config",
+                                "files": [
+                                    {
+                                        "path": "viewer-pod-template.json",
+                                        "content": viewer_pod_template,
                                     },
                                 ],
                             },

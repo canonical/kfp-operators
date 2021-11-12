@@ -210,6 +210,7 @@ class Operator(CharmBase):
         )
         self.model.unit.status = ActiveStatus()
 
+
 # TODO: Restore the readiness probes?
 
 

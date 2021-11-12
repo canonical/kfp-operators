@@ -89,7 +89,7 @@ class Operator(CharmBase):
                         "command": [
                             "persistence_agent",
                             "--logtostderr=true",
-                            f'--namespace=',
+                            f"--namespace=",
                             "--ttlSecondsAfterWorkflowFinish=86400",
                             "--numWorker=2",
                             f"--mlPipelineAPIServerName={api['service-name']}",

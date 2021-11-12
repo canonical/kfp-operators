@@ -84,7 +84,7 @@ class Operator(CharmBase):
                         "name": "ml-pipeline-scheduledworkflow",
                         "imageDetails": image_details,
                         "envConfig": {
-                            "NAMESPACE": '',
+                            "NAMESPACE": "",
                             "CRON_SCHEDULE_TIMEZONE": self.model.config["timezone"],
                         },
                     }

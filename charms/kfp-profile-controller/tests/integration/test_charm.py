@@ -46,4 +46,3 @@ async def test_build_and_deploy(ops_test: OpsTest):
 #    tracked namespace (namespace that has label pipelines.kubeflow.org/enabled=true) and ensure all
 #    expected resources are deployed and come up successfully (eg: if service account is not found,
 #    deployments will exist but pods will never be "ready")
-
