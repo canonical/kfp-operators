@@ -39,6 +39,8 @@ class Operator(CharmBase):
         self.framework.observe(self.on.install, self.set_pod_spec)
         self.framework.observe(self.on.upgrade_charm, self.set_pod_spec)
         self.framework.observe(self.on.config_changed, self.set_pod_spec)
+        # TODO: Need to add a relation_changed hook here too, otherwise
+        #  "Waiting for api relation data" wont resolve naturally
 
         for relation in self.interfaces.keys():
             self.framework.observe(
@@ -89,7 +91,7 @@ class Operator(CharmBase):
                         "command": [
                             "persistence_agent",
                             "--logtostderr=true",
-                            f"--namespace=",
+                            "--namespace=",
                             "--ttlSecondsAfterWorkflowFinish=86400",
                             "--numWorker=2",
                             f"--mlPipelineAPIServerName={api['service-name']}",

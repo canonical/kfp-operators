@@ -19,7 +19,8 @@ from serialized_data_interface import (
 CONTROLLER_PORT = 80
 
 # TODO: Istio destinationrule/auth manually disabled in sync.py.  Need a better solution for this.
-# TODO: If we start this without a relation to the object-storage, it sits in Active status.  Does it ever have warning about missing relation?
+# TODO: If we start this without a relation to the object-storage, it sits in Active status.
+#  Does it ever have warning about missing relation?
 
 
 class Operator(CharmBase):
@@ -69,8 +70,6 @@ class Operator(CharmBase):
             self.log.info(e)
             return
 
-        config = self.model.config
-
         # TODO: this didn't seem to work.  if deployed before object storage is up, still goes
         #  to active state
         if not ((os := self.interfaces["object-storage"]) and os.get_data()):
@@ -90,13 +89,14 @@ class Operator(CharmBase):
             "MINIO_PORT": os["port"],
             "MINIO_NAMESPACE": os["namespace"],
             # TODO: This sets the version of the images used in each namespace, coming from the
-            #  configMap pipeline-install-config's appVersion entry.  Should this be a config option?
-            #  It'll be updated whenever we update the charm.  Probably should just read it from tag
+            #  upstream configMap pipeline-install-config's appVersion entry.  Normally we'd expect
+            #  to set this in metadata but is different in this charm - should we have this
+            #  exposed better somewhere?
             "KFP_VERSION": "1.7.0-rc.3",
             "KFP_DEFAULT_PIPELINE_ROOT": "",
             "DISABLE_ISTIO_SIDECAR": "false",
             "CONTROLLER_PORT": CONTROLLER_PORT,
-            "METADATA_GRPC_SERVICE_HOST": "mlmd.kubeflow",  # TODO: Set using relation to kfp-api or mlmd
+            "METADATA_GRPC_SERVICE_HOST": "mlmd.kubeflow",  # TODO: Set using relation
             "METADATA_GRPC_SERVICE_PORT": "8080",  # TODO: Set using relation to kfp-api or mlmd
         }
 
@@ -140,13 +140,13 @@ class Operator(CharmBase):
             k8s_resources={
                 "kubernetesResources": {
                     "customResources": {
+                        # Define the metacontroller that manages the deployments for each user
                         "compositecontrollers.metacontroller.k8s.io": [
                             {
                                 "apiVersion": "metacontroller.k8s.io/v1alpha1",
                                 "kind": "CompositeController",
                                 "metadata": {
                                     "name": "kubeflow-pipelines-profile-controller",
-                                    # "labels": {}, # TODO: Include labels?  think they might be defined at metadata indentation
                                 },
                                 "spec": {
                                     "childResources": [
@@ -170,7 +170,8 @@ class Operator(CharmBase):
                                             "resource": "services",
                                             "updateStrategy": {"method": "InPlace"},
                                         },
-                                        # TODO: This only works if istio is available.  Disabled for now
+                                        # TODO: This only works if istio is available.  Disabled
+                                        #  for now and add back when istio checked as dependency
                                         # {
                                         #     "apiVersion": "networking.istio.io/v1alpha3",
                                         #     "resource": "destinationrules",
@@ -186,8 +187,8 @@ class Operator(CharmBase):
                                     "hooks": {
                                         "sync": {
                                             "webhook": {
-                                                # TODO: This name must match the service Juju creates for our above workload, which matches the name given to the kfp-profile-controller app at deployment(?)
-                                                "url": "http://kfp-profile-controller/sync"
+                                                "url": f"http://"
+                                                f"{self.model.app.name}.{self.model.name}/sync"
                                             }
                                         }
                                     },

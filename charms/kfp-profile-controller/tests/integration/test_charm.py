@@ -34,7 +34,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     # TODO: Need a better test for checking everything is ok
-    # Maybe: await ops_test.model.wait_for_idle(raise_on_error=False, raise_on_blocked=True) or similar?
+    # Maybe: await ops_test.model.wait_for_idle(raise_on_error=False, raise_on_blocked=True) ?
     await ops_test.model.wait_for_idle(timeout=60 * 10)
 
 

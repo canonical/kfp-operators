@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# fmt: off
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
@@ -438,4 +437,3 @@ def server_factory(visualization_server_image,
 
 if __name__ == "__main__":
     main()
-# fmt: on
