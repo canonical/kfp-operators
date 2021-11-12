@@ -14,7 +14,7 @@ resources:
     type: oci-image
     description: Backing OCI image
     auto-fetch: true
-    upstream-source: gcr.io/ml-pipeline/frontend:1.7.0-rc.3
+    upstream-source: gcr.io/ml-pipeline/frontend:1.7.0
 requires:
   object-storage:
     interface: object-storage
