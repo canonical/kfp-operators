@@ -33,6 +33,7 @@ jobs:
     - uses: balchua/microk8s-actions@v0.2.2
       with:
         addons: '["dns", "storage", "rbac"]'
+        channel: 1.21/stable
 
     - name: Install dependencies
       run: |
