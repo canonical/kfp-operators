@@ -23,23 +23,7 @@ class Operator(CharmBase):
 
         self.log = logging.getLogger()
 
-        if not self.model.unit.is_leader():
-            self.log.info("Not a leader, skipping set_pod_spec")
-            self.model.unit.status = ActiveStatus()
-            return
-
         self.image = OCIImageResource(self, "oci-image")
-
-        try:
-            self.interfaces = get_interfaces(self)
-        except NoVersionsListed as err:
-            self.model.unit.status = WaitingStatus(str(err))
-            return
-        except NoCompatibleVersions as err:
-            self.model.unit.status = BlockedStatus(str(err))
-            return
-        else:
-            self.model.unit.status = ActiveStatus()
 
         change_events = [
             self.on.install,
@@ -51,6 +35,8 @@ class Operator(CharmBase):
         for event in change_events:
             self.framework.observe(event, self.set_pod_spec)
 
+        # TODO: Think this through.  Are these relations we react to, provide data to, or both?
+        #  Handle them appropriately based on that
         for relation in self.interfaces.keys():
             self.framework.observe(
                 self.on[relation].relation_changed,
@@ -72,82 +58,18 @@ class Operator(CharmBase):
 
     def set_pod_spec(self, event):
         try:
+            self._check_leader()
+            interfaces = self._get_interfaces()
             image_details = self.image.fetch()
-        except OCIImageResourceError as e:
-            self.model.unit.status = e.status
-            self.log.info(e)
+            mysql = self._get_mysql()
+            os = self._get_object_storage(interfaces)
+            viz = self._get_viz(interfaces)
+        except (CheckFailed, OCIImageResourceError) as check_failed:
+            self.model.unit.status = check_failed.status
+            self.log.info(str(check_failed.status))
             return
 
-        config = self.model.config
-
-        mysql = self.model.relations["mysql"]
-
-        if len(mysql) > 1:
-            self.model.unit.status = BlockedStatus("Too many mysql relations")
-            return
-
-        try:
-            mysql = mysql[0]
-            unit = list(mysql.units)[0]
-            mysql = mysql.data[unit]
-            mysql["database"]
-        except (IndexError, KeyError):
-            self.model.unit.status = MaintenanceStatus(
-                "Waiting for mysql relation data"
-            )
-            return
-
-        if (viz := self.interfaces["kfp-viz"]) and viz.get_data():
-            viz = list(viz.get_data().values())[0]
-        else:
-            viz = {"service-name": "unset", "service-port": "1234"}
-
-        if not ((os := self.interfaces["object-storage"]) and os.get_data()):
-            self.model.unit.status = WaitingStatus(
-                "Waiting for object-storage relation data"
-            )
-            return
-
-        os = list(os.get_data().values())[0]
-
-        config_json = {
-            "DBConfig": {
-                "ConMaxLifeTimeSec": "120",
-                "DBName": mysql["database"],
-                "DriverName": "mysql",
-                "GroupConcatMaxLen": "4194304",
-                "Host": mysql["host"],
-                "Password": mysql["root_password"],
-                "Port": mysql["port"],
-                "User": "root",
-            },
-            "ObjectStoreConfig": {
-                "AccessKey": os["access-key"],
-                "BucketName": "mlpipeline",
-                "Host": f"{os['service']}.{os['namespace']}",
-                "Multipart": {"Disable": "true"},
-                "PipelinePath": "pipelines",
-                "Port": os["port"],
-                "Region": "",
-                "SecretAccessKey": os["secret-key"],
-                "Secure": str(os["secure"]).lower(),
-            },
-            "ARCHIVE_CONFIG_LOG_FILE_NAME": config["log-archive-filename"],
-            "ARCHIVE_CONFIG_LOG_PATH_PREFIX": config["log-archive-prefix"],
-            "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": config[
-                "auto-update-default-version"
-            ],
-            "CACHE_IMAGE": config["cache-image"],
-            "CACHE_NODE_RESTRICTIONS": "false",
-            "CacheEnabled": str(config["cache-enabled"]).lower(),
-            "DefaultPipelineRunnerServiceAccount": config["runner-sa"],
-            "InitConnectionTimeout": config["init-connection-timeout"],
-            "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
-            "KUBEFLOW_USERID_PREFIX": "",
-            "MULTIUSER": "true",
-            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": viz["service-name"],
-            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": viz["service-port"],
-        }
+        config, config_json = self.generate_config(mysql, os, viz)
 
         healthz = f"http://localhost:{config['http-port']}/apis/v1beta1/healthz"
 
@@ -290,6 +212,108 @@ class Operator(CharmBase):
             },
         )
         self.model.unit.status = ActiveStatus()
+
+    def generate_config(self, mysql, os, viz):
+        config = self.model.config
+        config_json = {
+            "DBConfig": {
+                "ConMaxLifeTimeSec": "120",
+                "DBName": mysql["database"],
+                "DriverName": "mysql",
+                "GroupConcatMaxLen": "4194304",
+                "Host": mysql["host"],
+                "Password": mysql["root_password"],
+                "Port": mysql["port"],
+                "User": "root",
+            },
+            "ObjectStoreConfig": {
+                "AccessKey": os["access-key"],
+                "BucketName": "mlpipeline",
+                "Host": f"{os['service']}.{os['namespace']}",
+                "Multipart": {"Disable": "true"},
+                "PipelinePath": "pipelines",
+                "Port": os["port"],
+                "Region": "",
+                "SecretAccessKey": os["secret-key"],
+                "Secure": str(os["secure"]).lower(),
+            },
+            "ARCHIVE_CONFIG_LOG_FILE_NAME": config["log-archive-filename"],
+            "ARCHIVE_CONFIG_LOG_PATH_PREFIX": config["log-archive-prefix"],
+            "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": config[
+                "auto-update-default-version"
+            ],
+            "CACHE_IMAGE": config["cache-image"],
+            "CACHE_NODE_RESTRICTIONS": "false",
+            "CacheEnabled": str(config["cache-enabled"]).lower(),
+            "DefaultPipelineRunnerServiceAccount": config["runner-sa"],
+            "InitConnectionTimeout": config["init-connection-timeout"],
+            "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
+            "KUBEFLOW_USERID_PREFIX": "",
+            "MULTIUSER": "true",
+            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": viz["service-name"],
+            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": viz["service-port"],
+        }
+        return config, config_json
+
+    def _check_leader(self):
+        if not self.unit.is_leader():
+            # We can't do anything useful when not the leader, so do nothing.
+            raise CheckFailed("Waiting for leadership", WaitingStatus)
+
+    def _get_interfaces(self):
+        # Remove this abstraction when SDI adds .status attribute to NoVersionsListed,
+        # NoCompatibleVersionsListed:
+        # https://github.com/canonical/serialized-data-interface/issues/26
+        try:
+            interfaces = get_interfaces(self)
+        except NoVersionsListed as err:
+            raise CheckFailed(err, WaitingStatus)
+        except NoCompatibleVersions as err:
+            raise CheckFailed(err, BlockedStatus)
+        return interfaces
+
+    def _get_mysql(self):
+        mysql = self.model.relations["mysql"]
+        if len(mysql) > 1:
+            raise CheckFailed("Too many mysql relations", BlockedStatus)
+
+        try:
+            mysql = mysql[0]
+            unit = list(mysql.units)[0]
+            mysql = mysql.data[unit]
+            _ = mysql["database"]
+        except (IndexError, KeyError):
+            raise CheckFailed("Waiting for mysql relation data", MaintenanceStatus)
+
+        return mysql
+
+    def _get_object_storage(self, interfaces):
+        try:
+            os = interfaces["object-storage"]
+            os.get_data()
+            os = list(os.get_data().values())[0]
+            return os
+        except Exception as e:
+            raise CheckFailed("Waiting for object-storage relation data", WaitingStatus)
+
+    def _get_viz(self, interfaces):
+        try:
+            viz = interfaces["kfp-viz"]
+            viz.get_data()
+        except:
+            viz = {"service-name": "unset", "service-port": "1234"}
+        return viz
+
+
+class CheckFailed(Exception):
+    """ Raise this exception if one of the checks in main fails. """
+
+    def __init__(self, msg, status_type=None):
+        super().__init__()
+
+        self.msg = msg
+        self.status_type = status_type
+        self.status = status_type(msg)
 
 
 if __name__ == "__main__":
