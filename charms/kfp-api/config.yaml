@@ -31,7 +31,7 @@ options:
     description: If true, pipeline run steps can be cached instead of re-run
   runner-sa:
     type: string
-    default: "pipeline-runner"
+    default: "default-editor"
     description: |
       Default pipeline runner service account.
       Used if service account is left unspecified when creating a run

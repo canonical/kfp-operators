@@ -1,3 +1,6 @@
+# Copyright 2021 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 from kfp import Client, dsl
 from subprocess import check_output
 import json

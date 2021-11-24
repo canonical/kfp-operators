@@ -1,5 +1,5 @@
-name: kfp-schedwf
-display-name: Kubeflow Pipelines Scheduled Workflows
+name: kfp-profile-controller
+display-name: Kubeflow Pipelines Profile Controller
 summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   Machine learning (ML) toolkit that is dedicated to making deployments
@@ -7,6 +7,7 @@ description: |
 maintainers:
   - "Dominik Fleischmann <dominik.fleischmann@canonical.com>"
   - "Kenneth Koski <kenneth.koski@canonical.com>"
+  - "Andrew Scribner <andrew.scribner@canonical.com>"
 tags: [ai, big-data, kubeflow, machine-learning, tensorflow]
 series: [kubernetes]
 resources:
@@ -14,8 +15,10 @@ resources:
     type: oci-image
     description: Backing OCI image
     auto-fetch: true
-    upstream-source: gcr.io/ml-pipeline/scheduledworkflow:1.7.0
-deployment:
-  type: stateless
-  service: omit
+    upstream-source: python:3.7
+requires:
+  object-storage:
+    interface: object-storage
+    schema: https://raw.githubusercontent.com/canonical/operator-schemas/master/object-storage.yaml
+    versions: [v1]
 min-juju-version: 2.8.6

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2021 Canonical Ltd.
+# See LICENSE file for licensing details.
 
 import logging
 
@@ -39,6 +41,8 @@ class Operator(CharmBase):
         self.framework.observe(self.on.install, self.set_pod_spec)
         self.framework.observe(self.on.upgrade_charm, self.set_pod_spec)
         self.framework.observe(self.on.config_changed, self.set_pod_spec)
+        # TODO: Need to add a relation_changed hook here too, otherwise
+        #  "Waiting for api relation data" wont resolve naturally
 
         for relation in self.interfaces.keys():
             self.framework.observe(
@@ -66,6 +70,7 @@ class Operator(CharmBase):
                 "serviceAccount": {
                     "roles": [
                         {
+                            "global": True,
                             "rules": [
                                 {
                                     "apiGroups": ["argoproj.io"],
@@ -88,7 +93,7 @@ class Operator(CharmBase):
                         "command": [
                             "persistence_agent",
                             "--logtostderr=true",
-                            f"--namespace={self.model.name}",
+                            "--namespace=",
                             "--ttlSecondsAfterWorkflowFinish=86400",
                             "--numWorker=2",
                             f"--mlPipelineAPIServerName={api['service-name']}",
