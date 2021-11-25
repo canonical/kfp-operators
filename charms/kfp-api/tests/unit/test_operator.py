@@ -26,11 +26,11 @@ def test_image_fetch(harness, oci_resource_data):
     with does_not_raise():
         harness.charm.image.fetch()
 
-
     # harness.begin_with_initial_hooks()
     # assert harness.charm.model.unit.status == BlockedStatus(
     #     "Missing resource: oci-image"
     # )
+
 
 # Tests to do:
 # * required relations missing block things
@@ -42,13 +42,16 @@ def test_image_fetch(harness, oci_resource_data):
 # * config_changed actually changes something?
 # Test when SOMETHING raises CheckFailed that it hits the status properly.  Or, check it for everything (parameterize somehow?)
 
+
 def test_mysql_relation(harness):
     harness.begin()
 
     # Test no relation
     with pytest.raises(CheckFailed) as no_relation:
         harness.charm._get_mysql()
-    assert no_relation.value.status == BlockedStatus("Missing required relation for mysql")
+    assert no_relation.value.status == BlockedStatus(
+        "Missing required relation for mysql"
+    )
 
     mysql_app = "mysql_app"
     mysql_unit = f"{mysql_app}/0"
@@ -58,18 +61,18 @@ def test_mysql_relation(harness):
     harness.add_relation_unit(rel_id, mysql_unit)
     with pytest.raises(CheckFailed) as no_relation_data:
         harness.charm._get_mysql()
-    assert no_relation_data.value.status == WaitingStatus("Waiting for mysql relation data")
+    assert no_relation_data.value.status == WaitingStatus(
+        "Waiting for mysql relation data"
+    )
 
     # Test with partial data
     data = {"database": "database"}
-    harness.update_relation_data(
-        rel_id,
-        mysql_unit,
-        data
-    )
+    harness.update_relation_data(rel_id, mysql_unit, data)
     with pytest.raises(CheckFailed) as partial_relation_data:
         harness.charm._get_mysql()
-    assert partial_relation_data.value.status == BlockedStatus("Received incomplete data from mysql relation.  See logs")
+    assert partial_relation_data.value.status == BlockedStatus(
+        "Received incomplete data from mysql relation.  See logs"
+    )
 
     # Test complete relation
     data = {
@@ -78,11 +81,7 @@ def test_mysql_relation(harness):
         "root_password": "root_password",
         "port": "port",
     }
-    harness.update_relation_data(
-        rel_id,
-        mysql_unit,
-        data
-    )
+    harness.update_relation_data(rel_id, mysql_unit, data)
     with does_not_raise():
         harness.charm._get_mysql()
 
@@ -94,70 +93,94 @@ def test_mysql_relation(harness):
     assert too_many_relations.value.status == BlockedStatus("Too many mysql relations")
 
 
-def test_kfp_viz_relation(harness):
-    harness.set_leader()  # Required for SDI relations
+def test_kfp_viz_relation_missing(harness):
+    harness.set_leader()
+    harness.begin()
+
+    viz_app = "kfp-viz"
+    default_viz_data = {"service-name": "unset", "service-port": "1234"}
+
+    # Could mock this away, but looked complicated
+    interfaces = harness.charm._get_interfaces()
+    assert harness.charm._get_viz(interfaces) == default_viz_data
+
+
+@pytest.mark.parametrize(
+    "relation_data,expected_viz_data,expected_raises,expected_status",
+    (
+        # No relation established.  Returns default value
+        (
+            None,
+            {"service-name": "unset", "service-port": "1234"},
+            does_not_raise(),
+            None,
+        ),
+        (
+            # Relation exists but no versions set yet
+            {},
+            None,
+            pytest.raises(CheckFailed),
+            WaitingStatus("List of kfp-viz versions not found for apps: kfp-viz"),
+        ),
+        (
+            # Relation exists with versions, but no data posted yet
+            {"_supported_versions": "- v1"},
+            None,
+            pytest.raises(CheckFailed),
+            WaitingStatus("Waiting for kfp-viz relation data"),
+        ),
+        (
+            # Relation exists with versions and empty data
+            {"_supported_versions": "- v1", "data": yaml.dump({})},
+            None,
+            pytest.raises(CheckFailed),
+            WaitingStatus("Waiting for kfp-viz relation data"),
+        ),
+        (
+            # Relation exists with versions and invalid (partial) data
+            {
+                "_supported_versions": "- v1",
+                "data": yaml.dump({"service-name": "service-name"}),
+            },
+            None,
+            pytest.raises(CheckFailed),
+            BlockedStatus(
+                "Found incomplete/incorrect relation data for 'kfp-viz'.  See logs"
+            ),
+        ),
+        (
+            # Relation exists with valid data
+            {
+                "_supported_versions": "- v1",
+                "data": yaml.dump({"service-name": "set", "service-port": "9876"}),
+            },
+            {"service-name": "set", "service-port": "9876"},
+            does_not_raise(),
+            None,
+        ),
+    ),
+)
+def test_kfp_viz_relation(
+    harness, relation_data, expected_viz_data, expected_raises, expected_status
+):
+    harness.set_leader()
     harness.begin()
 
     viz_app = "kfp-viz"
     viz_unit = f"{viz_app}/0"
-    default_viz_data = {"service-name": "unset", "service-port": "1234"}
 
-    # Test no relation, returning default data
-    # TODO: Mock this away?
-    interfaces = harness.charm._get_interfaces()
-    assert harness.charm._get_viz(interfaces) == default_viz_data
+    if relation_data is not None:
+        rel_id = harness.add_relation("kfp-viz", viz_app)
+        harness.add_relation_unit(rel_id, viz_unit)
+        harness.update_relation_data(rel_id, viz_app, relation_data)
 
-    # Test relation with no version data
-    rel_id = harness.add_relation("kfp-viz", viz_app)
-    harness.add_relation_unit(rel_id, viz_unit)
-    with pytest.raises(CheckFailed) as no_version:
+    with expected_raises as partial_relation_data:
         interfaces = harness.charm._get_interfaces()
-    assert no_version.value.status == WaitingStatus("List of kfp-viz versions not found for apps: kfp-viz")
-
-    # Test with relation, version, and no data
-    harness.update_relation_data(
-        rel_id,
-        viz_app,
-        {"_supported_versions": '- v1'}
-    )
-    interfaces = harness.charm._get_interfaces()
-    with pytest.raises(CheckFailed) as no_relation_data:
-        harness.charm._get_viz(interfaces)
-    assert no_relation_data.value.status == WaitingStatus("Waiting for kfp-viz relation data")
-
-    # Test with partial data (empty)
-    packaged_data = {"data": yaml.dump({})}
-    harness.update_relation_data(
-        rel_id,
-        viz_app,
-        packaged_data
-    )
-    with pytest.raises(CheckFailed) as partial_relation_data:
-        harness.charm._get_viz(interfaces)
-    assert partial_relation_data.value.status == WaitingStatus("Waiting for kfp-viz relation data")
-
-    # Test with partial data
-    packaged_data = {"data": yaml.dump({"service-name": "service-name"})}
-    harness.update_relation_data(
-        rel_id,
-        viz_app,
-        packaged_data
-    )
-    with pytest.raises(CheckFailed) as partial_relation_data:
-        harness.charm._get_viz(interfaces)
-    assert partial_relation_data.value.status == BlockedStatus("Found incomplete/incorrect relation data for 'kfp-viz'.  See logs")
-
-    # Test complete relation
-    data = {"service-name": "set", "service-port": "9876"}
-    packaged_data = {"data": yaml.dump(data)}
-    harness.update_relation_data(
-        rel_id,
-        viz_app,
-        packaged_data
-    )
-    with does_not_raise():
         viz = harness.charm._get_viz(interfaces)
-    assert viz == data
+    if expected_status is None:
+        assert viz == expected_viz_data
+    else:
+        assert partial_relation_data.value.status == expected_status
 
 
 def test_too_many_mysql_relation(harness):
