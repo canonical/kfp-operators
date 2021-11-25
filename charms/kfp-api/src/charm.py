@@ -3,6 +3,8 @@
 # See LICENSE file for licensing details.
 
 import json
+
+from jsonschema import ValidationError
 import logging
 from pathlib import Path
 
@@ -13,11 +15,11 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingSta
 from serialized_data_interface import (
     NoCompatibleVersions,
     NoVersionsListed,
-    get_interfaces,
+    get_interfaces, SerializedDataInterface,
 )
 
 
-class Operator(CharmBase):
+class KfpApiOperator(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -30,44 +32,36 @@ class Operator(CharmBase):
             self.on.upgrade_charm,
             self.on.config_changed,
             self.on["mysql"].relation_changed,
+            self.on["object-storage"].relation_changed,
+            self.on["kfp-viz"].relation_changed,
+            self.on["kfp-api"].relation_changed,
         ]
-
         for event in change_events:
-            self.framework.observe(event, self.set_pod_spec)
+            self.framework.observe(event, self.main)
 
-        # TODO: Think this through.  Are these relations we react to, provide data to, or both?
-        #  Handle them appropriately based on that
-        for relation in self.interfaces.keys():
-            self.framework.observe(
-                self.on[relation].relation_changed,
-                self.set_pod_spec,
-            )
-            self.framework.observe(
-                self.on[relation].relation_changed,
-                self.send_info,
-            )
-
-    def send_info(self, event):
-        if self.interfaces["kfp-api"]:
-            self.interfaces["kfp-api"].send_data(
+    def send_info(self, interfaces):
+        if interfaces["kfp-api"]:
+            interfaces["kfp-api"].send_data(
                 {
                     "service-name": f"{self.model.app.name}.{self.model.name}",
                     "service-port": self.model.config["http-port"],
                 }
             )
 
-    def set_pod_spec(self, event):
+    def main(self, event):
         try:
             self._check_leader()
+            mysql = self._get_mysql()
             interfaces = self._get_interfaces()
             image_details = self.image.fetch()
-            mysql = self._get_mysql()
             os = self._get_object_storage(interfaces)
             viz = self._get_viz(interfaces)
         except (CheckFailed, OCIImageResourceError) as check_failed:
             self.model.unit.status = check_failed.status
             self.log.info(str(check_failed.status))
             return
+
+        self.send_info(interfaces)
 
         config, config_json = self.generate_config(mysql, os, viz)
 
@@ -267,46 +261,97 @@ class Operator(CharmBase):
         try:
             interfaces = get_interfaces(self)
         except NoVersionsListed as err:
-            raise CheckFailed(err, WaitingStatus)
+            raise CheckFailed(str(err), WaitingStatus)
         except NoCompatibleVersions as err:
-            raise CheckFailed(err, BlockedStatus)
+            raise CheckFailed(str(err), BlockedStatus)
         return interfaces
 
     def _get_mysql(self):
         mysql = self.model.relations["mysql"]
-        if len(mysql) > 1:
+        if len(mysql) == 0:
+            raise CheckFailed("Missing required relation for mysql", BlockedStatus)
+        elif len(mysql) > 1:
             raise CheckFailed("Too many mysql relations", BlockedStatus)
 
         try:
             mysql = mysql[0]
             unit = list(mysql.units)[0]
             mysql = mysql.data[unit]
-            _ = mysql["database"]
-        except (IndexError, KeyError):
-            raise CheckFailed("Waiting for mysql relation data", MaintenanceStatus)
+        except Exception as e:
+            self.log.error(
+                f"Encountered the following exception when parsing mysql relation: "
+                f"{str(e)}"
+            )
+            raise CheckFailed(
+                "Unexpected error when parsing mysql relation.  See logs", BlockedStatus
+            )
 
+        expected_attributes = ["database", "host", "root_password", "port"]
+
+        missing_attributes = [attribute for attribute in expected_attributes if attribute not in mysql]
+
+        if len(missing_attributes) == len(expected_attributes):
+            raise CheckFailed("Waiting for mysql relation data", WaitingStatus)
+        elif len(missing_attributes) > 0:
+            self.log.error(
+                f"mysql relation data missing expected attributes '{missing_attributes}'"
+            )
+            raise CheckFailed(
+                "Received incomplete data from mysql relation.  See logs", BlockedStatus
+            )
         return mysql
 
-    def _get_object_storage(self, interfaces):
+    @staticmethod
+    def _get_object_storage(interfaces):
         try:
             os = interfaces["object-storage"]
             os.get_data()
             os = list(os.get_data().values())[0]
             return os
-        except Exception as e:
+        except Exception:
             raise CheckFailed("Waiting for object-storage relation data", WaitingStatus)
 
     def _get_viz(self, interfaces):
+        relation_name = "kfp-viz"
+        default_viz_data = {"service-name": "unset", "service-port": "1234"}
+
+        # If nothing is related to this relation, use a default value
+        if "kfp-viz" not in interfaces or interfaces["kfp-viz"] is None:
+            return default_viz_data
+
+        viz = interfaces["kfp-viz"]
+        if not isinstance(viz, SerializedDataInterface):
+            raise CheckFailed("Unexpected error with kfp-viz relation data - data not as expected")
+
+        # Get and validate data from the relation
         try:
-            viz = interfaces["kfp-viz"]
-            viz.get_data()
-        except:
-            viz = {"service-name": "unset", "service-port": "1234"}
-        return viz
+            # viz_data is a dict of {(ops.model.Relation, ops.model.Application): data}
+            viz_data = viz.get_data()
+        except ValidationError as val_error:
+            # Validation in .get_data() ensures if data is populated, it matches the schema and is
+            # not incomplete
+            self.log.error(val_error)
+            raise CheckFailed(
+                "Found incomplete/incorrect relation data for 'kfp-viz'.  See logs",
+                BlockedStatus
+            )
+
+        # Check if we have anything posted to this relation (could be joined but no data provided)
+        if len(viz_data) == 0:
+            raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
+
+        # unpack data from above viz_data
+        viz_data_dict = list(viz_data.values())[0]
+
+        # Validation above does not raise if empty data is received in relation
+        if len(viz_data_dict) == 0:
+            raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
+
+        return viz_data_dict
 
 
 class CheckFailed(Exception):
-    """ Raise this exception if one of the checks in main fails. """
+    """Raise this exception if one of the checks in main fails."""
 
     def __init__(self, msg, status_type=None):
         super().__init__()
@@ -317,4 +362,4 @@ class CheckFailed(Exception):
 
 
 if __name__ == "__main__":
-    main(Operator)
+    main(KfpApiOperator)
