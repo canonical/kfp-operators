@@ -301,53 +301,103 @@ class KfpApiOperator(CharmBase):
             )
         return mysql
 
-    @staticmethod
-    def _get_object_storage(interfaces):
-        try:
-            os = interfaces["object-storage"]
-            os.get_data()
-            os = list(os.get_data().values())[0]
-            return os
-        except Exception:
-            raise CheckFailed("Waiting for object-storage relation data", WaitingStatus)
+    def _get_object_storage(self, interfaces):
+        relation_name = "object-storage"
+        return self.validate_sdi_interface(interfaces, relation_name)
 
     def _get_viz(self, interfaces):
         relation_name = "kfp-viz"
         default_viz_data = {"service-name": "unset", "service-port": "1234"}
+        return self.validate_sdi_interface(interfaces, relation_name, default_return=default_viz_data)
 
-        # If nothing is related to this relation, use a default value
-        if "kfp-viz" not in interfaces or interfaces["kfp-viz"] is None:
-            return default_viz_data
+        # # If nothing is related to this relation, use a default value
+        # if "kfp-viz" not in interfaces or interfaces["kfp-viz"] is None:
+        #     return default_viz_data
+        #
+        # viz = interfaces["kfp-viz"]
+        # if not isinstance(viz, SerializedDataInterface):
+        #     raise CheckFailed("Unexpected error with kfp-viz relation data - data not as expected")
+        #
+        # # Get and validate data from the relation
+        # try:
+        #     # viz_data is a dict of {(ops.model.Relation, ops.model.Application): data}
+        #     viz_data = viz.get_data()
+        # except ValidationError as val_error:
+        #     # Validation in .get_data() ensures if data is populated, it matches the schema and is
+        #     # not incomplete
+        #     self.log.error(val_error)
+        #     raise CheckFailed(
+        #         "Found incomplete/incorrect relation data for 'kfp-viz'.  See logs",
+        #         BlockedStatus
+        #     )
+        #
+        # # Check if we have anything posted to this relation (could be joined but no data provided)
+        # if len(viz_data) == 0:
+        #     raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
+        #
+        # # unpack data from above viz_data
+        # viz_data_dict = list(viz_data.values())[0]
+        #
+        # # Validation above does not raise if empty data is received in relation
+        # if len(viz_data_dict) == 0:
+        #     raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
+        #
+        # return viz_data_dict
 
-        viz = interfaces["kfp-viz"]
-        if not isinstance(viz, SerializedDataInterface):
-            raise CheckFailed("Unexpected error with kfp-viz relation data - data not as expected")
+    def validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
+        """Validates data received from SerializedDataInterface, returning the data if valid
+
+        Optionally can return a default_return value when no relation is established
+
+        Raises:
+            CheckFailed(..., Blocked) when no relation established (unless default_return set)
+            CheckFailed(..., Blocked) if interface is not using SDI
+            CheckFailed(..., Blocked) if data in interface fails schema check
+            CheckFailed(..., Waiting) if we have a relation established but no data passed
+
+        Params:
+            interfaces:
+
+        Returns:
+              (dict) interface data
+        """
+        # If nothing is related to this relation, return a default value or raise an error
+        if relation_name not in interfaces or interfaces[relation_name] is None:
+            if default_return is not None:
+                return default_return
+            else:
+                raise CheckFailed(f"Missing required relation for {relation_name}", BlockedStatus)
+
+        relations = interfaces[relation_name]
+        if not isinstance(relations, SerializedDataInterface):
+            raise CheckFailed(f"Unexpected error with {relation_name} relation data - data not as expected", BlockedStatus)
 
         # Get and validate data from the relation
         try:
-            # viz_data is a dict of {(ops.model.Relation, ops.model.Application): data}
-            viz_data = viz.get_data()
+            # relations is a dict of {(ops.model.Relation, ops.model.Application): data}
+            unpacked_relation_data = relations.get_data()
         except ValidationError as val_error:
             # Validation in .get_data() ensures if data is populated, it matches the schema and is
             # not incomplete
             self.log.error(val_error)
             raise CheckFailed(
-                "Found incomplete/incorrect relation data for 'kfp-viz'.  See logs",
+                f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
                 BlockedStatus
             )
 
-        # Check if we have anything posted to this relation (could be joined but no data provided)
-        if len(viz_data) == 0:
+        # Check if we have an established relation with no data exchanged
+        if len(unpacked_relation_data) == 0:
             raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
 
-        # unpack data from above viz_data
-        viz_data_dict = list(viz_data.values())[0]
+        # Unpack data (we care only about the first element)
+        data_dict = list(unpacked_relation_data.values())[0]
 
-        # Validation above does not raise if empty data is received in relation
-        if len(viz_data_dict) == 0:
-            raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
+        # Catch if empty data dict is received (JSONSchema ValidationError above does not raise
+        # when this happens)
+        if len(data_dict) == 0:
+            raise CheckFailed(f"Found incomplete/incorrect relation data for {relation_name}.", BlockedStatus)
 
-        return viz_data_dict
+        return data_dict
 
 
 class CheckFailed(Exception):

@@ -35,7 +35,6 @@ def test_image_fetch(harness, oci_resource_data):
 # Tests to do:
 # * required relations missing block things
 #   * object-storage
-#   * optional kfp-viz
 # * things happen when we have required
 # * subscriber relations are optional, but they provide the expected data
 # * where else can I look for tests?  notebook?  minio?
@@ -93,6 +92,10 @@ def test_mysql_relation(harness):
     assert too_many_relations.value.status == BlockedStatus("Too many mysql relations")
 
 
+def test_too_many_mysql_relation(harness):
+    assert False
+
+
 def test_kfp_viz_relation_missing(harness):
     harness.set_leader()
     harness.begin()
@@ -134,7 +137,7 @@ def test_kfp_viz_relation_missing(harness):
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
             pytest.raises(CheckFailed),
-            WaitingStatus("Waiting for kfp-viz relation data"),
+            BlockedStatus("Found incomplete/incorrect relation data for kfp-viz."),
         ),
         (
             # Relation exists with versions and invalid (partial) data
@@ -145,7 +148,7 @@ def test_kfp_viz_relation_missing(harness):
             None,
             pytest.raises(CheckFailed),
             BlockedStatus(
-                "Found incomplete/incorrect relation data for 'kfp-viz'.  See logs"
+                "Found incomplete/incorrect relation data for kfp-viz.  See logs"
             ),
         ),
         (
@@ -183,8 +186,12 @@ def test_kfp_viz_relation(
         assert partial_relation_data.value.status == expected_status
 
 
-def test_too_many_mysql_relation(harness):
-    assert False
+def test_object_storage_relation(harness):
+    harness.set_leader()
+    harness.begin()
+
+    interfaces = harness.charm._get_interfaces()
+    os = harness.charm._get_object_storage(interfaces)
 
 
 @pytest.fixture
