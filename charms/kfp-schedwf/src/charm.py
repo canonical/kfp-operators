@@ -8,33 +8,31 @@ from pathlib import Path
 import yaml
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import ActiveStatus, MaintenanceStatus
+from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus
 
 from oci_image import OCIImageResource, OCIImageResourceError
 
 log = logging.getLogger()
 
 
-class Operator(CharmBase):
+class KfpSchedwf(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
 
-        if not self.model.unit.is_leader():
-            log.info("Not a leader, skipping set_pod_spec")
-            self.model.unit.status = ActiveStatus()
-            return
-
+        self.log = logging.getLogger()
         self.image = OCIImageResource(self, "oci-image")
-        self.framework.observe(self.on.install, self.set_pod_spec)
-        self.framework.observe(self.on.upgrade_charm, self.set_pod_spec)
-        self.framework.observe(self.on.config_changed, self.set_pod_spec)
 
-    def set_pod_spec(self, event):
+        self.framework.observe(self.on.install, self.main)
+        self.framework.observe(self.on.upgrade_charm, self.main)
+        self.framework.observe(self.on.config_changed, self.main)
+
+    def main(self, event):
         try:
+            self._check_leader()
             image_details = self.image.fetch()
-        except OCIImageResourceError as e:
-            self.model.unit.status = e.status
-            log.info(e)
+        except (CheckFailed, OCIImageResourceError) as check_failed:
+            self.model.unit.status = check_failed.status
+            self.log.info(str(check_failed.status))
             return
 
         self.model.unit.status = MaintenanceStatus("Setting pod spec")
@@ -103,6 +101,22 @@ class Operator(CharmBase):
         )
         self.model.unit.status = ActiveStatus()
 
+    def _check_leader(self):
+        if not self.unit.is_leader():
+            # We can't do anything useful when not the leader, so do nothing.
+            raise CheckFailed("Waiting for leadership", WaitingStatus)
+
+
+class CheckFailed(Exception):
+    """Raise this exception if one of the checks in main fails."""
+
+    def __init__(self, msg, status_type=None):
+        super().__init__()
+
+        self.msg = msg
+        self.status_type = status_type
+        self.status = status_type(msg)
+
 
 if __name__ == "__main__":
-    main(Operator)
+    main(KfpSchedwf)
