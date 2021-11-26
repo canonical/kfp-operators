@@ -9,7 +9,7 @@ from oci_image import MissingResourceError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import KfpSchedwf, CheckFailed
+from charm import KfpSchedwf
 
 
 def test_not_leader(harness):
