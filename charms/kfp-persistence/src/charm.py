@@ -29,14 +29,7 @@ class KfpPersistenceOperator(CharmBase):
         self.framework.observe(self.on.install, self.main)
         self.framework.observe(self.on.upgrade_charm, self.main)
         self.framework.observe(self.on.config_changed, self.main)
-        # TODO: Need to add a relation_changed hook here too, otherwise
-        #  "Waiting for api relation data" wont resolve naturally
-
-        for relation in self.interfaces.keys():
-            self.framework.observe(
-                self.on[relation].relation_changed,
-                self.main,
-            )
+        self.framework.observe(self.on["kfp-api"].relation_changed, self.main)
 
     def main(self, event):
         # Set up all relations/fetch required data
@@ -109,11 +102,13 @@ class KfpPersistenceOperator(CharmBase):
             raise CheckFailed(str(err), BlockedStatus)
         return interfaces
 
-    def _get_object_storage(self, interfaces):
-        relation_name = "object-storage"
+    def _get_kfpapi(self, interfaces):
+        relation_name = "kfp-api"
         return self.validate_sdi_interface(interfaces, relation_name)
 
-    def validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
+    def validate_sdi_interface(
+        self, interfaces: dict, relation_name: str, default_return=None
+    ):
         """Validates data received from SerializedDataInterface, returning the data if valid
 
         Optionally can return a default_return value when no relation is established
@@ -135,11 +130,16 @@ class KfpPersistenceOperator(CharmBase):
             if default_return is not None:
                 return default_return
             else:
-                raise CheckFailed(f"Missing required relation for {relation_name}", BlockedStatus)
+                raise CheckFailed(
+                    f"Missing required relation for {relation_name}", BlockedStatus
+                )
 
         relations = interfaces[relation_name]
         if not isinstance(relations, SerializedDataInterface):
-            raise CheckFailed(f"Unexpected error with {relation_name} relation data - data not as expected", BlockedStatus)
+            raise CheckFailed(
+                f"Unexpected error with {relation_name} relation data - data not as expected",
+                BlockedStatus,
+            )
 
         # Get and validate data from the relation
         try:
@@ -151,12 +151,14 @@ class KfpPersistenceOperator(CharmBase):
             self.log.error(val_error)
             raise CheckFailed(
                 f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
-                BlockedStatus
+                BlockedStatus,
             )
 
         # Check if we have an established relation with no data exchanged
         if len(unpacked_relation_data) == 0:
-            raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
+            raise CheckFailed(
+                f"Waiting for {relation_name} relation data", WaitingStatus
+            )
 
         # Unpack data (we care only about the first element)
         data_dict = list(unpacked_relation_data.values())[0]
@@ -164,7 +166,10 @@ class KfpPersistenceOperator(CharmBase):
         # Catch if empty data dict is received (JSONSchema ValidationError above does not raise
         # when this happens)
         if len(data_dict) == 0:
-            raise CheckFailed(f"Found incomplete/incorrect relation data for {relation_name}.", BlockedStatus)
+            raise CheckFailed(
+                f"Found incomplete/incorrect relation data for {relation_name}.",
+                BlockedStatus,
+            )
 
         return data_dict
 
@@ -178,6 +183,7 @@ class CheckFailed(Exception):
         self.msg = msg
         self.status_type = status_type
         self.status = status_type(msg)
+
 
 if __name__ == "__main__":
     main(KfpPersistenceOperator)
