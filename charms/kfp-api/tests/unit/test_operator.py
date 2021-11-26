@@ -12,6 +12,9 @@ from ops.testing import Harness
 from charm import KfpApiOperator, CheckFailed
 
 
+# TODO: Tests missing for config_changed and dropped/reloaded relations
+
+
 def test_not_leader(harness):
     harness.begin_with_initial_hooks()
     assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
@@ -25,9 +28,6 @@ def test_image_fetch(harness, oci_resource_data):
     harness.add_oci_resource(**oci_resource_data)
     with does_not_raise():
         harness.charm.image.fetch()
-
-
-# TODO: Tests missing for config_changed and dropped/reloaded relations
 
 
 @pytest.mark.parametrize(
@@ -302,7 +302,7 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     harness.set_leader()
     kfpapi_relation_name = "kfp-api"
     model_name = "test_model"
-    service_port = '8888'
+    service_port = "8888"
     harness.set_model_name(model_name)
     harness.update_config({"service-port": service_port})
 
@@ -340,7 +340,9 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     harness.update_relation_data(os_rel_id, "storage-provider", os_data)
 
     # example kfp-api provider relation
-    kfpapi_data = {"_supported_versions": "- v1",}
+    kfpapi_data = {
+        "_supported_versions": "- v1",
+    }
     kfpapi_rel_id = harness.add_relation(kfpapi_relation_name, "kfp-api-subscriber")
     harness.add_relation_unit(kfpapi_rel_id, "kfp-api-subscriber/0")
     harness.update_relation_data(kfpapi_rel_id, "kfp-api-subscriber", kfpapi_data)
@@ -351,11 +353,14 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     # Test that we sent data to anyone subscribing to us
     kfpapi_expected_versions = ["v1"]
     kfpapi_expected_data = {
-            "service-name": f"{this_app_name}.{model_name}",
-            "service-port": service_port,
+        "service-name": f"{this_app_name}.{model_name}",
+        "service-port": service_port,
     }
     kfpapi_sent_data = harness.get_relation_data(kfpapi_rel_id, "kfp-api")
-    assert yaml.safe_load(kfpapi_sent_data["_supported_versions"]) == kfpapi_expected_versions
+    assert (
+        yaml.safe_load(kfpapi_sent_data["_supported_versions"])
+        == kfpapi_expected_versions
+    )
     assert yaml.safe_load(kfpapi_sent_data["data"]) == kfpapi_expected_data
 
     # confirm that we can serialize the pod spec and that the unit is active

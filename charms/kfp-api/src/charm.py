@@ -15,7 +15,8 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingSta
 from serialized_data_interface import (
     NoCompatibleVersions,
     NoVersionsListed,
-    get_interfaces, SerializedDataInterface,
+    get_interfaces,
+    SerializedDataInterface,
 )
 
 
@@ -24,7 +25,6 @@ class KfpApiOperator(CharmBase):
         super().__init__(*args)
 
         self.log = logging.getLogger()
-
         self.image = OCIImageResource(self, "oci-image")
 
         change_events = [
@@ -39,7 +39,7 @@ class KfpApiOperator(CharmBase):
         for event in change_events:
             self.framework.observe(event, self.main)
 
-    def send_info(self, interfaces):
+    def _send_info(self, interfaces):
         if interfaces["kfp-api"]:
             interfaces["kfp-api"].send_data(
                 {
@@ -49,6 +49,7 @@ class KfpApiOperator(CharmBase):
             )
 
     def main(self, event):
+        # Set up all relations/fetch required data
         try:
             self._check_leader()
             mysql = self._get_mysql()
@@ -61,7 +62,7 @@ class KfpApiOperator(CharmBase):
             self.log.info(str(check_failed.status))
             return
 
-        self.send_info(interfaces)
+        self._send_info(interfaces)
 
         config, config_json = self.generate_config(mysql, os, viz)
 
@@ -288,7 +289,9 @@ class KfpApiOperator(CharmBase):
 
         expected_attributes = ["database", "host", "root_password", "port"]
 
-        missing_attributes = [attribute for attribute in expected_attributes if attribute not in mysql]
+        missing_attributes = [
+            attribute for attribute in expected_attributes if attribute not in mysql
+        ]
 
         if len(missing_attributes) == len(expected_attributes):
             raise CheckFailed("Waiting for mysql relation data", WaitingStatus)
@@ -308,9 +311,13 @@ class KfpApiOperator(CharmBase):
     def _get_viz(self, interfaces):
         relation_name = "kfp-viz"
         default_viz_data = {"service-name": "unset", "service-port": "1234"}
-        return self.validate_sdi_interface(interfaces, relation_name, default_return=default_viz_data)
+        return self.validate_sdi_interface(
+            interfaces, relation_name, default_return=default_viz_data
+        )
 
-    def validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
+    def validate_sdi_interface(
+        self, interfaces: dict, relation_name: str, default_return=None
+    ):
         """Validates data received from SerializedDataInterface, returning the data if valid
 
         Optionally can return a default_return value when no relation is established
@@ -332,11 +339,16 @@ class KfpApiOperator(CharmBase):
             if default_return is not None:
                 return default_return
             else:
-                raise CheckFailed(f"Missing required relation for {relation_name}", BlockedStatus)
+                raise CheckFailed(
+                    f"Missing required relation for {relation_name}", BlockedStatus
+                )
 
         relations = interfaces[relation_name]
         if not isinstance(relations, SerializedDataInterface):
-            raise CheckFailed(f"Unexpected error with {relation_name} relation data - data not as expected", BlockedStatus)
+            raise CheckFailed(
+                f"Unexpected error with {relation_name} relation data - data not as expected",
+                BlockedStatus,
+            )
 
         # Get and validate data from the relation
         try:
@@ -348,12 +360,14 @@ class KfpApiOperator(CharmBase):
             self.log.error(val_error)
             raise CheckFailed(
                 f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
-                BlockedStatus
+                BlockedStatus,
             )
 
         # Check if we have an established relation with no data exchanged
         if len(unpacked_relation_data) == 0:
-            raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
+            raise CheckFailed(
+                f"Waiting for {relation_name} relation data", WaitingStatus
+            )
 
         # Unpack data (we care only about the first element)
         data_dict = list(unpacked_relation_data.values())[0]
@@ -361,7 +375,10 @@ class KfpApiOperator(CharmBase):
         # Catch if empty data dict is received (JSONSchema ValidationError above does not raise
         # when this happens)
         if len(data_dict) == 0:
-            raise CheckFailed(f"Found incomplete/incorrect relation data for {relation_name}.", BlockedStatus)
+            raise CheckFailed(
+                f"Found incomplete/incorrect relation data for {relation_name}.",
+                BlockedStatus,
+            )
 
         return data_dict
 
