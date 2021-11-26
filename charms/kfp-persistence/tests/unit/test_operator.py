@@ -121,7 +121,6 @@ def test_object_storage_relation(
 
 def test_install_with_all_inputs(harness, oci_resource_data):
     harness.set_leader()
-    kfpapi_relation_name = "kfp-api"
     model_name = "test_model"
     service_port = "8888"
     harness.set_model_name(model_name)
