@@ -310,40 +310,6 @@ class KfpApiOperator(CharmBase):
         default_viz_data = {"service-name": "unset", "service-port": "1234"}
         return self.validate_sdi_interface(interfaces, relation_name, default_return=default_viz_data)
 
-        # # If nothing is related to this relation, use a default value
-        # if "kfp-viz" not in interfaces or interfaces["kfp-viz"] is None:
-        #     return default_viz_data
-        #
-        # viz = interfaces["kfp-viz"]
-        # if not isinstance(viz, SerializedDataInterface):
-        #     raise CheckFailed("Unexpected error with kfp-viz relation data - data not as expected")
-        #
-        # # Get and validate data from the relation
-        # try:
-        #     # viz_data is a dict of {(ops.model.Relation, ops.model.Application): data}
-        #     viz_data = viz.get_data()
-        # except ValidationError as val_error:
-        #     # Validation in .get_data() ensures if data is populated, it matches the schema and is
-        #     # not incomplete
-        #     self.log.error(val_error)
-        #     raise CheckFailed(
-        #         "Found incomplete/incorrect relation data for 'kfp-viz'.  See logs",
-        #         BlockedStatus
-        #     )
-        #
-        # # Check if we have anything posted to this relation (could be joined but no data provided)
-        # if len(viz_data) == 0:
-        #     raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
-        #
-        # # unpack data from above viz_data
-        # viz_data_dict = list(viz_data.values())[0]
-        #
-        # # Validation above does not raise if empty data is received in relation
-        # if len(viz_data_dict) == 0:
-        #     raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
-        #
-        # return viz_data_dict
-
     def validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
         """Validates data received from SerializedDataInterface, returning the data if valid
 
