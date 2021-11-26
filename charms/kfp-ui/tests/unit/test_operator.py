@@ -34,7 +34,7 @@ def test_image_fetch(harness, oci_resource_data):
 @pytest.mark.parametrize(
     "relation_name,relation_data,expected_returned_data,expected_raises,expected_status",
     (
-        ## Object storage
+        # Object storage
         # No relation established.  Raises CheckFailed
         (
             "object-storage",
@@ -111,7 +111,7 @@ def test_image_fetch(harness, oci_resource_data):
             does_not_raise(),
             None,
         ),
-        ## kfp-api
+        # kfp-api
         # No relation established.  Raises CheckFailed
         (
             "kfp-api",
