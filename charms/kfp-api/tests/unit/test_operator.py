@@ -27,11 +27,7 @@ def test_image_fetch(harness, oci_resource_data):
         harness.charm.image.fetch()
 
 
-# Tests to do:
-# * things happen when we have required
-# * subscriber relations are optional, but they provide the expected data
-# * config_changed actually changes something?
-# Test when SOMETHING raises CheckFailed that it hits the status properly.  Or, check it for everything (parameterize somehow?)
+# TODO: Tests missing for config_changed and dropped/reloaded relations
 
 
 @pytest.mark.parametrize(
@@ -306,7 +302,7 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     harness.set_leader()
     kfpapi_relation_name = "kfp-api"
     model_name = "test_model"
-    service_port = 8888
+    service_port = '8888'
     harness.set_model_name(model_name)
     harness.update_config({"service-port": service_port})
 
@@ -353,15 +349,14 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     this_app_name = harness.charm.model.app.name
 
     # Test that we sent data to anyone subscribing to us
-    kfpapi_data_expected = yaml.dump({
-        "_supported_versions": "- v1",
-        "data": {
+    kfpapi_expected_versions = ["v1"]
+    kfpapi_expected_data = {
             "service-name": f"{this_app_name}.{model_name}",
             "service-port": service_port,
-        },
-    })
+    }
     kfpapi_sent_data = harness.get_relation_data(kfpapi_rel_id, "kfp-api")
-    assert kfpapi_sent_data == kfpapi_data_expected
+    assert yaml.safe_load(kfpapi_sent_data["_supported_versions"]) == kfpapi_expected_versions
+    assert yaml.safe_load(kfpapi_sent_data["data"]) == kfpapi_expected_data
 
     # confirm that we can serialize the pod spec and that the unit is active
     yaml.safe_dump(harness.get_pod_spec())
