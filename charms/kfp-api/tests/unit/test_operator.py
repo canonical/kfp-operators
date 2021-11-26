@@ -26,11 +26,6 @@ def test_image_fetch(harness, oci_resource_data):
     with does_not_raise():
         harness.charm.image.fetch()
 
-    # harness.begin_with_initial_hooks()
-    # assert harness.charm.model.unit.status == BlockedStatus(
-    #     "Missing resource: oci-image"
-    # )
-
 
 # Tests to do:
 # * things happen when we have required
@@ -305,6 +300,72 @@ def test_object_storage_relation(
         assert data == expected_returned_data
     else:
         assert partial_relation_data.value.status == expected_status
+
+
+def test_install_with_all_inputs(harness, oci_resource_data):
+    harness.set_leader()
+    kfpapi_relation_name = "kfp-api"
+    model_name = "test_model"
+    service_port = 8888
+    harness.set_model_name(model_name)
+    harness.update_config({"service-port": service_port})
+
+    # Set up required relations
+    # Future: convert these to fixtures and share with the tests above
+    harness.add_oci_resource(**oci_resource_data)
+
+    # mysql relation
+    mysql_data = {
+        "database": "database",
+        "host": "host",
+        "root_password": "root_password",
+        "port": "port",
+    }
+    mysql_rel_id = harness.add_relation("mysql", "mysql-provider")
+    harness.add_relation_unit(mysql_rel_id, "mysql-provider/0")
+    harness.update_relation_data(mysql_rel_id, "mysql-provider/0", mysql_data)
+
+    # object storage relation
+    os_data = {
+        "_supported_versions": "- v1",
+        "data": yaml.dump(
+            {
+                "access-key": "access-key",
+                "namespace": "namespace",
+                "port": 1234,
+                "secret-key": "secret-key",
+                "secure": True,
+                "service": "service",
+            }
+        ),
+    }
+    os_rel_id = harness.add_relation("object-storage", "storage-provider")
+    harness.add_relation_unit(os_rel_id, "storage-provider/0")
+    harness.update_relation_data(os_rel_id, "storage-provider", os_data)
+
+    # example kfp-api provider relation
+    kfpapi_data = {"_supported_versions": "- v1",}
+    kfpapi_rel_id = harness.add_relation(kfpapi_relation_name, "kfp-api-subscriber")
+    harness.add_relation_unit(kfpapi_rel_id, "kfp-api-subscriber/0")
+    harness.update_relation_data(kfpapi_rel_id, "kfp-api-subscriber", kfpapi_data)
+
+    harness.begin_with_initial_hooks()
+    this_app_name = harness.charm.model.app.name
+
+    # Test that we sent data to anyone subscribing to us
+    kfpapi_data_expected = yaml.dump({
+        "_supported_versions": "- v1",
+        "data": {
+            "service-name": f"{this_app_name}.{model_name}",
+            "service-port": service_port,
+        },
+    })
+    kfpapi_sent_data = harness.get_relation_data(kfpapi_rel_id, "kfp-api")
+    assert kfpapi_sent_data == kfpapi_data_expected
+
+    # confirm that we can serialize the pod spec and that the unit is active
+    yaml.safe_dump(harness.get_pod_spec())
+    assert harness.charm.model.unit.status == ActiveStatus()
 
 
 @pytest.fixture
