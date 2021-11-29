@@ -6,124 +6,141 @@ on:
       - master
   pull_request:
 
+# TODO: Set the charm matrix from listing /charms folders
+
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - run: python3 -m pip install tox
+      - run: tox -e ${{ matrix.charm }}-lint
 
-    - name: Install dependencies
-      run: sudo pip3 install black flake8 flake8-copyright<0.3
-
-    - name: Check black
-      run: black --check --extend-exclude charms/kfp-profile-controller/files/upstream/* .
-
-    - name: Check flake8
-      run: flake8 --extend-exclude charms/kfp-profile-controller/files/upstream/*
-
-  test:
-    name: Test charms not using pytest-operator
+  unit:
+    name: Unit tests
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
     steps:
-    - name: Check out repo
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - run: python3 -m pip install tox
+      - run: tox -e ${{ matrix.charm }}-lint
 
-    - uses: balchua/microk8s-actions@v0.2.2
-      with:
-        addons: '["dns", "storage", "rbac"]'
-        channel: 1.21/stable
-
-    - name: Install dependencies
-      run: |
-        set -eux
-        sudo pip3 install charmcraft==1.0.0 pytest kfp
-        sudo snap install juju --classic
-        sudo snap install juju-helpers --classic
-        sudo snap install juju-wait --classic
-
-    # Avoid race condition with storage taking a long time to initialize
-    - name: Wait for storage
-      run: |
-        sg microk8s -c 'microk8s kubectl rollout status deployment/hostpath-provisioner -n kube-system'
-
-    - name: Bootstrap Juju
-      run: |
-        set -eux
-        sg microk8s -c 'juju bootstrap microk8s uk8s'
-        juju add-model kubeflow
-
-    - name: Deploy istio-pilot
-      run: |
-        set -eux
-        juju deploy cs:istio-pilot
-        juju wait -wvt 300
-
-    - name: Deploy bundle
-      run: |
-        set -eux
-        juju bundle deploy --build
-        juju relate istio-pilot:ingress kfp-ui:ingress
-        juju wait -wvt 600
-
-    - name: Test bundle
-      run: sg microk8s -c 'pytest -svv --ignore charms/kfp-profile-controller'
-
-    - name: Get all
-      run: kubectl get all -A
-      if: failure()
-
-    - name: Get juju status
-      run: juju status
-      if: failure()
-
-    - name: Get workload logs
-      run: kubectl logs --tail 100 -nkubeflow -ljuju-app
-      if: failure()
-
-    - name: Get operator logs
-      run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
-      if: failure()
-
-  test-with-pytest-operator:
-    name: Test charms using pytest-operator
+  integration:
+    name: Integration tests (microk8s)
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+          channel: 1.21/stable
+          charmcraft-channel: latest/candidate
+      - run: sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
 
-    - name: Setup operator environment
-      uses: charmed-kubernetes/actions-operator@main
-      with:
-        provider: microk8s
-        channel: 1.21
+      # Collect debug logs if failed
+      - name: Get all
+        run: kubectl get all -A
+        if: failure()
+      - name: Get juju status
+        run: juju status
+        if: failure()
+      - name: Get workload logs
+        run: kubectl logs --tail 100 -nkubeflow -ljuju-app
+        if: failure()
+      - name: Get operator logs
+        run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
+        if: failure()
 
-    # TODO: Remove once the actions-operator does this automatically
-    - name: Configure kubectl
-      run: |
-        sg microk8s -c "microk8s config > ~/.kube/config"
-
-    - name: Run test
-      working-directory: ./charms/kfp-profile-controller
-      run: |
-        sg microk8s -c "tox -e integration -- --model kubeflow"
-
-    - name: Get all
-      run: kubectl get all -A
-      if: failure()
-
-    - name: Get juju status
-      run: juju status
-      if: failure()
-
-    - name: Get workload logs
-      run: kubectl logs --tail 100 -nkubeflow -ljuju-app
-      if: failure()
-
-    - name: Get operator logs
-      run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
-      if: failure()
-
+## TODO: Temporarily disabled
+#  test-bundle:
+#    name: Test the bundle
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - uses: actions/checkout@v2
+#    - uses: balchua/microk8s-actions@v0.2.2
+#      with:
+#        addons: '["dns", "storage", "rbac"]'
+#        channel: 1.21/stable
+#
+#    - name: Install dependencies
+#      run: |
+#        set -eux
+#        sudo pip3 install charmcraft==1.0.0 pytest kfp
+#        sudo snap install juju --classic
+#        sudo snap install juju-helpers --classic
+#        sudo snap install juju-wait --classic
+#
+#    # Avoid race condition with storage taking a long time to initialize
+#    - name: Wait for storage
+#      run: |
+#        sg microk8s -c 'microk8s kubectl rollout status deployment/hostpath-provisioner -n kube-system'
+#
+#    - name: Bootstrap Juju
+#      run: |
+#        set -eux
+#        sg microk8s -c 'juju bootstrap microk8s uk8s'
+#        juju add-model kubeflow
+#
+#    - name: Deploy istio-pilot
+#      run: |
+#        set -eux
+#        juju deploy cs:istio-pilot
+#        juju wait -wvt 300
+#
+#    - name: Deploy bundle
+#      run: |
+#        set -eux
+#        juju bundle deploy --build
+#        juju relate istio-pilot:ingress kfp-ui:ingress
+#        juju wait -wvt 600
+#
+#    - name: Test bundle
+#      run: sg microk8s -c 'pytest -svv --ignore charms/kfp-profile-controller'
+#
+#    - name: Get all
+#      run: kubectl get all -A
+#      if: failure()
+#
+#    - name: Get juju status
+#      run: juju status
+#      if: failure()
+#
+#    - name: Get workload logs
+#      run: kubectl logs --tail 100 -nkubeflow -ljuju-app
+#      if: failure()
+#
+#    - name: Get operator logs
+#      run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
+#      if: failure()
