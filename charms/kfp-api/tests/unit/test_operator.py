@@ -162,9 +162,7 @@ def test_kfp_viz_relation_missing(harness):
             },
             None,
             pytest.raises(CheckFailed),
-            BlockedStatus(
-                "Found incomplete/incorrect relation data for kfp-viz.  See logs"
-            ),
+            BlockedStatus("Found incomplete/incorrect relation data for kfp-viz.  See logs"),
         ),
         (
             # Relation exists with valid data
@@ -230,9 +228,7 @@ def test_kfp_viz_relation(
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
             pytest.raises(CheckFailed),
-            BlockedStatus(
-                "Found incomplete/incorrect relation data for object-storage."
-            ),
+            BlockedStatus("Found incomplete/incorrect relation data for object-storage."),
         ),
         (
             # Relation exists with versions and invalid (partial) data
@@ -357,10 +353,7 @@ def test_install_with_all_inputs(harness, oci_resource_data):
         "service-port": service_port,
     }
     kfpapi_sent_data = harness.get_relation_data(kfpapi_rel_id, "kfp-api")
-    assert (
-        yaml.safe_load(kfpapi_sent_data["_supported_versions"])
-        == kfpapi_expected_versions
-    )
+    assert yaml.safe_load(kfpapi_sent_data["_supported_versions"]) == kfpapi_expected_versions
     assert yaml.safe_load(kfpapi_sent_data["data"]) == kfpapi_expected_data
 
     # confirm that we can serialize the pod spec and that the unit is active
