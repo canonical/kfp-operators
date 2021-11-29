@@ -149,26 +149,20 @@ class KfpApiOperator(CharmBase):
                                     },
                                     {
                                         "path": "sample_config.json",
-                                        "content": Path(
-                                            "src/sample_config.json"
-                                        ).read_text(),
+                                        "content": Path("src/sample_config.json").read_text(),
                                     },
                                 ],
                             }
                         ],
                         "kubernetes": {
                             "readinessProbe": {
-                                "exec": {
-                                    "command": ["wget", "-q", "-S", "-O", "-", healthz]
-                                },
+                                "exec": {"command": ["wget", "-q", "-S", "-O", "-", healthz]},
                                 "initialDelaySeconds": 3,
                                 "periodSeconds": 5,
                                 "timeoutSeconds": 2,
                             },
                             "livenessProbe": {
-                                "exec": {
-                                    "command": ["wget", "-q", "-S", "-O", "-", healthz]
-                                },
+                                "exec": {"command": ["wget", "-q", "-S", "-O", "-", healthz]},
                                 "initialDelaySeconds": 3,
                                 "periodSeconds": 5,
                                 "timeoutSeconds": 2,
@@ -183,9 +177,7 @@ class KfpApiOperator(CharmBase):
                         {
                             "name": "ml-pipeline",
                             "spec": {
-                                "selector": {
-                                    "app.kubernetes.io/name": self.model.app.name
-                                },
+                                "selector": {"app.kubernetes.io/name": self.model.app.name},
                                 "ports": [
                                     {
                                         "name": "grpc",
@@ -234,9 +226,7 @@ class KfpApiOperator(CharmBase):
             },
             "ARCHIVE_CONFIG_LOG_FILE_NAME": config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": config["log-archive-prefix"],
-            "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": config[
-                "auto-update-default-version"
-            ],
+            "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": config["auto-update-default-version"],
             "CACHE_IMAGE": config["cache-image"],
             "CACHE_NODE_RESTRICTIONS": "false",
             "CacheEnabled": str(config["cache-enabled"]).lower(),
@@ -280,8 +270,7 @@ class KfpApiOperator(CharmBase):
             mysql = mysql.data[unit]
         except Exception as e:
             self.log.error(
-                f"Encountered the following exception when parsing mysql relation: "
-                f"{str(e)}"
+                f"Encountered the following exception when parsing mysql relation: " f"{str(e)}"
             )
             raise CheckFailed(
                 "Unexpected error when parsing mysql relation.  See logs", BlockedStatus
@@ -315,9 +304,7 @@ class KfpApiOperator(CharmBase):
             interfaces, relation_name, default_return=default_viz_data
         )
 
-    def validate_sdi_interface(
-        self, interfaces: dict, relation_name: str, default_return=None
-    ):
+    def validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
         """Validates data received from SerializedDataInterface, returning the data if valid
 
         Optionally can return a default_return value when no relation is established
@@ -339,9 +326,7 @@ class KfpApiOperator(CharmBase):
             if default_return is not None:
                 return default_return
             else:
-                raise CheckFailed(
-                    f"Missing required relation for {relation_name}", BlockedStatus
-                )
+                raise CheckFailed(f"Missing required relation for {relation_name}", BlockedStatus)
 
         relations = interfaces[relation_name]
         if not isinstance(relations, SerializedDataInterface):
@@ -365,9 +350,7 @@ class KfpApiOperator(CharmBase):
 
         # Check if we have an established relation with no data exchanged
         if len(unpacked_relation_data) == 0:
-            raise CheckFailed(
-                f"Waiting for {relation_name} relation data", WaitingStatus
-            )
+            raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
 
         # Unpack data (we care only about the first element)
         data_dict = list(unpacked_relation_data.values())[0]
