@@ -2,15 +2,14 @@
 # See LICENSE file for licensing details.
 
 from contextlib import nullcontext as does_not_raise
+
 import pytest
 import yaml
-
 from oci_image import MissingResourceError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import KfpPersistenceOperator, CheckFailed
-
+from charm import CheckFailedError, KfpPersistenceOperator
 
 # TODO: Tests missing for dropped/reloaded relations
 
@@ -37,18 +36,18 @@ OTHER_APP_NAME = "kfp-api-provider"
 @pytest.mark.parametrize(
     "relation_data,expected_returned_data,expected_raises,expected_status",
     (
-        # No relation established.  Raises CheckFailed
+        # No relation established.  Raises CheckFailedError
         (
             None,
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus(f"Missing required relation for {RELATION_NAME}"),
         ),
         (
             # Relation exists but no versions set yet
             {},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             WaitingStatus(
                 f"List of {RELATION_NAME} versions not found for apps: {OTHER_APP_NAME}"
             ),
@@ -57,17 +56,15 @@ OTHER_APP_NAME = "kfp-api-provider"
             # Relation exists with versions, but no data posted yet
             {"_supported_versions": "- v1"},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             WaitingStatus(f"Waiting for {RELATION_NAME} relation data"),
         ),
         (
             # Relation exists with versions and empty data
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
-            pytest.raises(CheckFailed),
-            BlockedStatus(
-                f"Found incomplete/incorrect relation data for {RELATION_NAME}."
-            ),
+            pytest.raises(CheckFailedError),
+            BlockedStatus(f"Found incomplete/incorrect relation data for {RELATION_NAME}."),
         ),
         (
             # Relation exists with versions and invalid (partial) data
@@ -76,7 +73,7 @@ OTHER_APP_NAME = "kfp-api-provider"
                 "data": yaml.dump({"service-name": "service-name"}),
             },
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus(
                 f"Found incomplete/incorrect relation data for {RELATION_NAME}.  See logs"
             ),
@@ -85,9 +82,7 @@ OTHER_APP_NAME = "kfp-api-provider"
             # Relation exists with valid data
             {
                 "_supported_versions": "- v1",
-                "data": yaml.dump(
-                    {"service-name": "service-name", "service-port": "1928"}
-                ),
+                "data": yaml.dump({"service-name": "service-name", "service-port": "1928"}),
             },
             {"service-name": "service-name", "service-port": "1928"},
             does_not_raise(),

@@ -2,17 +2,19 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from jsonschema import ValidationError
+"""Charm data persistence application for Kubeflow Pipelines."""
+
 import logging
 
+from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
-from ops.charm import CharmBase
 from ops.main import main
+from ops.charm import CharmBase
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from serialized_data_interface import (
-    SerializedDataInterface,
     NoCompatibleVersions,
     NoVersionsListed,
+    SerializedDataInterface,
     get_interfaces,
 )
 
@@ -20,25 +22,27 @@ log = logging.getLogger()
 
 
 class KfpPersistenceOperator(CharmBase):
+    """Charm data persistence application for Kubeflow Pipelines."""
+
     def __init__(self, *args):
         super().__init__(*args)
 
         self.log = logging.getLogger()
         self.image = OCIImageResource(self, "oci-image")
 
-        self.framework.observe(self.on.install, self.main)
-        self.framework.observe(self.on.upgrade_charm, self.main)
-        self.framework.observe(self.on.config_changed, self.main)
-        self.framework.observe(self.on["kfp-api"].relation_changed, self.main)
+        self.framework.observe(self.on.install, self._main)
+        self.framework.observe(self.on.upgrade_charm, self._main)
+        self.framework.observe(self.on.config_changed, self._main)
+        self.framework.observe(self.on["kfp-api"].relation_changed, self._main)
 
-    def main(self, event):
+    def _main(self, event):
         # Set up all relations/fetch required data
         try:
             self._check_leader()
             interfaces = self._get_interfaces()
             image_details = self.image.fetch()
             kfpapi = self._get_kfpapi(interfaces)
-        except (CheckFailed, OCIImageResourceError) as check_failed:
+        except (CheckFailedError, OCIImageResourceError) as check_failed:
             self.model.unit.status = check_failed.status
             self.log.info(str(check_failed.status))
             return
@@ -88,7 +92,7 @@ class KfpPersistenceOperator(CharmBase):
     def _check_leader(self):
         if not self.unit.is_leader():
             # We can't do anything useful when not the leader, so do nothing.
-            raise CheckFailed("Waiting for leadership", WaitingStatus)
+            raise CheckFailedError("Waiting for leadership", WaitingStatus)
 
     def _get_interfaces(self):
         # Remove this abstraction when SDI adds .status attribute to NoVersionsListed,
@@ -97,19 +101,17 @@ class KfpPersistenceOperator(CharmBase):
         try:
             interfaces = get_interfaces(self)
         except NoVersionsListed as err:
-            raise CheckFailed(str(err), WaitingStatus)
+            raise CheckFailedError(str(err), WaitingStatus)
         except NoCompatibleVersions as err:
-            raise CheckFailed(str(err), BlockedStatus)
+            raise CheckFailedError(str(err), BlockedStatus)
         return interfaces
 
     def _get_kfpapi(self, interfaces):
         relation_name = "kfp-api"
         return self.validate_sdi_interface(interfaces, relation_name)
 
-    def validate_sdi_interface(
-        self, interfaces: dict, relation_name: str, default_return=None
-    ):
-        """Validates data received from SerializedDataInterface, returning the data if valid
+    def validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
+        """Validates data received from SerializedDataInterface, returning the data if valid.
 
         Optionally can return a default_return value when no relation is established
 
@@ -130,13 +132,13 @@ class KfpPersistenceOperator(CharmBase):
             if default_return is not None:
                 return default_return
             else:
-                raise CheckFailed(
+                raise CheckFailedError(
                     f"Missing required relation for {relation_name}", BlockedStatus
                 )
 
         relations = interfaces[relation_name]
         if not isinstance(relations, SerializedDataInterface):
-            raise CheckFailed(
+            raise CheckFailedError(
                 f"Unexpected error with {relation_name} relation data - data not as expected",
                 BlockedStatus,
             )
@@ -149,16 +151,14 @@ class KfpPersistenceOperator(CharmBase):
             # Validation in .get_data() ensures if data is populated, it matches the schema and is
             # not incomplete
             self.log.error(val_error)
-            raise CheckFailed(
+            raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
                 BlockedStatus,
             )
 
         # Check if we have an established relation with no data exchanged
         if len(unpacked_relation_data) == 0:
-            raise CheckFailed(
-                f"Waiting for {relation_name} relation data", WaitingStatus
-            )
+            raise CheckFailedError(f"Waiting for {relation_name} relation data", WaitingStatus)
 
         # Unpack data (we care only about the first element)
         data_dict = list(unpacked_relation_data.values())[0]
@@ -166,7 +166,7 @@ class KfpPersistenceOperator(CharmBase):
         # Catch if empty data dict is received (JSONSchema ValidationError above does not raise
         # when this happens)
         if len(data_dict) == 0:
-            raise CheckFailed(
+            raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.",
                 BlockedStatus,
             )
@@ -174,7 +174,7 @@ class KfpPersistenceOperator(CharmBase):
         return data_dict
 
 
-class CheckFailed(Exception):
+class CheckFailedError(Exception):
     """Raise this exception if one of the checks in main fails."""
 
     def __init__(self, msg, status_type=None):
