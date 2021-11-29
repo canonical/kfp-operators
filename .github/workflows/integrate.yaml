@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: python3 -m pip install tox
-      - run: tox -e ${{ matrix.charm }}-lint
+      - run: tox -e ${{ matrix.charm }}-unit
 
   integration:
     name: Integration tests (microk8s)
