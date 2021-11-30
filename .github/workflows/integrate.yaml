@@ -16,6 +16,7 @@ jobs:
       matrix:
         charm:
           - kfp-viewer
+          - kfp-viz
     steps:
       - uses: actions/checkout@v2
       - run: python3 -m pip install tox
@@ -28,6 +29,7 @@ jobs:
       matrix:
         charm:
           - kfp-viewer
+          - kfp-viz
     steps:
       - uses: actions/checkout@v2
       - run: python3 -m pip install tox
