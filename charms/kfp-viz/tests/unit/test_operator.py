@@ -2,15 +2,14 @@
 # See LICENSE file for licensing details.
 
 from contextlib import nullcontext as does_not_raise
+
 import pytest
 import yaml
-
 from oci_image import MissingResourceError
 from ops.model import ActiveStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import KfpVizOperator
-
 
 # TODO: Tests missing for config_changed and dropped/reloaded relations and relations where this
 #  charm provides data to the other application
@@ -36,7 +35,7 @@ def test_image_fetch(harness, oci_resource_data):
 
 def test_install_with_all_inputs(harness, oci_resource_data):
     harness.set_leader()
-    http_port = 1234
+    http_port = "1234"
     model_name = "test_model"
     harness.set_model_name(model_name)
     harness.update_config({"http-port": http_port})
@@ -70,10 +69,7 @@ def test_install_with_all_inputs(harness, oci_resource_data):
         "service-port": http_port,
     }
     kfpviz_sent_data = harness.get_relation_data(kfpviz_rel_id, this_app_name)
-    assert (
-        yaml.safe_load(kfpviz_sent_data["_supported_versions"])
-        == kfpviz_expected_versions
-    )
+    assert yaml.safe_load(kfpviz_sent_data["_supported_versions"]) == kfpviz_expected_versions
     assert yaml.safe_load(kfpviz_sent_data["data"]) == kfpviz_expected_data
 
     # confirm that we can serialize the pod spec and that the unit is active
