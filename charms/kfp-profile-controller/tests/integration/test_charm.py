@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 
 import yaml
-
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
@@ -46,6 +45,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
 #    similar fashion (some resources deployed to each namespace by kfp-profile-controller use the
 #    `default-editor` service account, which is created by the main kubeflow-profile controller)
 #  * This charm deploying successfully is not a full test of function.  We need to create a new
-#    tracked namespace (namespace that has label pipelines.kubeflow.org/enabled=true) and ensure all
-#    expected resources are deployed and come up successfully (eg: if service account is not found,
-#    deployments will exist but pods will never be "ready")
+#    tracked namespace (namespace that has label pipelines.kubeflow.org/enabled=true) and ensure
+#    all expected resources are deployed and come up successfully (eg: if service account is not
+#    found, deployments will exist but pods will never be "ready")
