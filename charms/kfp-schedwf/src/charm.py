@@ -2,35 +2,44 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+"""Charm the Kubeflow Pipelines Scheduled Workflow Controller.
+
+https://github.com/canonical/kfp-operators/
+"""
+
 import logging
 from pathlib import Path
 
 import yaml
+from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
 from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus
-
-from oci_image import OCIImageResource, OCIImageResourceError
 
 log = logging.getLogger()
 
 
 class KfpSchedwf(CharmBase):
+    """Charm the Kubeflow Pipelines Scheduled Workflow Controller.
+
+    https://github.com/canonical/kfp-operators/
+    """
+
     def __init__(self, *args):
         super().__init__(*args)
 
         self.log = logging.getLogger()
         self.image = OCIImageResource(self, "oci-image")
 
-        self.framework.observe(self.on.install, self.main)
-        self.framework.observe(self.on.upgrade_charm, self.main)
-        self.framework.observe(self.on.config_changed, self.main)
+        self.framework.observe(self.on.install, self._main)
+        self.framework.observe(self.on.upgrade_charm, self._main)
+        self.framework.observe(self.on.config_changed, self._main)
 
-    def main(self, event):
+    def _main(self, event):
         try:
             self._check_leader()
             image_details = self.image.fetch()
-        except (CheckFailed, OCIImageResourceError) as check_failed:
+        except (CheckFailedError, OCIImageResourceError) as check_failed:
             self.model.unit.status = check_failed.status
             self.log.info(str(check_failed.status))
             return
@@ -104,10 +113,10 @@ class KfpSchedwf(CharmBase):
     def _check_leader(self):
         if not self.unit.is_leader():
             # We can't do anything useful when not the leader, so do nothing.
-            raise CheckFailed("Waiting for leadership", WaitingStatus)
+            raise CheckFailedError("Waiting for leadership", WaitingStatus)
 
 
-class CheckFailed(Exception):
+class CheckFailedError(Exception):
     """Raise this exception if one of the checks in main fails."""
 
     def __init__(self, msg, status_type=None):
