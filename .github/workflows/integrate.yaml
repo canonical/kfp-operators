@@ -17,6 +17,7 @@ jobs:
         charm:
           - kfp-profile-controller
           - kfp-schedwf
+          - kfp-ui
           - kfp-viewer
           - kfp-viz
     steps:
@@ -32,6 +33,7 @@ jobs:
         charm:
           - kfp-profile-controller
           - kfp-schedwf
+          - kfp-ui
           - kfp-viewer
           - kfp-viz
     steps:
