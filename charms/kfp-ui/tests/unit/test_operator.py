@@ -2,15 +2,14 @@
 # See LICENSE file for licensing details.
 
 from contextlib import nullcontext as does_not_raise
+
 import pytest
 import yaml
-
 from oci_image import MissingResourceError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import KfpUiOperator, CheckFailed
-
+from charm import CheckFailedError, KfpUiOperator
 
 # TODO: Tests missing for config_changed and dropped/reloaded relations and relations where this
 #  charm provides data to the other application
@@ -35,12 +34,12 @@ def test_image_fetch(harness, oci_resource_data):
     "relation_name,relation_data,expected_returned_data,expected_raises,expected_status",
     (
         # Object storage
-        # No relation established.  Raises CheckFailed
+        # No relation established.  Raises CheckFailedError
         (
             "object-storage",
             None,
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus("Missing required relation for object-storage"),
         ),
         (
@@ -48,17 +47,15 @@ def test_image_fetch(harness, oci_resource_data):
             "object-storage",
             {},
             None,
-            pytest.raises(CheckFailed),
-            WaitingStatus(
-                "List of object-storage versions not found for apps: other-app"
-            ),
+            pytest.raises(CheckFailedError),
+            WaitingStatus("List of object-storage versions not found for apps: other-app"),
         ),
         (
             # Relation exists with versions, but no data posted yet
             "object-storage",
             {"_supported_versions": "- v1"},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             WaitingStatus("Waiting for object-storage relation data"),
         ),
         (
@@ -66,10 +63,8 @@ def test_image_fetch(harness, oci_resource_data):
             "object-storage",
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
-            pytest.raises(CheckFailed),
-            BlockedStatus(
-                "Found incomplete/incorrect relation data for object-storage."
-            ),
+            pytest.raises(CheckFailedError),
+            BlockedStatus("Found incomplete/incorrect relation data for object-storage."),
         ),
         (
             # Relation exists with versions and invalid (partial) data
@@ -79,7 +74,7 @@ def test_image_fetch(harness, oci_resource_data):
                 "data": yaml.dump({"service-name": "service-name"}),
             },
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus(
                 "Found incomplete/incorrect relation data for object-storage.  See logs"
             ),
@@ -112,12 +107,12 @@ def test_image_fetch(harness, oci_resource_data):
             None,
         ),
         # kfp-api
-        # No relation established.  Raises CheckFailed
+        # No relation established.  Raises CheckFailedError
         (
             "kfp-api",
             None,
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus("Missing required relation for kfp-api"),
         ),
         (
@@ -125,7 +120,7 @@ def test_image_fetch(harness, oci_resource_data):
             "kfp-api",
             {},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             WaitingStatus("List of kfp-api versions not found for apps: other-app"),
         ),
         (
@@ -133,7 +128,7 @@ def test_image_fetch(harness, oci_resource_data):
             "kfp-api",
             {"_supported_versions": "- v1"},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             WaitingStatus("Waiting for kfp-api relation data"),
         ),
         (
@@ -141,7 +136,7 @@ def test_image_fetch(harness, oci_resource_data):
             "kfp-api",
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus("Found incomplete/incorrect relation data for kfp-api."),
         ),
         (
@@ -152,10 +147,8 @@ def test_image_fetch(harness, oci_resource_data):
                 "data": yaml.dump({"service-name": "service-name"}),
             },
             None,
-            pytest.raises(CheckFailed),
-            BlockedStatus(
-                "Found incomplete/incorrect relation data for kfp-api.  See logs"
-            ),
+            pytest.raises(CheckFailedError),
+            BlockedStatus("Found incomplete/incorrect relation data for kfp-api.  See logs"),
         ),
         (
             # Relation exists with valid data
@@ -214,7 +207,7 @@ def test_relations_that_provide_data(
 
 def test_install_with_all_inputs(harness, oci_resource_data):
     harness.set_leader()
-    http_port = 1234
+    http_port = "1234"
     model_name = "test_model"
     harness.set_model_name(model_name)
     harness.update_config({"http-port": http_port})
@@ -263,9 +256,7 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     relation_version_data = {"_supported_versions": "- v1"}
 
     # example kfp-ui provider relation
-    kfpui_rel_id = harness.add_relation(
-        kfpui_relation_name, f"{kfpui_relation_name}-subscriber"
-    )
+    kfpui_rel_id = harness.add_relation(kfpui_relation_name, f"{kfpui_relation_name}-subscriber")
     harness.add_relation_unit(kfpui_rel_id, f"{kfpui_relation_name}-subscriber/0")
     harness.update_relation_data(
         kfpui_rel_id, f"{kfpui_relation_name}-subscriber", relation_version_data
@@ -290,10 +281,7 @@ def test_install_with_all_inputs(harness, oci_resource_data):
         "service-port": http_port,
     }
     kfpui_sent_data = harness.get_relation_data(kfpui_rel_id, this_app_name)
-    assert (
-        yaml.safe_load(kfpui_sent_data["_supported_versions"])
-        == kfpui_expected_versions
-    )
+    assert yaml.safe_load(kfpui_sent_data["_supported_versions"]) == kfpui_expected_versions
     assert yaml.safe_load(kfpui_sent_data["data"]) == kfpui_expected_data
 
     # Test that we sent expected data to ingress relation
@@ -302,13 +290,10 @@ def test_install_with_all_inputs(harness, oci_resource_data):
         "prefix": "/pipeline",
         "rewrite": "/pipeline",
         "service": f"{this_app_name}",
-        "port": http_port,
+        "port": int(http_port),
     }
     ingress_sent_data = harness.get_relation_data(ingress_rel_id, this_app_name)
-    assert (
-        yaml.safe_load(ingress_sent_data["_supported_versions"])
-        == ingress_expected_versions
-    )
+    assert yaml.safe_load(ingress_sent_data["_supported_versions"]) == ingress_expected_versions
     assert yaml.safe_load(ingress_sent_data["data"]) == ingress_expected_data
 
     # confirm that we can serialize the pod spec and that the unit is active

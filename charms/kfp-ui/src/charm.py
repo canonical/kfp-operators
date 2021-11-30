@@ -2,18 +2,23 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+"""Charm the Kubeflow Pipelines UI.
+
+https://github.com/canonical/kfp-operators
+"""
+
 import json
-from jsonschema import ValidationError
 import logging
 
+from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from serialized_data_interface import (
-    SerializedDataInterface,
     NoCompatibleVersions,
     NoVersionsListed,
+    SerializedDataInterface,
     get_interfaces,
 )
 
@@ -21,28 +26,33 @@ log = logging.getLogger()
 
 
 class KfpUiOperator(CharmBase):
+    """Charm the Kubeflow Pipelines UI.
+
+    https://github.com/canonical/kfp-operators
+    """
+
     def __init__(self, *args):
         super().__init__(*args)
 
         self.log = logging.getLogger()
         self.image = OCIImageResource(self, "oci-image")
 
-        self.framework.observe(self.on.install, self.main)
-        self.framework.observe(self.on.upgrade_charm, self.main)
-        self.framework.observe(self.on.config_changed, self.main)
-        self.framework.observe(self.on["object-storage"].relation_changed, self.main)
-        self.framework.observe(self.on["kfp-api"].relation_changed, self.main)
-        self.framework.observe(self.on["ingress"].relation_changed, self.main)
-        self.framework.observe(self.on["kfp-ui"].relation_changed, self.main)
+        self.framework.observe(self.on.install, self._main)
+        self.framework.observe(self.on.upgrade_charm, self._main)
+        self.framework.observe(self.on.config_changed, self._main)
+        self.framework.observe(self.on["object-storage"].relation_changed, self._main)
+        self.framework.observe(self.on["kfp-api"].relation_changed, self._main)
+        self.framework.observe(self.on["ingress"].relation_changed, self._main)
+        self.framework.observe(self.on["kfp-ui"].relation_changed, self._main)
 
-    def main(self, event):
+    def _main(self, event):
         try:
             self._check_leader()
             interfaces = self._get_interfaces()
             image_details = self.image.fetch()
             os = self._validate_sdi_interface(interfaces, "object-storage")
             kfp_api = self._validate_sdi_interface(interfaces, "kfp-api")
-        except (CheckFailed, OCIImageResourceError) as check_failed:
+        except (CheckFailedError, OCIImageResourceError) as check_failed:
             self.model.unit.status = check_failed.status
             self.log.info(str(check_failed.status))
             return
@@ -55,9 +65,7 @@ class KfpUiOperator(CharmBase):
         healthz = f"http://localhost:{config['http-port']}/apis/v1beta1/healthz"
 
         env = {
-            "ALLOW_CUSTOM_VISUALIZATIONS": str(
-                config["allow-custom-visualizations"]
-            ).lower(),
+            "ALLOW_CUSTOM_VISUALIZATIONS": str(config["allow-custom-visualizations"]).lower(),
             "ARGO_ARCHIVE_ARTIFACTORY": "minio",
             "ARGO_ARCHIVE_BUCKETNAME": "mlpipeline",
             "ARGO_ARCHIVE_LOGS": "false",
@@ -96,13 +104,9 @@ class KfpUiOperator(CharmBase):
         }
 
         # TODO: Not sure if this gets used.  I don't see it in regular pipeline manifests
-        config_json = json.dumps(
-            {"spec": {"serviceAccountName": "kubeflow-pipelines-viewer"}}
-        )
+        config_json = json.dumps({"spec": {"serviceAccountName": "kubeflow-pipelines-viewer"}})
 
-        viewer_pod_template = json.dumps(
-            {"spec": {"serviceAccountName": "default-editor"}}
-        )
+        viewer_pod_template = json.dumps({"spec": {"serviceAccountName": "default-editor"}})
 
         self.model.unit.status = MaintenanceStatus("Setting pod spec")
         self.model.pod.set_spec(
@@ -183,17 +187,13 @@ class KfpUiOperator(CharmBase):
                         ],
                         "kubernetes": {
                             "readinessProbe": {
-                                "exec": {
-                                    "command": ["wget", "-q", "-S", "-O", "-", healthz]
-                                },
+                                "exec": {"command": ["wget", "-q", "-S", "-O", "-", healthz]},
                                 "initialDelaySeconds": 3,
                                 "periodSeconds": 5,
                                 "timeoutSeconds": 2,
                             },
                             "livenessProbe": {
-                                "exec": {
-                                    "command": ["wget", "-q", "-S", "-O", "-", healthz]
-                                },
+                                "exec": {"command": ["wget", "-q", "-S", "-O", "-", healthz]},
                                 "initialDelaySeconds": 3,
                                 "periodSeconds": 5,
                                 "timeoutSeconds": 2,
@@ -228,7 +228,7 @@ class KfpUiOperator(CharmBase):
     def _check_leader(self):
         if not self.unit.is_leader():
             # We can't do anything useful when not the leader, so do nothing.
-            raise CheckFailed("Waiting for leadership", WaitingStatus)
+            raise CheckFailedError("Waiting for leadership", WaitingStatus)
 
     def _get_interfaces(self):
         # Remove this abstraction when SDI adds .status attribute to NoVersionsListed,
@@ -237,15 +237,14 @@ class KfpUiOperator(CharmBase):
         try:
             interfaces = get_interfaces(self)
         except NoVersionsListed as err:
-            raise CheckFailed(str(err), WaitingStatus)
+            raise CheckFailedError(str(err), WaitingStatus)
         except NoCompatibleVersions as err:
-            raise CheckFailed(str(err), BlockedStatus)
+            raise CheckFailedError(str(err), BlockedStatus)
         return interfaces
 
-    def _validate_sdi_interface(
-        self, interfaces: dict, relation_name: str, default_return=None
-    ):
-        """Validates data received from SerializedDataInterface, returning the data if valid
+    def _validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
+        """Validates data received from SerializedDataInterface, returning the data if valid.
+
         Optionally can return a default_return value when no relation is established
         Raises:
             CheckFailed(..., Blocked) when no relation established (unless default_return set)
@@ -262,13 +261,13 @@ class KfpUiOperator(CharmBase):
             if default_return is not None:
                 return default_return
             else:
-                raise CheckFailed(
+                raise CheckFailedError(
                     f"Missing required relation for {relation_name}", BlockedStatus
                 )
 
         relations = interfaces[relation_name]
         if not isinstance(relations, SerializedDataInterface):
-            raise CheckFailed(
+            raise CheckFailedError(
                 f"Unexpected error with {relation_name} relation data - data not as expected",
                 BlockedStatus,
             )
@@ -281,16 +280,14 @@ class KfpUiOperator(CharmBase):
             # Validation in .get_data() ensures if data is populated, it matches the schema and is
             # not incomplete
             self.log.error(val_error)
-            raise CheckFailed(
+            raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
                 BlockedStatus,
             )
 
         # Check if we have an established relation with no data exchanged
         if len(unpacked_relation_data) == 0:
-            raise CheckFailed(
-                f"Waiting for {relation_name} relation data", WaitingStatus
-            )
+            raise CheckFailedError(f"Waiting for {relation_name} relation data", WaitingStatus)
 
         # Unpack data (we care only about the first element)
         data_dict = list(unpacked_relation_data.values())[0]
@@ -298,7 +295,7 @@ class KfpUiOperator(CharmBase):
         # Catch if empty data dict is received (JSONSchema ValidationError above does not raise
         # when this happens)
         if len(data_dict) == 0:
-            raise CheckFailed(
+            raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.",
                 BlockedStatus,
             )
@@ -306,7 +303,7 @@ class KfpUiOperator(CharmBase):
         return data_dict
 
 
-class CheckFailed(Exception):
+class CheckFailedError(Exception):
     """Raise this exception if one of the checks in main fails."""
 
     def __init__(self, msg, status_type=None):
