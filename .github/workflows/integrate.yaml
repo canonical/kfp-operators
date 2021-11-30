@@ -16,6 +16,10 @@ jobs:
       matrix:
         charm:
           - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
           - kfp-viewer
           - kfp-viz
     steps:
@@ -30,12 +34,47 @@ jobs:
       matrix:
         charm:
           - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
           - kfp-viewer
           - kfp-viz
     steps:
       - uses: actions/checkout@v2
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-unit
+
+  integration:
+    name: Integration tests (microk8s)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        charm:
+          - kfp-profile-controller
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+          channel: 1.21/stable
+          charmcraft-channel: latest/candidate
+      - run: sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
+
+      # Collect debug logs if failed
+      - name: Get all
+        run: kubectl get all -A
+        if: failure()
+      - name: Get juju status
+        run: juju status
+        if: failure()
+      - name: Get workload logs
+        run: kubectl logs --tail 100 -nkubeflow -ljuju-app
+        if: failure()
+      - name: Get operator logs
+        run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
+        if: failure()
 
 ## TODO: Temporarily disabled
 #  test-bundle:
