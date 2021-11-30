@@ -2,7 +2,7 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Charm the Kubeflow Pipelines UI.
+"""Charm for the Kubeflow Pipelines UI.
 
 https://github.com/canonical/kfp-operators
 """
@@ -26,7 +26,7 @@ log = logging.getLogger()
 
 
 class KfpUiOperator(CharmBase):
-    """Charm the Kubeflow Pipelines UI.
+    """Charm for the Kubeflow Pipelines UI.
 
     https://github.com/canonical/kfp-operators
     """
@@ -294,6 +294,8 @@ class KfpUiOperator(CharmBase):
 
         # Catch if empty data dict is received (JSONSchema ValidationError above does not raise
         # when this happens)
+        # Remove once addressed in:
+        # https://github.com/canonical/serialized-data-interface/issues/28
         if len(data_dict) == 0:
             raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.",

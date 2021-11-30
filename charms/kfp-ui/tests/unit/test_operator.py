@@ -13,6 +13,8 @@ from charm import CheckFailedError, KfpUiOperator
 
 # TODO: Tests missing for config_changed and dropped/reloaded relations and relations where this
 #  charm provides data to the other application
+# TODO: test ingress relation (receive data)
+# TODO: test kfp-ui (provide data)
 
 
 def test_not_leader(harness):
@@ -197,12 +199,6 @@ def test_relations_that_provide_data(
         assert data == expected_returned_data
     else:
         assert partial_relation_data.value.status == expected_status
-
-
-# ingress (receive data)
-
-
-# kfp-ui (provide data)
 
 
 def test_install_with_all_inputs(harness, oci_resource_data):

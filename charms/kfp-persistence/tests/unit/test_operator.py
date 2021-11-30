@@ -90,7 +90,7 @@ OTHER_APP_NAME = "kfp-api-provider"
         ),
     ),
 )
-def test_object_storage_relation(
+def test_kfp_api_relation(
     harness, relation_data, expected_returned_data, expected_raises, expected_status
 ):
     harness.set_leader()
@@ -108,6 +108,102 @@ def test_object_storage_relation(
     with expected_raises as partial_relation_data:
         interfaces = harness.charm._get_interfaces()
         data = harness.charm._get_kfpapi(interfaces)
+    if expected_status is None:
+        assert data == expected_returned_data
+    else:
+        assert partial_relation_data.value.status == expected_status
+
+
+@pytest.mark.parametrize(
+    "relation_name,relation_data,expected_returned_data,expected_raises,expected_status",
+    (
+        # kfp-api
+        # No relation established.  Raises CheckFailedError
+        (
+            "kfp-api",
+            None,
+            None,
+            pytest.raises(CheckFailedError),
+            BlockedStatus("Missing required relation for kfp-api"),
+        ),
+        (
+            # Relation exists but no versions set yet
+            "kfp-api",
+            {},
+            None,
+            pytest.raises(CheckFailedError),
+            WaitingStatus("List of kfp-api versions not found for apps: other-app"),
+        ),
+        (
+            # Relation exists with versions, but no data posted yet
+            "kfp-api",
+            {"_supported_versions": "- v1"},
+            None,
+            pytest.raises(CheckFailedError),
+            WaitingStatus("Waiting for kfp-api relation data"),
+        ),
+        (
+            # Relation exists with versions and empty data
+            "kfp-api",
+            {"_supported_versions": "- v1", "data": yaml.dump({})},
+            None,
+            pytest.raises(CheckFailedError),
+            BlockedStatus("Found incomplete/incorrect relation data for kfp-api."),
+        ),
+        (
+            # Relation exists with versions and invalid (partial) data
+            "kfp-api",
+            {
+                "_supported_versions": "- v1",
+                "data": yaml.dump({"service-name": "service-name"}),
+            },
+            None,
+            pytest.raises(CheckFailedError),
+            BlockedStatus("Found incomplete/incorrect relation data for kfp-api.  See logs"),
+        ),
+        (
+            # Relation exists with valid data
+            "kfp-api",
+            {
+                "_supported_versions": "- v1",
+                "data": yaml.dump(
+                    {
+                        "service-name": "service-name",
+                        "service-port": "1234",
+                    }
+                ),
+            },
+            {
+                "service-name": "service-name",
+                "service-port": "1234",
+            },
+            does_not_raise(),
+            None,
+        ),
+    ),
+)
+def test_relations_that_provide_data(
+    harness,
+    relation_name,
+    relation_data,
+    expected_returned_data,
+    expected_raises,
+    expected_status,
+):
+    harness.set_leader()
+    harness.begin()
+
+    other_app = "other-app"
+    other_unit = f"{other_app}/0"
+
+    if relation_data is not None:
+        rel_id = harness.add_relation(relation_name, other_app)
+        harness.add_relation_unit(rel_id, other_unit)
+        harness.update_relation_data(rel_id, other_app, relation_data)
+
+    with expected_raises as partial_relation_data:
+        interfaces = harness.charm._get_interfaces()
+        data = harness.charm._validate_sdi_interface(interfaces, relation_name)
     if expected_status is None:
         assert data == expected_returned_data
     else:

@@ -123,86 +123,12 @@ def test_kfp_viz_relation_missing(harness):
 
 
 @pytest.mark.parametrize(
-    "relation_data,expected_returned_data,expected_raises,expected_status",
+    "relation_name,relation_data,expected_returned_data,expected_raises,expected_status",
     (
-        # No relation established.  Returns default value
-        (
-            None,
-            {"service-name": "unset", "service-port": "1234"},
-            does_not_raise(),
-            None,
-        ),
-        (
-            # Relation exists but no versions set yet
-            {},
-            None,
-            pytest.raises(CheckFailedError),
-            WaitingStatus("List of kfp-viz versions not found for apps: kfp-viz"),
-        ),
-        (
-            # Relation exists with versions, but no data posted yet
-            {"_supported_versions": "- v1"},
-            None,
-            pytest.raises(CheckFailedError),
-            WaitingStatus("Waiting for kfp-viz relation data"),
-        ),
-        (
-            # Relation exists with versions and empty data
-            {"_supported_versions": "- v1", "data": yaml.dump({})},
-            None,
-            pytest.raises(CheckFailedError),
-            BlockedStatus("Found incomplete/incorrect relation data for kfp-viz."),
-        ),
-        (
-            # Relation exists with versions and invalid (partial) data
-            {
-                "_supported_versions": "- v1",
-                "data": yaml.dump({"service-name": "service-name"}),
-            },
-            None,
-            pytest.raises(CheckFailedError),
-            BlockedStatus("Found incomplete/incorrect relation data for kfp-viz.  See logs"),
-        ),
-        (
-            # Relation exists with valid data
-            {
-                "_supported_versions": "- v1",
-                "data": yaml.dump({"service-name": "set", "service-port": "9876"}),
-            },
-            {"service-name": "set", "service-port": "9876"},
-            does_not_raise(),
-            None,
-        ),
-    ),
-)
-def test_kfp_viz_relation(
-    harness, relation_data, expected_returned_data, expected_raises, expected_status
-):
-    harness.set_leader()
-    harness.begin()
-
-    viz_app = "kfp-viz"
-    viz_unit = f"{viz_app}/0"
-
-    if relation_data is not None:
-        rel_id = harness.add_relation("kfp-viz", viz_app)
-        harness.add_relation_unit(rel_id, viz_unit)
-        harness.update_relation_data(rel_id, viz_app, relation_data)
-
-    with expected_raises as partial_relation_data:
-        interfaces = harness.charm._get_interfaces()
-        viz = harness.charm._get_viz(interfaces)
-    if expected_status is None:
-        assert viz == expected_returned_data
-    else:
-        assert partial_relation_data.value.status == expected_status
-
-
-@pytest.mark.parametrize(
-    "relation_data,expected_returned_data,expected_raises,expected_status",
-    (
+        # Object storage
         # No relation established.  Raises CheckFailedError
         (
+            "object-storage",
             None,
             None,
             pytest.raises(CheckFailedError),
@@ -210,13 +136,15 @@ def test_kfp_viz_relation(
         ),
         (
             # Relation exists but no versions set yet
+            "object-storage",
             {},
             None,
             pytest.raises(CheckFailedError),
-            WaitingStatus("List of object-storage versions not found for apps: minio"),
+            WaitingStatus("List of object-storage versions not found for apps: other-app"),
         ),
         (
             # Relation exists with versions, but no data posted yet
+            "object-storage",
             {"_supported_versions": "- v1"},
             None,
             pytest.raises(CheckFailedError),
@@ -224,6 +152,7 @@ def test_kfp_viz_relation(
         ),
         (
             # Relation exists with versions and empty data
+            "object-storage",
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
             pytest.raises(CheckFailedError),
@@ -231,6 +160,7 @@ def test_kfp_viz_relation(
         ),
         (
             # Relation exists with versions and invalid (partial) data
+            "object-storage",
             {
                 "_supported_versions": "- v1",
                 "data": yaml.dump({"service-name": "service-name"}),
@@ -243,6 +173,7 @@ def test_kfp_viz_relation(
         ),
         (
             # Relation exists with valid data
+            "object-storage",
             {
                 "_supported_versions": "- v1",
                 "data": yaml.dump(
@@ -267,16 +198,75 @@ def test_kfp_viz_relation(
             does_not_raise(),
             None,
         ),
+        # kfp-viz
+        # No relation established.  Raises CheckFailedError
+        (
+            "kfp-viz",
+            None,
+            None,
+            pytest.raises(CheckFailedError),
+            BlockedStatus("Missing required relation for kfp-viz"),
+        ),
+        (
+            # Relation exists but no versions set yet
+            "kfp-viz",
+            {},
+            None,
+            pytest.raises(CheckFailedError),
+            WaitingStatus("List of kfp-viz versions not found for apps: other-app"),
+        ),
+        (
+            # Relation exists with versions, but no data posted yet
+            "kfp-viz",
+            {"_supported_versions": "- v1"},
+            None,
+            pytest.raises(CheckFailedError),
+            WaitingStatus("Waiting for kfp-viz relation data"),
+        ),
+        (
+            # Relation exists with versions and empty data
+            "kfp-viz",
+            {"_supported_versions": "- v1", "data": yaml.dump({})},
+            None,
+            pytest.raises(CheckFailedError),
+            BlockedStatus("Found incomplete/incorrect relation data for kfp-viz."),
+        ),
+        (
+            # Relation exists with versions and invalid (partial) data
+            "kfp-viz",
+            {
+                "_supported_versions": "- v1",
+                "data": yaml.dump({"service-name": "service-name"}),
+            },
+            None,
+            pytest.raises(CheckFailedError),
+            BlockedStatus("Found incomplete/incorrect relation data for kfp-viz.  See logs"),
+        ),
+        (
+            # Relation exists with valid data
+            "kfp-viz",
+            {
+                "_supported_versions": "- v1",
+                "data": yaml.dump({"service-name": "set", "service-port": "9876"}),
+            },
+            {"service-name": "set", "service-port": "9876"},
+            does_not_raise(),
+            None,
+        ),
     ),
 )
-def test_object_storage_relation(
-    harness, relation_data, expected_returned_data, expected_raises, expected_status
+def test_relations_that_provide_data(
+    harness,
+    relation_name,
+    relation_data,
+    expected_returned_data,
+    expected_raises,
+    expected_status,
 ):
     harness.set_leader()
     harness.begin()
 
-    relation_name = "object-storage"
-    other_app = "minio"
+    other_app = "other-app"
     other_unit = f"{other_app}/0"
 
     if relation_data is not None:
@@ -286,7 +276,7 @@ def test_object_storage_relation(
 
     with expected_raises as partial_relation_data:
         interfaces = harness.charm._get_interfaces()
-        data = harness.charm._get_object_storage(interfaces)
+        data = harness.charm._validate_sdi_interface(interfaces, relation_name)
     if expected_status is None:
         assert data == expected_returned_data
     else:

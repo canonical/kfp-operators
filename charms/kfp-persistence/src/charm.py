@@ -2,7 +2,10 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Charm data persistence application for Kubeflow Pipelines."""
+"""Charm for the data persistence application of Kubeflow Pipelines.
+
+https://github.com/canonical/kfp-operators/
+"""
 
 import logging
 
@@ -22,7 +25,10 @@ log = logging.getLogger()
 
 
 class KfpPersistenceOperator(CharmBase):
-    """Charm data persistence application for Kubeflow Pipelines."""
+    """Charm for the data persistence application of Kubeflow Pipelines.
+
+    https://github.com/canonical/kfp-operators/
+    """
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -108,9 +114,9 @@ class KfpPersistenceOperator(CharmBase):
 
     def _get_kfpapi(self, interfaces):
         relation_name = "kfp-api"
-        return self.validate_sdi_interface(interfaces, relation_name)
+        return self._validate_sdi_interface(interfaces, relation_name)
 
-    def validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
+    def _validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
         """Validates data received from SerializedDataInterface, returning the data if valid.
 
         Optionally can return a default_return value when no relation is established
@@ -165,6 +171,8 @@ class KfpPersistenceOperator(CharmBase):
 
         # Catch if empty data dict is received (JSONSchema ValidationError above does not raise
         # when this happens)
+        # Remove once addressed in:
+        # https://github.com/canonical/serialized-data-interface/issues/28
         if len(data_dict) == 0:
             raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.",

@@ -368,6 +368,8 @@ class KfpApiOperator(CharmBase):
 
         # Catch if empty data dict is received (JSONSchema ValidationError above does not raise
         # when this happens)
+        # Remove once addressed in:
+        # https://github.com/canonical/serialized-data-interface/issues/28
         if len(data_dict) == 0:
             raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.",

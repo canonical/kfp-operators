@@ -27,7 +27,15 @@ from serialized_data_interface import (
 # podspec.
 CONTROLLER_PORT = 80
 
-# TODO: Istio destinationrule/auth manually disabled in sync.py.  Need a better solution for this.
+# TODO: This sets the version of the images deployed to each namespace (value comes from the
+#  upstream configMap pipeline-install-config's appVersion entry).  Normal pattern would
+#  set this in metadata but this is different here.  Should this be exposed differently?
+KFP_IMAGES_VERSION = "1.7.0-rc.3"
+
+# Note: Istio destinationrule/auth have been manually disabled in sync.py.  Need a better
+# solution for this in future
+
+# TODO: Restore the readiness probes?
 
 
 class KfpProfileControllerOperator(CharmBase):
@@ -67,11 +75,7 @@ class KfpProfileControllerOperator(CharmBase):
             "MINIO_HOST": os["service"],
             "MINIO_PORT": os["port"],
             "MINIO_NAMESPACE": os["namespace"],
-            # TODO: This sets the version of the images used in each namespace, coming from the
-            #  upstream configMap pipeline-install-config's appVersion entry.  Normally we'd expect
-            #  to set this in metadata but is different in this charm - should we have this
-            #  exposed better somewhere?
-            "KFP_VERSION": "1.7.0-rc.3",
+            "KFP_VERSION": KFP_IMAGES_VERSION,
             "KFP_DEFAULT_PIPELINE_ROOT": "",
             "DISABLE_ISTIO_SIDECAR": "false",
             "CONTROLLER_PORT": CONTROLLER_PORT,
@@ -84,8 +88,8 @@ class KfpProfileControllerOperator(CharmBase):
                 "version": 3,
                 "containers": [
                     {
-                        # TODO: annotations: sidecar.istio.io/inject: "false"
-                        # TODO: labels?
+                        # TODO: If istio is enabled, may need annotation here of
+                        #  sidecar.istio.io/inject: "false" like upstream uses
                         "name": "kubeflow-pipelines-profile-controller",
                         "command": ["python"],
                         "args": ["/hooks/sync.py"],
@@ -258,6 +262,8 @@ class KfpProfileControllerOperator(CharmBase):
 
         # Catch if empty data dict is received (JSONSchema ValidationError above does not raise
         # when this happens)
+        # Remove once addressed in:
+        # https://github.com/canonical/serialized-data-interface/issues/28
         if len(data_dict) == 0:
             raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.",
@@ -281,9 +287,6 @@ class CheckFailedError(Exception):
         self.msg = msg
         self.status_type = status_type
         self.status = status_type(msg)
-
-
-# TODO: Restore the readiness probes?
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Charm the Kubeflow Pipelines Viewer.
+"""Charm for the Kubeflow Pipelines Viewer.
 
 https://github.com/canonical/kfp-operators
 """
@@ -20,7 +20,7 @@ log = logging.getLogger()
 
 
 class KfpViewer(CharmBase):
-    """Charm the Kubeflow Pipelines Viewer.
+    """Charm for the Kubeflow Pipelines Viewer.
 
     https://github.com/canonical/kfp-operators
     """
