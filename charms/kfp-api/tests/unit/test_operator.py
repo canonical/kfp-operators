@@ -2,15 +2,14 @@
 # See LICENSE file for licensing details.
 
 from contextlib import nullcontext as does_not_raise
+
 import pytest
 import yaml
-
 from oci_image import MissingResourceError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import KfpApiOperator, CheckFailed
-
+from charm import CheckFailedError, KfpApiOperator
 
 # TODO: Tests missing for config_changed and dropped/reloaded relations
 
@@ -34,24 +33,24 @@ def test_image_fetch(harness, oci_resource_data):
     "relation_data,expected_returned_data,expected_raises,expected_status",
     (
         (
-            # No relation established.  Raises CheckFailed
+            # No relation established.  Raises CheckFailedError
             None,
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus("Missing required relation for mysql"),
         ),
         (
             # Relation exists but no data posted yet
             {},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             WaitingStatus("Waiting for mysql relation data"),
         ),
         (
             # Relation exists with only partial data
             {"database": "database"},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus("Received incomplete data from mysql relation.  See logs"),
         ),
         (
@@ -107,7 +106,7 @@ def test_mysql_relation_too_many_relations(harness):
     rel_id_2 = harness.add_relation("mysql", "extra_sql")
     harness.add_relation_unit(rel_id_2, "extra_sql/0")
 
-    with pytest.raises(CheckFailed) as too_many_relations:
+    with pytest.raises(CheckFailedError) as too_many_relations:
         harness.charm._get_mysql()
     assert too_many_relations.value.status == BlockedStatus("Too many mysql relations")
 
@@ -137,21 +136,21 @@ def test_kfp_viz_relation_missing(harness):
             # Relation exists but no versions set yet
             {},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             WaitingStatus("List of kfp-viz versions not found for apps: kfp-viz"),
         ),
         (
             # Relation exists with versions, but no data posted yet
             {"_supported_versions": "- v1"},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             WaitingStatus("Waiting for kfp-viz relation data"),
         ),
         (
             # Relation exists with versions and empty data
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus("Found incomplete/incorrect relation data for kfp-viz."),
         ),
         (
@@ -161,7 +160,7 @@ def test_kfp_viz_relation_missing(harness):
                 "data": yaml.dump({"service-name": "service-name"}),
             },
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus("Found incomplete/incorrect relation data for kfp-viz.  See logs"),
         ),
         (
@@ -202,32 +201,32 @@ def test_kfp_viz_relation(
 @pytest.mark.parametrize(
     "relation_data,expected_returned_data,expected_raises,expected_status",
     (
-        # No relation established.  Raises CheckFailed
+        # No relation established.  Raises CheckFailedError
         (
             None,
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus("Missing required relation for object-storage"),
         ),
         (
             # Relation exists but no versions set yet
             {},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             WaitingStatus("List of object-storage versions not found for apps: minio"),
         ),
         (
             # Relation exists with versions, but no data posted yet
             {"_supported_versions": "- v1"},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             WaitingStatus("Waiting for object-storage relation data"),
         ),
         (
             # Relation exists with versions and empty data
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus("Found incomplete/incorrect relation data for object-storage."),
         ),
         (
@@ -237,7 +236,7 @@ def test_kfp_viz_relation(
                 "data": yaml.dump({"service-name": "service-name"}),
             },
             None,
-            pytest.raises(CheckFailed),
+            pytest.raises(CheckFailedError),
             BlockedStatus(
                 "Found incomplete/incorrect relation data for object-storage.  See logs"
             ),

@@ -2,12 +2,16 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import json
+"""Charm the Kubeflow Pipelines API.
 
-from jsonschema import ValidationError
+https://github.com/canonical/kfp-operators/
+"""
+
+import json
 import logging
 from pathlib import Path
 
+from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
@@ -15,12 +19,17 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingSta
 from serialized_data_interface import (
     NoCompatibleVersions,
     NoVersionsListed,
-    get_interfaces,
     SerializedDataInterface,
+    get_interfaces,
 )
 
 
 class KfpApiOperator(CharmBase):
+    """Charm the Kubeflow Pipelines API.
+
+    https://github.com/canonical/kfp-operators/
+    """
+
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -37,7 +46,7 @@ class KfpApiOperator(CharmBase):
             self.on["kfp-api"].relation_changed,
         ]
         for event in change_events:
-            self.framework.observe(event, self.main)
+            self.framework.observe(event, self._main)
 
     def _send_info(self, interfaces):
         if interfaces["kfp-api"]:
@@ -48,7 +57,7 @@ class KfpApiOperator(CharmBase):
                 }
             )
 
-    def main(self, event):
+    def _main(self, event):
         # Set up all relations/fetch required data
         try:
             self._check_leader()
@@ -57,14 +66,14 @@ class KfpApiOperator(CharmBase):
             image_details = self.image.fetch()
             os = self._get_object_storage(interfaces)
             viz = self._get_viz(interfaces)
-        except (CheckFailed, OCIImageResourceError) as check_failed:
+        except (CheckFailedError, OCIImageResourceError) as check_failed:
             self.model.unit.status = check_failed.status
             self.log.info(str(check_failed.status))
             return
 
         self._send_info(interfaces)
 
-        config, config_json = self.generate_config(mysql, os, viz)
+        config, config_json = self._generate_config(mysql, os, viz)
 
         healthz = f"http://localhost:{config['http-port']}/apis/v1beta1/healthz"
 
@@ -200,7 +209,7 @@ class KfpApiOperator(CharmBase):
         )
         self.model.unit.status = ActiveStatus()
 
-    def generate_config(self, mysql, os, viz):
+    def _generate_config(self, mysql, os, viz):
         config = self.model.config
         config_json = {
             "DBConfig": {
@@ -243,7 +252,7 @@ class KfpApiOperator(CharmBase):
     def _check_leader(self):
         if not self.unit.is_leader():
             # We can't do anything useful when not the leader, so do nothing.
-            raise CheckFailed("Waiting for leadership", WaitingStatus)
+            raise CheckFailedError("Waiting for leadership", WaitingStatus)
 
     def _get_interfaces(self):
         # Remove this abstraction when SDI adds .status attribute to NoVersionsListed,
@@ -252,17 +261,17 @@ class KfpApiOperator(CharmBase):
         try:
             interfaces = get_interfaces(self)
         except NoVersionsListed as err:
-            raise CheckFailed(str(err), WaitingStatus)
+            raise CheckFailedError(str(err), WaitingStatus)
         except NoCompatibleVersions as err:
-            raise CheckFailed(str(err), BlockedStatus)
+            raise CheckFailedError(str(err), BlockedStatus)
         return interfaces
 
     def _get_mysql(self):
         mysql = self.model.relations["mysql"]
         if len(mysql) == 0:
-            raise CheckFailed("Missing required relation for mysql", BlockedStatus)
+            raise CheckFailedError("Missing required relation for mysql", BlockedStatus)
         elif len(mysql) > 1:
-            raise CheckFailed("Too many mysql relations", BlockedStatus)
+            raise CheckFailedError("Too many mysql relations", BlockedStatus)
 
         try:
             mysql = mysql[0]
@@ -272,7 +281,7 @@ class KfpApiOperator(CharmBase):
             self.log.error(
                 f"Encountered the following exception when parsing mysql relation: " f"{str(e)}"
             )
-            raise CheckFailed(
+            raise CheckFailedError(
                 "Unexpected error when parsing mysql relation.  See logs", BlockedStatus
             )
 
@@ -283,29 +292,29 @@ class KfpApiOperator(CharmBase):
         ]
 
         if len(missing_attributes) == len(expected_attributes):
-            raise CheckFailed("Waiting for mysql relation data", WaitingStatus)
+            raise CheckFailedError("Waiting for mysql relation data", WaitingStatus)
         elif len(missing_attributes) > 0:
             self.log.error(
                 f"mysql relation data missing expected attributes '{missing_attributes}'"
             )
-            raise CheckFailed(
+            raise CheckFailedError(
                 "Received incomplete data from mysql relation.  See logs", BlockedStatus
             )
         return mysql
 
     def _get_object_storage(self, interfaces):
         relation_name = "object-storage"
-        return self.validate_sdi_interface(interfaces, relation_name)
+        return self._validate_sdi_interface(interfaces, relation_name)
 
     def _get_viz(self, interfaces):
         relation_name = "kfp-viz"
         default_viz_data = {"service-name": "unset", "service-port": "1234"}
-        return self.validate_sdi_interface(
+        return self._validate_sdi_interface(
             interfaces, relation_name, default_return=default_viz_data
         )
 
-    def validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
-        """Validates data received from SerializedDataInterface, returning the data if valid
+    def _validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
+        """Validates data received from SerializedDataInterface, returning the data if valid.
 
         Optionally can return a default_return value when no relation is established
 
@@ -326,11 +335,13 @@ class KfpApiOperator(CharmBase):
             if default_return is not None:
                 return default_return
             else:
-                raise CheckFailed(f"Missing required relation for {relation_name}", BlockedStatus)
+                raise CheckFailedError(
+                    f"Missing required relation for {relation_name}", BlockedStatus
+                )
 
         relations = interfaces[relation_name]
         if not isinstance(relations, SerializedDataInterface):
-            raise CheckFailed(
+            raise CheckFailedError(
                 f"Unexpected error with {relation_name} relation data - data not as expected",
                 BlockedStatus,
             )
@@ -343,14 +354,14 @@ class KfpApiOperator(CharmBase):
             # Validation in .get_data() ensures if data is populated, it matches the schema and is
             # not incomplete
             self.log.error(val_error)
-            raise CheckFailed(
+            raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
                 BlockedStatus,
             )
 
         # Check if we have an established relation with no data exchanged
         if len(unpacked_relation_data) == 0:
-            raise CheckFailed(f"Waiting for {relation_name} relation data", WaitingStatus)
+            raise CheckFailedError(f"Waiting for {relation_name} relation data", WaitingStatus)
 
         # Unpack data (we care only about the first element)
         data_dict = list(unpacked_relation_data.values())[0]
@@ -358,7 +369,7 @@ class KfpApiOperator(CharmBase):
         # Catch if empty data dict is received (JSONSchema ValidationError above does not raise
         # when this happens)
         if len(data_dict) == 0:
-            raise CheckFailed(
+            raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.",
                 BlockedStatus,
             )
@@ -366,7 +377,7 @@ class KfpApiOperator(CharmBase):
         return data_dict
 
 
-class CheckFailed(Exception):
+class CheckFailedError(Exception):
     """Raise this exception if one of the checks in main fails."""
 
     def __init__(self, msg, status_type=None):
