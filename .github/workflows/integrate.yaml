@@ -15,6 +15,7 @@ jobs:
     strategy:
       matrix:
         charm:
+          - kfp-schedwf
           - kfp-viewer
           - kfp-viz
     steps:
@@ -28,6 +29,7 @@ jobs:
     strategy:
       matrix:
         charm:
+          - kfp-schedwf
           - kfp-viewer
           - kfp-viz
     steps:
