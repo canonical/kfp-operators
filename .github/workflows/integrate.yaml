@@ -60,21 +60,16 @@ jobs:
           provider: microk8s
           channel: 1.21/stable
           charmcraft-channel: latest/candidate
-      - run: sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
+      - run: |
+          exit 1  # Fail intentionally
 
       # Collect debug logs if failed
-      - name: Get all
-        run: kubectl get all -A
+      - name: Dump Juju/k8s logs on failure
+        uses: canonical/charm-logdump-action@main
         if: failure()
-      - name: Get juju status
-        run: juju status
-        if: failure()
-      - name: Get workload logs
-        run: kubectl logs --tail 100 -nkubeflow -ljuju-app
-        if: failure()
-      - name: Get operator logs
-        run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
-        if: failure()
+        with:
+          app: ${{ matrix.charm }}
+          model: testing
 
 ## TODO: Temporarily disabled
 #  test-bundle:
