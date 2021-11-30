@@ -8,8 +8,8 @@ import logging
 
 from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
-from ops.main import main
 from ops.charm import CharmBase
+from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from serialized_data_interface import (
     NoCompatibleVersions,
