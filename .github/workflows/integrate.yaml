@@ -61,7 +61,8 @@ jobs:
           channel: 1.21/stable
           charmcraft-channel: latest/candidate
       - run: |
-          exit 1  # Fail intentionally
+          juju add-model testing
+          sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
 
       # Collect debug logs if failed
       - name: Dump Juju/k8s logs on failure
