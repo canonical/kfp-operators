@@ -15,6 +15,7 @@ jobs:
     strategy:
       matrix:
         charm:
+          - kfp-viewer
           - kfp-viz
     steps:
       - uses: actions/checkout@v2
@@ -27,6 +28,7 @@ jobs:
     strategy:
       matrix:
         charm:
+          - kfp-viewer
           - kfp-viz
     steps:
       - uses: actions/checkout@v2
