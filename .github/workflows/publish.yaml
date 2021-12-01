@@ -13,19 +13,20 @@ jobs:
     name: Publish Charm
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         charm:
-          - kfp-api
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
+        - kfp-api
+        - kfp-persistence
+        - kfp-profile-controller
+        - kfp-schedwf
+        - kfp-ui
+        - kfp-viewer
+        - kfp-viz
     steps:
     - uses: actions/checkout@v2
     - uses: canonical/charmhub-upload-action@initial-implementation
       with:
-        credentials: ${{ secrets.CHARMSTORE_CREDENTIAL }}
+        credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
         charm-path: charms/${{ matrix.charm }}
         charmcraft-channel: latest/edge
