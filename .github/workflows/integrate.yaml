@@ -1,87 +1,139 @@
 name: CI
 
 on:
-  - push
-  - pull_request
+  push:
+    branches:
+      - master
+  pull_request:
+
+# TODO: Set the charm matrix from listing /charms folders
 
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - run: python3 -m pip install tox
+      - run: tox -e ${{ matrix.charm }}-lint
 
-    - name: Install dependencies
-      run: sudo pip3 install black flake8
-
-    - name: Check black
-      run: black --check .
-
-    - name: Check flake8
-      run: flake8
-
-  test:
-    name: Test
+  unit:
+    name: Unit tests
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
     steps:
-    - name: Check out repo
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - run: python3 -m pip install tox
+      - run: tox -e ${{ matrix.charm }}-unit
 
-    - uses: balchua/microk8s-actions@v0.2.2
-      with:
-        addons: '["dns", "storage", "rbac"]'
+  integration:
+    name: Integration tests (microk8s)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        charm:
+          - kfp-profile-controller
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+          channel: 1.21/stable
+          charmcraft-channel: latest/candidate
+      - run: |
+          juju add-model testing
+          sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
 
-    - name: Install dependencies
-      run: |
-        set -eux
-        sudo pip3 install charmcraft==1.0.0 pytest kfp
-        sudo snap install juju --classic
-        sudo snap install juju-helpers --classic
-        sudo snap install juju-wait --classic
+      # Collect debug logs if failed
+      - name: Dump Juju/k8s logs on failure
+        uses: canonical/charm-logdump-action@main
+        if: failure()
+        with:
+          app: ${{ matrix.charm }}
+          model: testing
 
-    # Avoid race condition with storage taking a long time to initialize
-    - name: Wait for storage
-      run: |
-        sg microk8s -c 'microk8s kubectl rollout status deployment/hostpath-provisioner -n kube-system'
-
-    - name: Bootstrap Juju
-      run: |
-        set -eux
-        sg microk8s -c 'juju bootstrap microk8s uk8s'
-        juju add-model kubeflow
-
-    - name: Deploy istio-pilot
-      run: |
-        set -eux
-        juju deploy cs:istio-pilot
-        juju wait -wvt 300
-
-    - name: Deploy bundle
-      run: |
-        set -eux
-        juju bundle deploy --build
-        juju relate istio-pilot:ingress kfp-ui:ingress
-        juju wait -wvt 600
-
-    - name: Test bundle
-      run: sg microk8s -c 'pytest -svv'
-
-    - name: Get all
-      run: kubectl get all -A
-      if: failure()
-
-    - name: Get juju status
-      run: juju status
-      if: failure()
-
-    - name: Get workload logs
-      run: kubectl logs --tail 100 -nkubeflow -ljuju-app
-      if: failure()
-
-    - name: Get operator logs
-      run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
-      if: failure()
-
+## TODO: Temporarily disabled
+#  test-bundle:
+#    name: Test the bundle
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - uses: actions/checkout@v2
+#    - uses: balchua/microk8s-actions@v0.2.2
+#      with:
+#        addons: '["dns", "storage", "rbac"]'
+#        channel: 1.21/stable
+#
+#    - name: Install dependencies
+#      run: |
+#        set -eux
+#        sudo pip3 install charmcraft==1.0.0 pytest kfp
+#        sudo snap install juju --classic
+#        sudo snap install juju-helpers --classic
+#        sudo snap install juju-wait --classic
+#
+#    # Avoid race condition with storage taking a long time to initialize
+#    - name: Wait for storage
+#      run: |
+#        sg microk8s -c 'microk8s kubectl rollout status deployment/hostpath-provisioner -n kube-system'
+#
+#    - name: Bootstrap Juju
+#      run: |
+#        set -eux
+#        sg microk8s -c 'juju bootstrap microk8s uk8s'
+#        juju add-model kubeflow
+#
+#    - name: Deploy istio-pilot
+#      run: |
+#        set -eux
+#        juju deploy cs:istio-pilot
+#        juju wait -wvt 300
+#
+#    - name: Deploy bundle
+#      run: |
+#        set -eux
+#        juju bundle deploy --build
+#        juju relate istio-pilot:ingress kfp-ui:ingress
+#        juju wait -wvt 600
+#
+#    - name: Test bundle
+#      run: sg microk8s -c 'pytest -svv --ignore charms/kfp-profile-controller'
+#
+#    - name: Get all
+#      run: kubectl get all -A
+#      if: failure()
+#
+#    - name: Get juju status
+#      run: juju status
+#      if: failure()
+#
+#    - name: Get workload logs
+#      run: kubectl logs --tail 100 -nkubeflow -ljuju-app
+#      if: failure()
+#
+#    - name: Get operator logs
+#      run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
+#      if: failure()

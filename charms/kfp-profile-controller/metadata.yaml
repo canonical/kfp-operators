@@ -1,0 +1,24 @@
+name: kfp-profile-controller
+display-name: Kubeflow Pipelines Profile Controller
+summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
+description: |
+  Machine learning (ML) toolkit that is dedicated to making deployments
+  of ML workflows on Kubernetes simple, portable, and scalable.
+maintainers:
+  - "Dominik Fleischmann <dominik.fleischmann@canonical.com>"
+  - "Kenneth Koski <kenneth.koski@canonical.com>"
+  - "Andrew Scribner <andrew.scribner@canonical.com>"
+tags: [ai, big-data, kubeflow, machine-learning, tensorflow]
+series: [kubernetes]
+resources:
+  oci-image:
+    type: oci-image
+    description: Backing OCI image
+    auto-fetch: true
+    upstream-source: python:3.7
+requires:
+  object-storage:
+    interface: object-storage
+    schema: https://raw.githubusercontent.com/canonical/operator-schemas/master/object-storage.yaml
+    versions: [v1]
+min-juju-version: 2.8.6
