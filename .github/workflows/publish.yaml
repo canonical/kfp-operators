@@ -28,4 +28,4 @@ jobs:
       with:
         credentials: ${{ secrets.CHARMSTORE_CREDENTIAL }}
         charm-path: charms/${{ matrix.charm }}
-        charmcraft-channel: latest/candidate
+        charmcraft-channel: latest/edge
