@@ -5,30 +5,28 @@ on:
     branches:
       - master
 
+# TODO: Set the charm matrix from listing /charms folders
+
 jobs:
-  charm:
-    name: Charm
+  publish-charm:
+    name: Publish Charm
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
-
-    - name: Install dependencies
-      run: |
-        sudo snap install charm --classic
-        sudo snap install juju-helpers --classic
-        sudo pip3 install charmcraft==1.0.0
-
-    - name: Publish bundle
-      env:
-        CHARMSTORE_CREDENTIAL: ${{ secrets.CHARMSTORE_CREDENTIAL }}
-      run: |
-        set -eux
-        echo $CHARMSTORE_CREDENTIAL > ~/.go-cookies
-        juju-bundle publish \
-            --url cs:~kubeflow-charmers/kubeflow-pipelines \
-            --publish-charms \
-            --publish-namespace kubeflow-charmers
-
-
+      - uses: actions/checkout@v2
+      # TODO: Update to @main when https://github.com/canonical/charmhub-upload-action/pull/1 merged
+      - uses: canonical/charmhub-upload-action@initial-implementation
+        with:
+          credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
+          charm-path: charms/${{ matrix.charm }}
+          charmcraft-channel: latest/edge
