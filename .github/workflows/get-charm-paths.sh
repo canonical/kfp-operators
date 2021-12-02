@@ -23,7 +23,7 @@ fi
 
 # Convert to JSON in format:
 # { charm_paths: [...] }
-CHARM_PATHS_JSON=$(echo "$CHARM_PATHS" | jq --slurp --raw-input 'split("\n")[:-1]' | jq "{\"charm_path\": . }" | jq -c)
+CHARM_PATHS_JSON=$(echo "$CHARM_PATHS" | jq --slurp --raw-input 'split("\n")[:-1]' | jq "{\"charm-path\": . }" | jq -c)
 
 echo "Found CHARM_PATHS_JSON: $CHARM_PATHS_JSON"
 
