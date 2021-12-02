@@ -1,3 +1,5 @@
+#!/bin/bash -x
+
 # Finds the charms in this repo, outputing them as JSON
 # Will return one of:
 # * the relative paths of the directories listed in `./charms`, if that directory exists
