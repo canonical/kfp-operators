@@ -10,25 +10,29 @@ on:
 # TODO: Set the charm matrix from listing /charms folders
 
 jobs:
+  get-charm-matrix:
+    name: Generate the Charm Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      charm_paths_json: ${{ steps.get-charm-matrix.outputs.CHARM_PATHS_JSON }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get paths for all charms in repo
+        id: get-charm-matrix
+        run: ./.github/workflows/get-charm-paths.sh
+
   publish-charm:
     name: Publish Charm
     runs-on: ubuntu-latest
+    needs: get-charm-matrix
     strategy:
       fail-fast: false
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
+      matrix: ${{ fromJson(needs.get-charm-matrix.outputs.charm_paths_json) }}
     steps:
       - uses: actions/checkout@v2
-      # TODO: Update to @main when https://github.com/canonical/charmhub-upload-action/pull/1 merged
+      # TODO: Update to @main when https://github.com/canonical/charmhub-upload-action/pull/3 merged
       - uses: canonical/charmhub-upload-action@branch/upload-charm-revisions
         with:
           credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
-          charm-path: charms/${{ matrix.charm }}
+          charm-path: ${{ matrix.charm-path }}
           charmcraft-channel: latest/edge
