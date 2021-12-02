@@ -6,6 +6,7 @@ on:
       - master
       - update-publish-*  # DEBUG: For testing only.  TODO: Remove.
       - branch/*  # DEBUG: For testing only.  TODO: Remove.
+      - track/*  # DEBUG: For testing only.  TODO: Remove
 
 # TODO: Set the charm matrix from listing /charms folders
 
