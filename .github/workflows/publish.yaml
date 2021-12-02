@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - update-publish-*  # DEBUG: For testing only.  TODO: Remove.
+      - branch/*  # DEBUG: For testing only.  TODO: Remove.
 
 # TODO: Set the charm matrix from listing /charms folders
 
@@ -26,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       # TODO: Update to @main when https://github.com/canonical/charmhub-upload-action/pull/1 merged
-      - uses: canonical/charmhub-upload-action@master
+      - uses: canonical/charmhub-upload-action@branch/upload-charm-revisions
         with:
           credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
           charm-path: charms/${{ matrix.charm }}
