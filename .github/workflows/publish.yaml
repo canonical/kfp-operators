@@ -14,11 +14,11 @@ jobs:
     name: Generate the Charm Matrix
     runs-on: ubuntu-latest
     outputs:
-      charm_paths_json: ${{ steps.get-charm-matrix.outputs.CHARM_PATHS_JSON }}
+      charm_paths_json: ${{ steps.get-charm-matrix-step.outputs.CHARM_PATHS_JSON }}
     steps:
       - uses: actions/checkout@v2
       - name: Get paths for all charms in repo
-        id: get-charm-matrix
+        id: get-charm-matrix-step
         run: ./.github/workflows/get-charm-paths.sh
 
   publish-charm:
