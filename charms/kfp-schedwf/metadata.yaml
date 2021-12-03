@@ -1,5 +1,4 @@
 name: kfp-schedwf
-display-name: Kubeflow Pipelines Scheduled Workflows
 summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   Machine learning (ML) toolkit that is dedicated to making deployments

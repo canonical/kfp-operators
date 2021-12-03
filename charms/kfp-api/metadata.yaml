@@ -1,5 +1,4 @@
 name: kfp-api
-display-name: Kubeflow Pipelines API
 summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   Machine learning (ML) toolkit that is dedicated to making deployments

@@ -1,5 +1,4 @@
 name: kfp-profile-controller
-display-name: Kubeflow Pipelines Profile Controller
 summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   Machine learning (ML) toolkit that is dedicated to making deployments

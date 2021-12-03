@@ -1,5 +1,4 @@
 name: kfp-viz
-display-name: Kubeflow Pipelines Visualization
 summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   Machine learning (ML) toolkit that is dedicated to making deployments
