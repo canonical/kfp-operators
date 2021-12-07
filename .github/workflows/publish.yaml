@@ -27,6 +27,8 @@ jobs:
   publish-charm:
     name: Publish Charm
     runs-on: ubuntu-latest
+    # Only publish to charmhub if we are pushing to a special branch or running PRs from something named `branch/*`
+    if: (github.event_name == 'push') ||  (startsWith( github.head_ref, 'branch/' ))
     needs: get-charm-matrix
     strategy:
       fail-fast: false
@@ -41,6 +43,7 @@ jobs:
           charmcraft-channel: latest/edge
 
   publish-bundle:
+    # TODO: This publishes always, even if nothing changed. Decouple bundle publishing from charm publishing in future?
     name: Publish Bundle
     runs-on: ubuntu-latest
     env:

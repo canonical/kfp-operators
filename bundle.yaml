@@ -1,7 +1,7 @@
 bundle: kubernetes
 name: kubeflow-pipelines
 applications:
-  argo-controller:        { charm: argo-controller, channel: latest/edge, scale: 1 }
+  argo-controller:        { charm: ch:argo-controller, channel: latest/edge, scale: 1 }
   minio:                  { charm: ch:minio, channel: latest/edge,       scale: 1 }
   kfp-api:                { charm: ch:kfp-api, channel: latest/edge,                        scale: 1 }
   kfp-db:                 { charm: cs:~charmed-osm/mariadb-k8s-35,    scale: 1, options: { database: mlpipeline } }
