@@ -1,14 +1,15 @@
 bundle: kubernetes
+name: kubeflow-pipelines
 applications:
-  argo-controller:        { charm: cs:~argo-charmers/argo-controller, scale: 1 }
-  minio:                  { charm: cs:~minio-charmers/minio-13,       scale: 1 }
-  kfp-api:                { charm: cs:kfp-api,                        scale: 1 }
+  argo-controller:        { charm: argo-controller, channel: latest/edge, scale: 1 }
+  minio:                  { charm: ch:minio, channel: latest/edge,       scale: 1 }
+  kfp-api:                { charm: ch:kfp-api, channel: latest/edge,                        scale: 1 }
   kfp-db:                 { charm: cs:~charmed-osm/mariadb-k8s-35,    scale: 1, options: { database: mlpipeline } }
-  kfp-persistence:        { charm: cs:kfp-persistence,                scale: 1 }
-  kfp-schedwf:            { charm: cs:kfp-schedwf,                    scale: 1 }
-  kfp-ui:                 { charm: cs:kfp-ui,                         scale: 1 }
-  kfp-viewer:             { charm: cs:kfp-viewer,                     scale: 1 }
-  kfp-viz:                { charm: cs:kfp-viz,                        scale: 1 }
+  kfp-persistence:        { charm: ch:kfp-persistence, channel: latest/edge,                scale: 1 }
+  kfp-schedwf:            { charm: ch:kfp-schedwf, channel: latest/edge,                    scale: 1 }
+  kfp-ui:                 { charm: ch:kfp-ui, channel: latest/edge,                         scale: 1 }
+  kfp-viewer:             { charm: ch:kfp-viewer, channel: latest/edge,                     scale: 1 }
+  kfp-viz:                { charm: ch:kfp-viz, channel: latest/edge,                        scale: 1 }
 relations:
 - [argo-controller:object-storage, minio:object-storage]
 - [kfp-api, kfp-db]
