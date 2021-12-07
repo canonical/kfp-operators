@@ -5,6 +5,7 @@ description: |
   - "Dominik Fleischmann <dominik.fleischmann@canonical.com>"
   - "Kenneth Koski <kenneth.koski@canonical.com>"
   - "Andrew Scribner <andrew.scribner@canonical.com>"
+series: [kubernetes]
 resources:
   oci-image:
     type: oci-image
