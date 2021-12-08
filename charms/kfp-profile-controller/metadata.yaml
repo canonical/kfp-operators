@@ -1,10 +1,8 @@
 name: kfp-profile-controller
 summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
+  Machine learning (ML) toolkit that is dedicated to making deployments
   of ML workflows on Kubernetes simple, portable, and scalable.
-  - "Dominik Fleischmann <dominik.fleischmann@canonical.com>"
-  - "Kenneth Koski <kenneth.koski@canonical.com>"
-  - "Andrew Scribner <andrew.scribner@canonical.com>"
 series: [kubernetes]
 resources:
   oci-image:

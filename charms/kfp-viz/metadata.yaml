@@ -1,9 +1,9 @@
 name: kfp-viz
 summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
+  Machine learning (ML) toolkit that is dedicated to making deployments
   of ML workflows on Kubernetes simple, portable, and scalable.
-  - "Dominik Fleischmann <dominik.fleischmann@canonical.com>"
-  - "Kenneth Koski <kenneth.koski@com.canonical>"
+series: [kubernetes]
 resources:
   oci-image:
     type: oci-image
