@@ -11,6 +11,7 @@ import json
 import logging
 from pathlib import Path
 
+from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
@@ -44,9 +45,30 @@ class KfpApiOperator(CharmBase):
             self.on["object-storage"].relation_changed,
             self.on["kfp-viz"].relation_changed,
             self.on["kfp-api"].relation_changed,
+            self.on["monitoring"].relation_changed,
         ]
         for event in change_events:
             self.framework.observe(event, self._main)
+        # Pass the service URL as the target
+        target = "%s.%s.svc:%s" % (
+            self.config["k8s-service-name"],
+            self.model.name,
+            self.config["http-port"],
+        )
+        self.prometheus_provider = MetricsEndpointProvider(
+            charm=self,
+            relation_name="monitoring",
+            jobs=[
+                {
+                    "job_name": "ml_pipeline",
+                    "scrape_interval": "30s",
+                    "metrics_path": self.config["prometheus-path"],
+                    "static_configs": [{"targets": [target]}],
+                }
+            ],
+        )
+        self.framework.observe(self.on["monitoring"].relation_broken, self._main)
+        self.framework.observe(self.on["monitoring"].relation_departed, self._main)
 
     def _send_info(self, interfaces):
         if interfaces["kfp-api"]:
@@ -184,7 +206,7 @@ class KfpApiOperator(CharmBase):
                 "kubernetesResources": {
                     "services": [
                         {
-                            "name": "ml-pipeline",
+                            "name": config["k8s-service-name"],
                             "spec": {
                                 "selector": {"app.kubernetes.io/name": self.model.app.name},
                                 "ports": [
@@ -202,7 +224,7 @@ class KfpApiOperator(CharmBase):
                                     },
                                 ],
                             },
-                        }
+                        },
                     ],
                 }
             },
