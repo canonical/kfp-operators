@@ -49,12 +49,6 @@ class KfpApiOperator(CharmBase):
         ]
         for event in change_events:
             self.framework.observe(event, self._main)
-        # Pass the service URL as the target
-        target = "%s.%s.svc:%s" % (
-            self.config["k8s-service-name"],
-            self.model.name,
-            self.config["http-port"],
-        )
         self.prometheus_provider = MetricsEndpointProvider(
             charm=self,
             relation_name="monitoring",
@@ -63,7 +57,7 @@ class KfpApiOperator(CharmBase):
                     "job_name": "ml_pipeline",
                     "scrape_interval": "30s",
                     "metrics_path": self.config["prometheus-path"],
-                    "static_configs": [{"targets": [target]}],
+                    "static_configs": [{"targets": ["*:{}".format(self.config["http-port"])]}],
                 }
             ],
         )

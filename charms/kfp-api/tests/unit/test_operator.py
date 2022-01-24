@@ -392,4 +392,4 @@ def test_prometheus_data_set(harness, mocker):
 
     assert json.loads(harness.get_relation_data(rel_id, harness.model.app.name)["scrape_jobs"])[0][
         "static_configs"
-    ][0]["targets"] == ["ml-pipeline.kubeflow.svc:8888"]
+    ][0]["targets"] == ["*:8888"]
