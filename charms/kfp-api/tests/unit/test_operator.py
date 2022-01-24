@@ -1,6 +1,7 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import json
 from contextlib import nullcontext as does_not_raise
 
 import pytest
@@ -289,7 +290,7 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     model_name = "test_model"
     service_port = "8888"
     harness.set_model_name(model_name)
-    harness.update_config({"service-port": service_port})
+    harness.update_config({"http-port": service_port})
 
     # Set up required relations
     # Future: convert these to fixtures and share with the tests above
@@ -365,3 +366,30 @@ def oci_resource_data():
             "password": "",
         },
     }
+
+
+def test_prometheus_data_set(harness, mocker):
+    harness.set_leader(True)
+    harness.set_model_name("kubeflow")
+    harness.begin()
+
+    mock_net_get = mocker.patch("ops.testing._TestingModelBackend.network_get")
+    mocker.patch("ops.testing._TestingPebbleClient.list_files")
+
+    bind_address = "1.1.1.1"
+    fake_network = {
+        "bind-addresses": [
+            {
+                "interface-name": "eth0",
+                "addresses": [{"hostname": "cassandra-tester-0", "value": bind_address}],
+            }
+        ]
+    }
+    mock_net_get.return_value = fake_network
+    rel_id = harness.add_relation("monitoring", "otherapp")
+    harness.add_relation_unit(rel_id, "otherapp/0")
+    harness.update_relation_data(rel_id, "otherapp", {})
+
+    assert json.loads(harness.get_relation_data(rel_id, harness.model.app.name)["scrape_jobs"])[0][
+        "static_configs"
+    ][0]["targets"] == ["ml-pipeline.kubeflow.svc:8888"]
