@@ -379,6 +379,56 @@ def server_factory(visualization_server_image,
                         }
                     }
                 },
+                # Added from https://github.com/kubeflow/pipelines/pull/6629 to fix
+                # https://github.com/canonical/bundle-kubeflow/issues/423.  This was not yet in
+                # upstream and if they go with something different we should consider syncing with
+                # upstream.
+                # Adds "Allow access to Kubeflow Pipelines" button in Notebook spawner UI
+                {
+                    "apiVersion": "kubeflow.org/v1alpha1",
+                    "kind": "PodDefault",
+                    "metadata": {
+                        "name": "access-ml-pipeline",
+                        "namespace": namespace
+                    },
+                    "spec": {
+                        "desc": "Allow access to Kubeflow Pipelines",
+                        "selector": {
+                            "matchLabels": {
+                                "access-ml-pipeline": "true"
+                            }
+                        },
+                        "volumes": [
+                            {
+                                "name": "volume-kf-pipeline-token",
+                                "projected": {
+                                    "sources": [
+                                        {
+                                            "serviceAccountToken": {
+                                                "path": "token",
+                                                "expirationSeconds": 7200,
+                                                "audience": "pipelines.kubeflow.org"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/secrets/kubeflow/pipelines",
+                                "name": "volume-kf-pipeline-token",
+                                "readOnly": True
+                            }
+                        ],
+                        "env": [
+                            {
+                                "name": "KF_PIPELINES_SA_TOKEN_PATH",
+                                "value": "/var/run/secrets/kubeflow/pipelines/token"
+                            }
+                        ]
+                    }
+                },
                 {
                     "apiVersion": "v1",
                     "kind": "Service",
