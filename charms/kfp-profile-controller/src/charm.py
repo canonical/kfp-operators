@@ -153,6 +153,18 @@ class KfpProfileControllerOperator(CharmBase):
                                             "resource": "services",
                                             "updateStrategy": {"method": "InPlace"},
                                         },
+                                        # Added from
+                                        # https://github.com/kubeflow/pipelines/pull/6629/files to
+                                        # fix
+                                        # https://github.com/canonical/bundle-kubeflow/issues/423.
+                                        # This was not yet in upstream and if they go with
+                                        # something different we should consider syncing with
+                                        # upstream
+                                        {
+                                            "apiVersion": "kubeflow.org/v1alpha1",
+                                            "resource": "poddefaults",
+                                            "updateStrategy": {"method": "InPlace"},
+                                        },
                                         # TODO: This only works if istio is available.  Disabled
                                         #  for now and add back when istio checked as dependency
                                         # {
