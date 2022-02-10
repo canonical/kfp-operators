@@ -1,3 +1,5 @@
 ops==1.2.0
 oci-image==1.0.0
-serialized-data-interface<0.4
+# serialized-data-interface>=0.4
+https://github.com/canonical/serialized-data-interface/archive/refs/heads/sborl.zip#egg=serialized-data-interface
+
