@@ -136,7 +136,8 @@ class KfpProfileControllerOperator(CharmBase):
                                         {
                                             "apiVersion": "v1",
                                             "resource": "secrets",
-                                            "updateStrategy": {"method": "OnDelete"},
+                                            # TODO: Push this change upstream
+                                            "updateStrategy": {"method": "InPlace"},
                                         },
                                         {
                                             "apiVersion": "v1",
