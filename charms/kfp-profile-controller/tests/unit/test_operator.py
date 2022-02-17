@@ -5,6 +5,7 @@ from contextlib import nullcontext as does_not_raise
 
 import pytest
 import yaml
+from base64 import b64decode
 from oci_image import MissingResourceError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
@@ -141,10 +142,14 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     service_port = "8888"
     harness.set_model_name(model_name)
     harness.update_config({"service-port": service_port})
+    harness.update_config({"access-key": "access-key"})
+    harness.update_config({"secret-key": "test-key"})
 
     # Set up required relations
     # Future: convert these to fixtures and share with the tests above
     harness.add_oci_resource(**oci_resource_data)
+
+    harness.begin_with_initial_hooks()
 
     # object storage relation
     os_data = {
@@ -164,7 +169,11 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     harness.add_relation_unit(os_rel_id, "storage-provider/0")
     harness.update_relation_data(os_rel_id, "storage-provider", os_data)
 
-    harness.begin_with_initial_hooks()
+    pod_spec = harness.get_pod_spec()
+    pod_spec_secrets = pod_spec[1]["kubernetesResources"]["secrets"]
+    pod_spec_secret_key = pod_spec_secrets[0]["data"]["MINIO_SECRET_KEY"]
+
+    assert b64decode(pod_spec_secret_key).decode("utf-8") == "test-key"
 
     # confirm that we can serialize the pod spec and that the unit is active
     yaml.safe_dump(harness.get_pod_spec())
