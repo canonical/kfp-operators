@@ -8,12 +8,15 @@ https://github.com/canonical/kfp-operators/
 """
 
 import logging
-from pathlib import Path
 from base64 import b64encode
+from pathlib import Path
+from random import choices
+from string import ascii_uppercase, digits
 
 from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
+from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from serialized_data_interface import (
@@ -45,10 +48,15 @@ class KfpProfileControllerOperator(CharmBase):
     https://github.com/canonical/kfp-operators/
     """
 
+    _stored = StoredState()
+
     def __init__(self, *args):
         super().__init__(*args)
 
         self.log = logging.getLogger()
+
+        self._stored.set_default(secret_key=_gen_pass())
+
         self.image = OCIImageResource(self, "oci-image")
 
         self.framework.observe(self.on.install, self._set_pod_spec)
@@ -66,6 +74,8 @@ class KfpProfileControllerOperator(CharmBase):
             self.model.unit.status = check_failed.status
             self.log.info(str(check_failed.status))
             return
+
+        secret_key = self.model.config["secret-key"] or self._stored.secret_key
 
         logging.info("Found all required relations - proceeding to setting pod spec")
         self.model.unit.status = MaintenanceStatus("Setting pod spec")
@@ -205,7 +215,7 @@ class KfpProfileControllerOperator(CharmBase):
                                 k: b64encode(v.encode("utf-8")).decode("utf-8")
                                 for k, v in {
                                     "MINIO_ACCESS_KEY": self.model.config["access-key"],
-                                    "MINIO_SECRET_KEY": self.model.config["secret-key"],
+                                    "MINIO_SECRET_KEY": secret_key,
                                 }.items()
                             },
                         }
@@ -302,6 +312,10 @@ class KfpProfileControllerOperator(CharmBase):
         if not self.unit.is_leader():
             # We can't do anything useful when not the leader, so do nothing.
             raise CheckFailedError("Waiting for leadership", WaitingStatus)
+
+
+def _gen_pass() -> str:
+    return "".join(choices(ascii_uppercase + digits, k=30))
 
 
 class CheckFailedError(Exception):

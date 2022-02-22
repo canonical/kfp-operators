@@ -1,11 +1,11 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from base64 import b64decode
 from contextlib import nullcontext as does_not_raise
 
 import pytest
 import yaml
-from base64 import b64decode
 from oci_image import MissingResourceError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
