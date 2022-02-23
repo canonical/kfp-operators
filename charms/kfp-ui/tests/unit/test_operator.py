@@ -1,6 +1,7 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from base64 import b64decode
 from contextlib import nullcontext as does_not_raise
 
 import pytest
@@ -295,6 +296,71 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     # confirm that we can serialize the pod spec and that the unit is active
     yaml.safe_dump(harness.get_pod_spec())
     assert harness.charm.model.unit.status == ActiveStatus()
+
+
+def test_object_storage_secrets_encoded(harness, oci_resource_data):
+    harness.set_leader()
+    http_port = "1234"
+    model_name = "test_model"
+    harness.set_model_name(model_name)
+    harness.update_config({"http-port": http_port})
+
+    kfpui_relation_name = "kfp-ui"
+
+    harness.set_leader()
+
+    # Set up required relations
+    # Future: convert these to fixtures and share with the tests above
+    harness.add_oci_resource(**oci_resource_data)
+
+    # object storage relation
+    os_data = {
+        "_supported_versions": "- v1",
+        "data": yaml.dump(
+            {
+                "access-key": "access-key",
+                "namespace": "namespace",
+                "port": 1234,
+                "secret-key": "secret-key",
+                "secure": True,
+                "service": "service",
+            }
+        ),
+    }
+    os_rel_id = harness.add_relation("object-storage", "storage-provider")
+    harness.add_relation_unit(os_rel_id, "storage-provider/0")
+    harness.update_relation_data(os_rel_id, "storage-provider", os_data)
+
+    # kfp-api relation
+    kfpapi_data = {
+        "_supported_versions": "- v1",
+        "data": yaml.dump(
+            {
+                "service-name": "service-name",
+                "service-port": "1234",
+            }
+        ),
+    }
+    os_rel_id = harness.add_relation("kfp-api", "kfp-api-provider")
+    harness.add_relation_unit(os_rel_id, "kfp-api-provider/0")
+    harness.update_relation_data(os_rel_id, "kfp-api-provider", kfpapi_data)
+
+    relation_version_data = {"_supported_versions": "- v1"}
+
+    # example kfp-ui provider relation
+    kfpui_rel_id = harness.add_relation(kfpui_relation_name, f"{kfpui_relation_name}-subscriber")
+    harness.add_relation_unit(kfpui_rel_id, f"{kfpui_relation_name}-subscriber/0")
+    harness.update_relation_data(
+        kfpui_rel_id, f"{kfpui_relation_name}-subscriber", relation_version_data
+    )
+
+    harness.begin_with_initial_hooks()
+
+    pod_spec, _ = harness.get_pod_spec()
+    minio_access_key = pod_spec["containers"][0]["envConfig"]["MINIO_ACCESS_KEY"]
+    minio_secret_key = pod_spec["containers"][0]["envConfig"]["MINIO_SECRET_KEY"]
+    assert b64decode(minio_access_key).decode("utf-8") == "access-key"
+    assert b64decode(minio_secret_key).decode("utf-8") == "secret-key"
 
 
 @pytest.fixture
