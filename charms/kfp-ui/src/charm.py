@@ -89,11 +89,10 @@ class KfpUiOperator(CharmBase):
             "KUBEFLOW_USERID_PREFIX": "",
             "METADATA_ENVOY_SERVICE_SERVICE_HOST": "localhost",
             "METADATA_ENVOY_SERVICE_SERVICE_PORT": "9090",
-            "MINIO_ACCESS_KEY": b64encode(os["access-key"].encode("utf-8")).decode("utf-8"),
+            "minio-secret": {"secret": {"name": "minio-secret"}},
             "MINIO_HOST": os["service"],
             "MINIO_NAMESPACE": os["namespace"],
             "MINIO_PORT": os["port"],
-            "MINIO_SECRET_KEY": b64encode(os["secret-key"].encode("utf-8")).decode("utf-8"),
             "MINIO_SSL": os["secure"],
             "ML_PIPELINE_SERVICE_HOST": kfp_api["service-name"],
             "ML_PIPELINE_SERVICE_PORT": kfp_api["service-port"],
@@ -202,6 +201,21 @@ class KfpUiOperator(CharmBase):
                         },
                     }
                 ],
+                "kubernetesResources": {
+                    "secrets": [
+                        {
+                            "name": "minio-secret",
+                            "type": "Opaque",
+                            "data": {
+                                k: b64encode(v.encode("utf-8")).decode("utf-8")
+                                for k, v in {
+                                    "MINIO_ACCESS_KEY": os["access-key"],
+                                    "MINIO_SECRET_KEY": os["secret-key"],
+                                }.items()
+                            },
+                        }
+                    ]
+                },
             },
         )
         self.model.unit.status = ActiveStatus()

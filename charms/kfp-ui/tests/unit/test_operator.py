@@ -357,10 +357,9 @@ def test_object_storage_secrets_encoded(harness, oci_resource_data):
     harness.begin_with_initial_hooks()
 
     pod_spec, _ = harness.get_pod_spec()
-    minio_access_key = pod_spec["containers"][0]["envConfig"]["MINIO_ACCESS_KEY"]
-    minio_secret_key = pod_spec["containers"][0]["envConfig"]["MINIO_SECRET_KEY"]
-    assert b64decode(minio_access_key).decode("utf-8") == "access-key"
-    assert b64decode(minio_secret_key).decode("utf-8") == "secret-key"
+    minio_secrets = pod_spec["kubernetesResources"]["secrets"][0]["data"]
+    assert b64decode(minio_secrets["MINIO_ACCESS_KEY"]).decode("utf-8") == "access-key"
+    assert b64decode(minio_secrets["MINIO_SECRET_KEY"]).decode("utf-8") == "secret-key"
 
 
 @pytest.fixture
