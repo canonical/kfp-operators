@@ -64,7 +64,7 @@ class KfpUiOperator(CharmBase):
         config = self.model.config
 
         healthz = f"http://localhost:{config['http-port']}/apis/v1beta1/healthz"
-
+        charm_name = self.model.app.name
         env = {
             "ALLOW_CUSTOM_VISUALIZATIONS": str(config["allow-custom-visualizations"]).lower(),
             "ARGO_ARCHIVE_ARTIFACTORY": "minio",
@@ -89,7 +89,7 @@ class KfpUiOperator(CharmBase):
             "KUBEFLOW_USERID_PREFIX": "",
             "METADATA_ENVOY_SERVICE_SERVICE_HOST": "localhost",
             "METADATA_ENVOY_SERVICE_SERVICE_PORT": "9090",
-            "minio-secret": {"secret": {"name": "minio-secret"}},
+            "minio-secret": {"secret": {"name": f"{charm_name}-minio-secret"}},
             "MINIO_HOST": os["service"],
             "MINIO_NAMESPACE": os["namespace"],
             "MINIO_PORT": os["port"],
@@ -204,7 +204,7 @@ class KfpUiOperator(CharmBase):
                 "kubernetesResources": {
                     "secrets": [
                         {
-                            "name": "minio-secret",
+                            "name": f"{charm_name}-minio-secret",
                             "type": "Opaque",
                             "data": {
                                 k: b64encode(v.encode("utf-8")).decode("utf-8")

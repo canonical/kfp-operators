@@ -223,10 +223,10 @@ def test_install_with_all_inputs(harness, oci_resource_data):
         "_supported_versions": "- v1",
         "data": yaml.dump(
             {
-                "access-key": "access-key",
+                "access-key": "minio-access-key",
                 "namespace": "namespace",
                 "port": 1234,
-                "secret-key": "secret-key",
+                "secret-key": "minio-super-secret-key",
                 "secure": True,
                 "service": "service",
             }
@@ -294,72 +294,25 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     assert yaml.safe_load(ingress_sent_data["data"]) == ingress_expected_data
 
     # confirm that we can serialize the pod spec and that the unit is active
-    yaml.safe_dump(harness.get_pod_spec())
+    pod_spec = harness.get_pod_spec()
+    yaml.safe_dump(pod_spec)
     assert harness.charm.model.unit.status == ActiveStatus()
 
-
-def test_object_storage_secrets_encoded(harness, oci_resource_data):
-    harness.set_leader()
-    http_port = "1234"
-    model_name = "test_model"
-    harness.set_model_name(model_name)
-    harness.update_config({"http-port": http_port})
-
-    kfpui_relation_name = "kfp-ui"
-
-    harness.set_leader()
-
-    # Set up required relations
-    # Future: convert these to fixtures and share with the tests above
-    harness.add_oci_resource(**oci_resource_data)
-
-    # object storage relation
-    os_data = {
-        "_supported_versions": "- v1",
-        "data": yaml.dump(
-            {
-                "access-key": "access-key",
-                "namespace": "namespace",
-                "port": 1234,
-                "secret-key": "secret-key",
-                "secure": True,
-                "service": "service",
-            }
-        ),
-    }
-    os_rel_id = harness.add_relation("object-storage", "storage-provider")
-    harness.add_relation_unit(os_rel_id, "storage-provider/0")
-    harness.update_relation_data(os_rel_id, "storage-provider", os_data)
-
-    # kfp-api relation
-    kfpapi_data = {
-        "_supported_versions": "- v1",
-        "data": yaml.dump(
-            {
-                "service-name": "service-name",
-                "service-port": "1234",
-            }
-        ),
-    }
-    os_rel_id = harness.add_relation("kfp-api", "kfp-api-provider")
-    harness.add_relation_unit(os_rel_id, "kfp-api-provider/0")
-    harness.update_relation_data(os_rel_id, "kfp-api-provider", kfpapi_data)
-
-    relation_version_data = {"_supported_versions": "- v1"}
-
-    # example kfp-ui provider relation
-    kfpui_rel_id = harness.add_relation(kfpui_relation_name, f"{kfpui_relation_name}-subscriber")
-    harness.add_relation_unit(kfpui_rel_id, f"{kfpui_relation_name}-subscriber/0")
-    harness.update_relation_data(
-        kfpui_rel_id, f"{kfpui_relation_name}-subscriber", relation_version_data
+    # assert minio secrets are setup correctly
+    charm_name = harness.model.app.name
+    secrets = pod_spec[0]["kubernetesResources"]["secrets"]
+    minio_secrets = [s for s in secrets if s["name"] == f"{charm_name}-minio-secret"][0]
+    assert (
+        pod_spec[0]["containers"][0]["envConfig"]["minio-secret"]["secret"]["name"]
+        == minio_secrets["name"]
     )
-
-    harness.begin_with_initial_hooks()
-
-    pod_spec, _ = harness.get_pod_spec()
-    minio_secrets = pod_spec["kubernetesResources"]["secrets"][0]["data"]
-    assert b64decode(minio_secrets["MINIO_ACCESS_KEY"]).decode("utf-8") == "access-key"
-    assert b64decode(minio_secrets["MINIO_SECRET_KEY"]).decode("utf-8") == "secret-key"
+    assert (
+        b64decode(minio_secrets["data"]["MINIO_ACCESS_KEY"]).decode("utf-8") == "minio-access-key"
+    )
+    assert (
+        b64decode(minio_secrets["data"]["MINIO_SECRET_KEY"]).decode("utf-8")
+        == "minio-super-secret-key"
+    )
 
 
 @pytest.fixture
