@@ -219,7 +219,7 @@ class KfpProfileControllerOperator(CharmBase):
                                 }.items()
                             },
                         }
-                    ]
+                    ],
                 },
                 "configMaps": {
                     "kubeflow-pipelines-profile-controller-code": {
