@@ -142,8 +142,6 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     service_port = "8888"
     harness.set_model_name(model_name)
     harness.update_config({"service-port": service_port})
-    harness.update_config({"access-key": "access-key"})
-    harness.update_config({"secret-key": "test-key"})
 
     # Set up required relations
     # Future: convert these to fixtures and share with the tests above
@@ -173,7 +171,7 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     pod_spec_secrets = pod_spec[1]["kubernetesResources"]["secrets"]
     pod_spec_secret_key = pod_spec_secrets[0]["data"]["MINIO_SECRET_KEY"]
 
-    assert b64decode(pod_spec_secret_key).decode("utf-8") == "test-key"
+    assert b64decode(pod_spec_secret_key).decode("utf-8") == "secret-key"
 
     # confirm that we can serialize the pod spec and that the unit is active
     yaml.safe_dump(harness.get_pod_spec())
