@@ -9,6 +9,7 @@ https://github.com/canonical/kfp-operators
 
 import json
 import logging
+from base64 import b64encode
 
 from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
@@ -63,7 +64,7 @@ class KfpUiOperator(CharmBase):
         config = self.model.config
 
         healthz = f"http://localhost:{config['http-port']}/apis/v1beta1/healthz"
-
+        charm_name = self.model.app.name
         env = {
             "ALLOW_CUSTOM_VISUALIZATIONS": str(config["allow-custom-visualizations"]).lower(),
             "ARGO_ARCHIVE_ARTIFACTORY": "minio",
@@ -88,11 +89,10 @@ class KfpUiOperator(CharmBase):
             "KUBEFLOW_USERID_PREFIX": "",
             "METADATA_ENVOY_SERVICE_SERVICE_HOST": "localhost",
             "METADATA_ENVOY_SERVICE_SERVICE_PORT": "9090",
-            "MINIO_ACCESS_KEY": os["access-key"],
+            "minio-secret": {"secret": {"name": f"{charm_name}-minio-secret"}},
             "MINIO_HOST": os["service"],
             "MINIO_NAMESPACE": os["namespace"],
             "MINIO_PORT": os["port"],
-            "MINIO_SECRET_KEY": os["secret-key"],
             "MINIO_SSL": os["secure"],
             "ML_PIPELINE_SERVICE_HOST": kfp_api["service-name"],
             "ML_PIPELINE_SERVICE_PORT": kfp_api["service-port"],
@@ -201,6 +201,21 @@ class KfpUiOperator(CharmBase):
                         },
                     }
                 ],
+                "kubernetesResources": {
+                    "secrets": [
+                        {
+                            "name": f"{charm_name}-minio-secret",
+                            "type": "Opaque",
+                            "data": {
+                                k: b64encode(v.encode("utf-8")).decode("utf-8")
+                                for k, v in {
+                                    "MINIO_ACCESS_KEY": os["access-key"],
+                                    "MINIO_SECRET_KEY": os["secret-key"],
+                                }.items()
+                            },
+                        }
+                    ]
+                },
             },
         )
         self.model.unit.status = ActiveStatus()

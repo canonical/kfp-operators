@@ -1,6 +1,7 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from base64 import b64decode
 from contextlib import nullcontext as does_not_raise
 
 import pytest
@@ -222,10 +223,10 @@ def test_install_with_all_inputs(harness, oci_resource_data):
         "_supported_versions": "- v1",
         "data": yaml.dump(
             {
-                "access-key": "access-key",
+                "access-key": "minio-access-key",
                 "namespace": "namespace",
                 "port": 1234,
-                "secret-key": "secret-key",
+                "secret-key": "minio-super-secret-key",
                 "secure": True,
                 "service": "service",
             }
@@ -293,8 +294,25 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     assert yaml.safe_load(ingress_sent_data["data"]) == ingress_expected_data
 
     # confirm that we can serialize the pod spec and that the unit is active
-    yaml.safe_dump(harness.get_pod_spec())
+    pod_spec = harness.get_pod_spec()
+    yaml.safe_dump(pod_spec)
     assert harness.charm.model.unit.status == ActiveStatus()
+
+    # assert minio secrets are setup correctly
+    charm_name = harness.model.app.name
+    secrets = pod_spec[0]["kubernetesResources"]["secrets"]
+    minio_secrets = [s for s in secrets if s["name"] == f"{charm_name}-minio-secret"][0]
+    assert (
+        pod_spec[0]["containers"][0]["envConfig"]["minio-secret"]["secret"]["name"]
+        == minio_secrets["name"]
+    )
+    assert (
+        b64decode(minio_secrets["data"]["MINIO_ACCESS_KEY"]).decode("utf-8") == "minio-access-key"
+    )
+    assert (
+        b64decode(minio_secrets["data"]["MINIO_SECRET_KEY"]).decode("utf-8")
+        == "minio-super-secret-key"
+    )
 
 
 @pytest.fixture
