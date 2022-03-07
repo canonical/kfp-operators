@@ -70,7 +70,7 @@ def lightkube_client() -> lightkube.Client:
 
 
 def _safe_load_file_to_text(filename: str):
-    """Returns the contents of filename if it is an existing file, else it returns filename"""
+    """Returns the contents of filename if it is an existing file, else it returns filename."""
     try:
         text = Path(filename).read_text()
     except FileNotFoundError:
@@ -80,7 +80,7 @@ def _safe_load_file_to_text(filename: str):
 
 @pytest.fixture(scope="session")
 def profile(lightkube_client):
-    """Creates a Profile object in cluster, cleaning it up after tests"""
+    """Creates a Profile object in cluster, cleaning it up after tests."""
     profile_file = "./tests/integration/profile.yaml"
     yaml_text = _safe_load_file_to_text(profile_file)
     yaml_rendered = yaml.safe_load(yaml_text)
@@ -88,8 +88,6 @@ def profile(lightkube_client):
 
     create_all_from_yaml(yaml_file=yaml_text, lightkube_client=lightkube_client)
     yield profilename
-
-    delete_all_from_yaml(yaml_text, lightkube_client)
 
 
 ALLOWED_IF_EXISTS = (None, "replace", "patch")
@@ -109,7 +107,8 @@ def create_all_from_yaml(
     if_exists: [str, None] = None,
     lightkube_client: lightkube.Client = None,
 ):
-    """Creates all k8s resources listed in a YAML file via lightkube
+    """Creates all k8s resources listed in a YAML file via lightkube.
+
     Args:
         yaml_file (str or Path): Either a string filename or a string of valid YAML.  Will attempt
                                  to open a filename at this path, failing back to interpreting the
@@ -134,7 +133,7 @@ def create_all_from_yaml(
             if if_exists is None:
                 raise e
             else:
-                log.info(
+                logger.info(
                     f"Caught {e.status} when creating {obj.metadata.name}.  Trying to {if_exists}"
                 )
                 if if_exists == "replace":
@@ -153,23 +152,6 @@ def create_all_from_yaml(
                     )
 
 
-def delete_all_from_yaml(yaml_file: str, lightkube_client: lightkube.Client = None):
-    """Deletes all k8s resources listed in a YAML file via lightkube
-    Args:
-        yaml_file (str or Path): Either a string filename or a string of valid YAML.  Will attempt
-                                 to open a filename at this path, failing back to interpreting the
-                                 string directly as YAML.
-        lightkube_client: Instantiated lightkube client or None
-    """
-    yaml_text = _safe_load_file_to_text(yaml_file)
-
-    if lightkube_client is None:
-        lightkube_client = lightkube.Client()
-
-    for obj in codecs.load_all_yaml(yaml_text):
-        lightkube_client.delete(type(obj), obj.metadata.name)
-
-
 @retry(
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_delay(30),
@@ -184,7 +166,6 @@ def validate_profile_resources(
     Retries multiple times using tenacity to allow time for profile-controller to create the
     namespace
     """
-
     namespace = client.get(Namespace, profile_name)
     namespace_name = namespace.metadata.name
 
