@@ -72,7 +72,7 @@ class KfpProfileControllerOperator(CharmBase):
         self.model.unit.status = MaintenanceStatus("Setting pod spec")
 
         deployment_env = {
-            "minio-secret-kfp": {"secret": {"name": "minio-secret-kfp"}},
+            "minio-secret": {"secret": {"name": f"{self.model.app.name}-minio-credentials"}},
             "MINIO_HOST": os["service"],
             "MINIO_PORT": os["port"],
             "MINIO_NAMESPACE": os["namespace"],
@@ -200,7 +200,7 @@ class KfpProfileControllerOperator(CharmBase):
                     },
                     "secrets": [
                         {
-                            "name": "minio-secret-kfp",
+                            "name": f"{self.model.app.name}-minio-credentials",
                             "type": "Opaque",
                             "data": {
                                 k: b64encode(v.encode("utf-8")).decode("utf-8")
