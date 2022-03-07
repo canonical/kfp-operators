@@ -47,7 +47,10 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
     # Deploy charms responsible for CRDs creation
     await ops_test.model.deploy(entity_url="kubeflow-profiles")
-    await ops_test.model.deploy(entity_url="metacontroller-operator")
+    await ops_test.model.deploy(
+        entity_url="metacontroller-operator",
+        trust=True,
+    )
 
     # Maybe: await ops_test.model.wait_for_idle(raise_on_error=False, raise_on_blocked=True) ?
     await ops_test.model.wait_for_idle(timeout=60 * 10)
