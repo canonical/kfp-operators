@@ -46,14 +46,17 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     # Deploy charms responsible for CRDs creation
-    await ops_test.model.deploy(entity_url="kubeflow-profiles")
+    await ops_test.model.deploy(
+        entity_url="kubeflow-profiles",
+        trust=True,
+    )
     await ops_test.model.deploy(
         entity_url="metacontroller-operator",
         trust=True,
     )
 
     # Maybe: await ops_test.model.wait_for_idle(raise_on_error=False, raise_on_blocked=True) ?
-    await ops_test.model.wait_for_idle(timeout=60 * 10)
+    await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
 
 
 async def test_profile_creation(lightkube_client, profile):
@@ -88,6 +91,8 @@ def profile(lightkube_client):
 
     create_all_from_yaml(yaml_file=yaml_text, lightkube_client=lightkube_client)
     yield profilename
+
+    delete_all_from_yaml(yaml_text, lightkube_client)
 
 
 ALLOWED_IF_EXISTS = (None, "replace", "patch")
@@ -150,6 +155,24 @@ def create_all_from_yaml(
                         f"Invalid value for if_exists '{if_exists}'.  "
                         f"Must be one of {ALLOWED_IF_EXISTS}"
                     )
+
+
+def delete_all_from_yaml(yaml_file: str, lightkube_client: lightkube.Client = None):
+    """Deletes all k8s resources listed in a YAML file via lightkube.
+
+    Args:
+        yaml_file (str or Path): Either a string filename or a string of valid YAML.  Will attempt
+                                 to open a filename at this path, failing back to interpreting the
+                                 string directly as YAML.
+        lightkube_client: Instantiated lightkube client or None
+    """
+    yaml_text = _safe_load_file_to_text(yaml_file)
+
+    if lightkube_client is None:
+        lightkube_client = lightkube.Client()
+
+    for obj in codecs.load_all_yaml(yaml_text):
+        lightkube_client.delete(type(obj), obj.metadata.name)
 
 
 @retry(
