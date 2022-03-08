@@ -13,9 +13,7 @@ from lightkube.generic_resource import create_global_resource
 from lightkube.resources.core_v1 import Namespace, Pod, Secret, ServiceAccount
 from lightkube.types import PatchType
 from pytest_operator.plugin import OpsTest
-
 from tenacity import retry, wait_exponential, stop_after_delay
-
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +59,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
 
 async def test_status(ops_test: OpsTest):
-    assert ops_test.model.applications["kubeflow-profiles"].units[0].workload_status == "active"
-    assert (
-        ops_test.model.applications["metacontroller-operator"].units[0].workload_status == "active"
-    )
-    assert (
-        ops_test.model.applications["kfp-profile-controller"].units[0].workload_status == "active"
-    )
+    charms = ("kubeflow-profiles", "metacontroller-operator", "kfp-profile-controller")
+    for charm in charms:
+        assert ops_test.model.applications[charm].units[0].workload_status == "active"
 
 
 async def test_profile_creation(lightkube_client, profile):
