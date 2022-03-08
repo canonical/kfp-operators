@@ -59,6 +59,16 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
 
 
+async def test_status(ops_test: OpsTest):
+    assert ops_test.model.applications["kubeflow-profiles"].units[0].workload_status == "active"
+    assert (
+        ops_test.model.applications["metacontroller-operator"].units[0].workload_status == "active"
+    )
+    assert (
+        ops_test.model.applications["kfp-profile-controller"].units[0].workload_status == "active"
+    )
+
+
 async def test_profile_creation(lightkube_client, profile):
     # Test whether a namespace was created for this profile
     profile_name = profile
@@ -202,8 +212,7 @@ def validate_profile_resources(
 
 
 def test_model_resources(ops_test: OpsTest):
-    """Verifies that the secret was created, secret-key matches the minio config value
-    and that the pods are running"""
+    """Verifies that the secret was created, secret-key matches the minio config value and pods are running"""
     client_secret = lightkube.Client()
     secret = client_secret.get(
         Secret, f"{APP_NAME}-minio-credentials", namespace=ops_test.model_name
