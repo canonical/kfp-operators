@@ -194,7 +194,9 @@ def validate_profile_resources(
     client: lightkube.Client,
     profile_name: str,
 ):
-    """Validates that a namespace for a Profile was created, has the expected label,
+    """Tests if the resources associated with Profile were created.
+
+    Validates that a namespace for a Profile was created, has the expected label,
     and that a default-editor service account was created.
     Retries multiple times using tenacity to allow time for profile-controller to create the
     namespace
@@ -212,7 +214,11 @@ def validate_profile_resources(
 
 
 def test_model_resources(ops_test: OpsTest):
-    """Verifies that the secret was created, secret-key matches the minio config value and pods are running"""
+    """Tests if the resources associated with secret's namespace were created.
+
+    Verifies that the secret was created, decoded secret-key matches the minio config value,
+    and that the pods are running.
+    """
     client_secret = lightkube.Client()
     secret = client_secret.get(
         Secret, f"{APP_NAME}-minio-credentials", namespace=ops_test.model_name
