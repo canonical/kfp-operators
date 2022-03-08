@@ -174,7 +174,7 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     assert b64decode(pod_spec_secret_key).decode("utf-8") == "secret-key"
 
     # confirm that we can serialize the pod spec and that the unit is active
-    yaml.safe_dump(harness.get_pod_spec())
+    yaml.safe_dump(pod_spec)
     assert harness.charm.model.unit.status == ActiveStatus()
 
 
