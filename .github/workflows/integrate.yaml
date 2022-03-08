@@ -62,6 +62,7 @@ jobs:
         with:
           provider: microk8s
           channel: 1.21/stable
+          bootstrap-options: --agent-version="2.9.22"
           charmcraft-channel: latest/candidate
       - run: |
           sg microk8s -c "tox -e ${{ matrix.charm }}-integration"

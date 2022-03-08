@@ -1,18 +1,19 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from base64 import b64decode
 import logging
+from base64 import b64decode
 from pathlib import Path
 
-import yaml
 import lightkube
+import pytest
+import yaml
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource
 from lightkube.resources.core_v1 import Namespace, Pod, Secret, ServiceAccount
 from lightkube.types import PatchType
-import pytest
 from pytest_operator.plugin import OpsTest
+
 from tenacity import retry, wait_exponential, stop_after_delay
 
 
