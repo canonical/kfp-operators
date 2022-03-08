@@ -13,7 +13,7 @@ from lightkube.generic_resource import create_global_resource
 from lightkube.resources.core_v1 import Namespace, Pod, Secret, ServiceAccount
 from lightkube.types import PatchType
 from pytest_operator.plugin import OpsTest
-from tenacity import retry, wait_exponential, stop_after_delay
+from tenacity import retry, stop_after_delay, wait_exponential
 
 logger = logging.getLogger(__name__)
 
