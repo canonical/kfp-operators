@@ -64,8 +64,9 @@ async def test_status(ops_test: OpsTest):
         assert ops_test.model.applications[charm].units[0].workload_status == "active"
 
 
-async def test_profile_creation(lightkube_client, profile):
-    # Test whether a namespace was created for this profile
+@pytest.mark.abort_on_fail
+async def test_profile_and_resources_creation(lightkube_client, profile):
+    """Create a profile and validate that corresponding resources were created."""
     profile_name = profile
     validate_profile_resources(lightkube_client, profile_name)
 
@@ -214,11 +215,11 @@ def test_model_resources(ops_test: OpsTest):
     Verifies that the secret was created, decoded secret-key matches the minio config value,
     and that the pods are running.
     """
-    client_secret = lightkube.Client()
-    secret = client_secret.get(
+    lightkube_client = lightkube.Client()
+    secret = lightkube_client.get(
         Secret, f"{APP_NAME}-minio-credentials", namespace=ops_test.model_name
     )
     assert b64decode(secret.data["MINIO_SECRET_KEY"]).decode("utf-8") == MINIO_CONFIG["secret-key"]
 
-    pod_status = client_secret.get(Pod, f"{APP_NAME}-operator-0", namespace=ops_test.model_name)
+    pod_status = lightkube_client.get(Pod, f"{APP_NAME}-operator-0", namespace=ops_test.model_name)
     assert pod_status.status.phase == "Running"
