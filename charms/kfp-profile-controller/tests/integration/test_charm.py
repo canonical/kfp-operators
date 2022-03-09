@@ -66,7 +66,7 @@ async def test_status(ops_test: OpsTest):
 
 @pytest.mark.abort_on_fail
 async def test_profile_and_resources_creation(lightkube_client, profile):
-    """Create a profile and validate that corresponding resources were created"""
+    """Create a profile and validate that corresponding resources were created."""
     profile_name = profile
     validate_profile_resources(lightkube_client, profile_name)
 
