@@ -11,7 +11,6 @@ import yaml
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource
 from lightkube.resources.core_v1 import Namespace, Pod, Secret, ServiceAccount
-from lightkube.types import PatchType
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
 
@@ -73,7 +72,7 @@ async def test_profile_and_resources_creation(lightkube_client, profile):
 
 @pytest.fixture(scope="session")
 def lightkube_client() -> lightkube.Client:
-    client = lightkube.Client()
+    client = lightkube.Client(field_manager=f"{APP_NAME}")
     create_global_resource(group="kubeflow.org", version="v1", kind="Profile", plural="profiles")
     return client
 
@@ -95,72 +94,15 @@ def profile(lightkube_client):
     yaml_rendered = yaml.safe_load(yaml_text)
     profilename = yaml_rendered["metadata"]["name"]
 
-    create_all_from_yaml(yaml_file=yaml_text, lightkube_client=lightkube_client)
+    for obj in codecs.load_all_yaml(yaml_text):
+        try:
+            lightkube_client.apply(obj)
+        except lightkube.core.exceptions.ApiError as e:
+            raise e
+
     yield profilename
 
     delete_all_from_yaml(yaml_text, lightkube_client)
-
-
-ALLOWED_IF_EXISTS = (None, "replace", "patch")
-
-
-def _validate_if_exists(if_exists):
-    if if_exists in ALLOWED_IF_EXISTS:
-        return if_exists
-    else:
-        raise ValueError(
-            f"Invalid value for if_exists '{if_exists}'.  Must be one of {ALLOWED_IF_EXISTS}"
-        )
-
-
-def create_all_from_yaml(
-    yaml_file: str,
-    if_exists: [str, None] = None,
-    lightkube_client: lightkube.Client = None,
-):
-    """Creates all k8s resources listed in a YAML file via lightkube.
-
-    Args:
-        yaml_file (str or Path): Either a string filename or a string of valid YAML.  Will attempt
-                                 to open a filename at this path, failing back to interpreting the
-                                 string directly as YAML.
-        if_exists (str): If an object to create already exists, do one of:
-            patch: Try to lightkube.patch the existing resource
-            replace: Try to lightkube.replace the existing resource (not yet implemented)
-            None: Do nothing (lightkube.core.exceptions.ApiError will be raised)
-        lightkube_client: Instantiated lightkube client or None
-    """
-    _validate_if_exists(if_exists)
-
-    yaml_text = _safe_load_file_to_text(yaml_file)
-
-    if lightkube_client is None:
-        lightkube_client = lightkube.Client()
-
-    for obj in codecs.load_all_yaml(yaml_text):
-        try:
-            lightkube_client.create(obj)
-        except lightkube.core.exceptions.ApiError as e:
-            if if_exists is None:
-                raise e
-            else:
-                logger.info(
-                    f"Caught {e.status} when creating {obj.metadata.name}.  Trying to {if_exists}"
-                )
-                if if_exists == "replace":
-                    raise NotImplementedError()
-                elif if_exists == "patch":
-                    lightkube_client.patch(
-                        type(obj),
-                        obj.metadata.name,
-                        obj.to_dict(),
-                        patch_type=PatchType.MERGE,
-                    )
-                else:
-                    raise ValueError(
-                        f"Invalid value for if_exists '{if_exists}'.  "
-                        f"Must be one of {ALLOWED_IF_EXISTS}"
-                    )
 
 
 def delete_all_from_yaml(yaml_file: str, lightkube_client: lightkube.Client = None):
