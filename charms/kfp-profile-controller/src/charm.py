@@ -8,6 +8,7 @@ https://github.com/canonical/kfp-operators/
 """
 
 import logging
+from base64 import b64encode
 from pathlib import Path
 
 from jsonschema import ValidationError
@@ -48,6 +49,7 @@ class KfpProfileControllerOperator(CharmBase):
         super().__init__(*args)
 
         self.log = logging.getLogger()
+
         self.image = OCIImageResource(self, "oci-image")
 
         self.framework.observe(self.on.install, self._set_pod_spec)
@@ -70,8 +72,7 @@ class KfpProfileControllerOperator(CharmBase):
         self.model.unit.status = MaintenanceStatus("Setting pod spec")
 
         deployment_env = {
-            "MINIO_ACCESS_KEY": os["access-key"],
-            "MINIO_SECRET_KEY": os["secret-key"],
+            "minio-secret": {"secret": {"name": f"{self.model.app.name}-minio-credentials"}},
             "MINIO_HOST": os["service"],
             "MINIO_PORT": os["port"],
             "MINIO_NAMESPACE": os["namespace"],
@@ -197,6 +198,19 @@ class KfpProfileControllerOperator(CharmBase):
                             }
                         ]
                     },
+                    "secrets": [
+                        {
+                            "name": f"{self.model.app.name}-minio-credentials",
+                            "type": "Opaque",
+                            "data": {
+                                k: b64encode(v.encode("utf-8")).decode("utf-8")
+                                for k, v in {
+                                    "MINIO_ACCESS_KEY": os["access-key"],
+                                    "MINIO_SECRET_KEY": os["secret-key"],
+                                }.items()
+                            },
+                        }
+                    ],
                 },
                 "configMaps": {
                     "kubeflow-pipelines-profile-controller-code": {

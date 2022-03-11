@@ -1,6 +1,7 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from base64 import b64decode
 from contextlib import nullcontext as does_not_raise
 
 import pytest
@@ -146,6 +147,8 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     # Future: convert these to fixtures and share with the tests above
     harness.add_oci_resource(**oci_resource_data)
 
+    harness.begin_with_initial_hooks()
+
     # object storage relation
     os_data = {
         "_supported_versions": "- v1",
@@ -164,10 +167,14 @@ def test_install_with_all_inputs(harness, oci_resource_data):
     harness.add_relation_unit(os_rel_id, "storage-provider/0")
     harness.update_relation_data(os_rel_id, "storage-provider", os_data)
 
-    harness.begin_with_initial_hooks()
+    pod_spec = harness.get_pod_spec()
+    pod_spec_secrets = pod_spec[1]["kubernetesResources"]["secrets"]
+    pod_spec_secret_key = pod_spec_secrets[0]["data"]["MINIO_SECRET_KEY"]
+
+    assert b64decode(pod_spec_secret_key).decode("utf-8") == "secret-key"
 
     # confirm that we can serialize the pod spec and that the unit is active
-    yaml.safe_dump(harness.get_pod_spec())
+    yaml.safe_dump(pod_spec)
     assert harness.charm.model.unit.status == ActiveStatus()
 
 

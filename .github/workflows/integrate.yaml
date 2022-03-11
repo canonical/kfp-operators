@@ -62,6 +62,8 @@ jobs:
         with:
           provider: microk8s
           channel: 1.21/stable
+          # TODO: Remove this line once juju is fixed. See issue KF-231
+          bootstrap-options: --agent-version="2.9.22"
           charmcraft-channel: latest/candidate
       - run: |
           sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
