@@ -41,3 +41,15 @@ options:
     description: |
       Connection timeout used when initializing clients for related services.
       The format used can be anything accepted by `time.ParseDuration`.
+  metrics-port:
+    type: string
+    default: '8080'
+    description: Metrics port
+  metrics-api:
+    type: string
+    default: '/metrics'
+    description: metrics api route
+  metrics-scrape-interval:
+    type: string
+    default: '30s'
+    description: how often metrics are scraped
