@@ -33,7 +33,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
         resources=resources,
     )
 
-    # juju config kfp-db database=mlpipeline
     await ops_test.model.deploy(entity_url="charmed-osm-mariadb-k8s", application_name="kfp-db", config=KFP_DB_CONFIG)
     await ops_test.model.add_relation(
         f"{APP_NAME}:mysql",
@@ -55,16 +54,19 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
 
 
-async def test_integrate_with_prometheus_and_grafana(ops_test: OpsTest):
+async def test_prometheus_grafana_integration(ops_test: OpsTest):
     """Deploy prometheus, grafana and required relations."""
-    await ops_test.model.deploy("prometheus-k8s", channel="latest/beta")
-    await ops_test.model.deploy("grafana-k8s", channel="latest/beta")
-    await ops_test.model.add_relation("prometheus-k8s", "grafana-k8s")
-    await ops_test.model.add_relation(APP_NAME, "grafana-k8s")
-    await ops_test.model.add_relation("prometheus-k8s", APP_NAME)
+    prometheus = "prometheus-k8s"
+    grafana = "grafana-k8s"
+
+    await ops_test.model.deploy(prometheus, channel="latest/beta")
+    await ops_test.model.deploy(grafana, channel="latest/beta")
+    await ops_test.model.add_relation(prometheus, grafana)
+    await ops_test.model.add_relation(APP_NAME, grafana)
+    await ops_test.model.add_relation(prometheus, APP_NAME)
 
     await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
 
     status = await ops_test.model.get_status()
     prometheus_unit_ip = status["applications"]["prometheus-k8s"]["units"]["prometheus-k8s/0"]["address"]
-    assert prometheus_unit_ip
+    logger.info(f"Prometheus available at http://{prometheus_unit_ip}:9090")
