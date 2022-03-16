@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
+import json
+import requests
 
 
 logger = logging.getLogger(__name__)
@@ -68,5 +70,20 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
 
     status = await ops_test.model.get_status()
-    prometheus_unit_ip = status["applications"]["prometheus-k8s"]["units"]["prometheus-k8s/0"]["address"]
+    prometheus_unit_ip = status["applications"][prometheus]["units"][f"{prometheus}/0"]["address"]
     logger.info(f"Prometheus available at http://{prometheus_unit_ip}:9090")
+
+    r = requests.get(
+        f'http://{prometheus_unit_ip}:9090/api/v1/query?query=up{{juju_application="{APP_NAME}"}}'
+    )
+    response = json.loads(r.content.decode("utf-8"))
+    response_status = response["status"]
+    logger.info(f"Response status is {response_status}")
+
+    response_metric = response["data"]["result"][0]["metric"]
+    assert response_metric["juju_application"] == APP_NAME
+    assert response_metric["juju_model"] == ops_test.model_name
+
+    grafana_unit_ip = status["applications"][grafana]["units"][f"{grafana}/0"]["address"]
+    logger.info(f"Grafana available at http://{grafana_unit_ip}:3000")
+    assert grafana_unit_ip
