@@ -1,8 +1,8 @@
 options:
   k8s-service-name:
+    type: string
     default: "ml-pipeline"
-    description: |
-      Name of the Kubernetes service where kfp-api will expose itself
+    description: Name of the Kubernetes service where kfp-api will expose itself
   grpc-port:
     type: string
     default: '8887'
