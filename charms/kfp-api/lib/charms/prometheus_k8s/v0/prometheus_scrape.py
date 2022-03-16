@@ -1103,7 +1103,9 @@ class MetricsEndpointConsumer(Object):
                 identifier = self._get_identifier_by_alert_rules(alert_rules)
 
             if not identifier:
-                logger.error("Alert rules were found but no usable group or identifier was present")
+                logger.error(
+                    "Alert rules were found but no usable group or identifier was present"
+                )
                 continue
             alerts[identifier] = alert_rules
 
@@ -1341,7 +1343,9 @@ class MetricsEndpointConsumer(Object):
         unitless_config = {"targets": targets, "labels": juju_labels}
         return unitless_config
 
-    def _labeled_unit_config(self, unit_name, host_address, ports, labels, scrape_metadata) -> dict:
+    def _labeled_unit_config(
+        self, unit_name, host_address, ports, labels, scrape_metadata
+    ) -> dict:
         """Static scrape configuration for a wildcard host.
 
         Wildcard hosts are those scrape targets whose name (Juju unit
@@ -2224,7 +2228,9 @@ class PromqlTransformer:
             )
             return expression
         args = [str(self.path)]
-        args.extend(["--label-matcher={}={}".format(key, value) for key, value in topology.items()])
+        args.extend(
+            ["--label-matcher={}={}".format(key, value) for key, value in topology.items()]
+        )
 
         args.extend(["{}".format(expression)])
         # noinspection PyBroadException

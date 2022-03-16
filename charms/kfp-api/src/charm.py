@@ -43,10 +43,10 @@ class KfpApiOperator(CharmBase):
             relation_name="monitoring",
             jobs=[
                 {
-                    "job_name": "kfp_api_metrics",
+                    "job_name": "ml_pipeline",
                     "scrape_interval": self.config["metrics-scrape-interval"],
                     "metrics_path": self.config["metrics-api"],
-                    "static_configs": [{"targets": ["*:{}".format(self.config["metrics-port"])]}],
+                    "static_configs": [{"targets": ["*:{}".format(self.config["http-port"])]}],
                 }
             ],
         )
@@ -204,7 +204,7 @@ class KfpApiOperator(CharmBase):
                 "kubernetesResources": {
                     "services": [
                         {
-                            "name": "ml-pipeline",
+                            "name": config["k8s-service-name"],
                             "spec": {
                                 "selector": {"app.kubernetes.io/name": self.model.app.name},
                                 "ports": [
@@ -222,7 +222,7 @@ class KfpApiOperator(CharmBase):
                                     },
                                 ],
                             },
-                        }
+                        },
                     ],
                 }
             },

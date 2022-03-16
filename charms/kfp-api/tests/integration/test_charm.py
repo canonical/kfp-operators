@@ -1,15 +1,14 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import json
 import logging
 from pathlib import Path
 
 import pytest
+import requests
 import yaml
 from pytest_operator.plugin import OpsTest
-import json
-import requests
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
         resources=resources,
     )
 
-    await ops_test.model.deploy(entity_url="charmed-osm-mariadb-k8s", application_name="kfp-db", config=KFP_DB_CONFIG)
+    await ops_test.model.deploy(
+        entity_url="charmed-osm-mariadb-k8s", application_name="kfp-db", config=KFP_DB_CONFIG
+    )
     await ops_test.model.add_relation(
         f"{APP_NAME}:mysql",
         "kfp-db:mysql",
@@ -57,7 +58,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
 
 async def test_prometheus_grafana_integration(ops_test: OpsTest):
-    """Deploy prometheus, grafana and required relations."""
+    """Deploy prometheus, grafana and required relations, then test the metrics."""
     prometheus = "prometheus-k8s"
     grafana = "grafana-k8s"
 
@@ -83,7 +84,3 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     response_metric = response["data"]["result"][0]["metric"]
     assert response_metric["juju_application"] == APP_NAME
     assert response_metric["juju_model"] == ops_test.model_name
-
-    grafana_unit_ip = status["applications"][grafana]["units"][f"{grafana}/0"]["address"]
-    logger.info(f"Grafana available at http://{grafana_unit_ip}:3000")
-    assert grafana_unit_ip
