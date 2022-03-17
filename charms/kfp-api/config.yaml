@@ -1,4 +1,8 @@
 options:
+  k8s-service-name:
+    type: string
+    default: "ml-pipeline"
+    description: Name of the Kubernetes service where kfp-api will expose itself
   grpc-port:
     type: string
     default: '8887'
@@ -41,3 +45,11 @@ options:
     description: |
       Connection timeout used when initializing clients for related services.
       The format used can be anything accepted by `time.ParseDuration`.
+  metrics-api:
+    type: string
+    default: '/metrics'
+    description: metrics api route
+  metrics-scrape-interval:
+    type: string
+    default: '30s'
+    description: how often metrics are scraped
