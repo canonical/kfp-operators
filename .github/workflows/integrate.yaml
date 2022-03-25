@@ -55,6 +55,7 @@ jobs:
       matrix:
         charm:
           - kfp-profile-controller
+          - kfp-api
     steps:
       - uses: actions/checkout@v2
       - name: Setup operator environment
