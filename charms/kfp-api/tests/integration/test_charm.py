@@ -32,6 +32,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
         entity_url=built_charm_path,
         application_name=APP_NAME,
         resources=resources,
+        trust=True,
     )
 
     await ops_test.model.deploy(
@@ -62,8 +63,8 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     prometheus = "prometheus-k8s"
     grafana = "grafana-k8s"
 
-    await ops_test.model.deploy(prometheus, channel="latest/beta")
-    await ops_test.model.deploy(grafana, channel="latest/beta")
+    await ops_test.model.deploy(prometheus, channel="latest/beta", trust=True)
+    await ops_test.model.deploy(grafana, channel="latest/beta", trust=True)
     await ops_test.model.add_relation(prometheus, grafana)
     await ops_test.model.add_relation(APP_NAME, grafana)
     await ops_test.model.add_relation(prometheus, APP_NAME)
