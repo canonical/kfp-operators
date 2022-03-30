@@ -95,6 +95,5 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     assert response_metric["juju_model"] == ops_test.model_name
 
 
-
 # TODO: Add test that makes sure the Grafana relation actually works
 #  once the template is defined.

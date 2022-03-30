@@ -25,7 +25,6 @@ from serialized_data_interface import (
     get_interfaces,
 )
 
-
 METRICS_PATH = "/metrics"
 
 
