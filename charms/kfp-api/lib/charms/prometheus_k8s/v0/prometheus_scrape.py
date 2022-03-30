@@ -157,6 +157,11 @@ each job must be given a unique name. For example
 ]
 ```
 
+**Important:** `job_name` should be a fixed string (e.g. hardcoded literal).
+For instance, if you include variable elements, like your `unit.name`, it may break
+the continuity of the metrics time series gathered by Prometheus when the leader unit
+changes (e.g. on upgrade or rescale).
+
 It is also possible to configure other scrape related parameters using
 these job specifications as described by the Prometheus
 [documentation](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config).
@@ -328,7 +333,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 16
+LIBPATCH = 17
 
 logger = logging.getLogger(__name__)
 
@@ -585,16 +590,15 @@ class JujuTopology:
     def identifier(self) -> str:
         """Format the topology information into a terse string."""
         # This is odd, but may have `None` as a model key
-        return "_".join([str(val) for val in self.as_dict().values()]).replace("/", "_")
+        return "_".join([str(val) for val in self.as_promql_label_dict().values()]).replace(
+            "/", "_"
+        )
 
     @property
     def promql_labels(self) -> str:
         """Format the topology information into a verbose string."""
         return ", ".join(
-            [
-                'juju_{}="{}"'.format(key, value)
-                for key, value in self.as_dict(rename_keys={"charm_name": "charm"}).items()
-            ]
+            ['{}="{}"'.format(key, value) for key, value in self.as_promql_label_dict().items()]
         )
 
     def as_dict(self, rename_keys: Optional[Dict[str, str]] = None) -> OrderedDict:
@@ -634,6 +638,10 @@ class JujuTopology:
             "juju_{}".format(key): val
             for key, val in self.as_dict(rename_keys={"charm_name": "charm"}).items()
         }
+        # The leader is the only unit that sets alert rules, if "juju_unit" is present,
+        # then the rules will only be evaluated for that unit
+        if "juju_unit" in vals:
+            vals.pop("juju_unit")
 
         return vals
 
@@ -683,9 +691,7 @@ class ProviderTopology(JujuTopology):
         """Format the topology information into a scrape identifier."""
         # This is used only by Metrics[Consumer|Provider] and does not need a
         # unit name, so only check for the charm name
-        return "juju_{}_prometheus_scrape".format(
-            "_".join([self.model, self.model_uuid[:7], self.application, self.charm_name])  # type: ignore
-        )
+        return "juju_{}_prometheus_scrape".format(self.identifier)
 
 
 class InvalidAlertRulePathError(Exception):

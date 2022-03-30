@@ -26,6 +26,9 @@ from serialized_data_interface import (
 )
 
 
+METRICS_PATH = "/metrics"
+
+
 class KfpApiOperator(CharmBase):
     """Charm the Kubeflow Pipelines API.
 
@@ -40,18 +43,19 @@ class KfpApiOperator(CharmBase):
 
         self.prometheus_provider = MetricsEndpointProvider(
             charm=self,
-            relation_name="monitoring",
+            relation_name="metrics-endpoint",
             jobs=[
                 {
-                    "job_name": "ml_pipeline",
-                    "scrape_interval": self.config["metrics-scrape-interval"],
-                    "metrics_path": self.config["metrics-api"],
+                    "metrics_path": METRICS_PATH,
                     "static_configs": [{"targets": ["*:{}".format(self.config["http-port"])]}],
                 }
             ],
         )
 
-        self.dashboard_provider = GrafanaDashboardProvider(self)
+        self.dashboard_provider = GrafanaDashboardProvider(
+            charm=self,
+            relation_name="grafana-dashboards",
+        )
 
         change_events = [
             self.on.install,
@@ -61,9 +65,6 @@ class KfpApiOperator(CharmBase):
             self.on["object-storage"].relation_changed,
             self.on["kfp-viz"].relation_changed,
             self.on["kfp-api"].relation_changed,
-            self.on["monitoring"].relation_changed,
-            self.on["monitoring"].relation_broken,
-            self.on["monitoring"].relation_departed,
         ]
         for event in change_events:
             self.framework.observe(event, self._main)
