@@ -45,6 +45,7 @@ class KfpUiOperator(CharmBase):
         self.framework.observe(self.on["kfp-api"].relation_changed, self._main)
         self.framework.observe(self.on["ingress"].relation_changed, self._main)
         self.framework.observe(self.on["kfp-ui"].relation_changed, self._main)
+        self.framework.observe(self.on.leader_settings_changed, self._main)
 
     def _main(self, event):
         try:
