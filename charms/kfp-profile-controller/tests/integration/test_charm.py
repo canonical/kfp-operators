@@ -159,3 +159,18 @@ def test_model_resources(ops_test: OpsTest):
 
     pod_status = lightkube_client.get(Pod, f"{APP_NAME}-operator-0", namespace=ops_test.model_name)
     assert pod_status.status.phase == "Running"
+
+
+async def test_minio_config_changed(ops_test: OpsTest):
+    """Tests if the kfp-profile controller unit turns active after minio config change."""
+    await ops_test.run(
+        "juju",
+        "config",
+        "minio",
+        "access-key=new-access-key",
+        "secret-key=new-secret-key"
+    )
+
+    await ops_test.model.wait_for_idle(status="active", timeout=600)
+
+    assert ops_test.model.applications[APP_NAME].units[0].workload_status == "active"

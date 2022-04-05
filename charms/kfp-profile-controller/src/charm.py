@@ -56,7 +56,7 @@ class KfpProfileControllerOperator(CharmBase):
         self.framework.observe(self.on.upgrade_charm, self._set_pod_spec)
         self.framework.observe(self.on.config_changed, self._set_pod_spec)
         self.framework.observe(self.on["object-storage"].relation_changed, self._set_pod_spec)
-        self.framework.observe(self.on.leader_settings_changed, self._set_pod_spec)
+        self.framework.observe(self.on.leader_elected, self._set_pod_spec)
 
     def _set_pod_spec(self, event):
         try:
