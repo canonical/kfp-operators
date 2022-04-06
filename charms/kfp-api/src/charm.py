@@ -53,7 +53,7 @@ class KfpApiOperator(CharmBase):
 
         self.dashboard_provider = GrafanaDashboardProvider(
             charm=self,
-            relation_name="grafana-dashboards",
+            relation_name="grafana-dashboard",
         )
 
         change_events = [
