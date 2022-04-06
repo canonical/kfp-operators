@@ -64,7 +64,7 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     prometheus = "prometheus-k8s"
     grafana = "grafana-k8s"
     prometheus_scrape_charm = "prometheus-scrape-config-k8s"
-    scrape_config = {"scrape_interval": "30s"}
+    scrape_config = {"scrape_interval": "5s"}
 
     await ops_test.model.deploy(prometheus, channel="latest/beta")
     await ops_test.model.deploy(grafana, channel="latest/beta")
@@ -77,7 +77,7 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     await ops_test.model.add_relation(APP_NAME, prometheus_scrape_charm)
     await ops_test.model.add_relation(prometheus, prometheus_scrape_charm)
 
-    await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
+    await ops_test.model.wait_for_idle(status="active", timeout=60 * 15)
 
     status = await ops_test.model.get_status()
     prometheus_unit_ip = status["applications"][prometheus]["units"][f"{prometheus}/0"]["address"]
