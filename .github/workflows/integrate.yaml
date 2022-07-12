@@ -35,7 +35,7 @@ jobs:
         with:
           credentials: "${{ secrets.charmcraft-credentials }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
-          charm-path: /charms/${{ matrix.charm }}
+          charm-path: ./charms/${{ matrix.charm }}
 
   lint:
     name: Lint
