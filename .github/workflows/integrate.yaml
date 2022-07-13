@@ -14,6 +14,17 @@ jobs:
   lib-check:
     name: Check libraries
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -24,6 +35,7 @@ jobs:
         with:
           credentials: "${{ secrets.charmcraft-credentials }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
+          charm-path: ./charms/${{ matrix.charm }}
 
   lint:
     name: Lint
