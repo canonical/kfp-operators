@@ -194,7 +194,7 @@ class KfpProfileControllerOperator(CharmBase):
                                         "apiVersion": "v1",
                                         "resource": "namespaces",
                                     },
-                                    "resyncPeriodSeconds": 10,
+                                    "resyncPeriodSeconds": 3600,
                                 },
                             }
                         ]
