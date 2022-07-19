@@ -6,7 +6,7 @@ from contextlib import nullcontext as does_not_raise
 import pytest
 import yaml
 from oci_image import MissingResourceError
-from ops.model import ActiveStatus, WaitingStatus
+from ops.model import ActiveStatus, WaitingStatus, BlockedStatus
 from ops.testing import Harness
 
 from charm import KfpViewer
@@ -15,6 +15,15 @@ from charm import KfpViewer
 def test_not_leader(harness):
     harness.begin_with_initial_hooks()
     assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
+
+
+def test_wrong_model(harness):
+    harness.set_leader()
+    harness.set_model_name("wrong-name")
+    harness.begin_with_initial_hooks()
+    assert harness.charm.model.unit.status == BlockedStatus(
+        "kfp-viewer must be deployed to model named `kubeflow`"
+    )
 
 
 def test_image_fetch(harness, oci_resource_data):
@@ -29,6 +38,7 @@ def test_image_fetch(harness, oci_resource_data):
 
 def test_install_with_all_inputs(harness, oci_resource_data):
     harness.set_leader()
+    harness.set_model_name("kubeflow")
     harness.add_oci_resource(**oci_resource_data)
 
     harness.begin_with_initial_hooks()

@@ -14,7 +14,7 @@ import yaml
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus
+from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus, BlockedStatus
 
 log = logging.getLogger()
 
@@ -38,6 +38,7 @@ class KfpViewer(CharmBase):
     def _main(self, event):
         try:
             self._check_leader()
+            self._check_model_name()
             image_details = self.image.fetch()
         except (CheckFailedError, OCIImageResourceError) as check_failed:
             self.model.unit.status = check_failed.status
@@ -108,6 +109,17 @@ class KfpViewer(CharmBase):
         if not self.unit.is_leader():
             # We can't do anything useful when not the leader, so do nothing.
             raise CheckFailedError("Waiting for leadership", WaitingStatus)
+
+    def _check_model_name(self):
+        """Raises BlockedStatus if the model name is not kubeflow
+
+        This is because some elements of the viewer are hard coded to use the kubeflow namespace
+        """
+        if self.model.name != "kubeflow":
+            raise CheckFailedError(
+                "kfp-viewer must be deployed to model named `kubeflow`",
+                BlockedStatus,
+            )
 
 
 class CheckFailedError(Exception):
