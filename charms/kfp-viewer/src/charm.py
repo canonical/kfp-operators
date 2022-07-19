@@ -14,7 +14,7 @@ import yaml
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import ActiveStatus, MaintenanceStatus, WaitingStatus, BlockedStatus
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 
 log = logging.getLogger()
 
@@ -111,7 +111,7 @@ class KfpViewer(CharmBase):
             raise CheckFailedError("Waiting for leadership", WaitingStatus)
 
     def _check_model_name(self):
-        """Raises BlockedStatus if the model name is not kubeflow
+        """Raises BlockedStatus if the model name is not kubeflow.
 
         This is because some elements of the viewer are hard coded to use the kubeflow namespace
         """
