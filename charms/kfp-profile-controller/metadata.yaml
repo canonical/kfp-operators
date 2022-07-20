@@ -10,6 +10,7 @@ resources:
     type: oci-image
     description: Backing OCI image
     upstream-source: python:3.7
+  # NOTE: If bumping KFP version, see also KFP_IMAGES_VERSION in charm.py.  That variable must also be updated
 requires:
   object-storage:
     interface: object-storage
