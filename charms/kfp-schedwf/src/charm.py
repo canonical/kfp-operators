@@ -68,7 +68,10 @@ class KfpSchedwf(CharmBase):
                                 },
                                 {
                                     "apiGroups": ["kubeflow.org"],
-                                    "resources": ["scheduledworkflows", "scheduledworkflows/finalizers"],
+                                    "resources": [
+                                        "scheduledworkflows",
+                                        "scheduledworkflows/finalizers",
+                                    ],
                                     "verbs": [
                                         "create",
                                         "get",
