@@ -67,7 +67,7 @@ class KfpViewer(CharmBase):
                                 },
                                 {
                                     "apiGroups": ["kubeflow.org"],
-                                    "resources": ["viewers"],
+                                    "resources": ["viewers", "viewers/finalizers"],
                                     "verbs": [
                                         "create",
                                         "get",

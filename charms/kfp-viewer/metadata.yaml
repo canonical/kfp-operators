@@ -12,4 +12,4 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: gcr.io/ml-pipeline/viewer-crd-controller:1.7.0
+    upstream-source: gcr.io/ml-pipeline/viewer-crd-controller:2.0.0-alpha.3
