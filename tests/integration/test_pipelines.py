@@ -1,8 +1,8 @@
-# Copyright 2021 Canonical Ltd.
-# See LICENSE file for licensing details.
-
-# TODO: Disabled because tests are being refactored.  Likely will be moved into test_bundle.py
+# # Copyright 2021 Canonical Ltd.
+# # See LICENSE file for licensing details.
 #
+# NOTE: Disabled because tests need to be refactored for multi-user pipeline authentication
+
 # from kfp import Client, dsl
 # from subprocess import check_output
 # import json
@@ -46,6 +46,12 @@
 #
 #
 # def test_pipelines():
+#     # TODO: This does not work atm because of multi-user and authentication.  We need to pass an
+#     #       identity into the Client that kfp will accept, and then access namespaced objects
+#     #       during out creation/usage of pipelines.
+#     #       This should be doable, but not sure how.  Might be able to take what we do in the
+#     #       PodDefault applied to our notebook servers?  Or maybe use the bundle-kubeflow
+#     #       authorization workflow?
 #     status = json.loads(
 #         check_output(
 #             [
@@ -66,7 +72,10 @@
 #             "url1": "gs://ml-pipeline/sample-data/shakespeare/shakespeare1.txt",
 #             "url2": "gs://ml-pipeline/sample-data/shakespeare/shakespeare2.txt",
 #         },
+#         namespace="admin",  # TODO: Use whatever account we add for our CI.
+#         service_account="default-editor"
 #     )
 #     completed = client.wait_for_run_completion(run.run_id, timeout=3600)
 #     status = completed.to_dict()["run"]["status"]
 #     assert status == "Succeeded", f"Pipeline cowsay status is {status}"
+#
