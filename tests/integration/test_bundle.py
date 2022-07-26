@@ -21,7 +21,7 @@ CHARM_PATH_TEMPLATE = "{basedir}/charms/{charm}/"
 log = logging.getLogger(__name__)
 
 
-async def test_build_and_deploy(ops_test: OpsTest):
+async def test_build_and_deploy(ops_test: OpsTest, request):
     # for each local charm, build it (in parallel?) and update the bundle to use that
     # TODO: Optionally override some local charms, pulling them instead?  And maybe that accepts a
     #       path (to an already built charm) or channel (so we can use a published branch)
@@ -44,11 +44,12 @@ async def test_build_and_deploy(ops_test: OpsTest):
     if ops_test.model_name != "kubeflow":
         raise ValueError("kfp must be deployed to namespace kubeflow")
 
+    bundlefile = Path(request.config.getoption("bundle"))
+
     basedir = Path("./").absolute()
 
     # Load template bundle
-    bundlefile = basedir / "tests/integration/data/kfp_minimal.yaml"
-    bundle = yaml.safe_load(Path(bundlefile).read_text())
+    bundle = yaml.safe_load(bundlefile.read_text())
 
     # Build the charms we need to build
     charms_to_build = {
