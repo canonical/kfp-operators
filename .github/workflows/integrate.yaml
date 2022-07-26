@@ -126,7 +126,10 @@ jobs:
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          sg microk8s -c "tox -e bundle-integration -- --model kubeflow"
+          # Remove destructive-mode once these bugs are fixed:
+          # https://github.com/canonical/charmcraft/issues/554
+          # https://github.com/canonical/craft-providers/issues/96
+          tox -e bundle-integration -- --model kubeflow --destructive-mode
 
       - name: Get all
         run: kubectl get all -A
