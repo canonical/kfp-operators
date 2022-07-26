@@ -128,18 +128,18 @@ jobs:
           juju add-model kubeflow
           sg microk8s -c "tox -e bundle-integration -- --model kubeflow"
 
-    - name: Get all
-      run: kubectl get all -A
-      if: failure()
+      - name: Get all
+        run: kubectl get all -A
+        if: failure()
 
-    - name: Get juju status
-      run: juju status
-      if: failure()
+      - name: Get juju status
+        run: juju status
+        if: failure()
 
-    - name: Get workload logs
-      run: kubectl logs --tail 100 -nkubeflow -ljuju-app
-      if: failure()
+      - name: Get workload logs
+        run: kubectl logs --tail 100 -nkubeflow -ljuju-app
+        if: failure()
 
-    - name: Get operator logs
-      run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
-      if: failure()
+      - name: Get operator logs
+        run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
+        if: failure()
