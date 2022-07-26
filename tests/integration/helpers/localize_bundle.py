@@ -2,12 +2,13 @@
 # See LICENSE file for licensing details.
 import copy
 from pathlib import Path
-from typing import Union, Optional
+from typing import Dict, Optional, Union
 import yaml
 from zipfile import ZipFile
 
 
 # TODO: Move this somewhere more general
+
 
 def get_charm_name(metadata_file: Union[Path, str]) -> str:
     metadata = yaml.safe_load(Path(metadata_file).read_text())
@@ -27,7 +28,7 @@ def get_charm_file(charm_dir: Path) -> Path:
     return (charm_dir / f"{charm_name}_ubuntu-20.04-amd64.charm").absolute()
 
 
-def get_resources_from_charm_dir(charm_dir: Path) -> dict[str:str]:
+def get_resources_from_charm_dir(charm_dir: Path) -> Dict[str, str]:
     """Returns the resources of the charm at path"""
     metadata_file = charm_dir / "metadata.yaml"
     metadata = yaml.safe_load(Path(metadata_file).read_text())
@@ -35,10 +36,10 @@ def get_resources_from_charm_dir(charm_dir: Path) -> dict[str:str]:
     return {k: v["upstream-source"] for k, v in resources.items()}
 
 
-def get_resources_from_charm_file(charm_file: str) -> dict[str, str]:
+def get_resources_from_charm_file(charm_file: str) -> Dict[str, str]:
     """Extracts the resources of a charm from a .charm (zipped) file."""
-    with ZipFile(charm_file, 'r') as zip:
-        metadata_file = zip.open('metadata.yaml')
+    with ZipFile(charm_file, "r") as zip:
+        metadata_file = zip.open("metadata.yaml")
         metadata = yaml.safe_load(metadata_file)
         resources = metadata["resources"]
         return {k: v["upstream-source"] for k, v in resources.items()}
