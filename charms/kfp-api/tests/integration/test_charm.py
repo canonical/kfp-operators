@@ -61,23 +61,29 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
 async def test_prometheus_grafana_integration(ops_test: OpsTest):
     """Deploy prometheus, grafana and required relations, then test the metrics."""
+    application_name = APP_NAME
     prometheus = "prometheus-k8s"
     grafana = "grafana-k8s"
-    prometheus_scrape_charm = "prometheus-scrape-config-k8s"
-    scrape_config = {"scrape_interval": "5s"}
+    prometheus_scrape = "prometheus-scrape-config-k8s"
+    scrape_config = {"scrape_interval": "30s"}
 
-    await ops_test.model.deploy(prometheus, channel="latest/beta")
-    await ops_test.model.deploy(grafana, channel="latest/beta")
-    await ops_test.model.add_relation(prometheus, grafana)
-    await ops_test.model.add_relation(APP_NAME, grafana)
-    await ops_test.model.deploy(
-        prometheus_scrape_charm,
-        channel="latest/beta",
-        config=scrape_config)
-    await ops_test.model.add_relation(APP_NAME, prometheus_scrape_charm)
-    await ops_test.model.add_relation(prometheus, prometheus_scrape_charm)
+    # Deploy and relate prometheus
+    await ops_test.model.deploy(prometheus, channel="latest/edge", trust=True)
+    await ops_test.model.deploy(grafana, channel="latest/edge", trust=True)
+    await ops_test.model.deploy(prometheus_scrape, channel="latest/beta", config=scrape_config)
 
-    await ops_test.model.wait_for_idle(status="active", timeout=60 * 15)
+    await ops_test.model.add_relation(application_name, prometheus_scrape)
+    await ops_test.model.add_relation(
+        f"{prometheus}:grafana-dashboard", f"{grafana}:grafana-dashboard"
+    )
+    await ops_test.model.add_relation(
+        f"{application_name}:grafana-dashboard", f"{grafana}:grafana-dashboard"
+    )
+    await ops_test.model.add_relation(
+        f"{prometheus}:metrics-endpoint", f"{prometheus_scrape}:metrics-endpoint"
+    )
+
+    await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
 
     status = await ops_test.model.get_status()
     prometheus_unit_ip = status["applications"][prometheus]["units"][f"{prometheus}/0"]["address"]
