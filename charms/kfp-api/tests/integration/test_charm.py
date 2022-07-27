@@ -83,7 +83,7 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
         f"{prometheus}:metrics-endpoint", f"{prometheus_scrape}:metrics-endpoint"
     )
 
-    await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
+    await ops_test.model.wait_for_idle(status="active", timeout=60 * 20)
 
     status = await ops_test.model.get_status()
     prometheus_unit_ip = status["applications"][prometheus]["units"][f"{prometheus}/0"]["address"]
