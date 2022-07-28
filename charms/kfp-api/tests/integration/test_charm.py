@@ -61,7 +61,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
 async def test_prometheus_grafana_integration(ops_test: OpsTest):
     """Deploy prometheus, grafana and required relations, then test the metrics."""
-    application_name = APP_NAME
     prometheus = "prometheus-k8s"
     grafana = "grafana-k8s"
     prometheus_scrape = "prometheus-scrape-config-k8s"
@@ -72,12 +71,12 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     await ops_test.model.deploy(grafana, channel="latest/edge", trust=True)
     await ops_test.model.deploy(prometheus_scrape, channel="latest/beta", config=scrape_config)
 
-    await ops_test.model.add_relation(application_name, prometheus_scrape)
+    await ops_test.model.add_relation(APP_NAME, prometheus_scrape)
     await ops_test.model.add_relation(
         f"{prometheus}:grafana-dashboard", f"{grafana}:grafana-dashboard"
     )
     await ops_test.model.add_relation(
-        f"{application_name}:grafana-dashboard", f"{grafana}:grafana-dashboard"
+        f"{APP_NAME}:grafana-dashboard", f"{grafana}:grafana-dashboard"
     )
     await ops_test.model.add_relation(
         f"{prometheus}:metrics-endpoint", f"{prometheus_scrape}:metrics-endpoint"
