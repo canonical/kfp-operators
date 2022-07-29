@@ -193,6 +193,10 @@ class KfpApiOperator(CharmBase):
                                 "periodSeconds": 5,
                                 "timeoutSeconds": 2,
                             },
+                            "startupProbe": {
+                                "exec": {"command": ["wget", "-q", "-S", "-O", "-", healthz]},
+                                "failureThreshold": 12,
+                            },
                         },
                     }
                 ],
@@ -230,7 +234,7 @@ class KfpApiOperator(CharmBase):
         config = self.model.config
         config_json = {
             "DBConfig": {
-                "ConMaxLifeTimeSec": "120",
+                "ConMaxLifeTime": "120s",
                 "DBName": mysql["database"],
                 "DriverName": "mysql",
                 "GroupConcatMaxLen": "4194304",

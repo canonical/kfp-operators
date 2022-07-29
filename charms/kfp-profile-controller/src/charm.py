@@ -31,7 +31,7 @@ CONTROLLER_PORT = 80
 # TODO: This sets the version of the images deployed to each namespace (value comes from the
 #  upstream configMap pipeline-install-config's appVersion entry).  Normal pattern would
 #  set this in metadata but this is different here.  Should this be exposed differently?
-KFP_IMAGES_VERSION = "1.7.0-rc.3"
+KFP_IMAGES_VERSION = "2.0.0-alpha.3"
 
 # Note: Istio destinationrule/auth have been manually disabled in sync.py.  Need a better
 # solution for this in future
@@ -194,7 +194,7 @@ class KfpProfileControllerOperator(CharmBase):
                                         "apiVersion": "v1",
                                         "resource": "namespaces",
                                     },
-                                    "resyncPeriodSeconds": 10,
+                                    "resyncPeriodSeconds": 3600,
                                 },
                             }
                         ]
