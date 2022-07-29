@@ -50,6 +50,8 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
     await ops_test.model.deploy(
         entity_url="metacontroller-operator",
+        # TODO: Revert once metacontroller that supports k8s 1.22 is in stable
+        channel="latest/edge",
         trust=True,
     )
 
