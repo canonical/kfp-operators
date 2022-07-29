@@ -90,7 +90,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.21/stable
+          channel: 1.22/stable
           charmcraft-channel: latest/candidate
       - run: |
           sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
@@ -114,7 +114,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.21/stable
+          channel: 1.22/stable
           charmcraft-channel: latest/candidate
 
       # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
