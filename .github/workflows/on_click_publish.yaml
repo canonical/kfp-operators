@@ -2,14 +2,14 @@
 # The result of triggering this workflow is to publish the charm(s)
 # in gh's default branch to the publish.yaml's default Charmhub channel
 # (typically, ch:latest/edge)
-name: Publish charm manually
+name: Publish manually
 
 on:
   workflow_dispatch:
     
 jobs:
-  publish-charm-manually:
-    name: Publish charm manually
+  publish-manually:
+    name: Publish manually
     uses: ./.github/workflows/publish.yaml
     secrets:
       charmcraft-credentials: "${{ secrets.CHARMCRAFT_CREDENTIALS }}"
