@@ -4,7 +4,7 @@ name: Publish
 on:
   workflow_call:
     secrets:
-      charmcraft-credentials:
+      CHARMCRAFT_CREDENTIALS:
         required: true
   workflow_dispatch:
     inputs:
@@ -60,14 +60,6 @@ jobs:
           destination_channel="${{ inputs.destination_channel || steps.select-channel.outputs.name }}"
           echo "setting output of destination_channel=$destination_channel"
           echo "::set-output name=destination_channel::$destination_channel"
-          
-          # charmcraft_credentials
-          # Make charmcraft_credentials a masked value (eg: prevent it from printing in logs)
-          # This should be redundant since it should come as a secret, but just in case..id
-          credentials=${{ secrets.charmcraft-credentials || secrets.CHARMCRAFT_CREDENTIALS }}
-          echo "::add-mask::$credentials"
-          echo "setting output of charmcraft_credentials=(not shown)"
-          echo "::set-output name=charmcraft_credentials::$credentials"
 
           # tag_prefix
           # if charm_path = ./ --> tag_prefix = '' (null)
@@ -83,7 +75,7 @@ jobs:
       - name: Upload charm to charmhub
         uses: canonical/charming-actions/upload-charm@2.0.0-rc
         with:
-          credentials: ${{ steps.parse-inputs.outputs.charmcraft_credentials }}
+          credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           charm-path: ${{ matrix.charm-path }}
           channel: ${{ steps.parse-inputs.outputs.destination_channel }}
