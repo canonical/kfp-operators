@@ -57,6 +57,7 @@ class KfpApiOperator(CharmBase):
             self.on.install,
             self.on.upgrade_charm,
             self.on.config_changed,
+            self.on.leader_elected,
             self.on["mysql"].relation_changed,
             self.on["object-storage"].relation_changed,
             self.on["kfp-viz"].relation_changed,

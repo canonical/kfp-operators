@@ -34,6 +34,7 @@ class KfpViewer(CharmBase):
         self.framework.observe(self.on.install, self._main)
         self.framework.observe(self.on.upgrade_charm, self._main)
         self.framework.observe(self.on.config_changed, self._main)
+        self.framework.observe(self.on.leader_elected, self._main)
 
     def _main(self, event):
         try:
