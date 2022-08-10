@@ -19,6 +19,12 @@ def test_not_leader(harness):
     assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
 
 
+def test_leader_elected(harness):
+    harness.begin_with_initial_hooks()
+    harness.set_leader(True)
+    assert harness.charm.model.unit.status != WaitingStatus("Waiting for leadership")
+
+
 def test_image_fetch(harness, oci_resource_data):
     harness.begin()
     with pytest.raises(MissingResourceError):
