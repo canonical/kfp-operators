@@ -21,3 +21,4 @@ jobs:
     uses: ./.github/workflows/publish.yaml
     secrets:
       CHARMCRAFT_CREDENTIALS: "${{ secrets.CHARMCRAFT_CREDENTIALS }}"
+
