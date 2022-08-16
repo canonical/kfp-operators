@@ -17,12 +17,6 @@ def test_not_leader(harness):
     assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
 
 
-def test_leader_elected(harness):
-    harness.begin_with_initial_hooks()
-    harness.set_leader(True)
-    assert harness.charm.model.unit.status != WaitingStatus("Waiting for leadership")
-
-
 def test_wrong_model(harness):
     harness.set_leader()
     harness.set_model_name("wrong-name")
