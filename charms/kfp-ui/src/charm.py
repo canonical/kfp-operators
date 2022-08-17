@@ -13,7 +13,7 @@ from base64 import b64encode
 
 from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
-from ops.charm import CharmBase
+from ops.charm import CharmBase, RelationJoinedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from serialized_data_interface import (
@@ -46,6 +46,7 @@ class KfpUiOperator(CharmBase):
         self.framework.observe(self.on["ingress"].relation_changed, self._main)
         self.framework.observe(self.on["kfp-ui"].relation_changed, self._main)
         self.framework.observe(self.on.leader_elected, self._main)
+        self.framework.observe(self.on.sidebar_relation_joined, self._on_sidebar_relation_joined)
 
     def _main(self, event):
         try:
@@ -319,6 +320,46 @@ class KfpUiOperator(CharmBase):
             )
 
         return data_dict
+
+    def _on_sidebar_relation_joined(self, event: RelationJoinedEvent):
+        if not self.unit.is_leader():
+            return
+        event.relation.data[self.app].update(
+            {
+                "config": json.dumps(
+                    [
+                        {
+                            "app": self.app.name,
+                            "type": "item",
+                            "text": "Experiments (KFP)",
+                            "link": "/pipeline/#/experiments",
+                            "icon": "done-all",
+                        },
+                        {
+                            "app": self.app.name,
+                            "type": "item",
+                            "link": "/pipeline/#/pipelines",
+                            "text": "Pipelines",
+                            "icon": "kubeflow:pipeline-centered",
+                        },
+                        {
+                            "app": self.app.name,
+                            "type": "item",
+                            "link": "/pipeline/#/runs",
+                            "text": "Runs",
+                            "icon": "maps:directions-run",
+                        },
+                        {
+                            "app": self.app.name,
+                            "type": "item",
+                            "link": "/pipeline/#/recurringruns",
+                            "text": "Recurring Runs",
+                            "icon": "device:access-alarm",
+                        },
+                    ]
+                )
+            }
+        )
 
 
 class CheckFailedError(Exception):
