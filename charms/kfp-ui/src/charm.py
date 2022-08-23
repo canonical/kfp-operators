@@ -47,6 +47,10 @@ class KfpUiOperator(CharmBase):
         self.framework.observe(self.on["kfp-ui"].relation_changed, self._main)
         self.framework.observe(self.on.leader_elected, self._main)
         self.framework.observe(self.on.sidebar_relation_joined, self._on_sidebar_relation_joined)
+        self.framework.observe(
+            self.on.sidebar_relation_departed,
+            self._on_sidebar_relation_departed,
+        )
 
     def _main(self, event):
         try:
@@ -330,6 +334,7 @@ class KfpUiOperator(CharmBase):
                     [
                         {
                             "app": self.app.name,
+                            "position": 1,
                             "type": "item",
                             "text": "Experiments (KFP)",
                             "link": "/pipeline/#/experiments",
@@ -337,6 +342,7 @@ class KfpUiOperator(CharmBase):
                         },
                         {
                             "app": self.app.name,
+                            "position": 1,
                             "type": "item",
                             "link": "/pipeline/#/pipelines",
                             "text": "Pipelines",
@@ -344,6 +350,7 @@ class KfpUiOperator(CharmBase):
                         },
                         {
                             "app": self.app.name,
+                            "position": 1,
                             "type": "item",
                             "link": "/pipeline/#/runs",
                             "text": "Runs",
@@ -351,6 +358,7 @@ class KfpUiOperator(CharmBase):
                         },
                         {
                             "app": self.app.name,
+                            "position": 1,
                             "type": "item",
                             "link": "/pipeline/#/recurringruns",
                             "text": "Recurring Runs",
@@ -360,6 +368,11 @@ class KfpUiOperator(CharmBase):
                 )
             }
         )
+
+    def _on_sidebar_relation_departed(self, event):
+        if not self.unit.is_leader():
+            return
+        event.relation.data[self.app].update({"config": json.dumps([])})
 
 
 class CheckFailedError(Exception):
