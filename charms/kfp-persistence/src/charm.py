@@ -74,6 +74,12 @@ class KfpPersistenceOperator(CharmBase):
                                     "resources": ["scheduledworkflows"],
                                     "verbs": ["get", "list", "watch"],
                                 },
+                                {
+                                    "apiGroups": [""],
+                                    "resources": ["namespaces"],
+                                    "verbs": ["get"],
+                                },
+
                             ],
                         }
                     ]
@@ -90,10 +96,24 @@ class KfpPersistenceOperator(CharmBase):
                             "--numWorker=2",
                             f"--mlPipelineAPIServerName={kfpapi['service-name']}",
                         ],
+                        "envConfig": {
+                            "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
+                            "KUBEFLOW_USERID_PREFIX": "",
+                        },
                     }
                 ],
             },
+            k8s_resources={
+                "kubernetesResources": {
+                    "configMaps": {
+                        "persistenceagent-config": {
+                            "params.env": "MULTIUSER=true",
+                        }
+                    }
+                }
+            },
         )
+
         self.model.unit.status = ActiveStatus()
 
     def _check_leader(self):
