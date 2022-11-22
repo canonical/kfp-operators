@@ -138,7 +138,7 @@ jobs:
           # Remove destructive-mode once these bugs are fixed:
           # https://github.com/canonical/charmcraft/issues/554
           # https://github.com/canonical/craft-providers/issues/96
-          tox -e bundle-integration -- --model kubeflow --destructive-mode
+          tox -e bundle-integration -- --model kubeflow --destructive-mode --bundle ./tests/integration/data/kfp_against_1.6_edge.yaml
 
       - name: Get all
         run: kubectl get all -A
