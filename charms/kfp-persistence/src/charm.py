@@ -79,7 +79,6 @@ class KfpPersistenceOperator(CharmBase):
                                     "resources": ["namespaces"],
                                     "verbs": ["get"],
                                 },
-
                             ],
                         }
                     ]
