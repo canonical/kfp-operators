@@ -51,7 +51,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
     await ops_test.model.deploy(
         entity_url="metacontroller-operator",
-        channel="1.6/edge",
+        channel="2.0/edge",
         trust=True,
     )
 
