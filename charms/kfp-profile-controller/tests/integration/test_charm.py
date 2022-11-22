@@ -46,14 +46,12 @@ async def test_build_and_deploy(ops_test: OpsTest):
     # Deploy charms responsible for CRDs creation
     await ops_test.model.deploy(
         entity_url="kubeflow-profiles",
-        # TODO: Revert once kubeflow-profiles stable supports k8s 1.22
-        channel="latest/edge",
+        channel="1.6/edge",
         trust=True,
     )
     await ops_test.model.deploy(
         entity_url="metacontroller-operator",
-        # TODO: Revert once metacontroller stable supports k8s 1.22
-        channel="latest/edge",
+        channel="1.6/edge",
         trust=True,
     )
 
