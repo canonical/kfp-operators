@@ -1,2 +1,2 @@
-ops==1.2.0
+ops
 oci-image==1.0.0
