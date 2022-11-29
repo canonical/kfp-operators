@@ -139,9 +139,7 @@ def test_relations_that_provide_data(
 def test_install_with_all_inputs(harness, oci_resource_data):
     harness.set_leader()
     model_name = "test_model"
-    service_port = "8888"
     harness.set_model_name(model_name)
-    harness.update_config({"service-port": service_port})
 
     # Set up required relations
     # Future: convert these to fixtures and share with the tests above
