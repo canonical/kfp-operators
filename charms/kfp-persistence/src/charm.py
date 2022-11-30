@@ -98,18 +98,11 @@ class KfpPersistenceOperator(CharmBase):
                         "envConfig": {
                             "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
                             "KUBEFLOW_USERID_PREFIX": "",
+                            # Upstream defines this in the configmap persistenceagent-config-*
+                            "params.env": "MULTIUSER=true",
                         },
                     }
                 ],
-            },
-            k8s_resources={
-                "kubernetesResources": {
-                    "configMaps": {
-                        "persistenceagent-config": {
-                            "params.env": "MULTIUSER=true",
-                        }
-                    }
-                }
             },
         )
 
