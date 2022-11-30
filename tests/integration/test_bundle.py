@@ -54,6 +54,8 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
     cmd = f"juju deploy -m {model} --trust {bundle_dst_file}"
     log.info(f"Deploying bundle to {model} using cmd '{cmd}'")
     rc, stdout, stderr = await ops_test.run(*shlex.split(cmd))
+    if rc != 0:
+        raise RuntimeError(f"Failed to deploy bundle.  Got stdout:\n{stderr}\nand stderr:\n{stderr}")
 
     # Wait for everything to be up.  Note, at time of writing these charms would naturally go
     # into blocked during deploy while waiting for each other to satisfy relations, so we don't
