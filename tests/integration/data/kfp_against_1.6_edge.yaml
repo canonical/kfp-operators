@@ -24,10 +24,11 @@ applications:
     charm: ch:kfp-api
     scale: 1
   kfp-db:
-    charm: cs:~charmed-osm/mariadb-k8s-35
+    charm: charmed-osm-mariadb-k8s
+    channel: latest/stable
+    scale: 1
     options:
       database: mlpipeline
-    scale: 1
   kfp-persistence:
     channel: latest/edge
     charm: ch:kfp-persistence
