@@ -1,0 +1,101 @@
+applications:
+  argo-controller:
+    channel: 3.3/edge
+    charm: ch:argo-controller
+    scale: 1
+  istio-ingressgateway:
+    _github_repo_name: istio-operators
+    channel: 1.11/edge
+    charm: istio-gateway
+    options:
+      kind: ingress
+    scale: 1
+    trust: true
+  istio-pilot:
+    _github_repo_name: istio-operators
+    channel: 1.11/edge
+    charm: istio-pilot
+    options:
+      default-gateway: kubeflow-gateway
+    scale: 1
+    trust: true
+  kfp-api:
+    channel: latest/edge
+    charm: ch:kfp-api
+    scale: 1
+  kfp-db:
+    charm: charmed-osm-mariadb-k8s
+    channel: latest/stable
+    scale: 1
+    options:
+      database: mlpipeline
+  kfp-persistence:
+    channel: latest/edge
+    charm: ch:kfp-persistence
+    scale: 1
+  kfp-profile-controller:
+    channel: latest/edge
+    charm: ch:kfp-profile-controller
+    scale: 1
+  kfp-schedwf:
+    channel: latest/edge
+    charm: ch:kfp-schedwf
+    scale: 1
+  kfp-ui:
+    channel: latest/edge
+    charm: ch:kfp-ui
+    scale: 1
+  kfp-viewer:
+    channel: latest/edge
+    charm: ch:kfp-viewer
+    scale: 1
+  kfp-viz:
+    channel: latest/edge
+    charm: ch:kfp-viz
+    scale: 1
+  kubeflow-dashboard:
+    _github_repo_name: kubeflow-dashboard-operator
+    channel: 1.6/edge
+    charm: kubeflow-dashboard
+    scale: 1
+  kubeflow-profiles:
+    _github_repo_name: kubeflow-profiles-operator
+    channel: 1.6/edge
+    charm: kubeflow-profiles
+    scale: 1
+  metacontroller-operator:
+    channel: 2.0/edge
+    charm: ch:metacontroller-operator
+    scale: 1
+    trust: true
+  minio:
+    channel: ckf-1.6/edge
+    charm: ch:minio
+    scale: 1
+bundle: kubernetes
+name: kubeflow-pipelines
+relations:
+  - - kfp-api
+    - kfp-db
+  - - kfp-api:kfp-api
+    - kfp-persistence:kfp-api
+  - - kfp-api:kfp-api
+    - kfp-ui:kfp-api
+  - - kfp-api:kfp-viz
+    - kfp-viz:kfp-viz
+  - - kfp-api:object-storage
+    - minio:object-storage
+  - - kfp-profile-controller:object-storage
+    - minio:object-storage
+  - - kfp-ui:object-storage
+    - minio:object-storage
+  - - argo-controller:object-storage
+    - minio:object-storage
+  - - kubeflow-profiles
+    - kubeflow-dashboard
+  - - istio-pilot:ingress
+    - kubeflow-dashboard:ingress
+  - - istio-pilot:istio-pilot
+    - istio-ingressgateway:istio-pilot
+  - - istio-pilot:ingress
+    - kfp-ui:ingress
