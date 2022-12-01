@@ -99,7 +99,7 @@ jobs:
           sg microk8s -c "microk8s config > ~/.kube/config"
 
       - run: |
-          sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
+          sg microk8s -c "tox -e ${{ matrix.charm }}-integration -- --keep-models"
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
