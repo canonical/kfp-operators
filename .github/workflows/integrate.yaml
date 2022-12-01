@@ -11,69 +11,69 @@ on:
 
 jobs:
 
-  lib-check:
-    name: Check libraries
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Check libs
-        uses: canonical/charming-actions/check-libraries@2.1.1
-        with:
-          credentials: "${{ secrets.charmcraft-credentials }}"
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-          charm-path: ./charms/${{ matrix.charm }}
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    steps:
-      - uses: actions/checkout@v2
-      - run: python3 -m pip install tox
-      - run: tox -e ${{ matrix.charm }}-lint
-
-  unit:
-    name: Unit tests
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    steps:
-      - uses: actions/checkout@v2
-      - run: python3 -m pip install tox
-      - run: tox -e ${{ matrix.charm }}-unit
+#  lib-check:
+#    name: Check libraries
+#    runs-on: ubuntu-latest
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        charm:
+#          - kfp-api
+#          - kfp-persistence
+#          - kfp-profile-controller
+#          - kfp-schedwf
+#          - kfp-ui
+#          - kfp-viewer
+#          - kfp-viz
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
+#      - name: Check libs
+#        uses: canonical/charming-actions/check-libraries@2.1.1
+#        with:
+#          credentials: "${{ secrets.charmcraft-credentials }}"
+#          github-token: "${{ secrets.GITHUB_TOKEN }}"
+#          charm-path: ./charms/${{ matrix.charm }}
+#
+#  lint:
+#    name: Lint
+#    runs-on: ubuntu-latest
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        charm:
+#          - kfp-api
+#          - kfp-persistence
+#          - kfp-profile-controller
+#          - kfp-schedwf
+#          - kfp-ui
+#          - kfp-viewer
+#          - kfp-viz
+#    steps:
+#      - uses: actions/checkout@v2
+#      - run: python3 -m pip install tox
+#      - run: tox -e ${{ matrix.charm }}-lint
+#
+#  unit:
+#    name: Unit tests
+#    runs-on: ubuntu-latest
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        charm:
+#          - kfp-api
+#          - kfp-persistence
+#          - kfp-profile-controller
+#          - kfp-schedwf
+#          - kfp-ui
+#          - kfp-viewer
+#          - kfp-viz
+#    steps:
+#      - uses: actions/checkout@v2
+#      - run: python3 -m pip install tox
+#      - run: tox -e ${{ matrix.charm }}-unit
 
   integration:
     name: Integration tests (microk8s)
@@ -82,7 +82,7 @@ jobs:
       fail-fast: false
       matrix:
         charm:
-          - kfp-profile-controller
+#          - kfp-profile-controller
           - kfp-api
     steps:
       - uses: actions/checkout@v2
@@ -101,6 +101,10 @@ jobs:
       - run: |
           sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 60
+
       # Collect debug logs if failed
       - name: Dump Juju/k8s logs on failure
         uses: canonical/charm-logdump-action@main
@@ -109,49 +113,49 @@ jobs:
           app: ${{ matrix.charm }}
           model: testing
 
-  test-bundle:
-    name: Test the bundle
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          channel: 1.22/stable
-          charmcraft-channel: latest/candidate
-
-      # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
-      - run: sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
-
-      # TODO: Remove once the actions-operator does this automatically
-      - name: Configure kubectl
-        run: |
-          sg microk8s -c "microk8s config > ~/.kube/config"
-
-      - name: Run test
-        run: |
-          # Requires the model to be called kubeflow due to kfp-viewer
-          juju add-model kubeflow
-          # Remove destructive-mode once these bugs are fixed:
-          # https://github.com/canonical/charmcraft/issues/554
-          # https://github.com/canonical/craft-providers/issues/96
-          tox -e bundle-integration -- --model kubeflow --destructive-mode --bundle ./tests/integration/data/kfp_against_1.6_edge.yaml
-
-      - name: Get all
-        run: kubectl get all -A
-        if: failure()
-
-      - name: Get juju status
-        run: juju status
-        if: failure()
-
-      - name: Get workload logs
-        run: kubectl logs --tail 100 -nkubeflow -ljuju-app
-        if: failure()
-
-      - name: Get operator logs
-        run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
-        if: failure()
+#  test-bundle:
+#    name: Test the bundle
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Check out code
+#        uses: actions/checkout@v2
+#      - name: Setup operator environment
+#        uses: charmed-kubernetes/actions-operator@main
+#        with:
+#          provider: microk8s
+#          channel: 1.22/stable
+#          charmcraft-channel: latest/candidate
+#
+#      # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
+#      - run: sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
+#
+#      # TODO: Remove once the actions-operator does this automatically
+#      - name: Configure kubectl
+#        run: |
+#          sg microk8s -c "microk8s config > ~/.kube/config"
+#
+#      - name: Run test
+#        run: |
+#          # Requires the model to be called kubeflow due to kfp-viewer
+#          juju add-model kubeflow
+#          # Remove destructive-mode once these bugs are fixed:
+#          # https://github.com/canonical/charmcraft/issues/554
+#          # https://github.com/canonical/craft-providers/issues/96
+#          tox -e bundle-integration -- --model kubeflow --destructive-mode --bundle ./tests/integration/data/kfp_against_1.6_edge.yaml
+#
+#      - name: Get all
+#        run: kubectl get all -A
+#        if: failure()
+#
+#      - name: Get juju status
+#        run: juju status
+#        if: failure()
+#
+#      - name: Get workload logs
+#        run: kubectl logs --tail 100 -nkubeflow -ljuju-app
+#        if: failure()
+#
+#      - name: Get operator logs
+#        run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
+#        if: failure()
