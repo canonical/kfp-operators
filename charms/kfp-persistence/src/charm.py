@@ -74,6 +74,11 @@ class KfpPersistenceOperator(CharmBase):
                                     "resources": ["scheduledworkflows"],
                                     "verbs": ["get", "list", "watch"],
                                 },
+                                {
+                                    "apiGroups": [""],
+                                    "resources": ["namespaces"],
+                                    "verbs": ["get"],
+                                },
                             ],
                         }
                     ]
@@ -90,6 +95,12 @@ class KfpPersistenceOperator(CharmBase):
                             "--numWorker=2",
                             f"--mlPipelineAPIServerName={kfpapi['service-name']}",
                         ],
+                        "envConfig": {
+                            "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
+                            "KUBEFLOW_USERID_PREFIX": "",
+                            # Upstream defines this in the configmap persistenceagent-config-*
+                            "MULTIUSER": "true",
+                        },
                     }
                 ],
             },
