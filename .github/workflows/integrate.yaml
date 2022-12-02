@@ -112,7 +112,7 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 120
 
-      - run |
+      - run: |
           juju debug-log -m testing -i prometheus-k8s/0 --replay
 
       # Collect debug logs if failed
