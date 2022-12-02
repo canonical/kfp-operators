@@ -93,6 +93,9 @@ jobs:
           channel: 1.22/stable
           charmcraft-channel: latest/candidate
 
+      - run: |
+          juju status --relations
+
       # TODO: Remove once the actions-operator does this automatically
       - name: Configure kubectl
         run: |
@@ -101,9 +104,12 @@ jobs:
       - run: |
           sg microk8s -c "tox -e ${{ matrix.charm }}-integration -- --keep-models"
 
+      - run: |
+          juju status --relations
+
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 60
+        timeout-minutes: 120
 
       # Collect debug logs if failed
       - name: Dump Juju/k8s logs on failure
