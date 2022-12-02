@@ -94,7 +94,7 @@ jobs:
           charmcraft-channel: latest/candidate
 
       - run: |
-          juju status --relations
+          juju status -m testing --relations
 
       # TODO: Remove once the actions-operator does this automatically
       - name: Configure kubectl
@@ -102,10 +102,10 @@ jobs:
           sg microk8s -c "microk8s config > ~/.kube/config"
 
       - run: |
-          sg microk8s -c "tox -e ${{ matrix.charm }}-integration -- --keep-models"
+          sg microk8s -c "tox -e ${{ matrix.charm }}-integration -- --keep-models --model testing"
 
       - run: |
-          juju status --relations
+          juju status -m testing --relations
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
