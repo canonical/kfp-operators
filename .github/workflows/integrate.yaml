@@ -92,6 +92,7 @@ jobs:
           provider: microk8s
           channel: 1.22/stable
           charmcraft-channel: latest/candidate
+          bootstrap-options: --agent-version="2.9.34"
 
       - run: |
           juju status -m testing --relations
@@ -110,6 +111,9 @@ jobs:
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 120
+
+      - run |
+          juju debug-log -m testing -i prometheus-k8s/0 --replay
 
       # Collect debug logs if failed
       - name: Dump Juju/k8s logs on failure
@@ -132,6 +136,8 @@ jobs:
 #          provider: microk8s
 #          channel: 1.22/stable
 #          charmcraft-channel: latest/candidate
+#          bootstrap-options: --agent-version="2.9.34"
+
 #
 #      # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
 #      - run: sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
