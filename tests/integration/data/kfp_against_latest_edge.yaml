@@ -58,6 +58,7 @@ applications:
     channel: latest/edge
     charm: kubeflow-dashboard
     scale: 1
+    trust: true
   kubeflow-profiles:
     _github_repo_name: kubeflow-profiles-operator
     channel: latest/edge
