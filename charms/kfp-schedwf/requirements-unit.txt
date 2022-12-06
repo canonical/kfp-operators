@@ -32,6 +32,8 @@ pytest-lazy-fixture==0.6.3
 pytest-mock==3.10.0
     # via -r ./requirements-unit.in
 pyyaml==6.0
-    # via ops
+    # via
+    #   -r ./requirements.txt
+    #   ops
 tomli==2.0.1
     # via pytest
