@@ -53,7 +53,7 @@ jobs:
           - kfp-viz
     steps:
       - uses: actions/checkout@v2
-      - run: python3 -m pip install tox
+      - run: python3 -m pip install "tox<4"
       - run: tox -e ${{ matrix.charm }}-lint
 
   unit:
