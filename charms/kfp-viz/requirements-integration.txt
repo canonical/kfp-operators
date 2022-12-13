@@ -117,7 +117,7 @@ ops==1.5.4
     #   serialized-data-interface
 outcome==1.2.0
     # via trio
-packaging==21.3
+packaging==22.0
     # via pytest
 paramiko==2.12.0
     # via juju
