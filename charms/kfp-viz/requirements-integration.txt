@@ -95,7 +95,7 @@ jujubundlelib==0.5.7
     # via theblues
 kaitaistruct==0.10
     # via selenium-wire
-kubernetes==17.17.0
+kubernetes==25.3.0
     # via juju
 macaroonbakery==1.3.1
     # via
