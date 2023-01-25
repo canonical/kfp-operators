@@ -90,7 +90,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.22/stable
+          channel: 1.24/stable
           charmcraft-channel: latest/candidate
           # TODO: Unpin this when this bug is resolved: https://bugs.launchpad.net/juju/+bug/1992833.
           #       In particular, these tests failed deploying the prometheus-k8s charm where it gets an error in
@@ -124,7 +124,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.22/stable
+          channel: 1.24/stable
           charmcraft-channel: latest/candidate
           # TODO: Unpin this when this bug is resolved: https://bugs.launchpad.net/juju/+bug/1992833.
           bootstrap-options: --agent-version="2.9.34"
