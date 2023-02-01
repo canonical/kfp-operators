@@ -16,5 +16,17 @@ resources:
 requires:
   kfp-api:
     interface: k8s-service
-    schema: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
+    schema:
+      v1:
+        provides:
+          type: object
+          properties:
+            service-name:
+              type: string
+            service-port:
+              type: string
+          required:
+          - service-name
+          - service-port
     versions: [v1]
+    __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
