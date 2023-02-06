@@ -64,6 +64,7 @@ applications:
     channel: latest/edge
     charm: kubeflow-profiles
     scale: 1
+    trust: true
   metacontroller-operator:
     channel: latest/edge
     charm: ch:metacontroller-operator
