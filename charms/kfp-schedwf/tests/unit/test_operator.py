@@ -3,6 +3,7 @@
 
 from contextlib import nullcontext as does_not_raise
 
+import ops
 import pytest
 import yaml
 from oci_image import MissingResourceError
@@ -10,6 +11,8 @@ from ops.model import ActiveStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import KfpSchedwf
+
+ops.testing.SIMULATE_CAN_CONNECT = True
 
 
 def test_not_leader(harness):
