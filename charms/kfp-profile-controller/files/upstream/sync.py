@@ -18,12 +18,27 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
 import base64
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def main():
+    logger.info("User profile sync service alive")
     settings = get_settings_from_env()
+    emit_settings_to_logs(settings)
     server = server_factory(**settings)
+    logger.info("Serving forever")
     server.serve_forever()
+
+
+def emit_settings_to_logs(settings):
+    """Emits settings to logs, omitting secrets"""
+    safe_settings = dict(settings)
+    for k in ["MINIO_SECRET_KEY"]:
+        if k in safe_settings:
+            safe_settings[k] = "REDACTED"
+    logger.info(f"Settings = {safe_settings}")
 
 
 def get_settings_from_env(
@@ -35,7 +50,12 @@ def get_settings_from_env(
     disable_istio_sidecar=None,
     minio_access_key=None,
     minio_secret_key=None,
+    minio_host=None,
+    minio_port=None,
+    minio_namespace=None,
     kfp_default_pipeline_root=None,
+    metadata_grpc_service_host=None,
+    metadata_grpc_service_port=None,
 ):
     """
     Returns a dict of settings from environment variables relevant to the controller
@@ -52,6 +72,11 @@ def get_settings_from_env(
         disable_istio_sidecar: Required (no default)
         minio_access_key: Required (no default)
         minio_secret_key: Required (no default)
+        minio_host: minio
+        minio_port: 9000
+        minio_namespace: kubeflow
+        metadata_grpc_service_host: metadata-grpc-service.kubeflow
+        metadata_grpc_service_port: 8080
     """
     settings = dict()
     settings["controller_port"] = controller_port or os.environ.get("CONTROLLER_PORT", "8080")
@@ -91,9 +116,23 @@ def get_settings_from_env(
         bytes(os.environ.get("MINIO_SECRET_KEY"), "utf-8")
     ).decode("utf-8")
 
+    settings["minio_host"] = minio_host or os.environ.get("MINIO_HOST", "minio")
+
+    settings["minio_port"] = minio_port or os.environ.get("MINIO_PORT", "9000")
+
+    settings["minio_namespace"] = minio_namespace or os.environ.get("MINIO_NAMESPACE", "kubeflow")
+
     # KFP_DEFAULT_PIPELINE_ROOT is optional
     settings["kfp_default_pipeline_root"] = kfp_default_pipeline_root or os.environ.get(
         "KFP_DEFAULT_PIPELINE_ROOT"
+    )
+
+    settings["metadata_grpc_service_host"] = metadata_grpc_service_host or os.environ.get(
+        "METADATA_GRPC_SERVICE_HOST", "metadata-grpc-service.kubeflow"
+    )
+
+    settings["metadata_grpc_service_port"] = metadata_grpc_service_port or os.environ.get(
+        "METADATA_GRPC_SERVICE_PORT", "8080"
     )
 
     return settings
@@ -107,6 +146,11 @@ def server_factory(
     disable_istio_sidecar,
     minio_access_key,
     minio_secret_key,
+    minio_host,
+    minio_namespace,
+    minio_port,
+    metadata_grpc_service_host,
+    metadata_grpc_service_port,
     kfp_default_pipeline_root=None,
     url="",
     controller_port=8080,
@@ -117,6 +161,8 @@ def server_factory(
 
     class Controller(BaseHTTPRequestHandler):
         def sync(self, parent, children):
+            logger.info("Got new request")
+
             # parent is a namespace
             namespace = parent.get("metadata", {}).get("name")
 
@@ -125,6 +171,9 @@ def server_factory(
             )
 
             if pipeline_enabled != "true":
+                logger.info(
+                    f"Namespace not in scope, no action taken (metadata.labels.pipelines.kubeflow.org/enabled = {pipeline_enabled}, must be 'true')"
+                )
                 return {"status": {}, "children": []}
 
             desired_configmap_count = 1
@@ -151,9 +200,11 @@ def server_factory(
                 and len(children["ConfigMap.v1"]) == desired_configmap_count
                 and len(children["Deployment.apps/v1"]) == 2
                 and len(children["Service.v1"]) == 2
-                and len(children["DestinationRule.networking.istio.io/v1alpha3"]) == 1
-                and len(children["AuthorizationPolicy.security.istio.io/v1beta1"]) == 1
-                and "True"
+                and
+                # TODO CANONICAL: This only works if istio is available.  Disabled for now
+                # len(children["DestinationRule.networking.istio.io/v1alpha3"]) == 1 and
+                # len(children["AuthorizationPolicy.security.istio.io/v1beta1"]) == 1 and
+                "True"
                 or "False"
             }
 
@@ -167,8 +218,8 @@ def server_factory(
                         "namespace": namespace,
                     },
                     "data": {
-                        "METADATA_GRPC_SERVICE_HOST": "metadata-grpc-service.kubeflow",
-                        "METADATA_GRPC_SERVICE_PORT": "8080",
+                        "METADATA_GRPC_SERVICE_HOST": metadata_grpc_service_host,
+                        "METADATA_GRPC_SERVICE_PORT": metadata_grpc_service_port,
                     },
                 },
                 # Visualization server related manifests below
@@ -209,42 +260,45 @@ def server_factory(
                         },
                     },
                 },
-                {
-                    "apiVersion": "networking.istio.io/v1alpha3",
-                    "kind": "DestinationRule",
-                    "metadata": {
-                        "name": "ml-pipeline-visualizationserver",
-                        "namespace": namespace,
-                    },
-                    "spec": {
-                        "host": "ml-pipeline-visualizationserver",
-                        "trafficPolicy": {"tls": {"mode": "ISTIO_MUTUAL"}},
-                    },
-                },
-                {
-                    "apiVersion": "security.istio.io/v1beta1",
-                    "kind": "AuthorizationPolicy",
-                    "metadata": {
-                        "name": "ml-pipeline-visualizationserver",
-                        "namespace": namespace,
-                    },
-                    "spec": {
-                        "selector": {"matchLabels": {"app": "ml-pipeline-visualizationserver"}},
-                        "rules": [
-                            {
-                                "from": [
-                                    {
-                                        "source": {
-                                            "principals": [
-                                                "cluster.local/ns/kubeflow/sa/ml-pipeline"
-                                            ]
-                                        }
-                                    }
-                                ]
-                            }
-                        ],
-                    },
-                },
+                # TODO CANONICAL: This only works if istio is available.  Disabled for now
+                # {
+                #     "apiVersion": "networking.istio.io/v1alpha3",
+                #     "kind": "DestinationRule",
+                #     "metadata": {
+                #         "name": "ml-pipeline-visualizationserver",
+                #         "namespace": namespace,
+                #     },
+                #     "spec": {
+                #         "host": "ml-pipeline-visualizationserver",
+                #         "trafficPolicy": {
+                #             "tls": {
+                #                 "mode": "ISTIO_MUTUAL"
+                #             }
+                #         }
+                #     }
+                # },
+                # {
+                #     "apiVersion": "security.istio.io/v1beta1",
+                #     "kind": "AuthorizationPolicy",
+                #     "metadata": {
+                #         "name": "ml-pipeline-visualizationserver",
+                #         "namespace": namespace,
+                #     },
+                #     "spec": {
+                #         "selector": {
+                #             "matchLabels": {
+                #                 "app": "ml-pipeline-visualizationserver"
+                #             }
+                #         },
+                #         "rules": [{
+                #             "from": [{
+                #                 "source": {
+                #                     "principals": ["cluster.local/ns/kubeflow/sa/ml-pipeline"]
+                #                 }
+                #             }]
+                #         }]
+                #     }
+                # },
                 {
                     "apiVersion": "v1",
                     "kind": "Service",
@@ -292,6 +346,9 @@ def server_factory(
                                         "imagePullPolicy": "IfNotPresent",
                                         "ports": [{"containerPort": 3000}],
                                         "env": [
+                                            {"name": "MINIO_PORT", "value": minio_port},
+                                            {"name": "MINIO_HOST", "value": minio_host},
+                                            {"name": "MINIO_NAMESPACE", "value": minio_namespace},
                                             {
                                                 "name": "MINIO_ACCESS_KEY",
                                                 "valueFrom": {
@@ -322,6 +379,49 @@ def server_factory(
                         },
                     },
                 },
+                # Added from https://github.com/kubeflow/pipelines/pull/6629 to fix
+                # https://github.com/canonical/bundle-kubeflow/issues/423.  This was not yet in
+                # upstream and if they go with something different we should consider syncing with
+                # upstream.
+                # Adds "Allow access to Kubeflow Pipelines" button in Notebook spawner UI
+                {
+                    "apiVersion": "kubeflow.org/v1alpha1",
+                    "kind": "PodDefault",
+                    "metadata": {"name": "access-ml-pipeline", "namespace": namespace},
+                    "spec": {
+                        "desc": "Allow access to Kubeflow Pipelines",
+                        "selector": {"matchLabels": {"access-ml-pipeline": "true"}},
+                        "volumes": [
+                            {
+                                "name": "volume-kf-pipeline-token",
+                                "projected": {
+                                    "sources": [
+                                        {
+                                            "serviceAccountToken": {
+                                                "path": "token",
+                                                "expirationSeconds": 7200,
+                                                "audience": "pipelines.kubeflow.org",
+                                            }
+                                        }
+                                    ]
+                                },
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/secrets/kubeflow/pipelines",
+                                "name": "volume-kf-pipeline-token",
+                                "readOnly": True,
+                            }
+                        ],
+                        "env": [
+                            {
+                                "name": "KF_PIPELINES_SA_TOKEN_PATH",
+                                "value": "/var/run/secrets/kubeflow/pipelines/token",
+                            }
+                        ],
+                    },
+                },
                 {
                     "apiVersion": "v1",
                     "kind": "Service",
@@ -343,10 +443,10 @@ def server_factory(
                     },
                 },
             ]
-            print("Received request:\n", json.dumps(parent, sort_keys=True))
+            print("Received request:\n", json.dumps(parent, indent=2, sort_keys=True))
             print(
                 "Desired resources except secrets:\n",
-                json.dumps(desired_resources, sort_keys=True),
+                json.dumps(desired_resources, indent=2, sort_keys=True),
             )
             # Moved after the print argument because this is sensitive data.
             desired_resources.append(
