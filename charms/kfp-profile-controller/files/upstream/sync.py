@@ -1,3 +1,4 @@
+# Source: manifests/apps/pipeline/upstream/base/installs/multi-user/pipelines-profile-controller/sync.py
 # Copyright 2020-2021 The Kubeflow Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

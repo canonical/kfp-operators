@@ -3,6 +3,7 @@
 
 from contextlib import nullcontext as does_not_raise
 
+import ops
 import pytest
 import yaml
 from oci_image import MissingResourceError
@@ -13,6 +14,8 @@ from charm import KfpVizOperator
 
 # TODO: Tests missing for config_changed and dropped/reloaded relations and relations where this
 #  charm provides data to the other application
+
+ops.testing.SIMULATE_CAN_CONNECT = True
 
 
 def test_not_leader(harness):

@@ -9,7 +9,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: gcr.io/ml-pipeline/frontend:2.0.0-alpha.5
+    upstream-source: gcr.io/ml-pipeline/frontend:2.0.0-alpha.6
 requires:
   object-storage:
     interface: object-storage

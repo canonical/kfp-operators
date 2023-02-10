@@ -3,6 +3,7 @@
 
 from contextlib import nullcontext as does_not_raise
 
+import ops
 import pytest
 import yaml
 from oci_image import MissingResourceError
@@ -12,6 +13,8 @@ from ops.testing import Harness
 from charm import CheckFailedError, KfpPersistenceOperator
 
 # TODO: Tests missing for dropped/reloaded relations
+
+ops.testing.SIMULATE_CAN_CONNECT = True
 
 
 def test_not_leader(harness):
