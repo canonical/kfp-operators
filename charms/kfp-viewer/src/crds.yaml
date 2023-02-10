@@ -1,5 +1,6 @@
+# Source: manifests/apps/pipeline/upstream/base/pipeline/cluster-scoped/viewer-crd.yaml
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: viewers.kubeflow.org
@@ -9,14 +10,12 @@ spec:
     kind: Viewer
     listKind: ViewerList
     plural: viewers
+    singular: viewer
     shortNames:
     - vi
-    singular: viewer
   scope: Namespaced
   versions:
   - name: v1beta1
-    served: true
-    storage: true
     schema:
       openAPIV3Schema:
         properties:
@@ -31,5 +30,7 @@ spec:
             x-kubernetes-preserve-unknown-fields: true
             x-kubernetes-map-type: atomic
         required:
-          - spec
+        - spec
         type: object
+    served: true
+    storage: true
