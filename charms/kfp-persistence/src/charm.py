@@ -168,7 +168,7 @@ class KfpPersistenceOperator(CharmBase):
         except ValidationError as val_error:
             # Validation in .get_data() ensures if data is populated, it matches the schema and is
             # not incomplete
-            self.log.error(val_error)
+            self.log.exception(val_error)
             raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
                 BlockedStatus,
