@@ -300,7 +300,7 @@ class KfpApiOperator(CharmBase):
             unit = list(mysql.units)[0]
             mysql = mysql.data[unit]
         except Exception as e:
-            self.log.error(
+            self.log.exception(
                 f"Encountered the following exception when parsing mysql relation: " f"{str(e)}"
             )
             raise CheckFailedError(
