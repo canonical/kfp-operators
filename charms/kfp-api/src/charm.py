@@ -300,7 +300,7 @@ class KfpApiOperator(CharmBase):
             unit = list(mysql.units)[0]
             mysql = mysql.data[unit]
         except Exception as e:
-            self.log.error(
+            self.log.exception(
                 f"Encountered the following exception when parsing mysql relation: " f"{str(e)}"
             )
             raise CheckFailedError(
@@ -316,7 +316,7 @@ class KfpApiOperator(CharmBase):
         if len(missing_attributes) == len(expected_attributes):
             raise CheckFailedError("Waiting for mysql relation data", WaitingStatus)
         elif len(missing_attributes) > 0:
-            self.log.error(
+            self.log.exception(
                 f"mysql relation data missing expected attributes '{missing_attributes}'"
             )
             raise CheckFailedError(
@@ -375,7 +375,7 @@ class KfpApiOperator(CharmBase):
         except ValidationError as val_error:
             # Validation in .get_data() ensures if data is populated, it matches the schema and is
             # not incomplete
-            self.log.error(val_error)
+            self.log.exception(val_error)
             raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
                 BlockedStatus,
