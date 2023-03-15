@@ -27,7 +27,7 @@ jobs:
           - kfp-viz
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Check libs
@@ -52,7 +52,7 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-lint
 
@@ -71,7 +71,7 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
@@ -85,7 +85,7 @@ jobs:
           - kfp-profile-controller
           - kfp-api
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
@@ -119,7 +119,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
