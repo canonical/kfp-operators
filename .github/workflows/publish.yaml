@@ -30,7 +30,7 @@ jobs:
     name: Generate the Charm Matrix
     runs-on: ubuntu-20.04
     # forks don't have access to keyrings and cannot publish, we just skip these jobs from forks
-    if: github.actor == 'canonical'
+    if: github.event.pull_request.head.repo.fork == false
     outputs:
       charm_paths_list: ${{ steps.get-charm-paths.outputs.CHARM_PATHS_LIST }}
     steps:
