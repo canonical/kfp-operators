@@ -136,7 +136,11 @@ jobs:
       - name: Configure kubectl
         run: |
           sg microk8s -c "microk8s config > ~/.kube/config"
-
+      # FIXME: adding a workaround to fix https://github.com/canonical/kfp-operators/issues/163
+      - name: Add max_user_instances and max_user_watches
+        run: |
+          sudo sysctl fs.inotify.max_user_instances=1280
+          sudo sysctl fs.inotify.max_user_watches=655360
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
