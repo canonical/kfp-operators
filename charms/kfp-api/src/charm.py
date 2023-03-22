@@ -289,33 +289,31 @@ class KfpApiOperator(CharmBase):
         return interfaces
 
     def _get_mysql(self):
-        mysql = self.model.relations["mysql"]
-        if len(mysql) == 0:
-            raise CheckFailedError("Missing required relation for mysql", BlockedStatus)
-        elif len(mysql) > 1:
-            raise CheckFailedError("Too many mysql relations", BlockedStatus)
+        mysql_relation = self.model.get_relation("mysql")
 
-        try:
-            mysql = mysql[0]
-            unit = list(mysql.units)[0]
-            mysql = mysql.data[unit]
-        except Exception as e:
-            self.log.exception(
-                f"Encountered the following exception when parsing mysql relation: " f"{str(e)}"
-            )
-            raise CheckFailedError(
-                "Unexpected error when parsing mysql relation.  See logs", BlockedStatus
-            )
+        # Raise exception and stop execution if the mysql relation is not established
+        if not mysql_relation:
+            raise CheckFailedError("There is no mysql relation", WaitingStatus)
 
+        if not mysql_relation.data:
+            raise CheckFailedError("There is no data in the mysql relation", WaitingStatus)
+
+        if not mysql_relation.units:
+            raise CheckFailedError("Waiting for remote unit to join relation", WaitingStatus)
+
+        # This charm should only establish a relation with exactly one unit
+        # the following iterator exracts exactly one unit from the set that's
+        # returned by mysql_relation.data
+        for unit in mysql_relation.units:
+            mysql = mysql_relation.data[unit]
+
+        # Check if the relation data contains the expected attributes
         expected_attributes = ["database", "host", "root_password", "port"]
-
         missing_attributes = [
             attribute for attribute in expected_attributes if attribute not in mysql
         ]
 
-        if len(missing_attributes) == len(expected_attributes):
-            raise CheckFailedError("Waiting for mysql relation data", WaitingStatus)
-        elif len(missing_attributes) > 0:
+        if len(missing_attributes) > 0:
             self.log.exception(
                 f"mysql relation data missing expected attributes '{missing_attributes}'"
             )
