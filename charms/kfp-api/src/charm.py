@@ -292,10 +292,9 @@ class KfpApiOperator(CharmBase):
         """Returns mysql relation data from the relation with a mysql database.
 
         Raises:
-            CheckFailedError in the following scenarios:
-                1. If there is no mysql relation, which will block the unit
-                2. If The remove unit has not joined the relation, will set unit to WaitingStatus
-                3. If the relation data bag is empty, will set unit to WaitingStatus
+            CheckFailed(..., BlockedStatus) if there is no mysql relation
+            CheckFailed(..., WaitingStatus) if The remove unit has not joined the relation
+            CheckFailed(..., WaitingStatus) if the relation data bag is empty
         """
         mysql_relation = self.model.get_relation("mysql")
 
