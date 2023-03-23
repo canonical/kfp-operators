@@ -293,34 +293,37 @@ class KfpApiOperator(CharmBase):
 
         # Raise exception and stop execution if the mysql relation is not established
         if not mysql_relation:
-            raise CheckFailedError("There is no mysql relation", WaitingStatus)
-
-        if not mysql_relation.data:
-            raise CheckFailedError("There is no data in the mysql relation", WaitingStatus)
+            raise CheckFailedError("There is no mysql relation", BlockedStatus)
 
         if not mysql_relation.units:
             raise CheckFailedError("Waiting for remote unit to join relation", WaitingStatus)
 
+        if not mysql_relation.data:
+            raise CheckFailedError("There is no data in the mysql relation", WaitingStatus)
+
         # This charm should only establish a relation with exactly one unit
-        # the following iterator exracts exactly one unit from the set that's
+        # the following extracts exactly one unit from the set that's
         # returned by mysql_relation.data
-        for unit in mysql_relation.units:
-            mysql = mysql_relation.data[unit]
+        units = mysql_relation.units
+        kfp_db_unit = list(units)[0]
+
+        # Get mysql relation data
+        mysql_relation_data = mysql_relation.data[kfp_db_unit]
 
         # Check if the relation data contains the expected attributes
         expected_attributes = ["database", "host", "root_password", "port"]
         missing_attributes = [
-            attribute for attribute in expected_attributes if attribute not in mysql
+            attribute for attribute in expected_attributes if attribute not in mysql_relation_data
         ]
 
-        if len(missing_attributes) > 0:
+        if missing_attributes:
             self.log.exception(
                 f"mysql relation data missing expected attributes '{missing_attributes}'"
             )
             raise CheckFailedError(
                 "Received incomplete data from mysql relation.  See logs", BlockedStatus
             )
-        return mysql
+        return mysql_relation_data
 
     def _get_object_storage(self, interfaces):
         relation_name = "object-storage"
