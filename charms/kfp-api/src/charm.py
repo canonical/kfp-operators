@@ -326,7 +326,7 @@ class KfpApiOperator(CharmBase):
         ]
 
         if missing_attributes:
-            self.log.exception(
+            self.log.error(
                 f"mysql relation data missing expected attributes '{missing_attributes}'"
             )
             raise CheckFailedError(
