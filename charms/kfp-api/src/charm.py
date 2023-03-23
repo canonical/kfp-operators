@@ -289,6 +289,14 @@ class KfpApiOperator(CharmBase):
         return interfaces
 
     def _get_mysql(self):
+        """Returns mysql relation data from the relation with a mysql database.
+
+        Raises:
+            CheckFailedError in the following scenarios:
+                1. If there is no mysql relation, which will block the unit
+                2. If The remove unit has not joined the relation, will set unit to WaitingStatus
+                3. If the relation data bag is empty, will set unit to WaitingStatus
+        """
         mysql_relation = self.model.get_relation("mysql")
 
         # Raise exception and stop execution if the mysql relation is not established
@@ -311,6 +319,8 @@ class KfpApiOperator(CharmBase):
         mysql_relation_data = mysql_relation.data[kfp_db_unit]
 
         # Check if the relation data contains the expected attributes
+        # mysql_relation_data may contain more than these attributes, but
+        # we are interested in the data bag containing at least the following:
         expected_attributes = ["database", "host", "root_password", "port"]
         missing_attributes = [
             attribute for attribute in expected_attributes if attribute not in mysql_relation_data
