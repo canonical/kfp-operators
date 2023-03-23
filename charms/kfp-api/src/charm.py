@@ -311,9 +311,11 @@ class KfpApiOperator(CharmBase):
         # This charm should only establish a relation with exactly one unit
         # the following extracts exactly one unit from the set that's
         # returned by mysql_relation.data
-        for unit in mysql_relation.units:
-            # Get mysql relation data
-            mysql_relation_data = mysql_relation.data[unit]
+        units = mysql_relation.units
+        kfp_db_unit = list(units)[0]
+
+        # Get mysql relation data
+        mysql_relation_data = mysql_relation.data[kfp_db_unit]
 
         # Check if the relation data contains the expected attributes
         # mysql_relation_data may contain more than these attributes, but
