@@ -109,8 +109,9 @@ def test_mysql_relation_too_many_relations(harness):
     rel_id_2 = harness.add_relation("mysql", "extra_sql")
     harness.add_relation_unit(rel_id_2, "extra_sql/0")
 
-    with pytest.raises(TooManyRelatedAppsError) as too_many_relations:
+    with pytest.raises(TooManyRelatedAppsError):
         harness.charm._get_mysql()
+
 
 def test_kfp_viz_relation_missing(harness):
     harness.set_leader()
