@@ -300,7 +300,7 @@ class KfpApiOperator(CharmBase):
 
         # Raise exception and stop execution if the mysql relation is not established
         if not mysql_relation:
-            raise CheckFailedError("There is no mysql relation", BlockedStatus)
+            raise CheckFailedError("Add mysql relation", BlockedStatus)
 
         if not mysql_relation.units:
             raise CheckFailedError("Waiting for remote unit to join relation", WaitingStatus)
