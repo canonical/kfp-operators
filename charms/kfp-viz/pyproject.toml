@@ -1,4 +1,4 @@
-# Copyright 2021 Canonical Ltd.
+# Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # Testing tools configuration
@@ -18,8 +18,8 @@ line-length = 99
 target-version = ["py38"]
 
 [tool.isort]
-profile = "black"
 line_length = 99
+profile = "black"
 
 # Linting tools configuration
 [tool.flake8]

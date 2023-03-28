@@ -3,15 +3,18 @@
 
 from contextlib import nullcontext as does_not_raise
 
+import ops
 import pytest
 import yaml
 from oci_image import MissingResourceError
-from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
+from ops.model import ActiveStatus, BlockedStatus, TooManyRelatedAppsError, WaitingStatus
 from ops.testing import Harness
 
 from charm import CheckFailedError, KfpApiOperator
 
 # TODO: Tests missing for config_changed and dropped/reloaded relations
+
+ops.testing.SIMULATE_CAN_CONNECT = True
 
 
 def test_not_leader(harness):
@@ -106,9 +109,8 @@ def test_mysql_relation_too_many_relations(harness):
     rel_id_2 = harness.add_relation("mysql", "extra_sql")
     harness.add_relation_unit(rel_id_2, "extra_sql/0")
 
-    with pytest.raises(CheckFailedError) as too_many_relations:
+    with pytest.raises(TooManyRelatedAppsError):
         harness.charm._get_mysql()
-    assert too_many_relations.value.status == BlockedStatus("Too many mysql relations")
 
 
 def test_kfp_viz_relation_missing(harness):

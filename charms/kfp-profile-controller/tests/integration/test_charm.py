@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 APP_NAME = "kfp-profile-controller"
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 
+MINIO_APP_NAME = "minio"
 MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
 
 
@@ -37,10 +38,10 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     # Deploy required relations
-    await ops_test.model.deploy(entity_url="minio", config=MINIO_CONFIG)
+    await ops_test.model.deploy(entity_url=MINIO_APP_NAME, config=MINIO_CONFIG)
     await ops_test.model.add_relation(
         f"{APP_NAME}:object-storage",
-        "minio:object-storage",
+        f"{MINIO_APP_NAME}:object-storage",
     )
 
     # Deploy charms responsible for CRDs creation
@@ -149,27 +150,48 @@ def validate_profile_resources(
     assert expected_label_value == namespace.metadata.labels[expected_label]
 
 
-def test_model_resources(ops_test: OpsTest):
+async def test_model_resources(ops_test: OpsTest):
     """Tests if the resources associated with secret's namespace were created.
 
     Verifies that the secret was created, decoded secret-key matches the minio config value,
     and that the pods are running.
     """
-    lightkube_client = lightkube.Client()
-    secret = lightkube_client.get(
-        Secret, f"{APP_NAME}-minio-credentials", namespace=ops_test.model_name
-    )
-    assert b64decode(secret.data["MINIO_SECRET_KEY"]).decode("utf-8") == MINIO_CONFIG["secret-key"]
+    minio_config = await ops_test.model.applications[MINIO_APP_NAME].get_config()
 
+    await assert_minio_secret(
+        access_key=minio_config["access-key"]["value"],
+        secret_key=minio_config["secret-key"]["value"],
+        ops_test=ops_test,
+    )
+
+    await assert_workload_running(ops_test)
+
+
+async def assert_workload_running(ops_test):
+    lightkube_client = lightkube.Client()
     pod_status = lightkube_client.get(Pod, f"{APP_NAME}-operator-0", namespace=ops_test.model_name)
     assert pod_status.status.phase == "Running"
 
 
+async def assert_minio_secret(access_key, secret_key, ops_test):
+    lightkube_client = lightkube.Client()
+    secret = lightkube_client.get(
+        Secret, f"{APP_NAME}-minio-credentials", namespace=ops_test.model_name
+    )
+    assert b64decode(secret.data["MINIO_ACCESS_KEY"]).decode("utf-8") == access_key
+    assert b64decode(secret.data["MINIO_SECRET_KEY"]).decode("utf-8") == secret_key
+    return lightkube_client
+
+
 async def test_minio_config_changed(ops_test: OpsTest):
-    """Tests if the kfp-profile controller unit turns active after minio config change."""
+    """Tests if the kfp-profile controller unit updates its secrets if minio credentials change."""
+    minio_access_key = "new-access-key"
+    minio_secret_key = "new-secret-key"
     await ops_test.model.applications["minio"].set_config(
-        {"access-key": "new-access-key", "secret-key": "new-secret-key"}
+        {"access-key": minio_access_key, "secret-key": minio_secret_key}
     )
     await ops_test.model.wait_for_idle(status="active", timeout=600)
+
+    assert_minio_secret(minio_access_key, minio_secret_key, ops_test)
 
     assert ops_test.model.applications[APP_NAME].units[0].workload_status == "active"

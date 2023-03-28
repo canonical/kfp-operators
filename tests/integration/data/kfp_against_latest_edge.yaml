@@ -58,11 +58,13 @@ applications:
     channel: latest/edge
     charm: kubeflow-dashboard
     scale: 1
+    trust: true
   kubeflow-profiles:
     _github_repo_name: kubeflow-profiles-operator
     channel: latest/edge
     charm: kubeflow-profiles
     scale: 1
+    trust: true
   metacontroller-operator:
     channel: latest/edge
     charm: ch:metacontroller-operator

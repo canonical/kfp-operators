@@ -69,7 +69,7 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     # Deploy and relate prometheus
     await ops_test.model.deploy(prometheus, channel="latest/edge", trust=True)
     await ops_test.model.deploy(grafana, channel="latest/edge", trust=True)
-    await ops_test.model.deploy(prometheus_scrape, channel="latest/beta", config=scrape_config)
+    await ops_test.model.deploy(prometheus_scrape, channel="latest/stable", config=scrape_config)
 
     await ops_test.model.add_relation(APP_NAME, prometheus_scrape)
     await ops_test.model.add_relation(
@@ -82,7 +82,7 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
         f"{prometheus}:metrics-endpoint", f"{prometheus_scrape}:metrics-endpoint"
     )
 
-    await ops_test.model.wait_for_idle(status="active", timeout=60 * 20)
+    await ops_test.model.wait_for_idle(status="active", timeout=90 * 20)
 
     status = await ops_test.model.get_status()
     prometheus_unit_ip = status["applications"][prometheus]["units"][f"{prometheus}/0"]["address"]
@@ -90,12 +90,11 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
 
     for attempt in retry_for_5_attempts:
         logger.info(
-            f"Testing prometheus deployment (attempt "
-            f"{attempt.retry_state.attempt_number})"
+            f"Testing prometheus deployment (attempt " f"{attempt.retry_state.attempt_number})"
         )
         with attempt:
             r = requests.get(
-                f'http://{prometheus_unit_ip}:9090/api/v1/query?'
+                f"http://{prometheus_unit_ip}:9090/api/v1/query?"
                 f'query=up{{juju_application="{APP_NAME}"}}'
             )
             response = json.loads(r.content.decode("utf-8"))
