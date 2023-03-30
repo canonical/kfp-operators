@@ -1,7 +1,11 @@
-# reusable workflow triggered by other actions
+name: CI
 
 on:
-  workflow_call:
+  pull_request:
+  push:
+    branches:
+    - main
+    - track/**
 
 jobs:
   quality-checks:
@@ -57,3 +61,18 @@ jobs:
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@all
     with:
       charm-name: ${{ inputs.charm-name }}
+
+  publish-on-success:
+    # only publish on push to main or track/** and if all tests pass
+    name: Publish
+    if: github.event_name == 'push'
+    needs: [quality-checks, unit-tests, integration-tests, bundle-tests]
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_publish.yaml@all
+    secrets: inherit
+
+  publish:
+    # always publish on PR
+    name: Publish
+    if: github.event_name == 'pull_request'
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_publish.yaml@all
+    secrets: inherit
