@@ -1,8 +1,8 @@
-name: On Pull Request
-
 # On pull_request, we:
-# * always publish to Charmhub at latest/edge/PR-<number>
 # * always run tests
+# * always publish to Charmhub at latest/edge/PR-<number>
+
+name: On Pull Request
 
 on:
   pull_request:
@@ -14,5 +14,5 @@ jobs:
 
   publish:
     name: Publish
-    needs: quality-checks
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/_publish.yaml@all
+    secrets: inherit

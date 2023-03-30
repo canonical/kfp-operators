@@ -1,8 +1,8 @@
-name: On Push
-
 # On push to main or track/** branch, we:
-# * always publish to Charmhub at latest/edge/PR-<number>
 # * always run tests
+# * publish to Charmhub at latest/edge/PR-<number> if tests pass
+
+name: On Push
 
 on:
   push:
