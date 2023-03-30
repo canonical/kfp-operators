@@ -1,21 +1,27 @@
 name: On Pull Request
 
 # On pull_request, we:
-# * always publish to charmhub at latest/edge/branchname
+# * always publish to Charmhub at latest/edge/PR-<number>
 # * always run tests
 
 on:
   pull_request:
 
 jobs:
-
-  tests:
-    name: Run Tests
-    uses: ./.github/workflows/integrate.yaml
+  pull-request:
+    strategy:
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/pull-request-template.yaml@all
     secrets: inherit
-
-  # publish runs in parallel with tests, as we always publish in this situation
-  publish-charm:
-    name: Publish Charm
-    uses: ./.github/workflows/publish.yaml
-    secrets: inherit
+    with:
+      charm-path: ./charms/${{ matrix.charm }}
+      charm-name: ${{ matrix.charm }}
+      run-bundle: true

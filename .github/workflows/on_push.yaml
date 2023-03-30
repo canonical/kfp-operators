@@ -1,11 +1,8 @@
 name: On Push
 
-# On push to a "special" branch, we:
-# * always publish to charmhub at latest/edge/branchname
+# On push to main or track/** branch, we:
+# * always publish to Charmhub at latest/edge/PR-<number>
 # * always run tests
-# where a "special" branch is one of main or track/**, as
-# by convention these branches are the source for a corresponding
-# charmhub edge channel.
 
 on:
   push:
@@ -14,15 +11,20 @@ on:
     - track/**
 
 jobs:
-
-  tests:
-    name: Run Tests
-    uses: ./.github/workflows/integrate.yaml
+  on-push:
+    strategy:
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/push-template.yaml@all
     secrets: inherit
-
-  # publish runs in series with tests, and only publishes if tests passes
-  publish-charm:
-    name: Publish Charm
-    needs: tests
-    uses: ./.github/workflows/publish.yaml
-    secrets: inherit
+    with:
+      charm-path: ./charms/${{ matrix.charm }}
+      charm-name: ${{ matrix.charm }}
+      run-bundle: true
