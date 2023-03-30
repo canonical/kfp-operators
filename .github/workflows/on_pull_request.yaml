@@ -9,7 +9,6 @@ on:
 
 jobs:
   tests:
-    name: CI
     uses: ./.github/workflows/_ci.yaml
 
   publish:
