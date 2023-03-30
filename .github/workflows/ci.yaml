@@ -7,6 +7,11 @@ on:
     - main
     - track/**
 
+# kill all previous jobs in the same branch if new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality-checks:
     name: Quality Checks
