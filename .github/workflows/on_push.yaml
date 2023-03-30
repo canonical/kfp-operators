@@ -30,7 +30,7 @@ jobs:
       charm-name: ${{ inputs.charm-name }}
 
   unit-tests:
-    Name: Unit Tests
+    name: Unit Tests
     strategy:
       matrix:
         charm:
@@ -47,7 +47,7 @@ jobs:
       charm-name: ${{ matrix.charm }}
 
   integration-tests:
-    Name: Integration Tests
+    name: Integration Tests
     needs: quality-checks
     strategy:
       matrix:
