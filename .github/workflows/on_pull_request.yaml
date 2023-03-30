@@ -22,8 +22,8 @@ jobs:
           - kfp-viz
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@all
     with:
-      charm-path: ./charms/${{ inputs.charm-path }}
-      charm-name: ${{ inputs.charm-name }}
+      charm-path: ./charms/${{ matrix.charm }}
+      charm-name: ${{ matrix.charm }}
 
   unit-tests:
     name: Unit Tests
