@@ -8,62 +8,11 @@ on:
   pull_request:
 
 jobs:
-  quality-checks:
-    name: Quality Checks
-    strategy:
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@all
-    with:
-      charm-path: ./charms/${{ matrix.charm }}
-      charm-name: ${{ matrix.charm }}
-
-  unit-tests:
-    name: Unit Tests
-    strategy:
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_unit-tests.yaml@all
-    secrets: inherit
-    with:
-      charm-name: ${{ matrix.charm }}
-
-  integration-tests:
-    name: Integration Tests
-    needs: quality-checks
-    strategy:
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-profile-controller
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_integration-tests.yaml@all
-    secrets: inherit
-    with:
-      charm-name: ${{ matrix.charm }}
-
-  bundle-tests:
-    name: Bundle Tests
-    needs: quality-checks
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@all
-    with:
-      charm-name: ${{ inputs.charm-name }}
+  tests:
+    name: CI
+    uses: ./.github/workflows/_ci.yaml
 
   publish:
     name: Publish
     needs: quality-checks
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/_publish.yaml@all
-    secrets: inherit
