@@ -7,7 +7,7 @@ on:
     - main
     - track/**
 
-# kill all previous jobs in the same branch if new commits are pushed
+# cancel all previous jobs in the same branch if new commits are pushed
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -49,7 +49,7 @@ jobs:
 
   integration-tests:
     name: Integration Tests
-    needs: quality-checks
+    needs: [quality-checks, unit-tests]
     strategy:
       matrix:
         charm:
@@ -60,13 +60,13 @@ jobs:
     with:
       charm-name: ${{ matrix.charm }}
 
-  bundle-tests:
-    name: Bundle Tests
-    needs: quality-checks
+  e2e-tests:
+    name: E2E Tests
+    needs: [quality-checks, unit-tests]
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@all
 
   publish-on-success:
-    # only publish on push to main or track/** and if all tests pass
+    # publish on push to main or track/** only if all tests pass
     name: Publish on Success
     if: github.event_name == 'push'
     needs: [quality-checks, unit-tests, integration-tests, bundle-tests]
@@ -74,8 +74,9 @@ jobs:
     secrets: inherit
 
   publish:
-    # always publish on PR
+    # publish on PR if unittests and quality checks pass
     name: Publish
+    needs: [quality-checks, unit-tests]
     if: github.event_name == 'pull_request'
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/_publish.yaml@all
     secrets: inherit
