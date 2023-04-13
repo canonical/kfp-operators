@@ -9,7 +9,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: gcr.io/ml-pipeline/visualization-server:2.0.0-alpha.6
+    upstream-source: gcr.io/ml-pipeline/visualization-server:2.0.0-alpha.7
 provides:
   kfp-viz:
     interface: k8s-service

@@ -31,7 +31,7 @@ CONTROLLER_PORT = 80
 # TODO: This sets the version of the images deployed to each namespace (value comes from the
 #  upstream configMap pipeline-install-config's appVersion entry).  Normal pattern would
 #  set this in metadata but this is different here.  Should this be exposed differently?
-KFP_IMAGES_VERSION = "2.0.0-alpha.6"
+KFP_IMAGES_VERSION = "2.0.0-alpha.7"
 
 # Note: Istio destinationrule/auth have been manually disabled in sync.py.  Need a better
 # solution for this in future
@@ -275,7 +275,7 @@ class KfpProfileControllerOperator(CharmBase):
         except ValidationError as val_error:
             # Validation in .get_data() ensures if data is populated, it matches the schema and is
             # not incomplete
-            self.log.error(val_error)
+            self.log.exception(val_error)
             raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
                 BlockedStatus,

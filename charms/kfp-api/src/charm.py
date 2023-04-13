@@ -294,6 +294,63 @@ class KfpApiOperator(CharmBase):
             raise ErrorWithStatus(str(err), BlockedStatus)
         return interfaces
 
+    def _get_mysql(self):
+        """Returns mysql relation data from the relation with a mysql database.
+
+        Raises:
+            CheckFailed(..., BlockedStatus) if there is no mysql relation
+            CheckFailed(..., WaitingStatus) if The remove unit has not joined the relation
+            CheckFailed(..., WaitingStatus) if the relation data bag is empty
+        """
+        mysql_relation = self.model.get_relation("mysql")
+
+        # Raise exception and stop execution if the mysql relation is not established
+        if not mysql_relation:
+            raise CheckFailedError("Add mysql relation", BlockedStatus)
+
+        if not mysql_relation.units:
+            raise CheckFailedError("Waiting for remote unit to join relation", WaitingStatus)
+
+        if not mysql_relation.data:
+            raise CheckFailedError("There is no data in the mysql relation", WaitingStatus)
+
+        # This charm should only establish a relation with exactly one unit
+        # the following extracts exactly one unit from the set that's
+        # returned by mysql_relation.data
+        units = mysql_relation.units
+        kfp_db_unit = list(units)[0]
+
+        # Get mysql relation data
+        mysql_relation_data = mysql_relation.data[kfp_db_unit]
+
+        # Check if the relation data contains the expected attributes
+        # mysql_relation_data may contain more than these attributes, but
+        # we are interested in the data bag containing at least the following:
+        expected_attributes = ["database", "host", "root_password", "port"]
+        missing_attributes = [
+            attribute for attribute in expected_attributes if attribute not in mysql_relation_data
+        ]
+
+        if missing_attributes:
+            self.log.error(
+                f"mysql relation data missing expected attributes '{missing_attributes}'"
+            )
+            raise CheckFailedError(
+                "Received incomplete data from mysql relation.  See logs", BlockedStatus
+            )
+        return mysql_relation_data
+
+    def _get_object_storage(self, interfaces):
+        relation_name = "object-storage"
+        return self._validate_sdi_interface(interfaces, relation_name)
+
+    def _get_viz(self, interfaces):
+        relation_name = "kfp-viz"
+        default_viz_data = {"service-name": "unset", "service-port": "1234"}
+        return self._validate_sdi_interface(
+            interfaces, relation_name, default_return=default_viz_data
+        )
+
     def _validate_sdi_interface(self, interfaces: dict, relation_name: str, default_return=None):
         """Validates data received from SerializedDataInterface, returning the data if valid.
 

@@ -16,5 +16,5 @@ To test grafana and prometheus integration:
 * test prometheus connection: http://PROMETHEUS_IP_ADDRESS:9090
 
 To set the prometheus scrape interval:
-* deploy the scrape-config charm with `juju deploy prometheus-scrape-config-k8s scrape-interval-config --config scrape_interval=20s --channel beta`
+* deploy the scrape-config charm with `juju deploy prometheus-scrape-config-k8s scrape-interval-config --config scrape_interval=20s --channel stable`
 * relate it to kfp-api and prometheus-k8s
