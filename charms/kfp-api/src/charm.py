@@ -289,40 +289,50 @@ class KfpApiOperator(CharmBase):
         return interfaces
 
     def _get_mysql(self):
-        mysql = self.model.relations["mysql"]
-        if len(mysql) == 0:
-            raise CheckFailedError("Missing required relation for mysql", BlockedStatus)
-        elif len(mysql) > 1:
-            raise CheckFailedError("Too many mysql relations", BlockedStatus)
+        """Returns mysql relation data from the relation with a mysql database.
 
-        try:
-            mysql = mysql[0]
-            unit = list(mysql.units)[0]
-            mysql = mysql.data[unit]
-        except Exception as e:
-            self.log.error(
-                f"Encountered the following exception when parsing mysql relation: " f"{str(e)}"
-            )
-            raise CheckFailedError(
-                "Unexpected error when parsing mysql relation.  See logs", BlockedStatus
-            )
+        Raises:
+            CheckFailed(..., BlockedStatus) if there is no mysql relation
+            CheckFailed(..., WaitingStatus) if The remove unit has not joined the relation
+            CheckFailed(..., WaitingStatus) if the relation data bag is empty
+        """
+        mysql_relation = self.model.get_relation("mysql")
 
+        # Raise exception and stop execution if the mysql relation is not established
+        if not mysql_relation:
+            raise CheckFailedError("Add mysql relation", BlockedStatus)
+
+        if not mysql_relation.units:
+            raise CheckFailedError("Waiting for remote unit to join relation", WaitingStatus)
+
+        if not mysql_relation.data:
+            raise CheckFailedError("There is no data in the mysql relation", WaitingStatus)
+
+        # This charm should only establish a relation with exactly one unit
+        # the following extracts exactly one unit from the set that's
+        # returned by mysql_relation.data
+        units = mysql_relation.units
+        kfp_db_unit = list(units)[0]
+
+        # Get mysql relation data
+        mysql_relation_data = mysql_relation.data[kfp_db_unit]
+
+        # Check if the relation data contains the expected attributes
+        # mysql_relation_data may contain more than these attributes, but
+        # we are interested in the data bag containing at least the following:
         expected_attributes = ["database", "host", "root_password", "port"]
-
         missing_attributes = [
-            attribute for attribute in expected_attributes if attribute not in mysql
+            attribute for attribute in expected_attributes if attribute not in mysql_relation_data
         ]
 
-        if len(missing_attributes) == len(expected_attributes):
-            raise CheckFailedError("Waiting for mysql relation data", WaitingStatus)
-        elif len(missing_attributes) > 0:
+        if missing_attributes:
             self.log.error(
                 f"mysql relation data missing expected attributes '{missing_attributes}'"
             )
             raise CheckFailedError(
                 "Received incomplete data from mysql relation.  See logs", BlockedStatus
             )
-        return mysql
+        return mysql_relation_data
 
     def _get_object_storage(self, interfaces):
         relation_name = "object-storage"
@@ -375,7 +385,7 @@ class KfpApiOperator(CharmBase):
         except ValidationError as val_error:
             # Validation in .get_data() ensures if data is populated, it matches the schema and is
             # not incomplete
-            self.log.error(val_error)
+            self.log.exception(val_error)
             raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
                 BlockedStatus,
