@@ -1,3 +1,6 @@
+charmed-kubeflow-chisme
+lightkube
+lightkube-models
 ops
 oci-image
 serialized-data-interface<0.4
