@@ -29,7 +29,6 @@ class TestCharm:
     """Test class for KfamApiOperatir."""
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
-
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_not_leader(self, k8s_resource_handler: MagicMock, harness: Harness):
         harness.begin_with_initial_hooks()
