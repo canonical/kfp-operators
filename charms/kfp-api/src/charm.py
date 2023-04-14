@@ -212,7 +212,7 @@ class KfpApiOperator(CharmBase):
                 "Host": f"{os['service']}.{os['namespace']}",
                 "Multipart": {"Disable": "true"},
                 "PipelinePath": "pipelines",
-                "Port": f"{os['port']}",
+                "Port": str(os["port"]),
                 "Region": "",
                 "SecretAccessKey": os["secret-key"],
                 "Secure": str(os["secure"]).lower(),
