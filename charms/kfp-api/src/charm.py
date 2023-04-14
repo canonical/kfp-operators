@@ -250,19 +250,20 @@ class KfpApiOperator(CharmBase):
         except ErrorWithStatus as error:
             self.model.unit.status = error.status
             raise error
+        config_dir = Path(f"{CONFIG_DIR}")
         try:
             with open("src/sample_config.json", "r") as sample_config:
                 file_content = sample_config.read()
-                sample_config_path = Path(f"{CONFIG_DIR}/{SAMPLE_CONFIG}")
-                self.container.push(sample_config_path, file_content, make_dirs=True)
+                sample_config = config_dir/f"{SAMPLE_CONFIG}"
+                self.container.push(sample_config, file_content, make_dirs=True)
         except ErrorWithStatus as error:
             self.logger.error("Failed to upload sample config to container.")
             raise error
         try:
             file_content = json.dumps(config_json)
             # no need to add `.json` extension to config file, it is detected automatically
-            config_path = Path(f"{CONFIG_DIR}/config")
-            self.container.push(config_path, file_content, make_dirs=True)
+            config = config_dir/"config"
+            self.container.push(config, file_content, make_dirs=True)
         except ErrorWithStatus as error:
             self.logger.error("Failed to upload config to container.")
             raise error

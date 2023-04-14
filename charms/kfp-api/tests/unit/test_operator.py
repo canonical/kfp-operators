@@ -26,7 +26,7 @@ def harness() -> Harness:
 
 
 class TestCharm:
-    """Test class for KfamApiOperatir."""
+    """Test class for KfamApiOperator."""
 
     @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
