@@ -443,7 +443,7 @@ class KfpApiOperator(CharmBase):
 
         if len(missing_attributes) == len(expected_attributes):
             raise ErrorWithStatus("Waiting for mysql relation data", WaitingStatus)
-        elif len(missing_attributes) > 0:
+        elif missing_attributes:
             self.logger.error(
                 f"mysql relation data missing expected attributes '{missing_attributes}'"
             )
