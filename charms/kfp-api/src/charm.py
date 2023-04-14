@@ -429,7 +429,7 @@ class KfpApiOperator(CharmBase):
             mysql = mysql.data[unit]
         except Exception as e:
             self.logger.error(
-                f"Encountered the following exception when parsing mysql relation: " f"{str(e)}"
+                f"Encountered the following exception when parsing mysql relation: {e}"
             )
             raise ErrorWithStatus(
                 "Unexpected error when parsing mysql relation. See logs", BlockedStatus
