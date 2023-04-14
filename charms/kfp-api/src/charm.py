@@ -414,25 +414,15 @@ class KfpApiOperator(CharmBase):
     def _get_object_storage(self, interfaces):
         """Retrieve object-storage relation data."""
         relation_name = "object-storage"
-        object_storage_data = None
-        try:
-            object_storage_data = self._validate_sdi_interface(interfaces, relation_name)
-        except ErrorWithStatus as error:
-            raise error
-        return object_storage_data
+        return self._validate_sdi_interface(interfaces, relation_name)
 
     def _get_viz(self, interfaces):
         """Retrieve kfp-viz relation data, return default, if empty."""
         relation_name = "kfp-viz"
         default_viz_data = {"service-name": "unset", "service-port": "1234"}
-        kfp_viz_data = None
-        try:
-            kfp_viz_data = self._validate_sdi_interface(
-                interfaces, relation_name, default_return=default_viz_data
-            )
-        except ErrorWithStatus as error:
-            raise error
-        return kfp_viz_data
+        return self._validate_sdi_interface(
+            interfaces, relation_name, default_return=default_viz_data
+        )
 
     def _check_leader(self):
         """Check if this unit is a leader."""
