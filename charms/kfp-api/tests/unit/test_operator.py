@@ -131,11 +131,14 @@ class TestCharm:
         harness.begin()
         harness.container_pebble_ready("ml-pipeline-api-server")
 
-        default_viz_data = {"service-name": "unset", "service-port": "1234"}
-
-        # Could mock this away, but looked complicated
+        # check for correct error message when retrieving missing relation data
         interfaces = harness.charm._get_interfaces()
-        assert harness.charm._get_viz(interfaces) == default_viz_data
+
+        with pytest.raises(ErrorWithStatus) as missing_relation:
+            harness.charm._get_viz(interfaces)
+        assert missing_relation.value.status == BlockedStatus(
+            "Please add required relation kfp-viz"
+        )
 
     @pytest.mark.parametrize(
         "relation_name,relation_data,expected_returned_data,expected_raises,expected_status",
@@ -345,6 +348,15 @@ class TestCharm:
         os_rel_id = harness.add_relation("object-storage", "storage-provider")
         harness.add_relation_unit(os_rel_id, "storage-provider/0")
         harness.update_relation_data(os_rel_id, "storage-provider", os_data)
+
+        # kfp-viz relation
+        kfp_viz_data = {
+            "_supported_versions": "- v1",
+            "data": yaml.dump({"service-name": "unset", "service-port": "1234"}),
+        }
+        kfp_viz_id = harness.add_relation("kfp-viz", "kfp-viz")
+        harness.add_relation_unit(kfp_viz_id, "kfp-viz/0")
+        harness.update_relation_data(kfp_viz_id, "kfp-viz", kfp_viz_data)
 
         # example kfp-api provider relation
         kfpapi_data = {

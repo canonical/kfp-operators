@@ -184,15 +184,10 @@ class KfpApiOperator(CharmBase):
         config = self.model.config
         try:
             mysql = self._get_mysql()
-        except ErrorWithStatus as error:
-            raise error
-        try:
             os = self._get_object_storage(interfaces)
-        except ErrorWithStatus as error:
-            raise error
-        try:
             viz = self._get_viz(interfaces)
         except ErrorWithStatus as error:
+            self.logger.error("Failed to generate container configuration.")
             raise error
 
         # at this point all data is correctly populated and proper config can be generated
@@ -419,10 +414,7 @@ class KfpApiOperator(CharmBase):
     def _get_viz(self, interfaces):
         """Retrieve kfp-viz relation data, return default, if empty."""
         relation_name = "kfp-viz"
-        default_viz_data = {"service-name": "unset", "service-port": "1234"}
-        return self._validate_sdi_interface(
-            interfaces, relation_name, default_return=default_viz_data
-        )
+        return self._validate_sdi_interface(interfaces, relation_name)
 
     def _check_leader(self):
         """Check if this unit is a leader."""
