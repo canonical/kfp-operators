@@ -34,7 +34,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
         application_name=APP_NAME,
         resources=resources,
         trust=True,
-        series="kubernetes",
     )
 
     await ops_test.model.deploy(
