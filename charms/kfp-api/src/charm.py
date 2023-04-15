@@ -262,7 +262,7 @@ class KfpApiOperator(CharmBase):
         try:
             file_content = json.dumps(config_json)
             # no need to add `.json` extension to config file, it is detected automatically
-            config = config_dir / "config"
+            config = CONFIG_DIR / "config"
             self.container.push(config, file_content, make_dirs=True)
         except ErrorWithStatus as error:
             self.logger.error("Failed to upload config to container.")
