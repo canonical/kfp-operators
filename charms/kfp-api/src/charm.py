@@ -34,7 +34,7 @@ from serialized_data_interface import (
 )
 
 CONFIG_DIR = Path("/config")
-SAMPLE_CONFIG = CONFIG_DIR  / "sample_config.json"
+SAMPLE_CONFIG = CONFIG_DIR / "sample_config.json"
 METRICS_PATH = "/metrics"
 PROBE_PATH = "/apis/v1beta1/healthz"
 
