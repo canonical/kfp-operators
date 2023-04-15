@@ -250,7 +250,6 @@ class KfpApiOperator(CharmBase):
         except ErrorWithStatus as error:
             self.model.unit.status = error.status
             raise error
-        config_dir = Path(f"{CONFIG_DIR}")
         try:
             with open("src/sample_config.json", "r") as sample_config:
                 file_content = sample_config.read()
