@@ -253,7 +253,6 @@ class KfpApiOperator(CharmBase):
         try:
             with open("src/sample_config.json", "r") as sample_config:
                 file_content = sample_config.read()
-                sample_config = config_dir / f"{SAMPLE_CONFIG}"
                 self.container.push(sample_config, file_content, make_dirs=True)
         except ErrorWithStatus as error:
             self.logger.error("Failed to upload sample config to container.")
