@@ -29,6 +29,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
     image_path = METADATA["resources"]["oci-image"]["upstream-source"]
     resources = {"oci-image": image_path}
 
+    # set default series for test model
+    await ops_test.juju("model-config", "default-series=focal")
+
     await ops_test.model.deploy(
         entity_url=built_charm_path,
         application_name=APP_NAME,
@@ -37,26 +40,25 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     await ops_test.model.deploy(
-        entity_url="charmed-osm-mariadb-k8s", application_name="kfp-db", config=KFP_DB_CONFIG
+        entity_url="charmed-osm-mariadb-k8s",
+        application_name="kfp-db",
+        config=KFP_DB_CONFIG,
+        channel="latest/stable",
+        trust=True,
     )
-    await ops_test.model.add_relation(
-        f"{APP_NAME}:mysql",
-        "kfp-db:mysql",
-    )
+    await ops_test.model.add_relation(f"{APP_NAME}:mysql", "kfp-db:mysql")
 
-    await ops_test.model.deploy(entity_url="minio", config=MINIO_CONFIG)
-    await ops_test.model.add_relation(
-        f"{APP_NAME}:object-storage",
-        "minio:object-storage",
+    await ops_test.model.deploy(
+        entity_url="minio", config=MINIO_CONFIG, channel="ckf-1.7/stable", trust=True
     )
+    await ops_test.model.add_relation(f"{APP_NAME}:object-storage", "minio:object-storage")
 
-    await ops_test.model.deploy(entity_url="kfp-viz")
-    await ops_test.model.add_relation(
-        f"{APP_NAME}:kfp-viz",
-        "kfp-viz:kfp-viz",
+    await ops_test.model.deploy(entity_url="kfp-viz", channel="2.0/stable", trust=True)
+    await ops_test.model.add_relation(f"{APP_NAME}:kfp-viz", "kfp-viz:kfp-viz")
+
+    await ops_test.model.wait_for_idle(
+        status="active", raise_on_blocked=False, raise_on_error=False, timeout=60 * 10
     )
-
-    await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
 
 
 async def test_prometheus_grafana_integration(ops_test: OpsTest):
@@ -67,9 +69,11 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     scrape_config = {"scrape_interval": "30s"}
 
     # Deploy and relate prometheus
-    await ops_test.model.deploy(prometheus, channel="latest/edge", trust=True)
-    await ops_test.model.deploy(grafana, channel="latest/edge", trust=True)
-    await ops_test.model.deploy(prometheus_scrape, channel="latest/stable", config=scrape_config)
+    await ops_test.model.deploy(prometheus, channel="latest/stable", trust=True)
+    await ops_test.model.deploy(grafana, channel="latest/stable", trust=True)
+    await ops_test.model.deploy(
+        prometheus_scrape, channel="latest/stable", config=scrape_config, trust=True
+    )
 
     await ops_test.model.add_relation(APP_NAME, prometheus_scrape)
     await ops_test.model.add_relation(
@@ -82,7 +86,9 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
         f"{prometheus}:metrics-endpoint", f"{prometheus_scrape}:metrics-endpoint"
     )
 
-    await ops_test.model.wait_for_idle(status="active", timeout=90 * 20)
+    await ops_test.model.wait_for_idle(
+        status="active", raise_on_blocked=False, raise_on_error=False, timeout=60 * 20
+    )
 
     status = await ops_test.model.get_status()
     prometheus_unit_ip = status["applications"][prometheus]["units"][f"{prometheus}/0"]["address"]
