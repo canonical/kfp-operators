@@ -33,8 +33,8 @@ from serialized_data_interface import (
     get_interfaces,
 )
 
-CONFIG_DIR = "/config"
-SAMPLE_CONFIG = "sample_config.json"
+CONFIG_DIR = Path("/config")
+SAMPLE_CONFIG = CONFIG_DIR  / "sample_config.json"
 METRICS_PATH = "/metrics"
 PROBE_PATH = "/apis/v1beta1/healthz"
 
