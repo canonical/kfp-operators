@@ -59,7 +59,7 @@ class KfpApiOperator(CharmBase):
         self._exec_command = (
             "/bin/apiserver "
             f"--config={CONFIG_DIR} "
-            f"--sampleconfig={CONFIG_DIR}/{SAMPLE_CONFIG} "
+            f"--sampleconfig={SAMPLE_CONFIG} "
             "-logtostderr=true "
         )
         self._container_name = "ml-pipeline-api-server"
