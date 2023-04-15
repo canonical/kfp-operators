@@ -403,3 +403,31 @@ class TestCharm:
         # there should be 1 environment variable
         assert 1 == len(test_env)
         assert "test_model" == test_env["POD_NAMESPACE"]
+
+    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    @patch("charm.KfpApiOperator._check_status")
+    @patch("charm.KfpApiOperator._generate_config")
+    @patch("charm.KfpApiOperator._upload_files_to_container")
+    def test_update_status(
+        self,
+        _apply_k8s_resources: MagicMock,
+        _check_status: MagicMock,
+        _generate_config: MagicMock,
+        _upload_files_to_conainer: MagicMock,
+        harness: Harness,
+    ):
+        """Test update status handler."""
+        harness.set_leader(True)
+        harness.begin_with_initial_hooks()
+        harness.container_pebble_ready("ml-pipeline-api-server")
+
+        # test successful update status
+        _apply_k8s_resources.reset_mock()
+        _upload_files_to_conainer.reset_mock()
+        harness.charm.on.update_status.emit()
+        # this will enforce the design in which resources are not altered in update-status handler
+        _apply_k8s_resources.assert_not_called()
+        _upload_files_to_conainer.assert_not_called()
+        # check status should be called
+        _check_status.assert_called()
