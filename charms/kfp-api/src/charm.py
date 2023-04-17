@@ -262,7 +262,7 @@ class KfpApiOperator(CharmBase):
                 raise GenericCharmRuntimeError(
                     "Failed to run health check on workload container"
                 ) from error
-                
+
             if check.status != CheckStatus.UP:
                 self.logger.error(
                     f"Container {self._container_name} failed health check. It will be restarted."
