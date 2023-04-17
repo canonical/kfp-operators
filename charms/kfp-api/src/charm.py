@@ -503,11 +503,13 @@ class KfpApiOperator(CharmBase):
 
     def _on_update_status(self, _):
         """Update status actions."""
-        self._check_leader()
         try:
             self._check_status()
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
+            self.logger.error(f"Failed update status with error: {err}")
+            return
+        self.model.unit.status = ActiveStatus()
 
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         # Set up all relations/fetch required data
