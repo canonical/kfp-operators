@@ -268,8 +268,7 @@ class KfpApiOperator(CharmBase):
                     f"Container {self._container_name} failed health check. It will be restarted."
                 )
                 raise ErrorWithStatus("Workload failed health check", MaintenanceStatus)
-            else:
-                self.model.unit.status = ActiveStatus()
+            self.model.unit.status = ActiveStatus()
 
     def _upload_files_to_container(self, config_json):
         """Upload required files to container."""
