@@ -87,7 +87,6 @@ class KfpApiOperator(CharmBase):
         self.service_patcher = KubernetesServicePatch(
             self,
             [grpc_port, http_port],
-            service_name=f"{self.model.app.name}",
         )
 
         # setup events to be handled by main event handler
