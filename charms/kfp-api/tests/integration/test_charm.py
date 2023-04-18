@@ -57,7 +57,12 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.add_relation(f"{APP_NAME}:kfp-viz", "kfp-viz:kfp-viz")
 
     await ops_test.model.wait_for_idle(
-        status="active", raise_on_blocked=False, raise_on_error=False, timeout=60 * 10
+        apps=[APP_NAME, "kfp-viz", "kfp-db", "minio"],
+        status="active",
+        raise_on_blocked=False,
+        raise_on_error=False,
+        timeout=60 * 10,
+        idle_period=120,
     )
 
 
@@ -87,7 +92,12 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     )
 
     await ops_test.model.wait_for_idle(
-        status="active", raise_on_blocked=False, raise_on_error=False, timeout=60 * 20
+        apps=["grafana-k8s", "prometheus-k8s", "prometheus-scrape-config-k8s"],
+        status="active",
+        raise_on_blocked=False,
+        raise_on_error=False,
+        timeout=60 * 20,
+        idle_period=60,
     )
 
     status = await ops_test.model.get_status()

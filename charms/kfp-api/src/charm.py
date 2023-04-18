@@ -87,7 +87,6 @@ class KfpApiOperator(CharmBase):
         self.service_patcher = KubernetesServicePatch(
             self,
             [grpc_port, http_port],
-            service_name=f"{self.model.app.name}",
         )
 
         # setup events to be handled by main event handler
@@ -170,9 +169,9 @@ class KfpApiOperator(CharmBase):
             "checks": {
                 "kfp-api-up": {
                     "override": "replace",
-                    "period": "30s",
-                    "timeout": "20s",
-                    "threshold": 4,
+                    "period": "5m",
+                    "timeout": "30s",
+                    "threshold": 2,
                     "http": {"url": f"http://localhost:{self.config['http-port']}{PROBE_PATH}"},
                 }
             },
@@ -257,13 +256,14 @@ class KfpApiOperator(CharmBase):
         container = self.unit.get_container(self._container_name)
         if container:
             try:
+                # verify if container is alive/up
                 check = container.get_check("kfp-api-up")
             except ModelError as error:
                 raise GenericCharmRuntimeError(
                     "Failed to run health check on workload container"
                 ) from error
 
-            if check.status != CheckStatus.UP:
+            if check.status == CheckStatus.DOWN:
                 self.logger.error(
                     f"Container {self._container_name} failed health check. It will be restarted."
                 )
@@ -509,6 +509,7 @@ class KfpApiOperator(CharmBase):
             self.model.unit.status = err.status
             self.logger.error(f"Failed update status with error: {err}")
             return
+
         self.model.unit.status = ActiveStatus()
 
     def _on_event(self, event, force_conflicts: bool = False) -> None:
