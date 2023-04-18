@@ -170,8 +170,8 @@ class KfpApiOperator(CharmBase):
                 "kfp-api-up": {
                     "override": "replace",
                     "period": "5m",
-                    "timeout": "30s",
-                    "threshold": 2,
+                    "timeout": "60s",
+                    "threshold": 3,
                     "http": {"url": f"http://localhost:{self.config['http-port']}{PROBE_PATH}"},
                 }
             },
