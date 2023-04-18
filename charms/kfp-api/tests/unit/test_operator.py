@@ -28,7 +28,7 @@ def harness() -> Harness:
 class TestCharm:
     """Test class for KfamApiOperator."""
 
-    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_not_leader(self, k8s_resource_handler: MagicMock, harness: Harness):
         harness.begin_with_initial_hooks()
@@ -78,7 +78,7 @@ class TestCharm:
             ),
         ),
     )
-    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
     def test_mysql_relation(
         self,
         relation_data,
@@ -108,7 +108,7 @@ class TestCharm:
         with does_not_raise():
             harness.charm._get_mysql()
 
-    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
     def test_mysql_relation_too_many_relations(self, harness: Harness):
         harness.set_leader(True)
         harness.begin()
@@ -126,7 +126,7 @@ class TestCharm:
             harness.charm._get_mysql()
         assert too_many_relations.value.status == BlockedStatus("Too many mysql relations")
 
-    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
     def test_kfp_viz_relation_missing(self, harness: Harness):
         harness.set_leader(True)
         harness.begin()
@@ -274,7 +274,7 @@ class TestCharm:
             ),
         ),
     )
-    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
     def test_relations_that_provide_data(
         self,
         relation_name,
@@ -304,7 +304,7 @@ class TestCharm:
         else:
             assert partial_relation_data.value.status == expected_status
 
-    @patch("charm.KubernetesServicePatch", lambda x, y, service_name: None)
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_install_with_all_inputs_and_pebble(
         self,
@@ -403,3 +403,31 @@ class TestCharm:
         # there should be 1 environment variable
         assert 1 == len(test_env)
         assert "test_model" == test_env["POD_NAMESPACE"]
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    @patch("charm.KfpApiOperator._check_status")
+    @patch("charm.KfpApiOperator._generate_config")
+    @patch("charm.KfpApiOperator._upload_files_to_container")
+    def test_update_status(
+        self,
+        _apply_k8s_resources: MagicMock,
+        _check_status: MagicMock,
+        _generate_config: MagicMock,
+        _upload_files_to_conainer: MagicMock,
+        harness: Harness,
+    ):
+        """Test update status handler."""
+        harness.set_leader(True)
+        harness.begin_with_initial_hooks()
+        harness.container_pebble_ready("ml-pipeline-api-server")
+
+        # test successful update status
+        _apply_k8s_resources.reset_mock()
+        _upload_files_to_conainer.reset_mock()
+        harness.charm.on.update_status.emit()
+        # this will enforce the design in which resources are not altered in update-status handler
+        _apply_k8s_resources.assert_not_called()
+        _upload_files_to_conainer.assert_not_called()
+        # check status should be called
+        _check_status.assert_called()

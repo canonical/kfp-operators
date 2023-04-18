@@ -24,8 +24,15 @@ from lightkube.generic_resource import load_in_cluster_generic_resources
 from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, Container, MaintenanceStatus, WaitingStatus
-from ops.pebble import Layer
+from ops.model import (
+    ActiveStatus,
+    BlockedStatus,
+    Container,
+    MaintenanceStatus,
+    ModelError,
+    WaitingStatus,
+)
+from ops.pebble import CheckStatus, Layer
 from serialized_data_interface import (
     NoCompatibleVersions,
     NoVersionsListed,
@@ -80,7 +87,6 @@ class KfpApiOperator(CharmBase):
         self.service_patcher = KubernetesServicePatch(
             self,
             [grpc_port, http_port],
-            service_name=f"{self.model.app.name}",
         )
 
         # setup events to be handled by main event handler
@@ -100,6 +106,7 @@ class KfpApiOperator(CharmBase):
         self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.upgrade_charm, self._on_upgrade)
         self.framework.observe(self.on.remove, self._on_remove)
+        self.framework.observe(self.on.update_status, self._on_update_status)
 
         self.prometheus_provider = MetricsEndpointProvider(
             charm=self,
@@ -162,9 +169,9 @@ class KfpApiOperator(CharmBase):
             "checks": {
                 "kfp-api-up": {
                     "override": "replace",
-                    "period": "30s",
-                    "timeout": "20s",
-                    "threshold": 4,
+                    "period": "5m",
+                    "timeout": "60s",
+                    "threshold": 3,
                     "http": {"url": f"http://localhost:{self.config['http-port']}{PROBE_PATH}"},
                 }
             },
@@ -242,6 +249,26 @@ class KfpApiOperator(CharmBase):
         """
         if not container.can_connect():
             raise ErrorWithStatus("Pod startup is not complete", MaintenanceStatus)
+
+    def _check_status(self):
+        """Check status of workload and set status accordingly."""
+        self._check_leader()
+        container = self.unit.get_container(self._container_name)
+        if container:
+            try:
+                # verify if container is alive/up
+                check = container.get_check("kfp-api-up")
+            except ModelError as error:
+                raise GenericCharmRuntimeError(
+                    "Failed to run health check on workload container"
+                ) from error
+
+            if check.status == CheckStatus.DOWN:
+                self.logger.error(
+                    f"Container {self._container_name} failed health check. It will be restarted."
+                )
+                raise ErrorWithStatus("Workload failed health check", MaintenanceStatus)
+            self.model.unit.status = ActiveStatus()
 
     def _upload_files_to_container(self, config_json):
         """Upload required files to container."""
@@ -473,6 +500,17 @@ class KfpApiOperator(CharmBase):
                 self.logger.error(f"Failed to delete K8S resources, with error: {error}")
                 raise error
         self.unit.status = MaintenanceStatus("K8S resources removed")
+
+    def _on_update_status(self, _):
+        """Update status actions."""
+        try:
+            self._check_status()
+        except ErrorWithStatus as err:
+            self.model.unit.status = err.status
+            self.logger.error(f"Failed update status with error: {err}")
+            return
+
+        self.model.unit.status = ActiveStatus()
 
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         # Set up all relations/fetch required data
