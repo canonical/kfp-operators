@@ -18,6 +18,9 @@ requires:
   mysql:
     interface: mysql
     limit: 1
+  relational-db:
+    interface: mysql_client
+    limit: 1
   object-storage:
     interface: object-storage
     schema:

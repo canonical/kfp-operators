@@ -11,7 +11,28 @@ from ops.testing import Harness
 
 from charm import ErrorWithStatus, KfpApiOperator
 
-# TODO: Tests missing for config_changed and dropped/reloaded relations
+
+@pytest.fixture()
+def mocked_resource_handler(mocker):
+    """Yields a mocked resource handler."""
+    mocked_resource_handler = MagicMock()
+    mocked_resource_handler_factory = mocker.patch("charm.KubernetesResourceHandler")
+    mocked_resource_handler_factory.return_value = mocked_resource_handler
+    yield mocked_resource_handler
+
+
+@pytest.fixture()
+def mocked_lightkube_client(mocker, mocked_resource_handler):
+    """Prevents lightkube clients from being created, returning a mock instead."""
+    mocked_resource_handler.lightkube_client = MagicMock()
+    yield mocked_resource_handler.lightkube_client
+
+
+@pytest.fixture()
+def mocked_kubernetes_service_patcher(mocker):
+    mocked_service_patcher = mocker.patch("charm.KubernetesServicePatch")
+    mocked_service_patcher.return_value = lambda x, y: None
+    yield mocked_service_patcher
 
 
 @pytest.fixture(scope="function")
@@ -106,7 +127,7 @@ class TestCharm:
         }
         harness.update_relation_data(rel_id, mysql_unit, data)
         with does_not_raise():
-            harness.charm._get_mysql()
+            harness.charm._get_db_data()
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     def test_mysql_relation_too_many_relations(self, harness: Harness):
@@ -120,11 +141,11 @@ class TestCharm:
         rel_id = harness.add_relation("mysql", mysql_app)
         harness.add_relation_unit(rel_id, mysql_unit)
         rel_id_2 = harness.add_relation("mysql", "extra_sql")
-        harness.add_relation_unit(rel_id_2, "extra_sql/0")
-
         with pytest.raises(ErrorWithStatus) as too_many_relations:
-            harness.charm._get_mysql()
-        assert too_many_relations.value.status == BlockedStatus("Too many mysql relations")
+            harness.add_relation_unit(rel_id_2, "extra_sql/0")
+        assert too_many_relations.value.status == BlockedStatus(
+            "Too many mysql relations. Relation mysql is deprecated."
+        )
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     def test_kfp_viz_relation_missing(self, harness: Harness):
@@ -435,3 +456,111 @@ class TestCharm:
         _upload_files_to_conainer.assert_not_called()
         # check status should be called
         _check_status.assert_called()
+
+    def _get_relation_db_only_side_effect_func(self, relation):
+        """Returns relational-db relation with some data."""
+        if relation == "mysql":
+            return None
+        if relation == "relational-db":
+            return {"some-data": True}
+
+    def test_relational_db_relation_no_data(
+        self,
+        mocked_resource_handler,
+        mocked_lightkube_client,
+        mocked_kubernetes_service_patcher,
+        harness: Harness,
+    ):
+        """Test that error is raised when relational-db has empty data."""
+        database = MagicMock()
+        fetch_relation_data = MagicMock()
+        # setup empty data for library function to return
+        fetch_relation_data.return_value = {}
+        database.fetch_relation_data = fetch_relation_data
+        harness.model.get_relation = MagicMock(
+            side_effect=self._get_relation_db_only_side_effect_func
+        )
+        harness.begin()
+        harness.charm.database = database
+        with pytest.raises(ErrorWithStatus) as err:
+            harness.charm._get_db_data()
+        assert err.value.status_type(WaitingStatus)
+        assert "Waiting for relational-db data" in str(err)
+
+    def test_relational_db_relation_missing_attributes(
+        self,
+        mocked_resource_handler,
+        mocked_lightkube_client,
+        mocked_kubernetes_service_patcher,
+        harness: Harness,
+    ):
+        """Test that error is raised when relational-db has missing attributes data."""
+        database = MagicMock()
+        fetch_relation_data = MagicMock()
+        # setup empty data for library function to return
+        fetch_relation_data.return_value = {"test-db-data": {"password": "password1"}}
+        database.fetch_relation_data = fetch_relation_data
+        harness.model.get_relation = MagicMock(
+            side_effect=self._get_relation_db_only_side_effect_func
+        )
+        harness.begin()
+        harness.charm.database = database
+        with pytest.raises(ErrorWithStatus) as err:
+            harness.charm._get_db_data()
+        assert err.value.status_type(WaitingStatus)
+        assert "Incorrect/incomplete data found in relation relational-db. See logs" in str(err)
+
+    def test_relational_db_relation_bad_data(
+        self,
+        mocked_resource_handler,
+        mocked_lightkube_client,
+        mocked_kubernetes_service_patcher,
+        harness: Harness,
+    ):
+        """Test that error is raised when relational-db has bad data."""
+        database = MagicMock()
+        fetch_relation_data = MagicMock()
+        # setup bad data for library function to return
+        fetch_relation_data.return_value = {"test-db-data": {"bad": "data"}}
+        database.fetch_relation_data = fetch_relation_data
+        harness.model.get_relation = MagicMock(
+            side_effect=self._get_relation_db_only_side_effect_func
+        )
+        harness.begin()
+        harness.charm.database = database
+        with pytest.raises(ErrorWithStatus) as err:
+            harness.charm._get_db_data()
+        assert err.value.status_type(WaitingStatus)
+        assert "Incorrect/incomplete data found in relation relational-db. See logs" in str(err)
+
+    def test_relational_db_relation_with_data(
+        self,
+        mocked_resource_handler,
+        mocked_lightkube_client,
+        mocked_kubernetes_service_patcher,
+        harness: Harness,
+    ):
+        """Test that correct data is returned when data is in relational-db relation."""
+        database = MagicMock()
+        fetch_relation_data = MagicMock()
+        fetch_relation_data.return_value = {
+            "test-db-data": {
+                "endpoints": "host:1234",
+                "username": "username",
+                "password": "password",
+            }
+        }
+        database.fetch_relation_data = fetch_relation_data
+        harness.model.get_relation = MagicMock(
+            side_effect=self._get_relation_db_only_side_effect_func
+        )
+        harness.begin()
+        harness.charm.database = database
+        res = harness.charm._get_db_data()
+        for key, val in res.items():
+            assert key, val in {
+                "db_name": "mysql",
+                "db_password": "password",
+                "db_host": "host",
+                "db_port": "1234",
+            }
