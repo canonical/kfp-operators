@@ -73,7 +73,7 @@ class KfpApiOperator(CharmBase):
             "-logtostderr=true "
         )
         self._container_name = "ml-pipeline-api-server"
-        self._database_name = "mysql"
+        self._database_name = "kfp-api-db"
         self._container = self.unit.get_container(self._container_name)
 
         # setup context to be used for updating K8S resources
