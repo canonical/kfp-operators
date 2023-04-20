@@ -3,8 +3,12 @@ summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   Machine learning (ML) toolkit that is dedicated to making deployments
   of ML workflows on Kubernetes simple, portable, and scalable.
-series: [kubernetes]
-min-juju-version: "2.9.0"
+website: https://charmhub.io/kfp-api
+source: https://github.com/canonical/kfp-operators
+issues: https://github.com/canonical/kfp-operators/issues
+containers:
+  ml-pipeline-api-server:
+    resource: oci-image
 resources:
   oci-image:
     type: oci-image
@@ -13,6 +17,7 @@ resources:
 requires:
   mysql:
     interface: mysql
+    limit: 1
   object-storage:
     interface: object-storage
     schema:
