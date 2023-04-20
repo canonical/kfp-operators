@@ -310,7 +310,7 @@ class KfpApiOperator(CharmBase):
         try:
             interfaces = get_interfaces(self)
         except NoVersionsListed as err:
-            raise ErrorWithStatus(str(err), WaitingStatus)
+            raise ErrorWithStatus((err), WaitingStatus)
         except NoCompatibleVersions as err:
             raise ErrorWithStatus(str(err), BlockedStatus)
         except RelationDataError as err:
