@@ -15,7 +15,7 @@ from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRunt
 from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
 from charmed_kubeflow_chisme.lightkube.batch import delete_many
 from charmed_kubeflow_chisme.pebble import update_layer
-from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
+from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from jsonschema import ValidationError
@@ -49,6 +49,8 @@ PROBE_PATH = "/apis/v1beta1/healthz"
 K8S_RESOURCE_FILES = [
     "src/templates/auth_manifests.yaml.j2",
 ]
+MYSQL_WARNING = "Relation mysql is deprecated."
+UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
 
 
 class KfpApiOperator(CharmBase):
@@ -71,6 +73,7 @@ class KfpApiOperator(CharmBase):
             "-logtostderr=true "
         )
         self._container_name = "ml-pipeline-api-server"
+        self._database_name = "mysql"
         self._container = self.unit.get_container(self._container_name)
 
         # setup context to be used for updating K8S resources
@@ -98,7 +101,6 @@ class KfpApiOperator(CharmBase):
             self.on["object-storage"].relation_changed,
             self.on["kfp-viz"].relation_changed,
             self.on["kfp-api"].relation_changed,
-            self.on["mysql"].relation_changed,
         ]
         for event in change_events:
             self.framework.observe(event, self._on_event)
@@ -108,6 +110,29 @@ class KfpApiOperator(CharmBase):
         self.framework.observe(self.on.upgrade_charm, self._on_upgrade)
         self.framework.observe(self.on.remove, self._on_remove)
         self.framework.observe(self.on.update_status, self._on_update_status)
+        self.framework.observe(self.on["mysql"].relation_joined, self._on_mysql_relation)
+        self.framework.observe(self.on["mysql"].relation_changed, self._on_mysql_relation)
+        self.framework.observe(self.on["mysql"].relation_departed, self._on_mysql_relation_remove)
+        self.framework.observe(self.on["mysql"].relation_broken, self._on_mysql_relation_remove)
+        self.framework.observe(
+            self.on["relational-db"].relation_joined, self._on_relational_db_relation
+        )
+        self.framework.observe(
+            self.on["relational-db"].relation_changed, self._on_relational_db_relation
+        )
+        self.framework.observe(
+            self.on["relational-db"].relation_departed, self._on_relational_db_relation_remove
+        )
+        self.framework.observe(
+            self.on["relational-db"].relation_broken, self._on_relational_db_relation_remove
+        )
+
+        # setup relational database interface and observers
+        self.database = DatabaseRequires(
+            self, relation_name="relational-db", database_name=self._database_name
+        )
+        self.framework.observe(self.database.on.database_created, self._on_relational_db_relation)
+        self.framework.observe(self.database.on.endpoints_changed, self._on_relational_db_relation)
 
         self.prometheus_provider = MetricsEndpointProvider(
             charm=self,
@@ -119,8 +144,6 @@ class KfpApiOperator(CharmBase):
                 }
             ],
         )
-
-        self.dashboard_provider = GrafanaDashboardProvider(self)
 
     @property
     def container(self):
@@ -185,13 +208,13 @@ class KfpApiOperator(CharmBase):
 
         Configuration is generated based on:
         - Supplied interfaces.
-        - MySQL relation data.
+        - Database data: from MySQL relation data or from data platform library.
         - Model configuration.
         """
 
         config = self.model.config
         try:
-            mysql = self._get_mysql()
+            db_data = self._get_db_data()
             os = self._get_object_storage(interfaces)
             viz = self._get_viz(interfaces)
         except ErrorWithStatus as error:
@@ -202,12 +225,12 @@ class KfpApiOperator(CharmBase):
         config_json = {
             "DBConfig": {
                 "ConMaxLifeTime": "120s",
-                "DBName": mysql["database"],
+                "DBName": db_data["db_name"],
                 "DriverName": "mysql",
                 "GroupConcatMaxLen": "4194304",
-                "Host": mysql["host"],
-                "Password": mysql["root_password"],
-                "Port": mysql["port"],
+                "Host": db_data["db_host"],
+                "Password": db_data["db_password"],
+                "Port": db_data["db_port"],
                 "User": "root",
             },
             "ObjectStoreConfig": {
@@ -382,59 +405,6 @@ class KfpApiOperator(CharmBase):
 
         return data_dict
 
-    def _get_mysql(self):
-        """Returns mysql relation data from the relation with a mysql database.
-
-        Raises:
-            ErrorWithStatus(..., BlockedStatus) if there is no mysql relation
-            ErrorWithStatus(..., BlockedStatus) if there are too many mysql relation
-            ErrorWithStatus(..., WaitingStatus) if The remove unit has not joined the relation
-            ErrorWithStatus(..., WaitingStatus) if the relation data bag is empty
-        """
-        mysql = self.model.relations["mysql"]
-        if len(mysql) > 1:
-            raise ErrorWithStatus("Too many mysql relations", BlockedStatus)
-
-        mysql_relation = self.model.get_relation("mysql")
-
-        # Raise exception and stop execution if the mysql relation is not established
-        if not mysql_relation:
-            raise ErrorWithStatus("Please add required mysql relation", BlockedStatus)
-
-        if not mysql_relation.units:
-            raise ErrorWithStatus("Waiting for remote unit to join relation", WaitingStatus)
-
-        if not mysql_relation.data:
-            raise ErrorWithStatus("There is no data in the mysql relation", WaitingStatus)
-
-        # This charm should only establish a relation with exactly one unit
-        # the following extracts exactly one unit from the set that's
-        # returned by mysql_relation.data
-        units = mysql_relation.units
-        kfp_db_unit = list(units)[0]
-
-        # Get mysql relation data
-        mysql_relation_data = mysql_relation.data[kfp_db_unit]
-
-        # Check if the relation data contains the expected attributes
-        # mysql_relation_data may contain more than these attributes, but
-        # we are interested in the data bag containing at least the following:
-        expected_attributes = ["database", "host", "root_password", "port"]
-        missing_attributes = [
-            attribute for attribute in expected_attributes if attribute not in mysql_relation_data
-        ]
-
-        if len(missing_attributes) == len(expected_attributes):
-            raise ErrorWithStatus("Waiting for mysql relation data", WaitingStatus)
-        elif missing_attributes:
-            self.logger.error(
-                f"mysql relation data missing expected attributes '{missing_attributes}'"
-            )
-            raise ErrorWithStatus(
-                "Received incomplete data from mysql relation. See logs", BlockedStatus
-            )
-        return mysql_relation_data
-
     def _get_object_storage(self, interfaces):
         """Retrieve object-storage relation data."""
         relation_name = "object-storage"
@@ -450,6 +420,118 @@ class KfpApiOperator(CharmBase):
         if not self.unit.is_leader():
             self.logger.warning("Not a leader, skipping setup")
             raise ErrorWithStatus("Waiting for leadership", WaitingStatus)
+
+    def _get_db_relation(self, relation_name):
+        """Retrieves relation with supplied relation name, if it is established.
+
+        Returns relation, if it is established, and raises error otherwise."""
+
+        try:
+            # retrieve relation data
+            relation = self.model.get_relation(relation_name)
+        except KeyError:
+            # relation was not found
+            relation = None
+        if not relation:
+            # relation is not established, raise an error
+            raise GenericCharmRuntimeError(
+                f"Database relation {relation_name} is not established or empty"
+            )
+
+        return relation
+
+    def _get_mysql_data(self) -> dict:
+        """Check mysql relation, retrieve and return data, if available."""
+        db_data = {}
+        relation_data = {}
+        relation = self._get_db_relation("mysql")
+
+        # retrieve database data from relation
+        try:
+            unit = next(iter(relation.units))
+            relation_data = relation.data[unit]
+            # retrieve database data from relation data
+            # this also validates the expected data by means of KeyError exception
+            db_data["db_name"] = self._database_name
+            db_data["db_password"] = relation_data["root_password"]
+            db_data["db_host"] = relation_data["host"]
+            db_data["db_port"] = relation_data["port"]
+        except (IndexError, StopIteration, KeyError) as err:
+            # failed to retrieve database configuration
+            if not relation_data:
+                raise GenericCharmRuntimeError(
+                    "Database relation mysql is not established or empty"
+                )
+            self.logger.error(f"Missing attribute {err} in mysql relation data")
+            # incorrect/incomplete data can be found in mysql relation which can be resolved:
+            # use WaitingStatus
+            raise ErrorWithStatus(
+                "Incorrect/incomplete data found in relation mysql. See logs", WaitingStatus
+            )
+
+        return db_data
+
+    def _get_relational_db_data(self) -> dict:
+        """Check relational-db relation, retrieve and return data, if available."""
+        db_data = {}
+        relation_data = {}
+
+        # ignore return value, because data is retrieved from library
+        self._get_db_relation("relational-db")
+
+        # retrieve database data from library
+        relation_data = self.database.fetch_relation_data()
+        # parse data in relation
+        # this also validates expected data by means of KeyError exception
+        for val in relation_data.values():
+            if not val:
+                continue
+            try:
+                db_data["db_name"] = self._database_name
+                db_data["db_password"] = val["password"]
+                host, port = val["endpoints"].split(":")
+                db_data["db_host"] = host
+                db_data["db_port"] = port
+            except KeyError as err:
+                self.logger.error(f"Missing attribute {err} in relational-db relation data")
+                # incorrect/incomplete data can be found in mysql relation which can be
+                # resolved: use WaitingStatus
+                raise ErrorWithStatus(
+                    "Incorrect/incomplete data found in relation relational-db. See logs",
+                    WaitingStatus,
+                )
+        # report if there was no data populated
+        if not db_data:
+            self.logger.info("Found empty relation data for relational-db relation.")
+            raise ErrorWithStatus("Waiting for relational-db data", WaitingStatus)
+
+        return db_data
+
+    def _get_db_data(self) -> dict:
+        """Check for MySQL relations -  mysql or relational-db - and retrieve data.
+
+        Only one database relation can be established at a time.
+        """
+        db_data = {}
+        try:
+            db_data = self._get_mysql_data()
+        except ErrorWithStatus as err:
+            # mysql relation is established, but data could not be retrieved
+            raise err
+        except GenericCharmRuntimeError:
+            # mysql relation is not established, proceed to check for relational-db relation
+            try:
+                db_data = self._get_relational_db_data()
+            except ErrorWithStatus as err:
+                # relation-db relation is established, but data could not be retrieved
+                raise err
+            except GenericCharmRuntimeError:
+                # mysql and relational-db relations are not established, raise error
+                raise ErrorWithStatus(
+                    "Please add required database relation: eg. relational-db", BlockedStatus
+                )
+
+        return db_data
 
     def _check_and_report_k8s_conflict(self, error):
         """Return True if error status code is 409 (conflict), False otherwise."""
@@ -506,6 +588,9 @@ class KfpApiOperator(CharmBase):
 
     def _on_update_status(self, _):
         """Update status actions."""
+        # skip update status processing in case of BlockedStatus
+        if isinstance(self.model.unit.status, BlockedStatus):
+            return
         try:
             self._check_status()
         except ErrorWithStatus as err:
@@ -514,6 +599,59 @@ class KfpApiOperator(CharmBase):
             return
 
         self.model.unit.status = ActiveStatus()
+
+    def _on_mysql_relation(self, event):
+        """Check for existing database relations and process mysql relation if needed."""
+        # check for too many mysql relations
+        mysql = self.model.relations["mysql"]
+        if len(mysql) > 1:
+            raise ErrorWithStatus(f"Too many mysql relations. {MYSQL_WARNING}", BlockedStatus)
+
+        # check for relational-db relation
+        # relying on KeyError to ensure that relational-db relation is not present
+        try:
+            relation = self.model.get_relation("relational-db")
+            if relation:
+                self.logger.warning(
+                    "Up-to-date database relation relational-db is already established."
+                )
+                self.logger.error(f"{MYSQL_WARNING} {UNBLOCK_MESSAGE}")
+                self.model.unit.status = BlockedStatus(f"{UNBLOCK_MESSAGE} See logs")
+                return
+        except KeyError:
+            pass
+        # relational-db relation was not found, proceed with warnings
+        self.logger.warning(MYSQL_WARNING)
+        self.model.unit.status = MaintenanceStatus(f"Adding mysql relation. {MYSQL_WARNING}")
+        self._on_event(event)
+
+    def _on_mysql_relation_remove(self, event):
+        """Process removal of mysql relation."""
+        self.model.unit.status = MaintenanceStatus(f"Removing mysql relation. {MYSQL_WARNING}")
+        self._on_event(event)
+
+    def _on_relational_db_relation(self, event):
+        """Check for existing database relations and process relational-db relation if needed."""
+        # relying on KeyError to ensure that mysql relation is not present
+        try:
+            relation = self.model.get_relation("mysql")
+            if relation:
+                self.logger.warning(
+                    "Failed to create relational-db relation due to existing mysql relation."
+                )
+                self.logger.error(f"{MYSQL_WARNING} {UNBLOCK_MESSAGE}")
+                self.model.unit.status = BlockedStatus(f"{UNBLOCK_MESSAGE} See logs")
+                return
+        except KeyError:
+            pass
+        # mysql relation was not found, proceed
+        self.model.unit.status = MaintenanceStatus("Adding relational-db relation")
+        self._on_event(event)
+
+    def _on_relational_db_relation_remove(self, event):
+        """Process removal of relational-db relation."""
+        self.model.unit.status = MaintenanceStatus("Removing relational-db relation")
+        self._on_event(event)
 
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         # Set up all relations/fetch required data
