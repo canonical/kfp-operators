@@ -39,6 +39,7 @@ from serialized_data_interface import (
     SerializedDataInterface,
     get_interfaces,
 )
+from serialized_data_interface.errors import RelationDataError
 
 CONFIG_DIR = Path("/config")
 SAMPLE_CONFIG = CONFIG_DIR / "sample_config.json"
@@ -311,6 +312,8 @@ class KfpApiOperator(CharmBase):
         except NoVersionsListed as err:
             raise ErrorWithStatus(str(err), WaitingStatus)
         except NoCompatibleVersions as err:
+            raise ErrorWithStatus(str(err), BlockedStatus)
+        except RelationDataError as err:
             raise ErrorWithStatus(str(err), BlockedStatus)
         return interfaces
 
