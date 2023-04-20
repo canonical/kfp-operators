@@ -159,7 +159,10 @@ class TestCharm:
                 {},
                 None,
                 pytest.raises(ErrorWithStatus),
-                WaitingStatus("List of object-storage versions not found for apps: other-app"),
+                WaitingStatus(
+                    "List of <ops.model.Relation object-storage:0> "
+                    "versions not found for apps: other-app"
+                ),
             ),
             (
                 # Relation exists with versions, but no data posted yet
@@ -175,7 +178,7 @@ class TestCharm:
                 {"_supported_versions": "- v1", "data": yaml.dump({})},
                 None,
                 pytest.raises(ErrorWithStatus),
-                BlockedStatus("Found empty relation data for object-storage"),
+                WaitingStatus("Waiting for object-storage relation data"),
             ),
             (
                 # Relation exists with versions and invalid (partial) data
@@ -186,9 +189,7 @@ class TestCharm:
                 },
                 None,
                 pytest.raises(ErrorWithStatus),
-                BlockedStatus(
-                    "Found incomplete/incorrect relation data for object-storage. See logs"
-                ),
+                BlockedStatus("Failed to validate data on object-storage:0 from other-app"),
             ),
             (
                 # Relation exists with valid data
@@ -232,7 +233,10 @@ class TestCharm:
                 {},
                 None,
                 pytest.raises(ErrorWithStatus),
-                WaitingStatus("List of kfp-viz versions not found for apps: other-app"),
+                WaitingStatus(
+                    "List of <ops.model.Relation kfp-viz:0> "
+                    "versions not found for apps: other-app"
+                ),
             ),
             (
                 # Relation exists with versions, but no data posted yet
@@ -248,7 +252,7 @@ class TestCharm:
                 {"_supported_versions": "- v1", "data": yaml.dump({})},
                 None,
                 pytest.raises(ErrorWithStatus),
-                BlockedStatus("Found empty relation data for kfp-viz"),
+                WaitingStatus("Waiting for kfp-viz relation data"),
             ),
             (
                 # Relation exists with versions and invalid (partial) data
@@ -259,7 +263,7 @@ class TestCharm:
                 },
                 None,
                 pytest.raises(ErrorWithStatus),
-                BlockedStatus("Found incomplete/incorrect relation data for kfp-viz. See logs"),
+                BlockedStatus("Failed to validate data on kfp-viz:0 from other-app"),
             ),
             (
                 # Relation exists with valid data
