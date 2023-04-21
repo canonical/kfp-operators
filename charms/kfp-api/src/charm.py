@@ -73,7 +73,7 @@ class KfpApiOperator(CharmBase):
             "-logtostderr=true "
         )
         self._container_name = "ml-pipeline-api-server"
-        self._database_name = "kfp-api-db"
+        self._database_name = "mlpipeline"
         self._container = self.unit.get_container(self._container_name)
 
         # setup context to be used for updating K8S resources
@@ -310,8 +310,7 @@ class KfpApiOperator(CharmBase):
             raise error
         try:
             file_content = json.dumps(config_json)
-            # no need to add `.json` extension to config file, it is detected automatically
-            config = CONFIG_DIR / "config"
+            config = CONFIG_DIR / "config.json"
             self.container.push(config, file_content, make_dirs=True)
         except ErrorWithStatus as error:
             self.logger.error("Failed to upload config to container.")
@@ -452,7 +451,7 @@ class KfpApiOperator(CharmBase):
             relation_data = relation.data[unit]
             # retrieve database data from relation data
             # this also validates the expected data by means of KeyError exception
-            db_data["db_name"] = self._database_name
+            db_data["db_name"] = relation_data["database"]
             db_data["db_password"] = relation_data["root_password"]
             db_data["db_host"] = relation_data["host"]
             db_data["db_port"] = relation_data["port"]
