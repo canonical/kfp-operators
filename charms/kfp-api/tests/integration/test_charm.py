@@ -89,7 +89,7 @@ class TestCharm:
 
         # Deploy and relate prometheus
         await ops_test.model.deploy(prometheus, channel="latest/stable", trust=True)
-        await ops_test.model.deploy(grafana, channel="latest/stable", trust=True)
+        await ops_test.model.deploy(grafana, channel="latest/edge", trust=True)
         await ops_test.model.deploy(
             prometheus_scrape, channel="latest/stable", config=scrape_config, trust=True
         )
