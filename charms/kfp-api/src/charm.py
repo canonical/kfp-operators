@@ -654,7 +654,7 @@ class KfpApiOperator(CharmBase):
 
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         # Set up all relations/fetch required data
-        if not container.can_connect():
+        if not self.container.can_connect():
             event.defer()
             return
         try:
