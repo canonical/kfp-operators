@@ -587,12 +587,12 @@ class KfpApiOperator(CharmBase):
 
     def _on_update_status(self, _):
         """Update status actions."""
-        # skip update status processing in case of BlockedStatus or WaitingStatus
+        # execute main eevent handler case of BlockedStatus or WaitingStatus
         # WaitingStatus assumes DB relation is empty/incorrect which prevents workload from
         # starting
         status = self.model.unit.status
         if isinstance(status, BlockedStatus) or isinstance(status, WaitingStatus):
-            return
+            self._on_event(_)
         try:
             self._check_status()
         except ErrorWithStatus as err:
