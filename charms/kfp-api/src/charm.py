@@ -588,9 +588,7 @@ class KfpApiOperator(CharmBase):
 
     def _on_update_status(self, _):
         """Update status actions."""
-        # skip update status processing in case of BlockedStatus
-        if isinstance(self.model.unit.status, BlockedStatus):
-            return
+        self._on_event(_)
         try:
             self._check_status()
         except ErrorWithStatus as err:
@@ -655,9 +653,6 @@ class KfpApiOperator(CharmBase):
 
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         # Set up all relations/fetch required data
-        if not self.container.can_connect():
-            event.defer()
-            return
         try:
             self._check_leader()
             interfaces = self._get_interfaces()
