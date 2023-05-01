@@ -231,7 +231,7 @@ class KfpApiOperator(CharmBase):
                 "Host": db_data["db_host"],
                 "Password": db_data["db_password"],
                 "Port": db_data["db_port"],
-                "User": "root",
+                "User": db_data["db_username"],
             },
             "ObjectStoreConfig": {
                 "AccessKey": os["access-key"],
@@ -453,6 +453,7 @@ class KfpApiOperator(CharmBase):
             # this also validates the expected data by means of KeyError exception
             db_data["db_name"] = relation_data["database"]
             db_data["db_password"] = relation_data["root_password"]
+            db_data["db_username"] = "root"
             db_data["db_host"] = relation_data["host"]
             db_data["db_port"] = relation_data["port"]
         except (IndexError, StopIteration, KeyError) as err:
@@ -475,7 +476,6 @@ class KfpApiOperator(CharmBase):
         db_data = {}
         relation_data = {}
 
-        # ignore return value, because data is retrieved from library
         self._get_db_relation("relational-db")
 
         # retrieve database data from library
@@ -488,6 +488,7 @@ class KfpApiOperator(CharmBase):
             try:
                 db_data["db_name"] = self._database_name
                 db_data["db_password"] = val["password"]
+                db_data["db_username"] = val["username"]
                 host, port = val["endpoints"].split(":")
                 db_data["db_host"] = host
                 db_data["db_port"] = port
