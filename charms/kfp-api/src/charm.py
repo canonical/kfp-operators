@@ -591,7 +591,7 @@ class KfpApiOperator(CharmBase):
         if isinstance(self.model.unit.status, WaitingStatus) or isinstance(
             self.model.unit.status, BlockedStatus
         ):
-            # do not check status in case of Witing and Blocked states
+            # do not check status in case of Waiting and Blocked states
             return
         try:
             self._check_status()
