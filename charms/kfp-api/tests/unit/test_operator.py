@@ -430,7 +430,7 @@ class TestCharm:
         assert "test_model" == test_env["POD_NAMESPACE"]
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    @patch("charm.KfpApiOperator._apply_k8s_resources")
     @patch("charm.KfpApiOperator._check_status")
     @patch("charm.KfpApiOperator._generate_config")
     @patch("charm.KfpApiOperator._upload_files_to_container")
@@ -451,9 +451,9 @@ class TestCharm:
         _apply_k8s_resources.reset_mock()
         _upload_files_to_conainer.reset_mock()
         harness.charm.on.update_status.emit()
-        # this will enforce the design in which resources are not altered in update-status handler
-        _apply_k8s_resources.assert_not_called()
-        _upload_files_to_conainer.assert_not_called()
+        # this will enforce the design in which main event handler is executed in update-status
+        _apply_k8s_resources.assert_called()
+        _upload_files_to_conainer.assert_called()
         # check status should be called
         _check_status.assert_called()
 
@@ -559,8 +559,9 @@ class TestCharm:
         res = harness.charm._get_db_data()
         for key, val in res.items():
             assert key, val in {
-                "db_name": "mysql",
+                "db_name": "mlpipeline",
                 "db_password": "password",
+                "db_username": "username",
                 "db_host": "host",
                 "db_port": "1234",
             }
