@@ -590,7 +590,7 @@ class KfpApiOperator(CharmBase):
         try:
             self._on_event(_)
         except ErrorWithStatus as err:
-            raise err
+            return
 
         if isinstance(self.model.unit.status, WaitingStatus) or isinstance(
             self.model.unit.status, BlockedStatus
