@@ -559,8 +559,9 @@ class TestCharm:
         res = harness.charm._get_db_data()
         for key, val in res.items():
             assert key, val in {
-                "db_name": "mysql",
+                "db_name": "mlpipeline",
                 "db_password": "password",
+                "db_username": "username",
                 "db_host": "host",
                 "db_port": "1234",
             }
