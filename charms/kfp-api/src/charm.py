@@ -588,7 +588,17 @@ class KfpApiOperator(CharmBase):
 
     def _on_update_status(self, _):
         """Update status actions."""
-        self._on_event(_)
+        try:
+            self._on_event(_)
+        except ErrorWithStatus:
+            return
+
+        if isinstance(self.model.unit.status, WaitingStatus) or isinstance(
+            self.model.unit.status, BlockedStatus
+        ):
+            # do not check status in case of Waiting and Blocked states
+            return
+
         try:
             self._check_status()
         except ErrorWithStatus as err:

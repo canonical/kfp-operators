@@ -55,7 +55,13 @@ class TestCharm:
         await ops_test.model.deploy(entity_url="kfp-viz", channel="2.0/stable", trust=True)
 
         # deploy mysql-k8s charm
-        await ops_test.model.deploy("mysql-k8s", channel="8.0/stable", series="jammy", trust=True)
+        await ops_test.model.deploy(
+            "mysql-k8s",
+            channel="8.0/stable",
+            series="jammy",
+            constraints="mem=250M",
+            trust=True,
+        )
         await ops_test.model.wait_for_idle(
             apps=["mysql-k8s"],
             status="active",
