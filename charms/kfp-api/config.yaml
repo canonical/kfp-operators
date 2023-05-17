@@ -45,3 +45,7 @@ options:
     description: |
       Connection timeout used when initializing clients for related services.
       The format used can be anything accepted by `time.ParseDuration`.
+  object-store-bucket-name:
+    type: string
+    default: "mlpipeline"
+    description: Default name of object storage bucket.

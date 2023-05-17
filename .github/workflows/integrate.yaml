@@ -4,18 +4,13 @@ name: CI
 on:
   workflow_call:
     secrets:
-      charmcraft-credentials:
+      CHARMCRAFT_CREDENTIALS:
         required: true
 
-# TODO: Set the charm matrix from listing /charms folders
-
 jobs:
-
   lib-check:
     name: Check libraries
-    runs-on: ubuntu-20.04
     strategy:
-      fail-fast: false
       matrix:
         charm:
           - kfp-api
@@ -25,17 +20,10 @@ jobs:
           - kfp-ui
           - kfp-viewer
           - kfp-viz
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Check libs
-        uses: canonical/charming-actions/check-libraries@2.2.3
-        with:
-          credentials: "${{ secrets.charmcraft-credentials }}"
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-          charm-path: ./charms/${{ matrix.charm }}
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@main
+    secrets: inherit
+    with:
+        charm-path: ./charms/${{ matrix.charm }}
 
   lint:
     name: Lint
@@ -92,10 +80,8 @@ jobs:
           provider: microk8s
           channel: 1.24/stable
           charmcraft-channel: latest/candidate
-          # TODO: Unpin this when this bug is resolved: https://bugs.launchpad.net/juju/+bug/1992833.
-          #       In particular, these tests failed deploying the prometheus-k8s charm where it gets an error in
-          #       the "metrics-endpoint-relation-changed" hook.
-          bootstrap-options: --agent-version="2.9.34"
+          # Pinning juju agent to 2.9.42 to keep compatibility with pythonlib-juju<3
+          bootstrap-options: --agent-version="2.9.42"
 
       # TODO: Remove once the actions-operator does this automatically
       - name: Configure kubectl
@@ -126,8 +112,8 @@ jobs:
           provider: microk8s
           channel: 1.24/stable
           charmcraft-channel: latest/candidate
-          # TODO: Unpin this when this bug is resolved: https://bugs.launchpad.net/juju/+bug/1992833.
-          bootstrap-options: --agent-version="2.9.34"
+          # Pinning juju agent to 2.9.42 to keep compatibility with pythonlib-juju<3
+          bootstrap-options: --agent-version="2.9.42"
 
       # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
       - run: sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
