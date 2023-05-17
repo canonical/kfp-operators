@@ -4,18 +4,13 @@ name: CI
 on:
   workflow_call:
     secrets:
-      charmcraft-credentials:
+      CHARMCRAFT_CREDENTIALS:
         required: true
 
-# TODO: Set the charm matrix from listing /charms folders
-
 jobs:
-
   lib-check:
     name: Check libraries
-    runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
         charm:
           - kfp-api
@@ -25,21 +20,14 @@ jobs:
           - kfp-ui
           - kfp-viewer
           - kfp-viz
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Check libs
-        uses: canonical/charming-actions/check-libraries@2.0.0-rc
-        with:
-          credentials: "${{ secrets.charmcraft-credentials }}"
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-          charm-path: ./charms/${{ matrix.charm }}
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@main
+    secrets: inherit
+    with:
+        charm-path: ./charms/${{ matrix.charm }}
 
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -52,13 +40,13 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-lint
 
   unit:
     name: Unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -71,13 +59,13 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
   integration:
     name: Integration tests (microk8s)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -85,13 +73,15 @@ jobs:
           - kfp-profile-controller
           - kfp-api
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.22/stable
+          channel: 1.24/stable
           charmcraft-channel: latest/candidate
+          # Pinning juju agent to 2.9.42 to keep compatibility with pythonlib-juju<3
+          bootstrap-options: --agent-version="2.9.42"
 
       # TODO: Remove once the actions-operator does this automatically
       - name: Configure kubectl
@@ -111,17 +101,19 @@ jobs:
 
   test-bundle:
     name: Test the bundle
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.22/stable
+          channel: 1.24/stable
           charmcraft-channel: latest/candidate
+          # Pinning juju agent to 2.9.42 to keep compatibility with pythonlib-juju<3
+          bootstrap-options: --agent-version="2.9.42"
 
       # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
       - run: sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"

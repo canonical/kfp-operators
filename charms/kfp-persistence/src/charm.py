@@ -74,6 +74,11 @@ class KfpPersistenceOperator(CharmBase):
                                     "resources": ["scheduledworkflows"],
                                     "verbs": ["get", "list", "watch"],
                                 },
+                                {
+                                    "apiGroups": [""],
+                                    "resources": ["namespaces"],
+                                    "verbs": ["get"],
+                                },
                             ],
                         }
                     ]
@@ -90,6 +95,12 @@ class KfpPersistenceOperator(CharmBase):
                             "--numWorker=2",
                             f"--mlPipelineAPIServerName={kfpapi['service-name']}",
                         ],
+                        "envConfig": {
+                            "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
+                            "KUBEFLOW_USERID_PREFIX": "",
+                            # Upstream defines this in the configmap persistenceagent-config-*
+                            "MULTIUSER": "true",
+                        },
                     }
                 ],
             },
@@ -157,7 +168,7 @@ class KfpPersistenceOperator(CharmBase):
         except ValidationError as val_error:
             # Validation in .get_data() ensures if data is populated, it matches the schema and is
             # not incomplete
-            self.log.error(val_error)
+            self.log.exception(val_error)
             raise CheckFailedError(
                 f"Found incomplete/incorrect relation data for {relation_name}.  See logs",
                 BlockedStatus,

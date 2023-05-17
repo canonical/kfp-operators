@@ -3,6 +3,7 @@
 
 from contextlib import nullcontext as does_not_raise
 
+import ops
 import pytest
 import yaml
 from oci_image import MissingResourceError
@@ -12,6 +13,8 @@ from ops.testing import Harness
 from charm import CheckFailedError, KfpPersistenceOperator
 
 # TODO: Tests missing for dropped/reloaded relations
+
+ops.testing.SIMULATE_CAN_CONNECT = True
 
 
 def test_not_leader(harness):
@@ -213,9 +216,7 @@ def test_relations_that_provide_data(
 def test_install_with_all_inputs(harness, oci_resource_data):
     harness.set_leader()
     model_name = "test_model"
-    service_port = "8888"
     harness.set_model_name(model_name)
-    harness.update_config({"service-port": service_port})
 
     # Set up required relations
     # Future: convert these to fixtures and share with the tests above

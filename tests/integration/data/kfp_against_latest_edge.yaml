@@ -23,11 +23,13 @@ applications:
     channel: latest/edge
     charm: ch:kfp-api
     scale: 1
+    trust: true
   kfp-db:
-    charm: cs:~charmed-osm/mariadb-k8s-35
+    charm: charmed-osm-mariadb-k8s
+    channel: latest/stable
+    scale: 1
     options:
       database: mlpipeline
-    scale: 1
   kfp-persistence:
     channel: latest/edge
     charm: ch:kfp-persistence
@@ -57,11 +59,13 @@ applications:
     channel: latest/edge
     charm: kubeflow-dashboard
     scale: 1
+    trust: true
   kubeflow-profiles:
     _github_repo_name: kubeflow-profiles-operator
     channel: latest/edge
     charm: kubeflow-profiles
     scale: 1
+    trust: true
   metacontroller-operator:
     channel: latest/edge
     charm: ch:metacontroller-operator
