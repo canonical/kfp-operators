@@ -16,7 +16,7 @@ jsonschema==3.2.0
     # via serialized-data-interface
 oci-image==1.0.0
     # via -r requirements.in
-ops==1.2.0
+ops==1.5.5
     # via
     #   -r requirements.in
     #   serialized-data-interface
