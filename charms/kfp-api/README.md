@@ -1,13 +1,7 @@
-## Kubeflow Pipelines API Operator
+# Charmed Kubeflow Pipelines API Operator
 
-### Overview
-This charm encompasses the Kubernetes Python operator for Kubeflow Pipelines
-API (see [CharmHub](https://charmhub.io/?q=kfp-api)).
+[![Charmed Kubeflow Pipelines API Operator](https://charmhub.io/kfp-api/badge.svg)](https://charmhub.io/kfp-api)
 
-## Install
+## Description
 
-To install Kubeflow Pipelines API, run:
-
-    juju deploy kfp-api
-
-For more information, see https://juju.is/docs
+Charmed Kubeflow Pipelines API Operator is an operator for Kubeflow Pipelines API server that allows users to interact with Kubeflow Pipelines components. This charm is part of the Charmed Kubeflow Pipelines bundle which is an integral part of [Charmed Kubeflow](https://charmhub.io/kubeflow)

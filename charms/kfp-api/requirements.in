@@ -1,5 +1,8 @@
-ops
+charmed-kubeflow-chisme>=0.0.8
+lightkube
+lightkube-models>=1.25.4.4
+ops>=2.2.0
 oci-image
-serialized-data-interface<0.4
+serialized-data-interface
 # Unittest fails if not pinned
 tenacity

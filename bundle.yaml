@@ -4,7 +4,7 @@ applications:
   argo-controller:         { charm: ch:argo-controller, channel: latest/edge, scale: 1 }
   metacontroller-operator: { charm: ch:metacontroller-operator, channel: latest/edge, scale: 1, trust: true }
   minio:                   { charm: ch:minio, channel: latest/edge,       scale: 1 }
-  kfp-api:                 { charm: ch:kfp-api, channel: latest/edge,                        scale: 1 }
+  kfp-api:                 { charm: ch:kfp-api, channel: latest/edge, scale: 1, trust: true}
   kfp-db:                  { charm: charmed-osm-mariadb-k8s, channel: latest/stable, scale: 1, options: { database: mlpipeline } }
   kfp-profile-controller:  { charm: ch:kfp-profile-controller, channel: latest/edge, scale: 1 }
   kfp-persistence:         { charm: ch:kfp-persistence, channel: latest/edge,                scale: 1 }
