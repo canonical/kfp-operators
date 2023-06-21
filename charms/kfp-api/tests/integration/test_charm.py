@@ -32,9 +32,6 @@ class TestCharm:
         image_path = METADATA["resources"]["oci-image"]["upstream-source"]
         resources = {"oci-image": image_path}
 
-        # set default series for test model
-        await ops_test.juju("model-config", "default-series=focal")
-
         await ops_test.model.deploy(
             entity_url=built_charm_path,
             application_name=APP_NAME,
