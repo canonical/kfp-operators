@@ -13,7 +13,12 @@ from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
-from serialized_data_interface import NoCompatibleVersions, NoVersionsListed, get_interfaces
+from serialized_data_interface.errors import (
+    NoCompatibleVersions,
+    NoVersionsListed,
+    RelationDataError,
+)
+from serialized_data_interface.sdi import get_interfaces
 
 log = logging.getLogger()
 
@@ -125,6 +130,8 @@ class KfpVizOperator(CharmBase):
         except NoVersionsListed as err:
             raise CheckFailedError(str(err), WaitingStatus)
         except NoCompatibleVersions as err:
+            raise CheckFailedError(str(err), BlockedStatus)
+        except RelationDataError as err:
             raise CheckFailedError(str(err), BlockedStatus)
         return interfaces
 

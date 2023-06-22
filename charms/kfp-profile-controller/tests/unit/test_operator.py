@@ -34,8 +34,8 @@ def test_image_fetch(harness, oci_resource_data):
     "relation_name,relation_data,expected_returned_data,expected_raises,expected_status",
     (
         # Object storage
-        # No relation established.  Raises CheckFailedError
         (
+            # No relation established.  Raises CheckFailedError
             "object-storage",
             None,
             None,
@@ -48,7 +48,10 @@ def test_image_fetch(harness, oci_resource_data):
             {},
             None,
             pytest.raises(CheckFailedError),
-            WaitingStatus("List of object-storage versions not found for apps: other-app"),
+            WaitingStatus(
+                "List of <ops.model.Relation object-storage:0> versions not found for apps:"
+                " other-app"
+            ),
         ),
         (
             # Relation exists with versions, but no data posted yet
@@ -64,7 +67,7 @@ def test_image_fetch(harness, oci_resource_data):
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
             pytest.raises(CheckFailedError),
-            BlockedStatus("Found incomplete/incorrect relation data for object-storage."),
+            WaitingStatus("Waiting for object-storage relation data"),
         ),
         (
             # Relation exists with versions and invalid (partial) data
@@ -75,9 +78,7 @@ def test_image_fetch(harness, oci_resource_data):
             },
             None,
             pytest.raises(CheckFailedError),
-            BlockedStatus(
-                "Found incomplete/incorrect relation data for object-storage.  See logs"
-            ),
+            BlockedStatus("Failed to validate data on object-storage:0 from other-app"),
         ),
         (
             # Relation exists with valid data
