@@ -79,9 +79,8 @@ jobs:
         with:
           provider: microk8s
           channel: 1.24/stable
+          juju-channel: 2.9/stable
           charmcraft-channel: latest/candidate
-          # Pinning juju agent to 2.9.42 to keep compatibility with pythonlib-juju<3
-          bootstrap-options: --agent-version="2.9.42"
 
       # TODO: Remove once the actions-operator does this automatically
       - name: Configure kubectl
@@ -111,9 +110,8 @@ jobs:
         with:
           provider: microk8s
           channel: 1.24/stable
+          juju-channel: 2.9/stable
           charmcraft-channel: latest/candidate
-          # Pinning juju agent to 2.9.42 to keep compatibility with pythonlib-juju<3
-          bootstrap-options: --agent-version="2.9.42"
 
       # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
       - run: sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
