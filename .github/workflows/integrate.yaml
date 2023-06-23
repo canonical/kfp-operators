@@ -113,6 +113,11 @@ jobs:
           juju-channel: 2.9/stable
           charmcraft-channel: latest/candidate
 
+      # TODO: Remove once https://bugs.launchpad.net/juju/+bug/2024897 is fixed
+      - name: Refresh Juju snap
+        run: |
+          sudo snap refresh juju --revision 22345
+
       # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
       - run: sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
 
