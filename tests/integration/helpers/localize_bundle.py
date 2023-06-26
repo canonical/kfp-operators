@@ -73,7 +73,7 @@ def localize_bundle_application(
         if not resources:
             resources = get_resources_from_charm_dir(charm_dir)
 
-    bundle["applications"][application]["charm"] = str(charm_file)
+    bundle["applications"][application]["charm"] = f"./{charm_file}"
     bundle["applications"][application]["resources"] = resources
     bundle["applications"][application]["_channel"] = bundle["applications"][application][
         "channel"
