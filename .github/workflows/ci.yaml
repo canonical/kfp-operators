@@ -1,5 +1,10 @@
 name: CI
 
+# cancel all previous jobs in the same branch if new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
   push:
