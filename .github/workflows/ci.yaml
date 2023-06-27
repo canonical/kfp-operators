@@ -42,8 +42,8 @@ jobs:
     with:
       charm-name: ${{ matrix.charm }}
 
-  integration-tests:
-    name: Integration Tests
+  individual-integration-tests:
+    name: Individual Integration Tests
     needs: [quality-checks, unit-tests]
     strategy:
       matrix:
