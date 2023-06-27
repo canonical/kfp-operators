@@ -7,11 +7,6 @@ on:
     - main
     - track/**
 
-# cancel all previous jobs in the same branch if new commits are pushed
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   quality-checks:
     name: Quality Checks
@@ -25,7 +20,7 @@ jobs:
           - kfp-ui
           - kfp-viewer
           - kfp-viz
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@all
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@v1
     with:
       charm-path: ./charms/${{ matrix.charm }}
       charm-name: ${{ matrix.charm }}
@@ -42,7 +37,7 @@ jobs:
           - kfp-ui
           - kfp-viewer
           - kfp-viz
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_unit-tests.yaml@all
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_unit-tests.yaml@v1
     secrets: inherit
     with:
       charm-name: ${{ matrix.charm }}
@@ -55,7 +50,7 @@ jobs:
         charm:
           - kfp-api
           - kfp-profile-controller
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_integration-tests.yaml@all
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_integration-tests.yaml@v1
     secrets: inherit
     with:
       charm-name: ${{ matrix.charm }}
@@ -63,14 +58,14 @@ jobs:
   e2e-tests:
     name: E2E Tests
     needs: [quality-checks, unit-tests]
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@all
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@v1
 
   publish-on-success:
     # publish on push to main or track/** only if all tests pass
     name: Publish on Success
     if: github.event_name == 'push'
     needs: [quality-checks, unit-tests, integration-tests, e2e-tests]
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_publish.yaml@all
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_publish.yaml@v1
     secrets: inherit
 
   publish:
@@ -78,5 +73,5 @@ jobs:
     name: Publish
     needs: [quality-checks, unit-tests]
     if: github.event_name == 'pull_request'
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_publish.yaml@all
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_publish.yaml@v1
     secrets: inherit
