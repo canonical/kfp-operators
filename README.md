@@ -41,7 +41,7 @@ mysql -h KFPDB_SVC_IP -u mysql -D mlpipeline -p
 # (enter password, `password`)
 ```
 
-From inside the dbclient pod, you can then use queries like:
+This will start a mysql interactive shell inside the dbclient pod, you can then use queries like:
 ```sql
 SHOW DATABASES;
 USE databasename;
