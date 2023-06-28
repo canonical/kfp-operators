@@ -39,8 +39,8 @@ OTHER_APP_NAME = "kfp-api-provider"
 @pytest.mark.parametrize(
     "relation_data,expected_returned_data,expected_raises,expected_status",
     (
-        # No relation established.  Raises CheckFailedError
         (
+            # No relation established.  Raises CheckFailedError
             None,
             None,
             pytest.raises(CheckFailedError),
@@ -52,7 +52,8 @@ OTHER_APP_NAME = "kfp-api-provider"
             None,
             pytest.raises(CheckFailedError),
             WaitingStatus(
-                f"List of {RELATION_NAME} versions not found for apps: {OTHER_APP_NAME}"
+                f"List of <ops.model.Relation {RELATION_NAME}:0> versions not found for apps:"
+                f" {OTHER_APP_NAME}"
             ),
         ),
         (
@@ -67,7 +68,7 @@ OTHER_APP_NAME = "kfp-api-provider"
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
             pytest.raises(CheckFailedError),
-            BlockedStatus(f"Found incomplete/incorrect relation data for {RELATION_NAME}."),
+            WaitingStatus("Waiting for kfp-api relation data"),
         ),
         (
             # Relation exists with versions and invalid (partial) data
@@ -77,9 +78,7 @@ OTHER_APP_NAME = "kfp-api-provider"
             },
             None,
             pytest.raises(CheckFailedError),
-            BlockedStatus(
-                f"Found incomplete/incorrect relation data for {RELATION_NAME}.  See logs"
-            ),
+            BlockedStatus(f"Failed to validate data on {RELATION_NAME}:0 from {OTHER_APP_NAME}"),
         ),
         (
             # Relation exists with valid data
@@ -121,8 +120,8 @@ def test_kfp_api_relation(
     "relation_name,relation_data,expected_returned_data,expected_raises,expected_status",
     (
         # kfp-api
-        # No relation established.  Raises CheckFailedError
         (
+            # No relation established.  Raises CheckFailedError
             "kfp-api",
             None,
             None,
@@ -135,7 +134,10 @@ def test_kfp_api_relation(
             {},
             None,
             pytest.raises(CheckFailedError),
-            WaitingStatus("List of kfp-api versions not found for apps: other-app"),
+            WaitingStatus(
+                f"List of <ops.model.Relation {RELATION_NAME}:0> versions not found for apps:"
+                " other-app"
+            ),
         ),
         (
             # Relation exists with versions, but no data posted yet
@@ -151,7 +153,7 @@ def test_kfp_api_relation(
             {"_supported_versions": "- v1", "data": yaml.dump({})},
             None,
             pytest.raises(CheckFailedError),
-            BlockedStatus("Found incomplete/incorrect relation data for kfp-api."),
+            WaitingStatus("Waiting for kfp-api relation data"),
         ),
         (
             # Relation exists with versions and invalid (partial) data
@@ -162,7 +164,7 @@ def test_kfp_api_relation(
             },
             None,
             pytest.raises(CheckFailedError),
-            BlockedStatus("Found incomplete/incorrect relation data for kfp-api.  See logs"),
+            BlockedStatus("Failed to validate data on kfp-api:0 from other-app"),
         ),
         (
             # Relation exists with valid data

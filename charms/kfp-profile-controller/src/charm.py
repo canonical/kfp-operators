@@ -16,12 +16,12 @@ from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
-from serialized_data_interface import (
+from serialized_data_interface.errors import (
     NoCompatibleVersions,
     NoVersionsListed,
-    SerializedDataInterface,
-    get_interfaces,
+    RelationDataError,
 )
+from serialized_data_interface.sdi import SerializedDataInterface, get_interfaces
 
 # This must be hard-coded to port 80 because the metacontroller webhook that talks to this port
 # only communicates over port 80.  Upstream uses the service to map 80->8080 but we cannot via
@@ -231,6 +231,8 @@ class KfpProfileControllerOperator(CharmBase):
         except NoVersionsListed as err:
             raise CheckFailedError(str(err), WaitingStatus)
         except NoCompatibleVersions as err:
+            raise CheckFailedError(str(err), BlockedStatus)
+        except RelationDataError as err:
             raise CheckFailedError(str(err), BlockedStatus)
         return interfaces
 
