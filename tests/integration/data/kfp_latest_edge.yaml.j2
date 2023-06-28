@@ -1,0 +1,55 @@
+bundle: kubernetes
+name: kubeflow-pipelines
+applications:
+  argo-controller:         { charm: ch:argo-controller, channel: latest/edge, scale: 1 }
+  metacontroller-operator: { charm: ch:metacontroller-operator, channel: latest/edge, scale: 1, trust: true }
+  minio:                   { charm: ch:minio, channel: latest/edge,       scale: 1 }
+  kfp-db:                  { charm: ch:mysql-k8s, channel: 8.0/stable, scale: 1, constraints: mem=2G}
+{%- if local_build == false %}
+  kfp-api:                 { charm: ch:kfp-api, channel: latest/edge, scale: 1, trust: true}
+  kfp-profile-controller:  { charm: ch:kfp-profile-controller, channel: latest/edge, scale: 1 }
+  kfp-persistence:         { charm: ch:kfp-persistence, channel: latest/edge,                scale: 1 }
+  kfp-schedwf:             { charm: ch:kfp-schedwf, channel: latest/edge,                    scale: 1 }
+  kfp-ui:                  { charm: ch:kfp-ui, channel: latest/edge,                         scale: 1 }
+  kfp-viewer:              { charm: ch:kfp-viewer, channel: latest/edge,                     scale: 1 }
+  kfp-viz:                 { charm: ch:kfp-viz, channel: latest/edge,                        scale: 1 }
+{%- else %}
+  kfp-api:
+    charm: {{ kfp_api }}
+    resources: {{ kfp_api_resources }}
+    scale: 1
+    trust: true
+  kfp-persistence:
+    charm: {{ kfp_persistence }}
+    resources: {{ kfp_persistence_resources }}
+    scale: 1
+  kfp-profile-controller:
+    charm: {{ kfp_profile_controller }}
+    resources: {{ kfp_profile_controller_resources }}
+    scale: 1
+  kfp-schedwf:
+    charm: {{ kfp_schedwf }}
+    resources: {{ kfp_schedwf_resources }}
+    scale: 1
+  kfp-ui:
+    charm: {{ kfp_ui }}
+    resources: {{ kfp_ui_resources }}
+    scale: 1
+  kfp-viewer:
+    charm: {{ kfp_viewer }}
+    resources: {{ kfp_viewer_resources }}
+    scale: 1
+  kfp-viz:
+    charm: {{ kfp_viz }}
+    resources: {{ kfp_viz_resources }}
+    scale: 1
+{%- endif %}
+relations:
+- [argo-controller:object-storage, minio:object-storage]
+- [kfp-api:relational-db, kfp-db:database]
+- [kfp-api:kfp-api, kfp-persistence:kfp-api]
+- [kfp-api:kfp-api, kfp-ui:kfp-api]
+- [kfp-api:kfp-viz, kfp-viz:kfp-viz]
+- [kfp-api:object-storage, minio:object-storage]
+- [kfp-profile-controller:object-storage, minio:object-storage]
+- [kfp-ui:object-storage, minio:object-storage]

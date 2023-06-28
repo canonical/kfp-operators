@@ -4,7 +4,8 @@ import shlex
 import yaml
 
 from pytest_operator.plugin import OpsTest
-from helpers.localize_bundle import localize_bundle_application
+from helpers.localize_bundle import localize_bundle_application, get_resources_from_charm_file
+from helpers.bundle_mgmt import render_bundle, deploy_bundle
 
 BUNDLE_CHARMS = [
     "kfp-api",
@@ -26,9 +27,8 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
         raise ValueError("kfp must be deployed to namespace kubeflow")
 
     # Get/load template bundle from command line args
-    bundlefile = Path(request.config.getoption("bundle"))
+    bundlefile_path = Path(request.config.getoption("bundle"))
     basedir = Path("./").absolute()
-    bundle = yaml.safe_load(bundlefile.read_text())
 
     # Build the charms we need to build
     charms_to_build = {
@@ -39,23 +39,17 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
     built_charms = await ops_test.build_charms(*charms_to_build.values())
     log.info(f"Built charms: {built_charms}")
 
-    # Edit the bundle, splicing our locally built charms into it
-    for charm, path in built_charms.items():
-        bundle = localize_bundle_application(bundle, application=charm, charm_file=path)
+    context = {}
+    for charm, charm_file in built_charms.items():
+       charm_resources = get_resources_from_charm_file(charm_file)
+       context.update([(f"{charm.replace('-', '_')}_resources", charm_resources)])
+       context.update([(f"{charm.replace('-', '_')}", charm_file)])
 
-    # Deploy the bundle
-    # TODO This should be easier... but it isn't.  Can either use the `juju bundle` integration, or
-    #      shell out to juju (like k8s charms do).  For now, I'm doing the latter
-    #      Observability has a function in their CI that is similar.  Use that?
-    bundle_dst_file = write_bundle_file(bundle, ops_test.tmp_path / "bundles" / "bundle.yaml")
+    # Render kfp-operators bundle file with locally built charms and their resources
+    rendered_bundle = render_bundle(ops_test, bundle_path=bundlefile_path, context=context, local_build=True)
 
-    model = ops_test.model_full_name
-    # TODO: Figure out when we need --trust rather than blanket-applying it
-    cmd = f"juju deploy -m {model} --trust {bundle_dst_file}"
-    log.info(f"Deploying bundle to {model} using cmd '{cmd}'")
-    rc, stdout, stderr = await ops_test.run(*shlex.split(cmd))
-    if rc != 0:
-        raise RuntimeError(f"Failed to deploy bundle.  Got stdout:\n{stderr}\nand stderr:\n{stderr}")
+    # Deploy the kfp-operators bundle from the rendered bundle file
+    await deploy_bundle(ops_test, bundle_path=rendered_bundle, trust=True)
 
     # Wait for everything to be up.  Note, at time of writing these charms would naturally go
     # into blocked during deploy while waiting for each other to satisfy relations, so we don't
@@ -66,12 +60,3 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
         raise_on_error=True,
         timeout=1800,
     )
-
-
-def write_bundle_file(bundle: dict, path: Path):
-    """Writes the bundle to a temporary file and returns the path."""
-    bundle_dst_file = path
-    bundle_dst_dir = bundle_dst_file.parent
-    bundle_dst_dir.mkdir(exist_ok=True, parents=True)
-    bundle_dst_file.write_text(yaml.dump(bundle))
-    return bundle_dst_file
