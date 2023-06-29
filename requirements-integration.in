@@ -1,6 +1,10 @@
+aiohttp
 # Pinning to <3.0 to ensure compatibility with the 2.9 controller version
 # Note: 3.0 is not being maintained anymore
 juju<3.0
+# Need this version of kfp to work with kfp 2.0.0-alpha.7
+kfp==1.8.22
+lightkube
 pytest
 pyyaml
 pytest-operator

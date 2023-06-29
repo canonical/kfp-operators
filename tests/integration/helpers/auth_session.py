@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+# From (Full Kubeflow from inside the cluster): 
+# https://www.kubeflow.org/docs/components/pipelines/v1/sdk/connect-api/
+# This script returns a session cookie by authenticating with dex
+import kfp
+import re
+import requests
+from urllib.parse import urlsplit
+
+def get_istio_auth_session(url: str, username: str, password: str) -> dict:
+    """
+    Determine if the specified URL is secured by Dex and try to obtain a session cookie.
+    WARNING: only Dex `staticPasswords` and `LDAP` authentication are currently supported
+             (we default default to using `staticPasswords` if both are enabled)
+
+    :param url: Kubeflow server URL, including protocol
+    :param username: Dex `staticPasswords` or `LDAP` username
+    :param password: Dex `staticPasswords` or `LDAP` password
+    :return: auth session information
+    """
+    # define the default return object
+    auth_session = {
+        "endpoint_url": url,    # KF endpoint URL
+        "redirect_url": None,   # KF redirect URL, if applicable
+        "dex_login_url": None,  # Dex login URL (for POST of credentials)
+        "is_secured": None,     # True if KF endpoint is secured
+        "session_cookie": None  # Resulting session cookies in the form "key1=value1; key2=value2"
+    }
+
+    # use a persistent session (for cookies)
+    with requests.Session() as s:
+
+        ################
+        # Determine if Endpoint is Secured
+        ################
+        resp = s.get(url, allow_redirects=True)
+        if resp.status_code != 200:
+            raise RuntimeError(
+                f"HTTP status code '{resp.status_code}' for GET against: {url}"
+            )
+
+        auth_session["redirect_url"] = resp.url
+
+        # if we were NOT redirected, then the endpoint is UNSECURED
+        if len(resp.history) == 0:
+            auth_session["is_secured"] = False
+            return auth_session
+        else:
+            auth_session["is_secured"] = True
+
+        ################
+        # Get Dex Login URL
+        ################
+        redirect_url_obj = urlsplit(auth_session["redirect_url"])
+
+        # if we are at `/auth?=xxxx` path, we need to select an auth type
+        if re.search(r"/auth$", redirect_url_obj.path): 
+            
+            #######
+            # TIP: choose the default auth type by including ONE of the following
+            #######
+            
+            # OPTION 1: set "staticPasswords" as default auth type
+            redirect_url_obj = redirect_url_obj._replace(
+                path=re.sub(r"/auth$", "/auth/local", redirect_url_obj.path)
+            )
+            # OPTION 2: set "ldap" as default auth type 
+            # redirect_url_obj = redirect_url_obj._replace(
+            #     path=re.sub(r"/auth$", "/auth/ldap", redirect_url_obj.path)
+            # )
+            
+        # if we are at `/auth/xxxx/login` path, then no further action is needed (we can use it for login POST)
+        if re.search(r"/auth/.*/login$", redirect_url_obj.path):
+            auth_session["dex_login_url"] = redirect_url_obj.geturl()
+
+        # else, we need to be redirected to the actual login page
+        else:
+            # this GET should redirect us to the `/auth/xxxx/login` path
+            resp = s.get(redirect_url_obj.geturl(), allow_redirects=True)
+            if resp.status_code != 200:
+                raise RuntimeError(
+                    f"HTTP status code '{resp.status_code}' for GET against: {redirect_url_obj.geturl()}"
+                )
+
+            # set the login url
+            auth_session["dex_login_url"] = resp.url
+
+        ################
+        # Attempt Dex Login
+        ################
+        resp = s.post(
+            auth_session["dex_login_url"],
+            data={"login": username, "password": password},
+            allow_redirects=True
+        )
+        if len(resp.history) == 0:
+            raise RuntimeError(
+                f"Login credentials were probably invalid - "
+                f"No redirect after POST to: {auth_session['dex_login_url']}"
+            )
+
+        # store the session cookies in a "key1=value1; key2=value2" string
+        auth_session["session_cookie"] = "; ".join([f"{c.name}={c.value}" for c in s.cookies])
+
+    return auth_session
+
+#if __name__ == "__main__":
+#    # kfp-operators v2.0.0-alpha.7 only work with kfp==1.8
+#    # This requires RBAC to be disabled
+#    auth_session = get_istio_auth_session(url="http://10.64.140.43.nip.io/dex", username="admin", password="admin")
+#    client = kfp.Client(host="http://10.64.140.43.nip.io/pipeline", cookies=auth_session["session_cookie"])
+#
+#    # Upload a pipline from yaml file
+#    #print(client.pipeline_uploads.upload_pipeline("./execution_order.yaml", name="my-pipeline"))
+#
+#    # Get pipeline created before
+#    my_pipeline_id = client.get_pipeline_id(name="my-pipeline")
+#    my_pipeline = client.get_pipeline(my_pipeline_id)
+#
+#    # Create an experiment from 'my-pipeline'
+#    experiment_response = client.create_experiment(name='experiment-1', namespace='default')
+#
+#    # Create a run from pipeline package
+#    create_run_response = client.create_run_from_pipeline_package(pipeline_file='./execution_order.yaml', arguments={}, run_name='my-run', experiment_name='experiment-1', namespace='default')
+#
+#    # Monitor a run to completion
+#    #client.wait_for_run_completion(create_run_response.run_id, timeout=10)
+#
+#    # Create a recurring run
+#    create_recurring_run_response = client.create_recurring_run(experiment_id=experiment_response.id, job_name='my-recurring-job', pipeline_id = my_pipeline_id, enabled=True, interval_second=1)
