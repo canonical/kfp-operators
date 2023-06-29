@@ -4,7 +4,7 @@ applications:
   argo-controller:         { charm: ch:argo-controller, channel: latest/edge, scale: 1 }
   metacontroller-operator: { charm: ch:metacontroller-operator, channel: latest/edge, scale: 1, trust: true }
   minio:                   { charm: ch:minio, channel: latest/edge,       scale: 1 }
-  kfp-db:                  { charm: ch:mysql-k8s, channel: 8.0/stable, scale: 1, constraints: mem=2G}
+  kfp-db:                  { charm: ch:mysql-k8s, channel: 8.0/stable, scale: 1, trust: true, constraints: mem=2G}
 {%- if local_build == false %}
   kfp-api:                 { charm: ch:kfp-api, channel: latest/edge, scale: 1, trust: true}
   kfp-profile-controller:  { charm: ch:kfp-profile-controller, channel: latest/edge, scale: 1 }
