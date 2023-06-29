@@ -1,15 +1,12 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import json
 import logging
 from pathlib import Path
 
 import pytest
-import requests
 import yaml
 from pytest_operator.plugin import OpsTest
-from tenacity import Retrying, stop_after_attempt, stop_after_delay, wait_exponential
 
 logger = logging.getLogger(__name__)
 
@@ -51,22 +48,6 @@ class TestCharm:
         )
         await ops_test.model.deploy(entity_url="kfp-viz", channel="2.0/stable", trust=True)
 
-        # deploy mysql-k8s charm
-        await ops_test.model.deploy(
-            "mysql-k8s",
-            channel="8.0/stable",
-            series="jammy",
-            constraints="mem=250M",
-            trust=True,
-        )
-        await ops_test.model.wait_for_idle(
-            apps=["mysql-k8s"],
-            status="active",
-            raise_on_blocked=True,
-            timeout=60 * 10,
-            idle_period=60,
-        )
-
         # test no database relation, charm should be in blocked state
         assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
 
@@ -83,74 +64,24 @@ class TestCharm:
             idle_period=120,
         )
 
-    async def test_prometheus_grafana_integration(self, ops_test: OpsTest):
-        """Deploy prometheus, grafana and required relations, then test the metrics."""
-        prometheus = "prometheus-k8s"
-        grafana = "grafana-k8s"
-        prometheus_scrape = "prometheus-scrape-config-k8s"
-        scrape_config = {"scrape_interval": "30s"}
-
-        # Deploy and relate prometheus
-        await ops_test.model.deploy(prometheus, channel="latest/stable", trust=True)
-        await ops_test.model.deploy(grafana, channel="latest/stable", trust=True)
-        await ops_test.model.deploy(
-            prometheus_scrape, channel="latest/stable", config=scrape_config, trust=True
-        )
-
-        await ops_test.model.add_relation(APP_NAME, prometheus_scrape)
-        await ops_test.model.add_relation(
-            f"{prometheus}:grafana-dashboard", f"{grafana}:grafana-dashboard"
-        )
-        await ops_test.model.add_relation(
-            f"{APP_NAME}:grafana-dashboard", f"{grafana}:grafana-dashboard"
-        )
-        await ops_test.model.add_relation(
-            f"{prometheus}:metrics-endpoint", f"{prometheus_scrape}:metrics-endpoint"
-        )
-
-        await ops_test.model.wait_for_idle(
-            apps=["grafana-k8s", "prometheus-k8s", "prometheus-scrape-config-k8s"],
-            status="active",
-            raise_on_blocked=False,
-            raise_on_error=False,
-            timeout=60 * 20,
-            idle_period=60,
-        )
-
-        status = await ops_test.model.get_status()
-        prometheus_unit_ip = status["applications"][prometheus]["units"][f"{prometheus}/0"][
-            "address"
-        ]
-        logger.info(f"Prometheus available at http://{prometheus_unit_ip}:9090")
-
-        for attempt in self.retry_for_5_attempts:
-            logger.info(
-                f"Testing prometheus deployment (attempt " f"{attempt.retry_state.attempt_number})"
-            )
-            with attempt:
-                r = requests.get(
-                    f"http://{prometheus_unit_ip}:9090/api/v1/query?"
-                    f'query=up{{juju_application="{APP_NAME}"}}'
-                )
-                response = json.loads(r.content.decode("utf-8"))
-                response_status = response["status"]
-                logger.info(f"Response status is {response_status}")
-                assert response_status == "success"
-
-                response_metric = response["data"]["result"][0]["metric"]
-                assert response_metric["juju_application"] == APP_NAME
-                assert response_metric["juju_model"] == ops_test.model_name
-
-    # Helper to retry calling a function over 30 seconds or 5 attempts
-    retry_for_5_attempts = Retrying(
-        stop=(stop_after_attempt(5) | stop_after_delay(30)),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
-        reraise=True,
-    )
-
     @pytest.mark.abort_on_fail
     async def test_relational_db_relation_with_mysql_relation(self, ops_test: OpsTest):
         """Test failure of addition of relational-db relation with mysql relation present."""
+        # Deploy mysql-k8s charm
+        await ops_test.model.deploy(
+            "mysql-k8s",
+            channel="8.0/edge",
+            series="jammy",
+            constraints="mem=600M",
+            trust=True,
+        )
+        await ops_test.model.wait_for_idle(
+            apps=["mysql-k8s"],
+            status="active",
+            raise_on_blocked=True,
+            timeout=60 * 10,
+            idle_period=60,
+        )
 
         # add relational-db relation which should put charm into blocked state,
         # because at this point mysql relation is already established
