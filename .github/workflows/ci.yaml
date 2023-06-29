@@ -54,10 +54,11 @@ jobs:
   individual-integration-tests:
     name: Individual Integration Tests 
     needs: [build-charms, quality-checks, unit-tests]
-    matrix:
-      charm:
-        - kfp-api
-        - kfp-profile-controller
+    strategy:
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-profile-controller
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/_integration-tests.yaml@dnplas-reusable-builds
     secrets: inherit
     with:
