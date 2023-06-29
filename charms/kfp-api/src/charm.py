@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2021 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Charm the Kubeflow Pipelines API.
@@ -67,6 +67,9 @@ class KfpApiOperator(CharmBase):
         self._grcp_port = self.model.config["grpc-port"]
         self._http_port = self.model.config["http-port"]
         self._exec_command = (
+            # TODO: Remove 'sleep' as soon as a fix for
+            # https://github.com/canonical/pebble/issues/240 is provided
+            "sleep 1.1 && "
             "/bin/apiserver "
             f"--config={CONFIG_DIR} "
             f"--sampleconfig={SAMPLE_CONFIG} "
@@ -184,7 +187,7 @@ class KfpApiOperator(CharmBase):
                 self._container_name: {
                     "override": "replace",
                     "summary": "ML Pipeline API Server",
-                    "command": self._exec_command,
+                    "command": f"bash -c '{self._exec_command}'",
                     "startup": "enabled",
                     "environment": self.service_environment,
                     "on-check-failure": {"kfp-api-up": "restart"},
