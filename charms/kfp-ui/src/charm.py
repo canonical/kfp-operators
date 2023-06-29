@@ -11,6 +11,10 @@ import json
 import logging
 from base64 import b64encode
 
+from charms.kubeflow_dashboard.v0.kubeflow_dashboard_sidebar import (
+    KubeflowDashboardSidebarRequirer,
+    SidebarItem,
+)
 from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
@@ -46,6 +50,35 @@ class KfpUiOperator(CharmBase):
         self.framework.observe(self.on["ingress"].relation_changed, self._main)
         self.framework.observe(self.on["kfp-ui"].relation_changed, self._main)
         self.framework.observe(self.on.leader_elected, self._main)
+
+        # add links in kubeflow-dashboard sidebar
+        self.kubeflow_dashboard_sidebar = KubeflowDashboardSidebarRequirer(
+            charm=self,
+            relation_name="sidebar",
+            sidebar_items=[
+                SidebarItem(
+                    text="Experiments (KFP)",
+                    link="/pipeline/#/experiments",
+                    type="item",
+                    icon="done-all",
+                ),
+                SidebarItem(
+                    text="Pipelines",
+                    link="/pipeline/#/pipelines",
+                    type="item",
+                    icon="kubeflow:pipeline-centered",
+                ),
+                SidebarItem(
+                    text="Runs", link="/pipeline/#/runs", type="item", icon="maps:directions-run"
+                ),
+                SidebarItem(
+                    text="Recurring Runs",
+                    link="/pipeline/#/recurringruns",
+                    type="item",
+                    icon="device:access-alarm",
+                ),
+            ],
+        )
 
     def _main(self, event):
         try:
