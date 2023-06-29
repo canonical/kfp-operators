@@ -83,8 +83,8 @@ jobs:
   
       - name: Run E2E Tests
         uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@dnplas-reusable-builds
-       with:
-           packed-charms: ${{ needs.build-charms.outputs.charms }}
+        with:
+          packed-charms: ${{ needs.build-charms.outputs.charms }}
 
   publish-on-success:
     # publish on push to main or track/** only if all tests pass
