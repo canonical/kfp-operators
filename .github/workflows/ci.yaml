@@ -52,35 +52,37 @@ jobs:
       charm-name: ${{ matrix.charm }}
 
   individual-integration-tests:
-   - name: Download packed charm(s)
-     uses: actions/download-artifact@v3
-     with:
-       name: ${{ needs.build.outputs.artifact-name }}
-
-    - name: Individual Integration Tests
-      needs: [quality-checks, unit-tests]
-      strategy:
-        matrix:
-          charm:
-            - kfp-api
-            - kfp-profile-controller
-      uses: canonical/charmed-kubeflow-workflows/.github/workflows/_integration-tests.yaml@dnplas-reusable-builds
-      secrets: inherit
-      with:
-        charm-name: ${{ matrix.charm }}
-        packed-charms: ${{ needs.build.outputs.charms }}
+   steps:
+     - name: Download packed charm(s)
+       uses: actions/download-artifact@v3
+       with:
+         name: ${{ needs.build.outputs.artifact-name }}
+  
+      - name: Individual Integration Tests
+        needs: [quality-checks, unit-tests]
+        strategy:
+          matrix:
+            charm:
+              - kfp-api
+              - kfp-profile-controller
+        uses: canonical/charmed-kubeflow-workflows/.github/workflows/_integration-tests.yaml@dnplas-reusable-builds
+        secrets: inherit
+        with:
+          charm-name: ${{ matrix.charm }}
+          packed-charms: ${{ needs.build.outputs.charms }}
 
   e2e-tests:
-    - name: Download packed charm(s)
-      uses: actions/download-artifact@v3
-      with:
-        name: ${{ needs.build.outputs.artifact-name }}
-
-    - name: E2E Tests
-     needs: [quality-checks, unit-tests]
-     uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@dnplas-reusable-builds
-     with:
-         packed-charms: ${{ needs.build.outputs.charms }}
+    steps:
+      - name: Download packed charm(s)
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
+  
+      - name: E2E Tests
+       needs: [quality-checks, unit-tests]
+       uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@dnplas-reusable-builds
+       with:
+           packed-charms: ${{ needs.build.outputs.charms }}
 
   publish-on-success:
     # publish on push to main or track/** only if all tests pass
