@@ -14,8 +14,8 @@ on:
 
 jobs:
   build-charms:
-  name: Build charms
-  uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@v2
+    name: Build charms
+    uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@v2
 
   quality-checks:
     name: Quality Checks
