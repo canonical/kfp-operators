@@ -53,23 +53,23 @@ jobs:
 
   individual-integration-tests:
    name: Individual Integration Tests 
-   needs: [build-charms, quality-checks, unit-tests]
-   matrix:
-     charm:
-       - kfp-api
-       - kfp-profile-controller
-   steps:
-     - name: Download packed charm(s)
-       uses: actions/download-artifact@v3
-       with:
-         name: ${{ needs.build-charms.outputs.artifact-name }}
-  
-     - name: Individual Integration Tests
-       uses: canonical/charmed-kubeflow-workflows/.github/workflows/_integration-tests.yaml@dnplas-reusable-builds
-       secrets: inherit
-       with:
-         charm-name: ${{ matrix.charm }}
-         packed-charms: ${{ needs.build-charms.outputs.charms }}
+     needs: [build-charms, quality-checks, unit-tests]
+     matrix:
+       charm:
+         - kfp-api
+         - kfp-profile-controller
+     steps:
+       - name: Download packed charm(s)
+         uses: actions/download-artifact@v3
+         with:
+           name: ${{ needs.build-charms.outputs.artifact-name }}
+    
+       - name: Individual Integration Tests
+         uses: canonical/charmed-kubeflow-workflows/.github/workflows/_integration-tests.yaml@dnplas-reusable-builds
+         secrets: inherit
+         with:
+           charm-name: ${{ matrix.charm }}
+           packed-charms: ${{ needs.build-charms.outputs.charms }}
 
   e2e-tests:
     name: E2E Tests
