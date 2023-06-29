@@ -58,33 +58,20 @@ jobs:
       charm:
         - kfp-api
         - kfp-profile-controller
-    steps:
-      - name: Download packed charm(s)
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.build-charms.outputs.artifact-name }}
-    
-      - name: Individual Integration Tests
-        uses: canonical/charmed-kubeflow-workflows/.github/workflows/_integration-tests.yaml@dnplas-reusable-builds
-        secrets: inherit
-        with:
-          charm-name: ${{ matrix.charm }}
-          packed-charms: ${{ needs.build-charms.outputs.charms }}
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_integration-tests.yaml@dnplas-reusable-builds
+    secrets: inherit
+    with:
+      charm-name: ${{ matrix.charm }}
+      packed-charms: ${{ needs.build-charms.outputs.charms }}
+      charms-artefact-name: ${{ needs.build-charms.outputs.artifact-name }}
 
   e2e-tests:
     name: E2E Tests
     needs: [build-charms, quality-checks, unit-tests]
-
-    steps:
-      - name: Download packed charm(s)
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.build-charms.outputs.artifact-name }}
-  
-      - name: Run E2E Tests
-        uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@dnplas-reusable-builds
-        with:
-          packed-charms: ${{ needs.build-charms.outputs.charms }}
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@dnplas-reusable-builds
+    with:
+      packed-charms: ${{ needs.build-charms.outputs.charms }}
+      charms-artefact-name: ${{ needs.build-charms.outputs.artifact-name }}
 
   publish-on-success:
     # publish on push to main or track/** only if all tests pass
