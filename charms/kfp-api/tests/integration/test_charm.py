@@ -20,6 +20,7 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
 KFP_DB_CONFIG = {"database": "mlpipeline"}
 
+
 @pytest.fixture
 def ops_test(ops_test: OpsTest) -> OpsTest:
     if os.environ.get("CI") == "true":

@@ -24,6 +24,7 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 MINIO_APP_NAME = "minio"
 MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
 
+
 @pytest.fixture
 def ops_test(ops_test: OpsTest) -> OpsTest:
     if os.environ.get("CI") == "true":
