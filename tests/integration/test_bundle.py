@@ -1,4 +1,5 @@
 import logging
+import pytest
 from pathlib import Path, PosixPath
 import shlex
 import yaml
@@ -32,7 +33,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
 
     # Build the charms we need to build
     charms_to_build = {
-        charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
+        charm: Path(f"./charms/{charm}")
         for charm in BUNDLE_CHARMS
     }
     log.info(f"Building charms for: {charms_to_build}")
@@ -47,11 +48,14 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
     # TODO This should be easier... but it isn't.  Can either use the `juju bundle` integration, or
     #      shell out to juju (like k8s charms do).  For now, I'm doing the latter
     #      Observability has a function in their CI that is similar.  Use that?
-    bundle_dst_file = write_bundle_file(bundle, ops_test.tmp_path / "bundles" / "bundle.yaml")
+    bundle_dst_file = write_bundle_file(bundle, Path("./bundle.yaml"))
+
+    rendered_bundle = Path(bundle_dst_file).read_text()
+    log.info(f"BUNDLE: {rendered_bundle}")
 
     model = ops_test.model_full_name
     # TODO: Figure out when we need --trust rather than blanket-applying it
-    cmd = f"juju deploy -m {model} --trust {bundle_dst_file}"
+    cmd = f"juju deploy -m {model} --trust ./{bundle_dst_file}"
     log.info(f"Deploying bundle to {model} using cmd '{cmd}'")
     rc, stdout, stderr = await ops_test.run(*shlex.split(cmd))
     if rc != 0:

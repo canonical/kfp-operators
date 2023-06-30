@@ -8,6 +8,10 @@ on:
         required: true
 
 jobs:
+  build:
+    name: Build charms
+    uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@v2
+
   lib-check:
     name: Check libraries
     strategy:
@@ -63,44 +67,10 @@ jobs:
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
-  integration:
-    name: Integration tests (microk8s)
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-profile-controller
-          - kfp-api
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          channel: 1.24/stable
-          juju-channel: 2.9/stable
-          charmcraft-channel: latest/candidate
-
-      # TODO: Remove once the actions-operator does this automatically
-      - name: Configure kubectl
-        run: |
-          sg microk8s -c "microk8s config > ~/.kube/config"
-
-      - run: |
-          sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
-
-      # Collect debug logs if failed
-      - name: Dump Juju/k8s logs on failure
-        uses: canonical/charm-logdump-action@main
-        if: failure()
-        with:
-          app: ${{ matrix.charm }}
-          model: testing
-
   test-bundle:
     name: Test the bundle
     runs-on: ubuntu-20.04
+    needs: build
 
     steps:
       - name: Check out code
@@ -110,30 +80,21 @@ jobs:
         with:
           provider: microk8s
           channel: 1.24/stable
-          juju-channel: 2.9/stable
+          microk8s-addons: "dns hostpath-storage rbac metallb:'10.64.140.43-10.64.140.49'"
           charmcraft-channel: latest/candidate
+          juju-channel: 2.9/stable
 
-      # TODO: Remove once https://bugs.launchpad.net/juju/+bug/2024897 is fixed
-      - name: Refresh Juju snap
-        run: |
-          sudo snap refresh juju --revision 22345
-
-      # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
-      - run: sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
-
-      # TODO: Remove once the actions-operator does this automatically
-      - name: Configure kubectl
-        run: |
-          sg microk8s -c "microk8s config > ~/.kube/config"
+      - name: Download packed charm(s)
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
 
       - name: Run test
         run: |
-          # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          # Remove destructive-mode once these bugs are fixed:
-          # https://github.com/canonical/charmcraft/issues/554
-          # https://github.com/canonical/craft-providers/issues/96
-          tox -e bundle-integration -- --model kubeflow --destructive-mode
+          tox -e bundle-integration -- --model kubeflow
+        env:
+            CI_PACKED_CHARMS: ${{ needs.build.outputs.charms }}
 
       - name: Get all
         run: kubectl get all -A
