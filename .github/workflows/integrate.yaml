@@ -84,6 +84,11 @@ jobs:
           charmcraft-channel: latest/candidate
           juju-channel: 2.9/stable
 
+      # TODO: Remove once https://bugs.launchpad.net/juju/+bug/2024897 is fixed
+      - name: Refresh Juju snap
+        run: |
+          sudo snap refresh juju --revision 22345
+
       - name: Download packed charm(s)
         uses: actions/download-artifact@v3
         with:
