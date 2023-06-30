@@ -63,7 +63,7 @@ jobs:
     secrets: inherit
     with:
       charm-name: ${{ matrix.charm }}
-      packed-charms: ${{ needs.build-charms.outputs.charms }}
+      packed-charms: ${{ fromJSON(needs.build-charms.outputs.charms) }}
       charms-artefact-name: ${{ needs.build-charms.outputs.artifact-name }}
 
   e2e-tests:
@@ -71,7 +71,7 @@ jobs:
     needs: [build-charms, quality-checks, unit-tests]
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/_bundle.yaml@dnplas-reusable-builds
     with:
-      packed-charms: ${{ needs.build-charms.outputs.charms }}
+      packed-charms: ${{ fromJSON(needs.build-charms.outputs.charms) }}
       charms-artefact-name: ${{ needs.build-charms.outputs.artifact-name }}
 
   publish-on-success:
