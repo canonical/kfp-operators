@@ -8,10 +8,10 @@ spec:
   - name: grpc 
     port: {{ grpc-port }}
     protocol: TCP
-    targetPort: 8888
+    targetPort: 8887
   - name: http
     port: {{ http-port }}
     protocol: TCP
-    targetPort: 8887
+    targetPort: 8888
   selector:
     app.kubernetes.io/name: {{ service }}
