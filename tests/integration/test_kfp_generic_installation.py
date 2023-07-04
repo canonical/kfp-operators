@@ -181,7 +181,6 @@ def apply_viewer(lightkube_client):
 
 
 # TODO: Abstract the build and deploy method into conftest
-@pytest.mark.skip("")
 async def test_build_and_deploy(ops_test: OpsTest, request):
     """Build and deploy kfp-operators charms."""
     # Immediately raise an error if the model name is not kubeflow
