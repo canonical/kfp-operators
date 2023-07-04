@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Fom: https://github.com/kubeflow/pipelines/blob/master/samples/core/execution_order/execution_order.py
+# From: https://github.com/kubeflow/pipelines/blob/master/samples/core/execution_order/execution_order.py
 # This script is compatible with kfp==1.8, but not with 2.0
 from kfp import dsl, compiler
 import kfp.components as comp
