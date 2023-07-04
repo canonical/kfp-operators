@@ -119,7 +119,10 @@ jobs:
           sudo snap refresh juju --revision 22345
 
       # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
-      - run: sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
+      - run: |
+          # Workaround for allowing requests into the cluster
+          sg microk8s -c "microk8s disable rbac"
+          sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
 
       # TODO: Remove once the actions-operator does this automatically
       - name: Configure kubectl
@@ -132,6 +135,7 @@ jobs:
           juju add-model kubeflow
           # Run integration tests against the 1.7 generic install bundle definition
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
+          # and https://github.com/canonical/charmcraft/issues/1138
           tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/data/kfp_1.7_stable_generic_install.yaml.j2 --destructive-mode
 
       - name: Get all
