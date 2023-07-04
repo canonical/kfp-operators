@@ -131,7 +131,8 @@ jobs:
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
           # Run integration tests against the 1.7 generic install bundle definition
-          tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/data/kfp_1.7_stable_generic_install.yaml.j2
+          # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
+          tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/data/kfp_1.7_stable_generic_install.yaml.j2 --destructive-mode
 
       - name: Get all
         run: kubectl get all -A
