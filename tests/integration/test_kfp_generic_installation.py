@@ -45,7 +45,7 @@ SAMPLE_VIEWER = f"{basedir}/tests/integration/viewer/mnist.yaml"
 log = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def auth_session() -> dict:
     """Returns the session cookies needed for Authentication."""
     # Authenticate with Dex using static password and username
@@ -58,7 +58,7 @@ def auth_session() -> dict:
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def kfp_client(auth_session) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Get session cookies
