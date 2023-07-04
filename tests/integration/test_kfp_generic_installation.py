@@ -45,7 +45,7 @@ SAMPLE_VIEWER = f"{basedir}/tests/integration/viewer/mnist.yaml"
 log = logging.getLogger(__name__)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def auth_session() -> dict:
     """Returns the session cookies needed for Authentication."""
     # Authenticate with Dex using static password and username
@@ -58,7 +58,7 @@ def auth_session() -> dict:
     )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def kfp_client(auth_session) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Get session cookies
@@ -72,7 +72,7 @@ def kfp_client(auth_session) -> kfp.Client:
 @pytest.fixture(scope="session")
 def lightkube_client() -> lightkube.Client:
     """Returns a lihgtkkube Client that can talk to the K8s API."""
-    client = lightkube.Client(field_manager=f"kfp-operators")
+    client = lightkube.Client(field_manager="kfp-operators")
     return client
 
 
@@ -181,6 +181,7 @@ def apply_viewer(lightkube_client):
 
 
 # TODO: Abstract the build and deploy method into conftest
+@pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, request):
     """Build and deploy kfp-operators charms."""
     # Immediately raise an error if the model name is not kubeflow
