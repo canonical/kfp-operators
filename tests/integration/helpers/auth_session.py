@@ -106,28 +106,3 @@ def get_istio_auth_session(url: str, username: str, password: str) -> dict:
         auth_session["session_cookie"] = "; ".join([f"{c.name}={c.value}" for c in s.cookies])
 
     return auth_session
-
-#if __name__ == "__main__":
-#    # kfp-operators v2.0.0-alpha.7 only work with kfp==1.8
-#    # This requires RBAC to be disabled
-#    auth_session = get_istio_auth_session(url="http://10.64.140.43.nip.io/dex", username="admin", password="admin")
-#    client = kfp.Client(host="http://10.64.140.43.nip.io/pipeline", cookies=auth_session["session_cookie"])
-#
-#    # Upload a pipline from yaml file
-#    #print(client.pipeline_uploads.upload_pipeline("./execution_order.yaml", name="my-pipeline"))
-#
-#    # Get pipeline created before
-#    my_pipeline_id = client.get_pipeline_id(name="my-pipeline")
-#    my_pipeline = client.get_pipeline(my_pipeline_id)
-#
-#    # Create an experiment from 'my-pipeline'
-#    experiment_response = client.create_experiment(name='experiment-1', namespace='default')
-#
-#    # Create a run from pipeline package
-#    create_run_response = client.create_run_from_pipeline_package(pipeline_file='./execution_order.yaml', arguments={}, run_name='my-run', experiment_name='experiment-1', namespace='default')
-#
-#    # Monitor a run to completion
-#    #client.wait_for_run_completion(create_run_response.run_id, timeout=10)
-#
-#    # Create a recurring run
-#    create_recurring_run_response = client.create_recurring_run(experiment_id=experiment_response.id, job_name='my-recurring-job', pipeline_id = my_pipeline_id, enabled=True, interval_second=1)
