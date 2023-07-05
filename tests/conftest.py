@@ -11,7 +11,7 @@ def pytest_addoption(parser: Parser):
              "An example file is in ./tests/integration/data/kfp_latest_edge.yaml",
     )
     parser.addoption(
-        "--local-build",
+        "--build",
         default=True,
         help="Whether the charms in this repository should be built locally and used"
              "to render the bundle definition template."

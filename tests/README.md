@@ -52,13 +52,13 @@ This test suite installs and configures the `kfp-operators` in a generic (single
 2. Run integration tests against the preferred bundle definition in `integration/bundles`
 
 ```
-tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> --local-build=<true|false>
+tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> --build=<true|false>
 ```
 
 Where,
 * `--model` tells the testing framework which model to deploy charms to
 * `--bundle` is the path to a bundle template that's going to be used during the test execution
-* `--local-build` tells the test suite whether to build charms and run tests against them, or use charms in Charmhub
+* `--build` tells the test suite whether to build charms and run tests against them, or use charms in Charmhub
 
 ## Testing a multi-user installation
 TODO
