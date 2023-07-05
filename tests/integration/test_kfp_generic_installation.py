@@ -52,9 +52,24 @@ def apply_auth_manifests(lightkube_client):
     for yaml_file_path in glob.glob(f"{AUTH_DIR}/*"):
         apply_manifests(lightkube_client, yaml_file_path)
 
+    yield
+
+    for yaml_file_path in glob.glob(f"{AUTH_DIR}/*"):
+        yaml = Path(yaml_file_path).read_text()
+        yaml_loaded = codecs.load_all_yaml(yaml)
+        for obj in yaml_loaded:
+            try:
+                lightkube_client.delete(
+                    obj=type(obj),
+                    name=obj.metadata.name,
+                    namespace=obj.metadata.namespace,
+                )
+            except lightkube.core.exceptions.ApiError as e:
+                raise e
+
 
 @pytest.fixture(scope="function")
-def kfp_client() -> kfp.Client:
+def kfp_client(apply_auth_manifests) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Instantiate the KFP Client
     client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=KUBEFLOW_USR_NAMESPACE)
