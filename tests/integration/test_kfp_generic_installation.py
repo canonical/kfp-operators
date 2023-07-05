@@ -4,6 +4,7 @@
 import glob
 import logging
 import pytest
+import subprocess
 import time
 from pathlib import Path, PosixPath
 
@@ -46,6 +47,15 @@ AUTH_DIR=f"{basedir}/tests/integration/auth"
 
 log = logging.getLogger(__name__)
 
+@pytest.fixture(scope="function")
+def forward_kfp_ui():
+    """Port forward the kfp-ui service."""
+    kfp_ui_process = subprocess.Popen(["kubectl", "port-forward", "-n", "kubeflow", "svc/kfp-ui", "8080:3000"])
+
+    yield
+
+    kfp_ui_process.terminate()
+
 @pytest.fixture(scope="session")
 def apply_auth_manifests(lightkube_client):
     """Apply authorization for a test user to be able to talk to KFP API and cleanup afterwards."""
@@ -74,7 +84,7 @@ def apply_auth_manifests(lightkube_client):
 
 
 @pytest.fixture(scope="function")
-def kfp_client(apply_auth_manifests) -> kfp.Client:
+def kfp_client(apply_auth_manifests, forward_kfp_ui) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Instantiate the KFP Client
     client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=KUBEFLOW_USR_NAMESPACE)
