@@ -8,15 +8,6 @@ applications:
     charm: argo-server
     channel: 3.3/stable
     scale: 1
-  dex-auth:
-    charm: dex-auth
-    channel: 2.31/stable
-    scale: 1
-    options:
-      public-url: http://10.64.140.43.nip.io
-      static-password: admin
-      static-username: admin
-    trust: true
   istio-ingressgateway:
     charm: istio-gateway
     channel: 1.16/stable
@@ -44,12 +35,6 @@ applications:
     resources:
       oci-image: 468
     scale: 1
-  oidc-gatekeeper:
-    charm: oidc-gatekeeper
-    channel: ckf-1.7/stable
-    scale: 1
-    options:
-      public-url: http://10.64.140.43.nip.io
 {%- if local_build == false %}
   kfp-api:
     charm: kfp-api
@@ -110,14 +95,6 @@ relations:
   - kfp-viz:kfp-viz
 - - istio-pilot:istio-pilot
   - istio-ingressgateway:istio-pilot
-- - dex-auth:oidc-client
-  - oidc-gatekeeper:oidc-client
-- - istio-pilot:ingress
-  - oidc-gatekeeper:ingress
-- - istio-pilot:ingress-auth
-  - oidc-gatekeeper:ingress-auth
-- - istio-pilot:ingress
-  - dex-auth:ingress
 - - kfp-api:relational-db
   - kfp-db:database
 - - kfp-api:object-storage

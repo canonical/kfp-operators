@@ -15,7 +15,6 @@ This directory has the following structure:
     │   ├── kfp_1.7_stable_generic_install.yaml.j2
     │   └── kfp_latest_edge.yaml.j2
     ├── helpers
-    │   ├── auth_session.py
     │   ├── bundle_mgmt.py
     │   └── localize_bundle.py
     ├── pipelines
@@ -33,10 +32,7 @@ This directory has the following structure:
 
 ## Testing a "generic" installation
 
-#### Using Authentication
-This test suite installs and configures the `kfp-operators` in a generic (single-user) environment with Authentication components (dex-auth, istio-operators, and oidc-gatekeeper) for talking to the KFP API Server.
-
-#### Pre-requisites and assumptions
+### Pre-requisites and assumptions
 
 * It is assumed these tests will run in a Microk8s environment.
 * Microk8s addons: metallb, hostpath-storage, dns
