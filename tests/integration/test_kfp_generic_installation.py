@@ -65,7 +65,7 @@ def apply_auth_manifests(lightkube_client):
     for obj in yaml_loaded:
         try:
             lightkube_client.delete(
-                obj=type(obj),
+                res=type(obj),
                 name=obj.metadata.name,
                 namespace=obj.metadata.namespace,
             )
