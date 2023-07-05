@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
+import glob
 import logging
 import pytest
 import time
@@ -40,17 +41,25 @@ SAMPLE_VIEWER = f"{basedir}/tests/integration/viewer/mnist.yaml"
 # Variables for configuring the KFP Client
 # It is assumed that the ml-pipeline-ui (kfp-ui) service is port-forwarded
 KUBEFLOW_LOCAL_HOST="http://localhost:8080"
-KUBEFLOW_USR_NAMESPACE="test-kubeflow-user"
+KUBEFLOW_USR_NAMESPACE="kubeflow-user-example-com"
+AUTH_DIR=f"{basedir}/tests/integration/auth"
 
 log = logging.getLogger(__name__)
+
+@pytest.fixture(scope="session")
+def apply_auth_manifests():
+    """Apply authorization for a test user to be able to talk to KFP API."""
+    for yaml_file_path in glob.glob(f"{AUTH_DIR}/*"):
+        apply(lightkube_client, yaml_file_path)
 
 
 @pytest.fixture(scope="function")
 def kfp_client() -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Instantiate the KFP Client
-    client = kfp.Client(host=f"{KUBEFLOW_LOCAL_HOST}/pipeline", namespace=KUBEFLOW_USR_NAMESPACE)
-
+    client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=KUBEFLOW_USR_NAMESPACE)
+    client.runs.api_client.default_headers.update(
+            {"kubeflow-userid": KUBEFLOW_USR_NAMESPACE})
     return client
 
 
@@ -68,7 +77,7 @@ def upload_and_clean_pipeline(kfp_client: kfp.Client):
         uploadfile=SAMPLE_PIPELINE, name=SAMPLE_PIPELINE_NAME
     )
 
-    yield upload_and_clean_pipeline
+    yield pipeline_upload_response
 
     kfp_client.delete_pipeline(pipeline_id=pipeline_upload_response.id)
 
@@ -76,7 +85,7 @@ def upload_and_clean_pipeline(kfp_client: kfp.Client):
 @pytest.fixture(scope="function")
 def create_and_clean_experiment(kfp_client: kfp.Client):
     """Create an experiment and remove after test case execution."""
-    experiment_response = kfp_client.create_experiment(name="test-experiment", namespace="default")
+    experiment_response = kfp_client.create_experiment(name="test-experiment", namespace=KUBEFLOW_USR_NAMESPACE)
 
     yield experiment_response
 
@@ -158,8 +167,7 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
         arguments={},
         run_name="test-run-1",
         experiment_name=experiment_response.name,
-        namespace="default",
-        service_account="default",
+        namespace=KUBEFLOW_USR_NAMESPACE,
     )
 
     # FIXME: wait for completion does not work at the moment, it seems like
@@ -191,7 +199,6 @@ async def test_create_and_monitor_recurring_run(kfp_client, upload_and_clean_pip
         enabled=True,
         cron_expression="*/2 * * * * *",
         max_concurrency=1,
-        service_account="default",
     )
 
     recurring_job = create_recurring_run_response
@@ -217,10 +224,16 @@ async def test_create_and_monitor_recurring_run(kfp_client, upload_and_clean_pip
 # ---- KFP Viewer and Visualization focused test cases
 async def test_apply_sample_viewer(lightkube_client):
     """Test a Viewer can be applied and its presence is verified."""
-    viewer_object, viewer_object_class = apply_viewer(lightkube_client)
+    # Create a Viewer namespaced resource
+    viewer_class_resource = create_namespaced_resource(
+        group="kubeflow.org", version="v1beta1", kind="Viewer", plural="viewers"
+    )
+
+    # Apply viewer
+    viewer_object = apply(lightkube_client, yaml_file_path=SAMPLE_VIEWER)
 
     viewer = lightkube_client.get(
-        res=viewer_object_class,
+        res=viewer_class_resource,
         name=viewer_object.metadata.name,
         namespace=viewer_object.metadata.namespace,
     )
@@ -249,29 +262,17 @@ async def fetch_response(url, headers):
             result_text = await response.text()
     return result_status, str(result_text)
 
-def apply_viewer(lightkube_client: lightkube.Client):
-    """Apply a sample Viewer and remove it after test case execution.
-
-        Args:
-            lightkube_client (lightkube.Client): the lightkube Client that talks to the K8s API.
-        Returns:
-            A Viewer object and its class.
-    """
-    # Create a Viewer namespaced resource
-    viewer_class_resource = create_namespaced_resource(
-        group="kubeflow.org", version="v1beta1", kind="Viewer", plural="viewers"
-    )
-
-    # Apply viewer
-    viewer_yaml = Path(SAMPLE_VIEWER).read_text()
-    viewer_yaml_loaded = codecs.load_all_yaml(viewer_yaml)
-    for viewer_obj in viewer_yaml_loaded:
+def apply(lightkube_client: lightkube.Client, yaml_file_path: str):
+    """Apply resources using manifest files and returns the applied object."""
+    yaml = Path(yaml_file_path).read_text()
+    yaml_loaded = codecs.load_all_yaml(yaml)
+    for obj in yaml_loaded:
         try:
             lightkube_client.apply(
-                obj=viewer_obj,
-                name=viewer_obj.metadata.name,
-                namespace=viewer_obj.metadata.namespace,
+                obj=obj,
+                name=obj.metadata.name,
+                namespace=obj.metadata.namespace,
             )
         except lightkube.core.exceptions.ApiError as e:
             raise e
-    return viewer_obj, viewer_class_resource
+    return obj
