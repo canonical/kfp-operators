@@ -49,23 +49,28 @@ log = logging.getLogger(__name__)
 @pytest.fixture(scope="session")
 def apply_auth_manifests(lightkube_client):
     """Apply authorization for a test user to be able to talk to KFP API and cleanup afterwards."""
+    # Apply namespace first
+    namespace_dir = f"{AUTH_DIR}/namespace.yaml"
+    apply_manifests(lightkube_client, namespace_dir)
+
+    # Apply all auth resources
     for yaml_file_path in glob.glob(f"{AUTH_DIR}/*"):
         apply_manifests(lightkube_client, yaml_file_path)
 
     yield
 
-    for yaml_file_path in glob.glob(f"{AUTH_DIR}/*"):
-        yaml = Path(yaml_file_path).read_text()
-        yaml_loaded = codecs.load_all_yaml(yaml)
-        for obj in yaml_loaded:
-            try:
-                lightkube_client.delete(
-                    obj=type(obj),
-                    name=obj.metadata.name,
-                    namespace=obj.metadata.namespace,
-                )
-            except lightkube.core.exceptions.ApiError as e:
-                raise e
+    # Remove namespace
+    yaml = Path(namespace_dir).read_text()
+    yaml_loaded = codecs.load_all_yaml(yaml)
+    for obj in yaml_loaded:
+        try:
+            lightkube_client.delete(
+                obj=type(obj),
+                name=obj.metadata.name,
+                namespace=obj.metadata.namespace,
+            )
+        except lightkube.core.exceptions.ApiError as e:
+            raise e
 
 
 @pytest.fixture(scope="function")
