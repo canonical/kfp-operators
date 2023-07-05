@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 
 @pytest.fixture(scope="session")
 def apply_auth_manifests(lightkube_client):
-    """Apply authorization for a test user to be able to talk to KFP API."""
+    """Apply authorization for a test user to be able to talk to KFP API and cleanup afterwards."""
     for yaml_file_path in glob.glob(f"{AUTH_DIR}/*"):
         apply_manifests(lightkube_client, yaml_file_path)
 
