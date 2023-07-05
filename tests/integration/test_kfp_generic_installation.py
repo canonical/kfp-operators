@@ -47,10 +47,10 @@ AUTH_DIR=f"{basedir}/tests/integration/auth"
 log = logging.getLogger(__name__)
 
 @pytest.fixture(scope="session")
-def apply_auth_manifests():
+def apply_auth_manifests(lightkube_client):
     """Apply authorization for a test user to be able to talk to KFP API."""
     for yaml_file_path in glob.glob(f"{AUTH_DIR}/*"):
-        apply(lightkube_client, yaml_file_path)
+        apply_manifests(lightkube_client, yaml_file_path)
 
 
 @pytest.fixture(scope="function")
@@ -230,7 +230,7 @@ async def test_apply_sample_viewer(lightkube_client):
     )
 
     # Apply viewer
-    viewer_object = apply(lightkube_client, yaml_file_path=SAMPLE_VIEWER)
+    viewer_object = apply_manifests(lightkube_client, yaml_file_path=SAMPLE_VIEWER)
 
     viewer = lightkube_client.get(
         res=viewer_class_resource,
@@ -262,7 +262,7 @@ async def fetch_response(url, headers):
             result_text = await response.text()
     return result_status, str(result_text)
 
-def apply(lightkube_client: lightkube.Client, yaml_file_path: str):
+def apply_manifests(lightkube_client: lightkube.Client, yaml_file_path: str):
     """Apply resources using manifest files and returns the applied object."""
     yaml = Path(yaml_file_path).read_text()
     yaml_loaded = codecs.load_all_yaml(yaml)
