@@ -218,13 +218,13 @@ async def test_create_and_monitor_recurring_run(kfp_client, upload_and_clean_pip
     assert recurring_job.trigger.cron_schedule.cron == "*/2 * * * * *"
 
     # Wait for the recurring job to schedule some runs
-    # time.sleep(6)
+    time.sleep(6)
 
     # FIXME: disabling the job does not work at the moment, it seems like
     # the status of the recurring run is never updated and is causing the
     # following assertion to fail
     # Disable the job after few runs
-    # kfp_client.disable_job(recurring_job.id)
+    kfp_client.disable_job(recurring_job.id)
 
     # Assert the job is disabled
     # assert recurring_job.enabled is False
