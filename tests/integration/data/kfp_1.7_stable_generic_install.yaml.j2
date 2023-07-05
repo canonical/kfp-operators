@@ -3,145 +3,79 @@ applications:
   argo-controller:
     charm: argo-controller
     channel: 3.3/stable
-    revision: 236
-    series: focal
-    resources:
-      oci-image: 185
     scale: 1
-    constraints: arch=amd64
   argo-server:
     charm: argo-server
     channel: 3.3/stable
-    revision: 185
-    series: focal
-    resources:
-      oci-image: 186
     scale: 1
-    constraints: arch=amd64
   dex-auth:
     charm: dex-auth
     channel: 2.31/stable
-    revision: 224
-    series: focal
-    resources:
-      oci-image: 318
     scale: 1
     options:
       public-url: http://10.64.140.43.nip.io
       static-password: admin
       static-username: admin
-    constraints: arch=amd64
     trust: true
   istio-ingressgateway:
     charm: istio-gateway
     channel: 1.16/stable
-    revision: 551
-    series: focal
     scale: 1
     options:
       kind: ingress
-    constraints: arch=amd64
     trust: true
   istio-pilot:
     charm: istio-pilot
     channel: 1.16/stable
-    revision: 551
-    series: focal
-    scale: 1
     options:
       default-gateway: kubeflow-gateway
-    constraints: arch=amd64
     trust: true
   kfp-db:
     charm: mysql-k8s
     channel: 8.0/edge
-    revision: 85
-    series: jammy
     resources:
       mysql-image: 84
     scale: 1
-    constraints: arch=amd64 mem=600M
-    storage:
-      database: kubernetes,1,1024M
     trust: true
+    constraints: 600M
   minio:
     charm: minio
     channel: ckf-1.7/stable
-    revision: 186
-    series: focal
     resources:
       oci-image: 468
     scale: 1
-    constraints: arch=amd64
-    storage:
-      minio-data: kubernetes,1,10240M
   oidc-gatekeeper:
     charm: oidc-gatekeeper
     channel: ckf-1.7/stable
-    revision: 176
-    series: focal
-    resources:
-      oci-image: 308
     scale: 1
     options:
       public-url: http://10.64.140.43.nip.io
-    constraints: arch=amd64
 {%- if local_build == false %}
   kfp-api:
     charm: kfp-api
     channel: 2.0/stable
-    revision: 413
-    series: focal
-    resources:
-      oci-image: 414
     scale: 1
-    constraints: arch=amd64
     trust: true
   kfp-persistence:
     charm: kfp-persistence
     channel: 2.0/stable
-    revision: 407
-    series: focal
-    resources:
-      oci-image: 412
     scale: 1
-    constraints: arch=amd64
   kfp-schedwf:
     charm: kfp-schedwf
     channel: 2.0/stable
-    revision: 424
-    series: focal
-    resources:
-      oci-image: 426
     scale: 1
-    constraints: arch=amd64
   kfp-ui:
     charm: kfp-ui
     channel: 2.0/stable
-    revision: 412
-    series: focal
-    resources:
-      oci-image: 412
     scale: 1
-    constraints: arch=amd64
   kfp-viewer:
     charm: kfp-viewer
     channel: 2.0/stable
-    revision: 424
-    series: focal
-    resources:
-      oci-image: 420
     scale: 1
-    constraints: arch=amd64
   kfp-viz:
     charm: kfp-viz
     channel: 2.0/stable
-    revision: 394
-    series: focal
-    resources:
-      oci-image: 401
     scale: 1
-    constraints: arch=amd64
 {% else %}
   kfp-api:
     charm: {{ kfp_api }}

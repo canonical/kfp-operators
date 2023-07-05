@@ -12,6 +12,7 @@ from helpers.auth_session import get_istio_auth_session
 
 import aiohttp
 import kfp
+import kfp_server_api
 import lightkube
 import yaml
 from lightkube import codecs
@@ -71,113 +72,31 @@ def kfp_client(auth_session) -> kfp.Client:
 
 @pytest.fixture(scope="session")
 def lightkube_client() -> lightkube.Client:
-    """Returns a lihgtkkube Client that can talk to the K8s API."""
+    """Returns a lightkube Client that can talk to the K8s API."""
     client = lightkube.Client(field_manager="kfp-operators")
     return client
 
 
 @pytest.fixture(scope="function")
-def upload_pipeline_from_file(kfp_client: kfp.Client):
-    """Upload a pipeline with the Python client(from a pre-compiled pipeline yaml file) and remove after test case execution."""
+def upload_and_clean_pipeline(kfp_client: kfp.Client):
+    """Upload an arbitrary pipeline and remove after test case execution."""
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
         uploadfile=SAMPLE_PIPELINE, name=SAMPLE_PIPELINE_NAME
     )
 
-    yield pipeline_upload_response
+    yield upload_and_clean_pipeline
 
     kfp_client.delete_pipeline(pipeline_id=pipeline_upload_response.id)
 
 
 @pytest.fixture(scope="function")
-def create_experiment(kfp_client: kfp.Client):
+def create_and_clean_experiment(kfp_client: kfp.Client):
     """Create an experiment and remove after test case execution."""
     experiment_response = kfp_client.create_experiment(name="test-experiment", namespace="default")
 
     yield experiment_response
 
     kfp_client.delete_experiment(experiment_id=experiment_response.id)
-
-
-@pytest.fixture(scope="function")
-def create_run_from_pipeline_file(kfp_client: kfp.Client, create_experiment):
-    """Create a run from a pipeline file using an existing experiment."""
-    # Create an experiment for this run
-    experiment_response = create_experiment
-
-    # Create a run from a pipeline file (SAMPLE_PIPELINE) and an experiment (create_experiment).
-    # This call uses the 'default' kubeflow service account to be able to edit Workflows
-    create_run_response = kfp_client.create_run_from_pipeline_package(
-        pipeline_file=SAMPLE_PIPELINE,
-        arguments={},
-        run_name="test-run",
-        experiment_name=experiment_response.name,
-        namespace="default",
-        service_account="default",
-    )
-
-    yield create_run_response
-
-
-@pytest.fixture(scope="function")
-def create_recurring_run(kfp_client: kfp.Client, upload_pipeline_from_file, create_experiment):
-    """Create a recuring run from a pipline that's uploaded to the server and remove after test case execution."""
-    # Upload a pipeline from file
-    pipeline_response = upload_pipeline_from_file
-
-    # Create an experiment for this run
-    experiment_response = create_experiment
-
-    # Create a recurring run from a pipeline (upload_pipeline_from_file) and an experiment (create_experiment)
-    # This call uses the 'default' kubeflow service account to be able to edit ScheduledWorkflows
-    # This ScheduledWorkflow (Recurring Run) will run once every two seconds
-    create_recurring_run_response = kfp_client.create_recurring_run(
-        experiment_id=experiment_response.id,
-        job_name="my-recurring-job",
-        pipeline_id=pipeline_response.id,
-        enabled=True,
-        cron_expression="*/2 * * * * *",
-        max_concurrency=1,
-        service_account="default",
-    )
-
-    yield create_recurring_run_response
-
-    # Delete job
-    kfp_client.delete_job(create_recurring_run_response.id)
-
-
-@pytest.fixture(scope="function")
-def apply_viewer(lightkube_client):
-    """Apply a sample Viewer and remove it after test case execution."""
-    # Create a Viewer namespaced resource
-    viewer_class_resource = create_namespaced_resource(
-        group="kubeflow.org", version="v1beta1", kind="Viewer", plural="viewers"
-    )
-
-    # Apply viewer
-    viewer_yaml = Path(SAMPLE_VIEWER).read_text()
-    viewer_yaml_loaded = codecs.load_all_yaml(viewer_yaml)
-    for viewer_obj in viewer_yaml_loaded:
-        try:
-            lightkube_client.apply(
-                obj=viewer_obj,
-                name=viewer_obj.metadata.name,
-                namespace=viewer_obj.metadata.namespace,
-            )
-        except lightkube.core.exceptions.ApiError as e:
-            raise e
-
-    yield viewer_obj
-
-    for viewer_obj in viewer_yaml_loaded:
-        try:
-            lightkube_client.delete(
-                res=viewer_class_resource,
-                name=viewer_obj.metadata.name,
-                namespace=viewer_obj.metadata.namespace,
-            )
-        except lightkube.core.exceptions.ApiError as e:
-            raise e
 
 
 # TODO: Abstract the build and deploy method into conftest
@@ -227,20 +146,36 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
 
 
 # ---- KFP API Server focused test cases
-async def test_upload_pipeline(upload_pipeline_from_file, kfp_client):
+async def test_upload_pipeline(kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
+    # Upload a pipeline and get the server response
+    pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
+        uploadfile=SAMPLE_PIPELINE, name="test-upload-pipeline"
+    )
     # Upload a pipeline and get its ID
-    uploaded_pipeline_id = upload_pipeline_from_file.id
+    uploaded_pipeline_id = pipeline_upload_response.id
 
     # Get pipeline id by name, default='sample-pipeline'
-    server_pipeline_id = kfp_client.get_pipeline_id(name=SAMPLE_PIPELINE_NAME)
+    server_pipeline_id = kfp_client.get_pipeline_id(name="test-upload-pipeline")
     assert uploaded_pipeline_id == server_pipeline_id
 
 
-async def test_create_and_monitor_run(create_run_from_pipeline_file, kfp_client):
+async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     """Create a run and monitor it to completion."""
     # Create a run, save response in variable for easy manipulation
-    run_response = create_run_from_pipeline_file
+    # Create an experiment for this run
+    experiment_response = create_and_clean_experiment
+
+    # Create a run from a pipeline file (SAMPLE_PIPELINE) and an experiment (create_experiment).
+    # This call uses the 'default' kubeflow service account to be able to edit Workflows
+    create_run_response = kfp_client.create_run_from_pipeline_package(
+        pipeline_file=SAMPLE_PIPELINE,
+        arguments={},
+        run_name="test-run-1",
+        experiment_name=experiment_response.name,
+        namespace="default",
+        service_account="default",
+    )
 
     # FIXME: wait for completion does not work at the moment, it seems like
     # the status of the run is never updated and is causing this to timeout
@@ -252,11 +187,29 @@ async def test_create_and_monitor_run(create_run_from_pipeline_file, kfp_client)
 
 
 # ---- ScheduledWorfklows and Argo focused test case
-async def test_create_and_monitor_recurring_run(create_recurring_run, kfp_client):
+async def test_create_and_monitor_recurring_run(kfp_client, upload_and_clean_pipeline, create_and_clean_experiment):
     """Create a recurring run and monitor it to completion."""
-    # Create a recurring run, save response in variable for easy manipulation
-    recurring_job = create_recurring_run
 
+    # Upload a pipeline from file
+    pipeline_response = upload_and_clean_pipeline
+
+    # Create an experiment for this run
+    experiment_response = create_and_clean_experiment
+
+    # Create a recurring run from a pipeline (upload_pipeline_from_file) and an experiment (create_experiment)
+    # This call uses the 'default' kubeflow service account to be able to edit ScheduledWorkflows
+    # This ScheduledWorkflow (Recurring Run) will run once every two seconds
+    create_recurring_run_response = kfp_client.create_recurring_run(
+        experiment_id=experiment_response.id,
+        job_name="recurring-job-1",
+        pipeline_id=pipeline_response.id,
+        enabled=True,
+        cron_expression="*/2 * * * * *",
+        max_concurrency=1,
+        service_account="default",
+    )
+
+    recurring_job = create_recurring_run_response
     # Assert the job is enabled
     assert recurring_job.enabled is True
 
@@ -276,20 +229,19 @@ async def test_create_and_monitor_recurring_run(create_recurring_run, kfp_client
     # assert recurring_job.enabled is False
 
 
-# ---- KFP Viewer focused test cases
-async def test_apply_sample_viewer(lightkube_client, apply_viewer):
+# ---- KFP Viewer and Visualization focused test cases
+async def test_apply_sample_viewer(lightkube_client):
     """Test a Viewer can be applied and its presence is verified."""
-    viewer_object = apply_viewer
+    viewer_object, viewer_object_class = apply_viewer(lightkube_client)
 
     viewer = lightkube_client.get(
-        res=type(viewer_object),
+        res=viewer_object_class,
         name=viewer_object.metadata.name,
         namespace=viewer_object.metadata.namespace,
     )
     assert viewer is not None
 
 
-# ---- KFP Visualization focused test cases
 async def test_viz_server_healthcheck(ops_test: OpsTest):
     """Run a healthcheck on the server endpoint."""
     status = await ops_test.model.get_status()
@@ -297,32 +249,6 @@ async def test_viz_server_healthcheck(ops_test: OpsTest):
     url = units["kfp-viz/0"]["address"]
     headers = {"kubeflow-userid": "user"}
     result_status, result_text = await fetch_response(url=f"http://{url}:8888", headers=headers)
-
-    assert result_status == 200
-
-
-@pytest.mark.skip("The Authentication workflow prevents this test from running")
-async def test_create_viz(ops_test: OpsTest, auth_session):
-    """Create a Visualization."""
-    # Get session cookies
-    session_cookies = auth_session["session_cookie"]
-
-    # Get Visualization server information
-    status = await ops_test.model.get_status()
-    units = status["applications"]["kfp-viz"]["units"]
-    url = units["kfp-viz/0"]["address"]
-    headers = {"kubeflow-userid": "user"}
-
-    # Define a test Visualization
-    test_visualization_data = "type=test&source=gs://ml-pipeline/data.csv"
-
-    # POST a request for creating a Visualization
-    result_status, result_text = await post_request(
-        f"http://{url}:8888",
-        headers=headers,
-        data=test_visualization_data,
-        cookies=session_cookies,
-    )
 
     assert result_status == 200
 
@@ -338,7 +264,6 @@ async def fetch_response(url, headers, cookies: dict = None):
             result_text = await response.text()
     return result_status, str(result_text)
 
-
 async def post_request(url, headers, data: str, cookies: dict = None):
     """Make an HTTP POST request"."""
     result_status = 0
@@ -348,3 +273,30 @@ async def post_request(url, headers, data: str, cookies: dict = None):
             result_status = response.status
             result_text = await response.text()
     return result_status, str(result_text)
+
+def apply_viewer(lightkube_client: lightkube.Client):
+    """Apply a sample Viewer and remove it after test case execution.
+
+        Args:
+            lightkube_client (lightkube.Client): the lightkube Client that talks to the K8s API.
+        Returns:
+            A Viewer object and its class.
+    """
+    # Create a Viewer namespaced resource
+    viewer_class_resource = create_namespaced_resource(
+        group="kubeflow.org", version="v1beta1", kind="Viewer", plural="viewers"
+    )
+
+    # Apply viewer
+    viewer_yaml = Path(SAMPLE_VIEWER).read_text()
+    viewer_yaml_loaded = codecs.load_all_yaml(viewer_yaml)
+    for viewer_obj in viewer_yaml_loaded:
+        try:
+            lightkube_client.apply(
+                obj=viewer_obj,
+                name=viewer_obj.metadata.name,
+                namespace=viewer_obj.metadata.namespace,
+            )
+        except lightkube.core.exceptions.ApiError as e:
+            raise e
+    return viewer_obj, viewer_class_resource
