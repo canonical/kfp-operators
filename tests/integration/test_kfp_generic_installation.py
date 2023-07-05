@@ -127,7 +127,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
         context.update([(f"{charm.replace('-', '_')}", charm_file)])
 
     # Render kfp-operators bundle file with locally built charms and their resources
-    local_build = request.config.getoptions("local-build")
+    local_build = request.config.getoption("local-build")
     rendered_bundle = render_bundle(
         ops_test, bundle_path=bundlefile_path, context=context, local_build=local_build
     )
