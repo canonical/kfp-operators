@@ -25,16 +25,13 @@ applications:
   kfp-db:
     charm: mysql-k8s
     channel: 8.0/edge
-    resources:
-      mysql-image: 84
     scale: 1
+    options:
+      profile: testing
     trust: true
-    constraints: mem=600M
   minio:
     charm: minio
     channel: ckf-1.7/stable
-    resources:
-      oci-image: 468
     scale: 1
 {%- if local_build == false %}
   kfp-api:
