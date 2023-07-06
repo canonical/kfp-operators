@@ -25,7 +25,7 @@ This directory has the following structure:
         └── mnist.yaml
 ```
 
-* `integration/bundles`: contains a set of bundle definition Jinja2 templates that can be passed to the `tox` command to run integration tests against different configurations for the kfp-operators. The CI runs the latest stable version of this bundle definition.
+* `integration/bundles`: contains a set of bundle definition Jinja2 templates that can be passed to the `tox` command to run integration tests against different configurations for the kfp-operators. The CI runs the latest stable version of this bundle definition by default.
 * `integration/pipelines`: contains Python scripts that define KFP pipelines, these are used to compile the pipelines files (YAML files inside this same directory). These files are used by the test suites for uploading pipelines and creating runs, for instance.
 * `integration/viewer`: contains a set of `Viewer` objects that can be used to test the Visualisation (kfp-viz) and Viewer (kfp-viewer) KFP componets.
 * `integration/helpers`: contains a set of helper methods that are used by the test suites.
@@ -38,9 +38,9 @@ This directory has the following structure:
 * Microk8s addons: metallb, hostpath-storage, dns
 > NOTE: Metallb is enabled with an arbitrary IP range 10.64.140.43-10.64.140.49
 * juju
-* charmcraft (only for local builds)
+* charmcraft (only for testing with locally built charms)
 * tox
-* lxd (only for local builds and if `destructive-mode` is not enabled)
+* lxd (only for testing with locally built and if `destructive-mode` is not enabled)
 
 ##### Testing locally
 

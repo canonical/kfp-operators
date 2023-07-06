@@ -162,6 +162,8 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
     # into blocked during deploy while waiting for each other to satisfy relations, so we don't
     # raise_on_blocked.
     await ops_test.model.wait_for_idle(
+        wait_for_active=True,
+        idle_period=40,
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
