@@ -33,6 +33,16 @@ applications:
     charm: minio
     channel: ckf-1.7/stable
     scale: 1
+  kubeflow-profiles:
+    charm: kubeflow-profiles
+    channel: 1.7/stable
+    scale: 1
+    trust: true
+  kubeflow-roles:
+    charm: kubeflow-roles
+    channel: 1.7/stable
+    scale: 1
+    trust: true
 {%- if local_build == false %}
   kfp-api:
     charm: kfp-api

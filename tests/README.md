@@ -12,7 +12,7 @@ This directory has the following structure:
 ├── conftest.py
 └── integration
     ├── bundles
-    │   ├── kfp_1.7_stable_generic_install.yaml.j2
+    │   ├── kfp_1.7_stable_install.yaml.j2
     │   └── kfp_latest_edge.yaml.j2
     ├── helpers
     │   ├── bundle_mgmt.py
@@ -20,6 +20,8 @@ This directory has the following structure:
     ├── pipelines
     │   ├── sample_pipeline.yaml
     │   └── sample_pipeline_execution_order.py
+    ├── profile
+    │   └── profile.yaml
     ├── test_kfp_generic_installation.py
     └── viewer
         └── mnist.yaml
@@ -30,9 +32,9 @@ This directory has the following structure:
 * `integration/viewer`: contains a set of `Viewer` objects that can be used to test the Visualisation (kfp-viz) and Viewer (kfp-viewer) KFP componets.
 * `integration/helpers`: contains a set of helper methods that are used by the test suites.
 
-## Testing a "generic" installation
+## Testing locally
 
-### Pre-requisites and assumptions
+#### Pre-requisites and assumptions
 
 * It is assumed these tests will run in a Microk8s environment.
 * Microk8s addons: metallb, hostpath-storage, dns
@@ -42,7 +44,12 @@ This directory has the following structure:
 * tox
 * lxd (only for testing with locally built and if `destructive-mode` is not enabled)
 
-##### Testing locally
+#### Functional tests
+
+The test suite for functional tests will deploy the `kfp_1.7_stable_install.yaml.j2` bundle, upload a pipeline, create an experiment, create a run and a recurring run, and run health checks on the visualisation and viewer servers.
+Communication with the KFP API happens using the KFP Python SDK. A `kfp.client` is configured using a test profile (`Profile`) to be able to execute pipeline operations (create runs, experiments, upload pipelines, etc.).
+
+> NOTE: This test suite does not deploy the `kfp-profile-controller` as the tests for that component are already covered in the charm's directory.
 
 1. Create a `kubeflow` model with `juju add-model kubeflow`
 2. Run integration tests against the preferred bundle definition in `integration/bundles`
@@ -55,6 +62,3 @@ Where,
 * `--model` tells the testing framework which model to deploy charms to
 * `--bundle` is the path to a bundle template that's going to be used during the test execution
 * `--build` tells the test suite whether to build charms and run tests against them, or use charms in Charmhub
-
-## Testing a multi-user installation
-TODO

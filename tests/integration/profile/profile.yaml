@@ -1,0 +1,11 @@
+# Copyright 2022 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+apiVersion: kubeflow.org/v1
+kind: Profile
+metadata:
+  name: kubeflow-user-example-com
+spec:
+  owner:
+    kind: User
+    name: userid2@email.com

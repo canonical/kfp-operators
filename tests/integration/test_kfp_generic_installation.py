@@ -43,7 +43,7 @@ SAMPLE_VIEWER = f"{basedir}/tests/integration/viewer/mnist.yaml"
 # It is assumed that the ml-pipeline-ui (kfp-ui) service is port-forwarded
 KUBEFLOW_LOCAL_HOST="http://localhost:8080"
 KUBEFLOW_USR_NAMESPACE="kubeflow-user-example-com"
-AUTH_DIR=f"{basedir}/tests/integration/auth"
+PROFILE_FILE=f"{basedir}/tests/integration/profile/profile.yaml"
 
 log = logging.getLogger(__name__)
 
@@ -57,20 +57,15 @@ def forward_kfp_ui():
     kfp_ui_process.terminate()
 
 @pytest.fixture(scope="session")
-def apply_auth_manifests(lightkube_client):
-    """Apply authorization for a test user to be able to talk to KFP API and cleanup afterwards."""
-    # Apply namespace first
-    namespace_dir = f"{AUTH_DIR}/namespace.yaml"
-    apply_manifests(lightkube_client, namespace_dir)
-
-    # Apply all auth resources
-    for yaml_file_path in glob.glob(f"{AUTH_DIR}/*"):
-        apply_manifests(lightkube_client, yaml_file_path)
+def apply_profile(lightkube_client):
+    """Apply a Profile simulating a user."""
+    # Apply Profile first
+    apply_manifests(lightkube_client, PROFILE_FILE)
 
     yield
 
     # Remove namespace
-    yaml = Path(namespace_dir).read_text()
+    yaml = Path(PROFILE_FILE).read_text()
     yaml_loaded = codecs.load_all_yaml(yaml)
     for obj in yaml_loaded:
         try:
