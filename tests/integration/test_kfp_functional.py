@@ -6,6 +6,7 @@ import logging
 import pytest
 import subprocess
 import time
+import yaml
 from pathlib import Path, PosixPath
 
 from helpers.localize_bundle import localize_bundle_application, get_resources_from_charm_file
@@ -19,6 +20,7 @@ import yaml
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource, create_namespaced_resource
 from pytest_operator.plugin import OpsTest
+from tenacity import retry, stop_after_delay, wait_fixed
 
 GENERIC_BUNDLE_CHARMS = [
     "kfp-api",
@@ -42,12 +44,14 @@ SAMPLE_VIEWER = f"{basedir}/tests/integration/viewer/mnist.yaml"
 # Variables for configuring the KFP Client
 # It is assumed that the ml-pipeline-ui (kfp-ui) service is port-forwarded
 KUBEFLOW_LOCAL_HOST="http://localhost:8080"
-KUBEFLOW_USR_NAMESPACE="kubeflow-user-example-com"
-PROFILE_FILE=f"{basedir}/tests/integration/profile/profile.yaml"
+KUBEFLOW_PROFILE_NAMESPACE="kubeflow-user-example-com"
+PROFILE_FILE_PATH=f"{basedir}/tests/integration/profile/profile.yaml"
+PROFILE_FILE=yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
+KUBEFLOW_USER_NAME=PROFILE_FILE["spec"]["owner"]["name"]
 
 log = logging.getLogger(__name__)
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def forward_kfp_ui():
     """Port forward the kfp-ui service."""
     kfp_ui_process = subprocess.Popen(["kubectl", "port-forward", "-n", "kubeflow", "svc/kfp-ui", "8080:3000"])
@@ -65,12 +69,12 @@ def apply_profile(lightkube_client):
     )
 
     # Apply Profile first
-    apply_manifests(lightkube_client, PROFILE_FILE)
+    apply_manifests(lightkube_client, PROFILE_FILE_PATH)
 
     yield
 
     # Remove namespace
-    read_yaml = Path(PROFILE_FILE).read_text()
+    read_yaml = Path(PROFILE_FILE_PATH).read_text()
     yaml_loaded = codecs.load_all_yaml(read_yaml)
     for obj in yaml_loaded:
         try:
@@ -83,13 +87,13 @@ def apply_profile(lightkube_client):
             raise e
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def kfp_client(apply_profile, forward_kfp_ui) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Instantiate the KFP Client
-    client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=KUBEFLOW_USR_NAMESPACE)
+    client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=KUBEFLOW_PROFILE_NAMESPACE)
     client.runs.api_client.default_headers.update(
-            {"kubeflow-userid": KUBEFLOW_USR_NAMESPACE})
+            {"kubeflow-userid": KUBEFLOW_USER_NAME})
     return client
 
 
@@ -186,6 +190,7 @@ async def test_upload_pipeline(kfp_client):
     assert uploaded_pipeline_id == server_pipeline_id
 
 
+@retry(stop=stop_after_delay(5), wait=wait_fixed(1))
 async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     """Create a run and monitor it to completion."""
     # Create a run, save response in variable for easy manipulation
@@ -199,19 +204,18 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
         arguments={},
         run_name="test-run-1",
         experiment_name=experiment_response.name,
-        namespace=KUBEFLOW_USR_NAMESPACE,
+        namespace=KUBEFLOW_PROFILE_NAMESPACE,
     )
 
-    # FIXME: wait for completion does not work at the moment, it seems like
-    # the status of the run is never updated and is causing this to timeout
     # Monitor the run to completion, the pipeline should not be executed in
-    # more than 60 seconds as it is a very simple operation
-    # monitor_response = kfp_client.wait_for_run_completion(run_response.run_id, timeout=60)
+    # more than 300 seconds as it is a very simple operation
+    monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=300)
 
-    # assert monitor_response.success is True
+    assert monitor_response.success is True
 
 
 # ---- ScheduledWorfklows and Argo focused test case
+@retry(stop=stop_after_delay(5), wait=wait_fixed(1))
 async def test_create_and_monitor_recurring_run(kfp_client, upload_and_clean_pipeline, create_and_clean_experiment):
     """Create a recurring run and monitor it to completion."""
 

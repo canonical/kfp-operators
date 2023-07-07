@@ -22,7 +22,7 @@ This directory has the following structure:
     │   └── sample_pipeline_execution_order.py
     ├── profile
     │   └── profile.yaml
-    ├── test_kfp_generic_installation.py
+    ├── test_kfp_functional.py
     └── viewer
         └── mnist.yaml
 ```
