@@ -50,10 +50,13 @@ KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 
 log = logging.getLogger(__name__)
 
+
 @pytest.fixture(scope="session")
 def forward_kfp_ui():
     """Port forward the kfp-ui service."""
-    kfp_ui_process = subprocess.Popen(["kubectl", "port-forward", "-n", "kubeflow", "svc/kfp-ui", "8080:3000"])
+    kfp_ui_process = subprocess.Popen(
+        ["kubectl", "port-forward", "-n", "kubeflow", "svc/kfp-ui", "8080:3000"]
+    )
 
     # FIXME: find a better way to do this
     # Allow time for the port-forward to happen
@@ -62,6 +65,7 @@ def forward_kfp_ui():
     yield
 
     kfp_ui_process.terminate()
+
 
 @pytest.fixture(scope="session")
 def apply_profile(lightkube_client):
@@ -95,8 +99,7 @@ def kfp_client(apply_profile, forward_kfp_ui) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Instantiate the KFP Client
     client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=KUBEFLOW_PROFILE_NAMESPACE)
-    client.runs.api_client.default_headers.update(
-            {"kubeflow-userid": KUBEFLOW_USER_NAME})
+    client.runs.api_client.default_headers.update({"kubeflow-userid": KUBEFLOW_USER_NAME})
     return client
 
 
@@ -122,7 +125,9 @@ def upload_and_clean_pipeline(kfp_client: kfp.Client):
 @pytest.fixture(scope="function")
 def create_and_clean_experiment(kfp_client: kfp.Client):
     """Create an experiment and remove after test case execution."""
-    experiment_response = kfp_client.create_experiment(name="test-experiment", namespace=KUBEFLOW_PROFILE_NAMESPACE)
+    experiment_response = kfp_client.create_experiment(
+        name="test-experiment", namespace=KUBEFLOW_PROFILE_NAMESPACE
+    )
 
     yield experiment_response
 
@@ -179,7 +184,16 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
 
     # Wait for kfp-ui to be active and idle.
     # This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
-    await ops_test.model.wait_for_idle(apps=["kfp-ui"], status="active", raise_on_blocked=False, raise_on_error=True, idle_period=40, wait_for_active=True, timeout=1800)
+    await ops_test.model.wait_for_idle(
+        apps=["kfp-ui"],
+        status="active",
+        raise_on_blocked=False,
+        raise_on_error=True,
+        idle_period=40,
+        wait_for_active=True,
+        timeout=1800,
+    )
+
 
 # ---- KFP API Server focused test cases
 async def test_upload_pipeline(kfp_client):
@@ -216,11 +230,13 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     # more than 300 seconds as it is a very simple operation
     monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=300)
 
-    assert monitor_response.run.status == 'Succeeded'
+    assert monitor_response.run.status == "Succeeded"
 
 
 # ---- ScheduledWorfklows and Argo focused test case
-async def test_create_and_monitor_recurring_run(kfp_client, upload_and_clean_pipeline, create_and_clean_experiment):
+async def test_create_and_monitor_recurring_run(
+    kfp_client, upload_and_clean_pipeline, create_and_clean_experiment
+):
     """Create a recurring run and monitor it to completion."""
 
     # Upload a pipeline from file
@@ -301,6 +317,7 @@ async def fetch_response(url, headers):
             result_status = response.status
             result_text = await response.text()
     return result_status, str(result_text)
+
 
 def apply_manifests(lightkube_client: lightkube.Client, yaml_file_path: str):
     """Apply resources using manifest files and returns the applied object."""
