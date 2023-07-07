@@ -1,4 +1,4 @@
-# Copyright 2021 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 from contextlib import nullcontext as does_not_raise
@@ -418,12 +418,17 @@ class TestCharm:
         assert pebble_plan
         assert pebble_plan.services
         pebble_plan_info = pebble_plan.to_dict()
-        assert pebble_plan_info["services"]["ml-pipeline-api-server"]["command"] == (
+        pebble_exec_command = pebble_plan_info["services"]["ml-pipeline-api-server"]["command"]
+        exec_command = (
+            # TODO: Remove 'sleep' as soon as a fix for
+            # https://github.com/canonical/pebble/issues/240 is provided
+            "sleep 1.1 && "
             "/bin/apiserver "
             "--config=/config "
             "--sampleconfig=/config/sample_config.json "
             "-logtostderr=true "
         )
+        assert pebble_exec_command == f"bash -c '{exec_command}'"
         test_env = pebble_plan_info["services"]["ml-pipeline-api-server"]["environment"]
         # there should be 1 environment variable
         assert 1 == len(test_env)
