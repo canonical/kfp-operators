@@ -20,7 +20,6 @@ import yaml
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource, create_namespaced_resource
 from pytest_operator.plugin import OpsTest
-from tenacity import retry, stop_after_delay, wait_fixed
 
 GENERIC_BUNDLE_CHARMS = [
     "kfp-api",
@@ -43,11 +42,11 @@ SAMPLE_VIEWER = f"{basedir}/tests/integration/viewer/mnist.yaml"
 
 # Variables for configuring the KFP Client
 # It is assumed that the ml-pipeline-ui (kfp-ui) service is port-forwarded
-KUBEFLOW_LOCAL_HOST="http://localhost:8080"
-KUBEFLOW_PROFILE_NAMESPACE="kubeflow-user-example-com"
-PROFILE_FILE_PATH=f"{basedir}/tests/integration/profile/profile.yaml"
-PROFILE_FILE=yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
-KUBEFLOW_USER_NAME=PROFILE_FILE["spec"]["owner"]["name"]
+KUBEFLOW_LOCAL_HOST = "http://localhost:8080"
+KUBEFLOW_PROFILE_NAMESPACE = "kubeflow-user-example-com"
+PROFILE_FILE_PATH = f"{basedir}/tests/integration/profile/profile.yaml"
+PROFILE_FILE = yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
+KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 
 log = logging.getLogger(__name__)
 
@@ -55,6 +54,10 @@ log = logging.getLogger(__name__)
 def forward_kfp_ui():
     """Port forward the kfp-ui service."""
     kfp_ui_process = subprocess.Popen(["kubectl", "port-forward", "-n", "kubeflow", "svc/kfp-ui", "8080:3000"])
+
+    # FIXME: find a better way to do this
+    # Allow time for the port-forward to happen
+    time.sleep(6)
 
     yield
 
@@ -176,7 +179,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
 
     # Wait for kfp-ui to be active and idle.
     # This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
-    await ops_test.model.wait_for_idle(apps=["kfp-ui"], status="active", raised_on_blocked=False, raise_on_error=True, idle_period=40, wait_for_active=True, timeout=1800)
+    await ops_test.model.wait_for_idle(apps=["kfp-ui"], status="active", raise_on_blocked=False, raise_on_error=True, idle_period=40, wait_for_active=True, timeout=1800)
 
 # ---- KFP API Server focused test cases
 async def test_upload_pipeline(kfp_client):
@@ -193,7 +196,6 @@ async def test_upload_pipeline(kfp_client):
     assert uploaded_pipeline_id == server_pipeline_id
 
 
-@retry(stop=stop_after_delay(5), wait=wait_fixed(1))
 async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     """Create a run and monitor it to completion."""
     # Create a run, save response in variable for easy manipulation
@@ -214,11 +216,10 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     # more than 300 seconds as it is a very simple operation
     monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=300)
 
-    assert monitor_response.success is True
+    assert monitor_response.run.status == 'Succeeded'
 
 
 # ---- ScheduledWorfklows and Argo focused test case
-@retry(stop=stop_after_delay(5), wait=wait_fixed(1))
 async def test_create_and_monitor_recurring_run(kfp_client, upload_and_clean_pipeline, create_and_clean_experiment):
     """Create a recurring run and monitor it to completion."""
 
