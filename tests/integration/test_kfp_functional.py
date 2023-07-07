@@ -119,7 +119,7 @@ def upload_and_clean_pipeline(kfp_client: kfp.Client):
 @pytest.fixture(scope="function")
 def create_and_clean_experiment(kfp_client: kfp.Client):
     """Create an experiment and remove after test case execution."""
-    experiment_response = kfp_client.create_experiment(name="test-experiment", namespace=KUBEFLOW_USR_NAMESPACE)
+    experiment_response = kfp_client.create_experiment(name="test-experiment", namespace=KUBEFLOW_PROFILE_NAMESPACE)
 
     yield experiment_response
 
@@ -174,6 +174,9 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
         timeout=1800,
     )
 
+    # Wait for kfp-ui to be active and idle.
+    # This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
+    await ops_test.model.wait_for_idle(apps=["kfp-ui"], status="active", raised_on_blocked=False, raise_on_error=True, idle_period=40, wait_for_active=True, timeout=1800)
 
 # ---- KFP API Server focused test cases
 async def test_upload_pipeline(kfp_client):
