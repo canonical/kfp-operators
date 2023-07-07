@@ -17,7 +17,7 @@ import kfp_server_api
 import lightkube
 import yaml
 from lightkube import codecs
-from lightkube.generic_resource import create_namespaced_resource
+from lightkube.generic_resource import create_global_resource, create_namespaced_resource
 from pytest_operator.plugin import OpsTest
 
 GENERIC_BUNDLE_CHARMS = [
@@ -59,14 +59,19 @@ def forward_kfp_ui():
 @pytest.fixture(scope="session")
 def apply_profile(lightkube_client):
     """Apply a Profile simulating a user."""
+    # Create a Viewer namespaced resource
+    profile_class_resource = create_global_resource(
+        group="kubeflow.org", version="v1", kind="Profile", plural="profiles"
+    )
+
     # Apply Profile first
     apply_manifests(lightkube_client, PROFILE_FILE)
 
     yield
 
     # Remove namespace
-    yaml = Path(PROFILE_FILE).read_text()
-    yaml_loaded = codecs.load_all_yaml(yaml)
+    read_yaml = Path(PROFILE_FILE).read_text()
+    yaml_loaded = codecs.load_all_yaml(read_yaml)
     for obj in yaml_loaded:
         try:
             lightkube_client.delete(
@@ -79,7 +84,7 @@ def apply_profile(lightkube_client):
 
 
 @pytest.fixture(scope="function")
-def kfp_client(apply_auth_manifests, forward_kfp_ui) -> kfp.Client:
+def kfp_client(apply_profile, forward_kfp_ui) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Instantiate the KFP Client
     client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=KUBEFLOW_USR_NAMESPACE)
@@ -291,14 +296,13 @@ async def fetch_response(url, headers):
 
 def apply_manifests(lightkube_client: lightkube.Client, yaml_file_path: str):
     """Apply resources using manifest files and returns the applied object."""
-    yaml = Path(yaml_file_path).read_text()
-    yaml_loaded = codecs.load_all_yaml(yaml)
+    read_yaml = Path(yaml_file_path).read_text()
+    yaml_loaded = codecs.load_all_yaml(read_yaml)
     for obj in yaml_loaded:
         try:
             lightkube_client.apply(
                 obj=obj,
                 name=obj.metadata.name,
-                namespace=obj.metadata.namespace,
             )
         except lightkube.core.exceptions.ApiError as e:
             raise e
