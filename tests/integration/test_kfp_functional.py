@@ -17,8 +17,10 @@ import kfp
 import kfp_server_api
 import lightkube
 import yaml
+import tenacity
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource, create_namespaced_resource
+from lightkube.models.core_v1 import Service
 from pytest_operator.plugin import OpsTest
 
 GENERIC_BUNDLE_CHARMS = [
@@ -136,7 +138,7 @@ def create_and_clean_experiment(kfp_client: kfp.Client):
 
 # TODO: Abstract the build and deploy method into conftest
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, request):
+async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     """Build and deploy kfp-operators charms."""
     # Immediately raise an error if the model name is not kubeflow
     if ops_test.model_name != "kubeflow":
@@ -174,25 +176,19 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
     # into blocked during deploy while waiting for each other to satisfy relations, so we don't
     # raise_on_blocked.
     await ops_test.model.wait_for_idle(
-        wait_for_active=True,
-        idle_period=40,
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
         timeout=1800,
     )
 
-    # Wait for kfp-ui to be active and idle.
+    # Wait for kfp-ui to be active and idle. This is 
     # This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
-    await ops_test.model.wait_for_idle(
-        apps=["kfp-ui"],
-        status="active",
-        raise_on_blocked=False,
-        raise_on_error=True,
-        idle_period=40,
-        wait_for_active=True,
-        timeout=1800,
-    )
+    @tenacity.retry(wait=tenacity.wait_exponential(multiplier=1, min=1, max=15), stop=tenacity.stop_after_delay(15), reraise=True)
+    def assert_get_kfp_ui_service():
+        log.info("Waiting for kfp-ui service to be up and running.")
+        kfp_ui_service = lightkube_client.get(Service, name="kfp-ui", namespace="kubeflow")
+        assert kfp_ui_service is not None
 
 
 # ---- KFP API Server focused test cases

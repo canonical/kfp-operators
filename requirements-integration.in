@@ -8,3 +8,4 @@ lightkube
 pytest
 pyyaml
 pytest-operator
+tenacity
