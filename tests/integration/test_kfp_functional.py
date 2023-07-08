@@ -186,7 +186,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
     @tenacity.retry(
         wait=tenacity.wait_exponential(multiplier=1, min=1, max=15),
-        stop=tenacity.stop_after_delay(15),
+        stop=tenacity.stop_after_delay(30),
         reraise=True,
     )
     def assert_get_kfp_ui_service():
