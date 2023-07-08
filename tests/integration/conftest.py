@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from helpers.k8s_resources import apply_manifests
+from kfp_globals import *
 
 import kfp
 import kfp_server_api
