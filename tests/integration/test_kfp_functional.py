@@ -20,7 +20,7 @@ import yaml
 import tenacity
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource, create_namespaced_resource
-from lightkube.models.core_v1 import Service
+from lightkube.resources.core_v1 import Service
 from pytest_operator.plugin import OpsTest
 
 GENERIC_BUNDLE_CHARMS = [
@@ -193,6 +193,8 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         log.info("Waiting for kfp-ui service to be up and running.")
         kfp_ui_service = lightkube_client.get(Service, name="kfp-ui", namespace="kubeflow")
         assert kfp_ui_service is not None
+
+    assert_get_kfp_ui_service()
 
 
 # ---- KFP API Server focused test cases
