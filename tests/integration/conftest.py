@@ -29,6 +29,7 @@ PROFILE_FILE_PATH = f"{basedir}/tests/integration/profile/profile.yaml"
 PROFILE_FILE = yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
 KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 
+
 @pytest.fixture(scope="session")
 def forward_kfp_ui():
     """Port forward the kfp-ui service."""
@@ -117,14 +118,14 @@ def pytest_addoption(parser: Parser):
         "--bundle",
         default="./tests/integration/bundles/kfp_latest_edge.yaml.j2",
         help="Path to bundle file to use as the template for tests.  This must include all charms"
-             "built by this bundle, where the locally built charms will replace those specified. "
-             "This is useful for testing this bundle against different external dependencies. "
-             "An example file is in ./tests/integration/data/kfp_latest_edge.yaml",
+        "built by this bundle, where the locally built charms will replace those specified. "
+        "This is useful for testing this bundle against different external dependencies. "
+        "An example file is in ./tests/integration/data/kfp_latest_edge.yaml",
     )
     parser.addoption(
         "--build",
         default=True,
         help="Whether the charms in this repository should be built locally and used"
-             "to render the bundle definition template."
-             "If set to False, the integration tests will be run against charms in Charmhub.",
+        "to render the bundle definition template."
+        "If set to False, the integration tests will be run against charms in Charmhub.",
     )

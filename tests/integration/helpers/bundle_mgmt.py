@@ -28,6 +28,7 @@ def render_bundle(ops_test: OpsTest, bundle_path: Path, context: dict, local_bui
     logger.debug(f"Rendered bundle saved in {rendered_bundle_path}")
     return rendered_bundle_path
 
+
 async def deploy_bundle(ops_test: OpsTest, bundle_path: Path, trust: bool) -> None:
     """Deploy a bundle from file using juju CLI.
 
@@ -36,13 +37,7 @@ async def deploy_bundle(ops_test: OpsTest, bundle_path: Path, trust: bool) -> No
         trust (bool): Whether to deploy with trust.
     """
     # Deploy the bundle
-    run_args = [
-        "juju",
-        "deploy",
-        "-m",
-        ops_test.model_full_name,
-        f"{bundle_path}"
-    ]
+    run_args = ["juju", "deploy", "-m", ops_test.model_full_name, f"{bundle_path}"]
     if trust:
         run_args.append("--trust")
     retcode, stdout, stderr = await ops_test.run(*run_args)
