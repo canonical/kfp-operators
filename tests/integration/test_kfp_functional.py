@@ -182,9 +182,13 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         timeout=1800,
     )
 
-    # Wait for kfp-ui to be active and idle. This is 
+    # Wait for kfp-ui to be active and idle. This is
     # This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
-    @tenacity.retry(wait=tenacity.wait_exponential(multiplier=1, min=1, max=15), stop=tenacity.stop_after_delay(15), reraise=True)
+    @tenacity.retry(
+        wait=tenacity.wait_exponential(multiplier=1, min=1, max=15),
+        stop=tenacity.stop_after_delay(15),
+        reraise=True,
+    )
     def assert_get_kfp_ui_service():
         log.info("Waiting for kfp-ui service to be up and running.")
         kfp_ui_service = lightkube_client.get(Service, name="kfp-ui", namespace="kubeflow")
