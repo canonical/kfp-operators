@@ -1,142 +1,27 @@
 #!/usr/bin/env python3
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-import glob
+"""Functional tests for kfp-operators."""
 import logging
-import pytest
-import subprocess
 import time
-import yaml
-from pathlib import Path, PosixPath
+from pathlib import Path
 
-from helpers.localize_bundle import localize_bundle_application, get_resources_from_charm_file
 from helpers.bundle_mgmt import render_bundle, deploy_bundle
+from helpers.k8s_resources import apply_manifests, fetch_response
+from helpers.localize_bundle import get_resources_from_charm_file
+from kfp_globals import CHARM_PATH_TEMPLATE, KFP_CHARMS, KUBEFLOW_PROFILE_NAMESPACE, SAMPLE_PIPELINE, SAMPLE_VIEWER
 
-import aiohttp
-import kfp
-import kfp_server_api
 import lightkube
-import yaml
+import pytest
 import tenacity
 from lightkube import codecs
-from lightkube.generic_resource import create_global_resource, create_namespaced_resource
-from lightkube.resources.core_v1 import Service
+from lightkube.generic_resource import create_namespaced_resource
+from lightkube.resources.apps_v1 import Deployment
 from pytest_operator.plugin import OpsTest
-
-GENERIC_BUNDLE_CHARMS = [
-    "kfp-api",
-    "kfp-persistence",
-    "kfp-schedwf",
-    "kfp-ui",
-    "kfp-viewer",
-    "kfp-viz",
-]
-
-basedir = Path("./").absolute()
-CHARM_PATH_TEMPLATE = "{basedir}/charms/{charm}/"
-
-# Variables for uploading/creating pipelines/experiments/runs
-SAMPLE_PIPELINE = f"{basedir}/tests/integration/pipelines/sample_pipeline.yaml"
-SAMPLE_PIPELINE_NAME = "sample-pipeline-2"
-
-# Variables for creating a viewer
-SAMPLE_VIEWER = f"{basedir}/tests/integration/viewer/mnist.yaml"
-
-# Variables for configuring the KFP Client
-# It is assumed that the ml-pipeline-ui (kfp-ui) service is port-forwarded
-KUBEFLOW_LOCAL_HOST = "http://localhost:8080"
-KUBEFLOW_PROFILE_NAMESPACE = "kubeflow-user-example-com"
-PROFILE_FILE_PATH = f"{basedir}/tests/integration/profile/profile.yaml"
-PROFILE_FILE = yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
-KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 
 log = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="session")
-def forward_kfp_ui():
-    """Port forward the kfp-ui service."""
-    kfp_ui_process = subprocess.Popen(
-        ["kubectl", "port-forward", "-n", "kubeflow", "svc/kfp-ui", "8080:3000"]
-    )
-
-    # FIXME: find a better way to do this
-    # Allow time for the port-forward to happen
-    time.sleep(6)
-
-    yield
-
-    kfp_ui_process.terminate()
-
-
-@pytest.fixture(scope="session")
-def apply_profile(lightkube_client):
-    """Apply a Profile simulating a user."""
-    # Create a Viewer namespaced resource
-    profile_class_resource = create_global_resource(
-        group="kubeflow.org", version="v1", kind="Profile", plural="profiles"
-    )
-
-    # Apply Profile first
-    apply_manifests(lightkube_client, PROFILE_FILE_PATH)
-
-    yield
-
-    # Remove namespace
-    read_yaml = Path(PROFILE_FILE_PATH).read_text()
-    yaml_loaded = codecs.load_all_yaml(read_yaml)
-    for obj in yaml_loaded:
-        try:
-            lightkube_client.delete(
-                res=type(obj),
-                name=obj.metadata.name,
-                namespace=obj.metadata.namespace,
-            )
-        except lightkube.core.exceptions.ApiError as e:
-            raise e
-
-
-@pytest.fixture(scope="session")
-def kfp_client(apply_profile, forward_kfp_ui) -> kfp.Client:
-    """Returns a KFP Client that can talk to the KFP API Server."""
-    # Instantiate the KFP Client
-    client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=KUBEFLOW_PROFILE_NAMESPACE)
-    client.runs.api_client.default_headers.update({"kubeflow-userid": KUBEFLOW_USER_NAME})
-    return client
-
-
-@pytest.fixture(scope="session")
-def lightkube_client() -> lightkube.Client:
-    """Returns a lightkube Client that can talk to the K8s API."""
-    client = lightkube.Client(field_manager="kfp-operators")
-    return client
-
-
-@pytest.fixture(scope="function")
-def upload_and_clean_pipeline(kfp_client: kfp.Client):
-    """Upload an arbitrary pipeline and remove after test case execution."""
-    pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
-        uploadfile=SAMPLE_PIPELINE, name=SAMPLE_PIPELINE_NAME
-    )
-
-    yield pipeline_upload_response
-
-    kfp_client.delete_pipeline(pipeline_id=pipeline_upload_response.id)
-
-
-@pytest.fixture(scope="function")
-def create_and_clean_experiment(kfp_client: kfp.Client):
-    """Create an experiment and remove after test case execution."""
-    experiment_response = kfp_client.create_experiment(
-        name="test-experiment", namespace=KUBEFLOW_PROFILE_NAMESPACE
-    )
-
-    yield experiment_response
-
-    kfp_client.delete_experiment(experiment_id=experiment_response.id)
-
-
-# TODO: Abstract the build and deploy method into conftest
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     """Build and deploy kfp-operators charms."""
@@ -151,7 +36,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # Build the charms we need to build
     charms_to_build = {
         charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
-        for charm in GENERIC_BUNDLE_CHARMS
+        for charm in KFP_CHARMS
     }
     log.info(f"Building charms for: {charms_to_build}")
     built_charms = await ops_test.build_charms(*charms_to_build.values())
@@ -182,19 +67,35 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         timeout=1800,
     )
 
-    # Wait for kfp-ui to be active and idle. This is
-    # This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
+    # Wait for kfp-* Deployment to be active and idle.
+    # If a kfp charm is ever migrated to sidecar, and the above issue is still
+    # there, appropriate changes must be done on this method for checking the readiness
+    # of the application.
+    # FIXME: This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
     @tenacity.retry(
         wait=tenacity.wait_exponential(multiplier=1, min=1, max=15),
         stop=tenacity.stop_after_delay(30),
         reraise=True,
     )
-    def assert_get_kfp_ui_service():
-        log.info("Waiting for kfp-ui service to be up and running.")
-        kfp_ui_service = lightkube_client.get(Service, name="kfp-ui", namespace="kubeflow")
-        assert kfp_ui_service is not None
+    def assert_get_kfp_deployment(kfp_component: str):
+        """Asserts the deployment of kfp_component is ready and available."""
+        log.info(f"Waiting for {kfp_component} to be ready and available")
+        # Get Deployment, the namespace should always be kubeflow
+        kfp_deployment = lightkube_client.get(Deployment, name=kfp_component, namespace="kubeflow")
 
-    assert_get_kfp_ui_service()
+        # Verify the deployment exists
+        assert kfp_deployment is not None
+
+        # Verify the readiness and availability
+        assert kfp_deployment.status.readyReplicas == 1
+        assert kfp_deployment.status.availableReplicas == 1
+
+    for component in KFP_CHARMS:
+        if component == "kfp-api":
+            # The issue seems to be happening only with podspec charms,
+            # nothing to do for kfp-api
+            continue
+        assert_get_kfp_deployment(kfp_component=component)
 
 
 # ---- KFP API Server focused test cases
@@ -307,30 +208,3 @@ async def test_viz_server_healthcheck(ops_test: OpsTest):
     result_status, result_text = await fetch_response(url=f"http://{url}:8888", headers=headers)
 
     assert result_status == 200
-
-
-# ---- Helpers
-async def fetch_response(url, headers):
-    """Fetch provided URL and return pair - status and text (int, string)."""
-    result_status = 0
-    result_text = ""
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url=url, headers=headers) as response:
-            result_status = response.status
-            result_text = await response.text()
-    return result_status, str(result_text)
-
-
-def apply_manifests(lightkube_client: lightkube.Client, yaml_file_path: str):
-    """Apply resources using manifest files and returns the applied object."""
-    read_yaml = Path(yaml_file_path).read_text()
-    yaml_loaded = codecs.load_all_yaml(read_yaml)
-    for obj in yaml_loaded:
-        try:
-            lightkube_client.apply(
-                obj=obj,
-                name=obj.metadata.name,
-            )
-        except lightkube.core.exceptions.ApiError as e:
-            raise e
-    return obj

@@ -9,14 +9,16 @@ This directory has the following structure:
 ```
 .
 ├── README.md
-├── conftest.py
 └── integration
     ├── bundles
     │   ├── kfp_1.7_stable_install.yaml.j2
     │   └── kfp_latest_edge.yaml.j2
+    ├── conftest.py
     ├── helpers
     │   ├── bundle_mgmt.py
+    │   ├── k8s_resources.py
     │   └── localize_bundle.py
+    ├── kfp_globals.py
     ├── pipelines
     │   ├── sample_pipeline.yaml
     │   └── sample_pipeline_execution_order.py
