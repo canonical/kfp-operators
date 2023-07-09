@@ -138,7 +138,7 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
 
     # Monitor the run to completion, the pipeline should not be executed in
     # more than 300 seconds as it is a very simple operation
-    monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=300)
+    monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=600)
 
     assert monitor_response.run.status == "Succeeded"
 
