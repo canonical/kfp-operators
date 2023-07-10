@@ -79,6 +79,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # there, appropriate changes must be done on this method for checking the readiness
     # of the application.
     # FIXME: This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
+    # Also https://github.com/juju/python-libjuju/issues/900
     @tenacity.retry(
         wait=tenacity.wait_exponential(multiplier=2, min=1, max=15),
         stop=tenacity.stop_after_delay(900),
@@ -137,6 +138,7 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     )
 
     # FIXME: waiting_for_run_completion timeouts on GitHub runners
+    # Related issue: https://github.com/canonical/kfp-operators/issues/244
     # Monitor the run to completion, the pipeline should not be executed in
     # more than 300 seconds as it is a very simple operation
     #monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=600)
@@ -181,6 +183,7 @@ async def test_create_and_monitor_recurring_run(
     # FIXME: disabling the job does not work at the moment, it seems like
     # the status of the recurring run is never updated and is causing the
     # following assertion to fail
+    # Related issue: https://github.com/canonical/kfp-operators/issues/244
     # Disable the job after few runs
     kfp_client.disable_job(recurring_job.id)
 
