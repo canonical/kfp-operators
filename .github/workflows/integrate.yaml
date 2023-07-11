@@ -148,10 +148,10 @@ jobs:
         if: always()
         run: |
           mkdir ~/kfp-operators-debug-logs
-          juju debug-log --replay | tee kfp-operators-debug-logs/juju-debug-log.log
-          juju status | tee kfp-operators-debug-logs/juju-status.log
-          sg microk8s -c "microk8s.kubectl describe deployments -A -oyaml | tee kfp-operators-debug-logs/deployments.log"
-          sg microk8s -c "microk8s.kubectl describe pods -A -oyaml | tee kfp-operators-debug-logs/pods.log"
+          juju debug-log --replay | tee ~/kfp-operators-debug-logs/juju-debug-log.log
+          juju status | tee ~/kfp-operators-debug-logs/juju-status.log
+          sg microk8s -c "microk8s.kubectl describe deployments -A -oyaml | tee ~/kfp-operators-debug-logs/deployments.log"
+          sg microk8s -c "microk8s.kubectl describe pods -A -oyaml | tee ~/kfp-operators-debug-logs/pods.log"
 
       - name: Upload debug artifacts
         if: always()
