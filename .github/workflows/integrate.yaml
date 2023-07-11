@@ -145,6 +145,7 @@ jobs:
         if: failure()
 
       - name: Save relevant debug artifacts
+        if: always()
         run: |
           mkdir ~/kfp-operators-debug-logs
           juju debug-log --replay | tee kfp-operators-debug-logs/juju-debug-log.log
@@ -153,6 +154,7 @@ jobs:
           sg microk8s -c "microk8s.kubectl describe pods -A -oyaml | tee kfp-operators-debug-logs/pods.log"
 
       - name: Upload debug artifacts
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: kfp-operators-debug-logs
