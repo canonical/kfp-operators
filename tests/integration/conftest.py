@@ -123,7 +123,7 @@ def pytest_addoption(parser: Parser):
         "An example file is in ./tests/integration/data/kfp_latest_edge.yaml",
     )
     parser.addoption(
-        "--build",
+        "--no-build",
         action="store_true",
         help="Whether the charms in this repository should be built locally and used"
         "to render the bundle definition template."

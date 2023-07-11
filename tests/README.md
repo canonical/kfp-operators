@@ -57,10 +57,10 @@ Communication with the KFP API happens using the KFP Python SDK. A `kfp.client` 
 2. Run integration tests against the preferred bundle definition in `integration/bundles`
 
 ```
-tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> <--build>
+tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> <--no-build>
 ```
 
 Where,
 * `--model` tells the testing framework which model to deploy charms to
 * `--bundle` is the path to a bundle template that's going to be used during the test execution
-* `--build` tells the test suite whether to build charms and run tests against them, or use charms in Charmhub
+* `--no-build` tells the test suite whether to build charms and run tests against them, or use charms in Charmhub
