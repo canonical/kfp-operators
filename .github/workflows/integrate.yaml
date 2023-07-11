@@ -144,10 +144,16 @@ jobs:
         run: juju status
         if: failure()
 
-      - name: Get workload logs
-        run: kubectl logs --tail 100 -nkubeflow -ljuju-app
-        if: failure()
+      - name: Save relevant debug artifacts
+        run: |
+          mkdir ~/kfp-operators-debug-logs
+          juju debug-log --replay | tee kfp-operators-debug-logs/juju-debug-log.log
+          juju status | tee kfp-operators-debug-logs/juju-status.log
+          sg microk8s -c "microk8s.kubectl describe deployments -A -oyaml | tee kfp-operators-debug-logs/deployments.log"
+          sg microk8s -c "microk8s.kubectl describe pods -A -oyaml | tee kfp-operators-debug-logs/pods.log"
 
-      - name: Get operator logs
-        run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
-        if: failure()
+      - name: Upload debug artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: kfp-operators-debug-logs
+          path: ~/kfp-operators-debug-logs
