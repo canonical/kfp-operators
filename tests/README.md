@@ -57,7 +57,7 @@ Communication with the KFP API happens using the KFP Python SDK. A `kfp.client` 
 2. Run integration tests against the preferred bundle definition in `integration/bundles`
 
 ```
-tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> --build=<true|false>
+tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> <--build>
 ```
 
 Where,

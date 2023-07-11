@@ -2,7 +2,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 """Conftest for integration tests."""
-import argparse
 import subprocess
 import time
 from pathlib import Path
@@ -125,7 +124,7 @@ def pytest_addoption(parser: Parser):
     )
     parser.addoption(
         "--build",
-        action=argparse.BooleanOptionalAction,
+        action="store_true",
         help="Whether the charms in this repository should be built locally and used"
         "to render the bundle definition template."
         "If set to False, the integration tests will be run against charms in Charmhub.",
