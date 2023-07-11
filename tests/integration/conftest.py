@@ -124,7 +124,7 @@ def pytest_addoption(parser: Parser):
     )
     parser.addoption(
         "--build",
-        action="store_false",
+        action="store_true",
         help="Whether the charms in this repository should be built locally and used"
         "to render the bundle definition template."
         "If set to False, the integration tests will be run against charms in Charmhub.",
