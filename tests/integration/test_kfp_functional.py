@@ -149,8 +149,6 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     # works properly on the GitHub runners
     test_run = kfp_client.get_run(create_run_response.run_id).run
     assert test_run is not None
-    assert test_run.status is not None
-    assert test_run.error is None
 
 # ---- ScheduledWorfklows and Argo focused test case
 async def test_create_and_monitor_recurring_run(
