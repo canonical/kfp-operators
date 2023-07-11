@@ -32,6 +32,8 @@ log = logging.getLogger(__name__)
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     """Build and deploy kfp-operators charms."""
+    no_build = request.config.getoption("no_build")
+
     # Immediately raise an error if the model name is not kubeflow
     if ops_test.model_name != "kubeflow":
         raise ValueError("kfp must be deployed to namespace kubeflow")
@@ -40,23 +42,23 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     bundlefile_path = Path(request.config.getoption("bundle"))
     basedir = Path("./").absolute()
 
-    # Build the charms we need to build
-    charms_to_build = {
-        charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
-        for charm in KFP_CHARMS
-    }
-    log.info(f"Building charms for: {charms_to_build}")
-    built_charms = await ops_test.build_charms(*charms_to_build.values())
-    log.info(f"Built charms: {built_charms}")
-
+    # Build the charms we need to build only if --no-build is not set
     context = {}
-    for charm, charm_file in built_charms.items():
-        charm_resources = get_resources_from_charm_file(charm_file)
-        context.update([(f"{charm.replace('-', '_')}_resources", charm_resources)])
-        context.update([(f"{charm.replace('-', '_')}", charm_file)])
+    if not no_build:
+        charms_to_build = {
+            charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
+            for charm in KFP_CHARMS
+        }
+        log.info(f"Building charms for: {charms_to_build}")
+        built_charms = await ops_test.build_charms(*charms_to_build.values())
+        log.info(f"Built charms: {built_charms}")
+
+        for charm, charm_file in built_charms.items():
+            charm_resources = get_resources_from_charm_file(charm_file)
+            context.update([(f"{charm.replace('-', '_')}_resources", charm_resources)])
+            context.update([(f"{charm.replace('-', '_')}", charm_file)])
 
     # Render kfp-operators bundle file with locally built charms and their resources
-    no_build = request.config.getoption("no_build")
     rendered_bundle = render_bundle(
         ops_test, bundle_path=bundlefile_path, context=context, no_build=no_build
     )
