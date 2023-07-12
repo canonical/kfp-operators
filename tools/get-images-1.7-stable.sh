@@ -7,7 +7,7 @@ STATIC_IMAGE_LIST=(
 # from seldon-core
 )
 # dynamic list
-#git checkout origin/track/1.7
+git checkout origin/track/1.7
 IMAGE_LIST=()
 IMAGE_LIST+=($(find -type f -name metadata.yaml -exec yq '.resources | to_entries | .[] | .value | ."upstream-source"' {} \;))
 
