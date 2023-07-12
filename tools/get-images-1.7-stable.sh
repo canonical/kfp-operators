@@ -4,7 +4,6 @@
 #
 # static list
 STATIC_IMAGE_LIST=(
-# from seldon-core
 )
 # dynamic list
 git checkout origin/track/1.7
