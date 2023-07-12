@@ -6,7 +6,7 @@
 STATIC_IMAGE_LIST=(
 )
 # dynamic list
-git checkout origin/track/1.7
+git checkout origin/track/2.0
 IMAGE_LIST=()
 IMAGE_LIST+=($(find -type f -name metadata.yaml -exec yq '.resources | to_entries | .[] | .value | ."upstream-source"' {} \;))
 
