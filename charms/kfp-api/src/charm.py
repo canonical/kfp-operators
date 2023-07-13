@@ -51,6 +51,7 @@ K8S_RESOURCE_FILES = [
 ]
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
+KFP_API_SERVICE_NAME = "apiserver"
 
 
 class KfpApiOperator(CharmBase):
@@ -186,7 +187,7 @@ class KfpApiOperator(CharmBase):
             "summary": "kfp-api layer",
             "description": "Pebble config layer for kfp-api",
             "services": {
-                "apiserver": {
+                KFP_API_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "ML Pipeline API Server",
                     "command": f"bash -c '{self._exec_command}'",
