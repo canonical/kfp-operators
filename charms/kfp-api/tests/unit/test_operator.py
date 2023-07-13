@@ -413,7 +413,7 @@ class TestCharm:
         k8s_resource_handler.apply.assert_called()
 
         # test Pebble
-        assert harness.charm.container.get_service("ml-pipeline-api-server").is_running()
+        assert harness.charm.container.get_service("apiserver").is_running()
         pebble_plan = harness.get_container_pebble_plan("ml-pipeline-api-server")
         assert pebble_plan
         assert pebble_plan.services
