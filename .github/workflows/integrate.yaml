@@ -131,7 +131,6 @@ jobs:
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          juju set-model-constraints mem=700M root-disk=10G
           # Run integration tests against the 1.7 generic install bundle definition
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
           # and https://github.com/canonical/charmcraft/issues/1138
@@ -151,6 +150,8 @@ jobs:
           mkdir ~/kfp-operators-debug-logs
           juju debug-log --replay | tee ~/kfp-operators-debug-logs/juju-debug-log.log
           juju status | tee ~/kfp-operators-debug-logs/juju-status.log
+          df -f | tee df.log
+          sg microk8s -c "microk8s.kubectl describe nodes | tee ~/kfp-operators-debug-logs/nodes.log"
           sg microk8s -c "microk8s.kubectl describe deployments -A | tee ~/kfp-operators-debug-logs/deployments.log"
           sg microk8s -c "microk8s.kubectl describe pods -A | tee ~/kfp-operators-debug-logs/pods.log"
           sg microk8s -c "microk8s.kubectl describe workloads -A | tee ~/kfp-operators-debug-logs/workloads.log"
