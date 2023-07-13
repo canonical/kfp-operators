@@ -95,7 +95,7 @@ class KfpUiOperator(CharmBase):
                     desc="Pipelines",
                     link="/pipeline/#/runs",
                     location="quick",
-                )
+                ),
             ],
         )
 
