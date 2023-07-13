@@ -131,6 +131,7 @@ jobs:
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
+          juju set-model-constraints mem=700M root-disk=10G
           # Run integration tests against the 1.7 generic install bundle definition
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
           # and https://github.com/canonical/charmcraft/issues/1138
