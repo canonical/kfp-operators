@@ -11,9 +11,9 @@ import json
 import logging
 from base64 import b64encode
 
-from charms.kubeflow_dashboard.v0.kubeflow_dashboard_sidebar import (
-    KubeflowDashboardSidebarRequirer,
-    SidebarItem,
+from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
+    DashboardLink,
+    KubeflowDashboardLinksRequirer,
 )
 from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
@@ -52,31 +52,50 @@ class KfpUiOperator(CharmBase):
         self.framework.observe(self.on.leader_elected, self._main)
 
         # add links in kubeflow-dashboard sidebar
-        self.kubeflow_dashboard_sidebar = KubeflowDashboardSidebarRequirer(
+        self.kubeflow_dashboard_sidebar = KubeflowDashboardLinksRequirer(
             charm=self,
-            relation_name="sidebar",
-            sidebar_items=[
-                SidebarItem(
+            relation_name="dashboard-links",
+            dashboard_links=[
+                DashboardLink(
                     text="Experiments (KFP)",
                     link="/pipeline/#/experiments",
                     type="item",
                     icon="done-all",
+                    location="menu",
                 ),
-                SidebarItem(
+                DashboardLink(
                     text="Pipelines",
                     link="/pipeline/#/pipelines",
                     type="item",
                     icon="kubeflow:pipeline-centered",
+                    location="menu",
                 ),
-                SidebarItem(
-                    text="Runs", link="/pipeline/#/runs", type="item", icon="maps:directions-run"
+                DashboardLink(
+                    text="Runs",
+                    link="/pipeline/#/runs",
+                    type="item",
+                    icon="maps:directions-run",
+                    location="menu",
                 ),
-                SidebarItem(
+                DashboardLink(
                     text="Recurring Runs",
                     link="/pipeline/#/recurringruns",
                     type="item",
                     icon="device:access-alarm",
+                    location="menu",
                 ),
+                DashboardLink(
+                    text="Upload a pipeline",
+                    desc="Pipelines",
+                    link="/pipeline/",
+                    location="quick",
+                ),
+                DashboardLink(
+                    text="View all pipeline runs",
+                    desc="Pipelines",
+                    link="/pipeline/#/runs",
+                    location="quick",
+                )
             ],
         )
 
