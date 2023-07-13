@@ -150,7 +150,7 @@ jobs:
           mkdir ~/kfp-operators-debug-logs
           juju debug-log --replay | tee ~/kfp-operators-debug-logs/juju-debug-log.log
           juju status | tee ~/kfp-operators-debug-logs/juju-status.log
-          df -f | tee df.log
+          df -h | tee df.log
           sg microk8s -c "microk8s.kubectl describe nodes | tee ~/kfp-operators-debug-logs/nodes.log"
           sg microk8s -c "microk8s.kubectl describe deployments -A | tee ~/kfp-operators-debug-logs/deployments.log"
           sg microk8s -c "microk8s.kubectl describe pods -A | tee ~/kfp-operators-debug-logs/pods.log"
