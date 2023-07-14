@@ -91,9 +91,7 @@ jobs:
       - name: Run test
         run: |
           # Run integration tests against the 1.7 generic install bundle definition
-          # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
-          # and https://github.com/canonical/charmcraft/issues/1138
-          sg microk8s -c "tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode"
+          sg microk8s -c "tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2"
 
       - name: Get all
         run: kubectl get all -A
