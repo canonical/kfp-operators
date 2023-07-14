@@ -10,6 +10,7 @@ on:
 
 jobs:
   test-bundle:
+    name: Bundle functional tests
     runs-on: [self-hosted, linux, X64, two-xlarge]
     steps:
       - uses: actions/checkout@v3
@@ -21,9 +22,16 @@ jobs:
 
           echo "MY_ADDONS=hostpath-storage ingress dns:$dns_server rbac registry metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'" >> $GITHUB_OUTPUT
 
+      # Install py3.8 to keep consistent with other tests environments
+      # in this and other MLOps team repositories.
       - name: Install tools
         run: |
           sudo apt-get update -yqq
+          sudo apt install software-properties-common -yqq
+          sudo add-apt-repository ppa:deadsnakes/ppa -y
+          sudo apt install -yqq python3.8
+          sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
+          sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
           sudo apt-get install -yqq python3-pip
           sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox
           sudo snap install charmcraft --classic
@@ -85,6 +93,8 @@ jobs:
           # Run integration tests against the 1.7 generic install bundle definition
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
           # and https://github.com/canonical/charmcraft/issues/1138
+          # Re-compile the integration dependencies to match the python version in the runner
+          python3-
           sg microk8s -c "tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode"
 
       - name: Get all
