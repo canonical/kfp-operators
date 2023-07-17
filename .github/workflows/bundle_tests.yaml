@@ -15,13 +15,6 @@ jobs:
     runs-on: [self-hosted, linux, X64, two-xlarge]
     steps:
       - uses: actions/checkout@v3
-      - name: Parse and enable DNS server
-        id: dns-name
-        run: |
-          dns_server=$(grep -oPm1 'Current DNS Server: \K[^\s]+' <<< "$(resolvectl status)")
-          echo "Using following DNS Server: $dns_server"
-
-          echo "MY_ADDONS=hostpath-storage ingress dns:$dns_server rbac registry metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'" >> $GITHUB_OUTPUT
 
       # Install py3.8 to keep consistent with other tests environments
       # in this and other MLOps team repositories.
@@ -35,21 +28,14 @@ jobs:
           sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
           sudo apt-get install -yqq python3-pip
           sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox
-          sudo snap install charmcraft --classic
 
-      - name: Setup microk8s
-        run: |
-          sudo snap install microk8s --classic --channel=1.24/stable
-          sudo usermod -a -G microk8s $USER
-
-      - name: Setup LXD
-        run: |
-          sudo lxd waitready
-          sudo lxd init --minimal
-          sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket
-          lxc network set lxdbr0 ipv6.address none
-          bash -c 'sudo usermod -a -G lxd $USER'
-          bash -c 'sudo su $USER'
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+          provider: microk8s
+          channel: 1.24/stable
+          juju-channel: 2.9/stable
+          charmcraft-channel: latest/candidate
+          microk8s-addons: "rbac dns hostpath-storage metallb:'10.64.140.43-10.64.140.49'"
 
       - name: Update credentials
         run: |
@@ -59,47 +45,20 @@ jobs:
           password = \"${{ secrets.CKF_DOCKERHUB_PASSWORD }}\"
           EOF"
 
-      - name: Restart microk8s
+      - name: Run juju workaround
         run: |
-          sg microk8s -c "microk8s stop"
-          sg microk8s -c "microk8s start"
-          sg microk8s -c "microk8s status --wait-ready --timeout 150"
-
-      - name: Enable addons
-        run: |
-          sg microk8s -c "microk8s enable ${{ steps.dns-name.outputs.MY_ADDONS }}"
-
-      - name: Wait for microk8s to be ready and give time for addons
-        run: |
-          sleep 90
-          sg microk8s -c "microk8s status --wait-ready --timeout 150"
-          sg microk8s -c "mkdir -p ~/.kube"
-          sg microk8s -c "microk8s config > ~/.kube/config"
-
-      - name: Install and bootstrap juju
-        run: |
-          sudo snap install juju --classic --channel=2.9/stable
           # TODO: Remove once https://bugs.launchpad.net/juju/+bug/2024897 is fixed
           sudo snap refresh juju --revision 22345
-          sg microk8s -c 'juju bootstrap microk8s bundle-controller --model-default test-mode=true --model-default logging-config="<root>=DEBUG" --debug --verbose'
-
-      - name: Show all pods status
-        run: |
-          sg microk8s -c "microk8s kubectl get pods --all-namespaces"
 
       - name: Increase file system limits
         run: |
           sudo sysctl fs.inotify.max_user_instances=1280
           sudo sysctl fs.inotify.max_user_watches=655360
 
-      - run: |
-          sg microk8s -c "juju add-model kubeflow --config automatically-retry-hooks=true"
-          sg microk8s -c "juju model-config"
-          sg microk8s -c "juju status"
-
       - name: Run test
         run: |
           # Run integration tests against the 1.7 generic install bundle definition
+          sg microk8s -c "juju add-model kubeflow --config automatically-retry-hooks=true"
           sg microk8s -c "tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2"
 
       - name: Get all
