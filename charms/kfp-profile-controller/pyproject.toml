@@ -16,7 +16,7 @@ log_cli_level = "INFO"
 [tool.black]
 line-length = 99
 target-version = ["py38"]
-exclude = ["files"]
+exclude = 'files'
 
 [tool.isort]
 profile = "black"
