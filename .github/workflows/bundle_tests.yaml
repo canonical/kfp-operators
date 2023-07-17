@@ -12,7 +12,7 @@ on:
 jobs:
   test-bundle:
     name: Bundle functional tests
-    runs-on: [self-hosted, linux, X64, two-xlarge]
+    runs-on: [self-hosted, linux, X64, jammy, two-xlarge]
     steps:
       - uses: actions/checkout@v3
 
@@ -28,6 +28,7 @@ jobs:
           sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
           sudo apt-get install -yqq python3-pip
           sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox
+          sudo snap install lxd --channel latest/stable --classic
 
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
