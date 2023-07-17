@@ -67,8 +67,8 @@ jobs:
 
       - name: Wait for microk8s to be ready and give time for addons
         run: |
-          sg microk8s -c "microk8s kubectl wait --for=condition=available -nkube-system deployment/coredns deployment/hostpath-provisioner"
-          sg microk8s -c "microk8s kubectl -nkube-system rollout status ds/calico-node"
+          sg microk8s -c "microk8s kubectl wait --for=condition=available -nkube-system deployment/coredns deployment/hostpath-provisioner --timeout=120s" || true
+          sg microk8s -c "microk8s kubectl -nkube-system rollout status ds/calico-node --timeout=120s" || true
           sg microk8s -c "microk8s status --wait-ready --timeout 150"
 
       - name: Install and bootstrap juju
