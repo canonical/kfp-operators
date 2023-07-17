@@ -13,6 +13,7 @@ jobs:
   test-bundle:
     name: Bundle functional tests
     runs-on: [self-hosted, linux, X64, jammy, two-xlarge]
+    timeout-minutes: 200
     steps:
       - uses: actions/checkout@v3
 
@@ -54,7 +55,7 @@ jobs:
       - name: Run test
         run: |
           # Run integration tests against the 1.7 generic install bundle definition
-          # Re-create dependencies for integration tests in py3.9
+          # Re-create dependencies for integration tests in py3 > py3.8
           rm ./requirements-integration.txt && pip-compile ./requirements-integration.in --resolver=backtracking
           juju add-model kubeflow --config automatically-retry-hooks=true
           sg microk8s -c "tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2"
