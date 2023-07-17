@@ -41,7 +41,16 @@ jobs:
           sudo snap install microk8s --classic --channel=1.24/stable
           sudo usermod -a -G microk8s $USER
 
-      - name: update credentials
+      - name: Setup LXD
+        run: |
+          sudo lxd waitready
+          sudo lxd init --minimal
+          sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket
+          lxc network set lxdbr0 ipv6.address none
+          bash -c 'sudo usermod -a -G lxd $USER'
+          bash -c 'sudo su $USER'
+
+      - name: Update credentials
         run: |
           sg microk8s -c "cat >> /var/snap/microk8s/current/args/containerd-template.toml << EOF
           [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"registry-1.docker.io\".auth]
