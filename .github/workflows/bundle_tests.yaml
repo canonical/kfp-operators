@@ -3,6 +3,7 @@
 # of the steps, as we have to manually configure the operator environment.
 # This is a workaround that should be changed when the charmed-kubernetes/actions-operator
 # works correctly on self hosted runners.
+# TODO: move this workflow to canonical/charmed-kubeflow-workflows
 name: Bundle integration tests
 
 on:
