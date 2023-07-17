@@ -12,7 +12,7 @@ on:
 jobs:
   test-bundle:
     name: Bundle functional tests
-    runs-on: [self-hosted, linux, X64, two-xlarge]
+    runs-on: [self-hosted, linux, X64, jammy, two-xlarge]
     timeout-minutes: 200
     steps:
       - uses: actions/checkout@v3
@@ -32,6 +32,7 @@ jobs:
           sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox pip-tools
 
       - name: Install charm dev tools
+        run: |
           sudo snap install charmcraft latest/candidate --classic
           sudo snap install juju --classic --channel=2.9/stable
           sudo snap refresh juju --revision 22345
