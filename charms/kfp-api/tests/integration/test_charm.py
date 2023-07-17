@@ -71,9 +71,8 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
     await ops_test.model.add_relation(prometheus, grafana)
     await ops_test.model.add_relation(APP_NAME, grafana)
     await ops_test.model.deploy(
-        prometheus_scrape_charm,
-        channel="latest/beta",
-        config=scrape_config)
+        prometheus_scrape_charm, channel="latest/beta", config=scrape_config
+    )
     await ops_test.model.add_relation(APP_NAME, prometheus_scrape_charm)
     await ops_test.model.add_relation(prometheus, prometheus_scrape_charm)
 
@@ -85,13 +84,12 @@ async def test_prometheus_grafana_integration(ops_test: OpsTest):
 
     for attempt in retry_for_5_attempts:
         logger.info(
-            f"Testing prometheus deployment (attempt "
-            f"{attempt.retry_state.attempt_number})"
+            f"Testing prometheus deployment (attempt {attempt.retry_state.attempt_number})"
         )
         with attempt:
             r = requests.get(
-                f'http://{prometheus_unit_ip}:9090/api/v1/query?'
-                f'query=up{{juju_application="{APP_NAME}"}}'
+                f"http://{prometheus_unit_ip}:9090/api/v1/query?"
+                f"query=up{{juju_application='{APP_NAME}'}}"
             )
             response = json.loads(r.content.decode("utf-8"))
             response_status = response["status"]
