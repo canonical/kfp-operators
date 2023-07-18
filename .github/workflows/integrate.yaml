@@ -104,11 +104,12 @@ jobs:
 
     steps:
       # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
+      # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,
-      # and docker images) from the GH runner, which will liberate around 60 GB of storage,
-      # which will be distributed in 40GB more for root and around 20 for a mnt point.
+      # and docker images) from the GH runner, which will liberate around 60 GB of storage
+      # distributed in 40GB for root and around 20 for a mnt point.
       - name: Maximise GH runner space
-        uses: easimon/maximize-build-space@master
+        uses: easimon/maximize-build-space@v7
         with:
           root-reserve-mb: 40960
           remove-dotnet: 'true'
