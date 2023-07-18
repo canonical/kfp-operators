@@ -138,6 +138,14 @@ jobs:
         run: |
           sg microk8s -c "microk8s config > ~/.kube/config"
 
+      - name: Cache tox environment
+        uses: actions/cache@v2
+        with:
+          path: ./.tox
+          key: ${{ runner.os }}-tox-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
