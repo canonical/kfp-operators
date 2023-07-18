@@ -11,6 +11,10 @@ import json
 import logging
 from base64 import b64encode
 
+from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
+    DashboardLink,
+    KubeflowDashboardLinksRequirer,
+)
 from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
@@ -46,6 +50,54 @@ class KfpUiOperator(CharmBase):
         self.framework.observe(self.on["ingress"].relation_changed, self._main)
         self.framework.observe(self.on["kfp-ui"].relation_changed, self._main)
         self.framework.observe(self.on.leader_elected, self._main)
+
+        # add links in kubeflow-dashboard sidebar
+        self.kubeflow_dashboard_sidebar = KubeflowDashboardLinksRequirer(
+            charm=self,
+            relation_name="dashboard-links",
+            dashboard_links=[
+                DashboardLink(
+                    text="Experiments (KFP)",
+                    link="/pipeline/#/experiments",
+                    type="item",
+                    icon="done-all",
+                    location="menu",
+                ),
+                DashboardLink(
+                    text="Pipelines",
+                    link="/pipeline/#/pipelines",
+                    type="item",
+                    icon="kubeflow:pipeline-centered",
+                    location="menu",
+                ),
+                DashboardLink(
+                    text="Runs",
+                    link="/pipeline/#/runs",
+                    type="item",
+                    icon="maps:directions-run",
+                    location="menu",
+                ),
+                DashboardLink(
+                    text="Recurring Runs",
+                    link="/pipeline/#/recurringruns",
+                    type="item",
+                    icon="device:access-alarm",
+                    location="menu",
+                ),
+                DashboardLink(
+                    text="Upload a pipeline",
+                    desc="Pipelines",
+                    link="/pipeline/",
+                    location="quick",
+                ),
+                DashboardLink(
+                    text="View all pipeline runs",
+                    desc="Pipelines",
+                    link="/pipeline/#/runs",
+                    location="quick",
+                ),
+            ],
+        )
 
     def _main(self, event):
         try:
