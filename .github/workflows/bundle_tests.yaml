@@ -87,6 +87,8 @@ jobs:
           # Re-create dependencies for integration tests in py3 > py3.8
           rm ./requirements-integration.txt && pip-compile ./requirements-integration.in --resolver=backtracking
           juju add-model kubeflow --config automatically-retry-hooks=true
+          # Workaround for https://github.com/canonical/charmcraft/issues/1132
+          sg microk8s -c "charmcraft pack -p ./charms/kfp-viz"
           sg microk8s -c "tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2"
 
       - name: Get all
