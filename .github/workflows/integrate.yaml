@@ -103,8 +103,23 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
+      # This action will remove unused software (dotnet, haskell, android libs, codeql,
+      # and docker images) from the GH runner, which will liberate around 60 GB of storage,
+      # which will be distributed in 40GB more for root and around 20 for a mnt point.
+      - name: Maximise GH runner space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 40960
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+
       - name: Check out code
         uses: actions/checkout@v3
+
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
@@ -150,6 +165,7 @@ jobs:
           mkdir ~/kfp-operators-debug-logs
           juju debug-log --replay | tee ~/kfp-operators-debug-logs/juju-debug-log.log
           juju status | tee ~/kfp-operators-debug-logs/juju-status.log
+          bash -c "cp ~/.local/state/charmcraft/log/* ~/kfp-operators-debug-logs/"
           sg microk8s -c "microk8s.kubectl describe deployments -A | tee ~/kfp-operators-debug-logs/deployments.log"
           sg microk8s -c "microk8s.kubectl describe pods -A | tee ~/kfp-operators-debug-logs/pods.log"
           sg microk8s -c "microk8s.kubectl describe workloads -A | tee ~/kfp-operators-debug-logs/workloads.log"

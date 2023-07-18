@@ -1,7 +1,9 @@
 aiohttp
 # Pinning to <3.0 to ensure compatibility with the 2.9 controller version
 # Note: 3.0 is not being maintained anymore
-juju<3.0
+# FIXME: This is a workaround for https://github.com/juju/python-libjuju/issues/913
+# please pin to a released python-libjuju ASAP.
+juju @ git+https://github.com/DnPlas/python-libjuju@dnplas-pyyaml-6
 # Need this version of kfp to work with kfp 2.0.0-alpha.7
 kfp==1.8.22
 lightkube
