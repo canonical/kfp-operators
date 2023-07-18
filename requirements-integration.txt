@@ -20,7 +20,6 @@ attrs==23.1.0
     # via
     #   aiohttp
     #   jsonschema
-    #   referencing
 backcall==0.2.0
     # via ipython
 bcrypt==4.0.1
@@ -116,9 +115,7 @@ idna==3.4
     #   requests
     #   yarl
 importlib-resources==6.0.0
-    # via
-    #   jsonschema
-    #   jsonschema-specifications
+    # via jsonschema
 iniconfig==2.0.0
     # via pytest
 ipdb==0.13.13
@@ -129,10 +126,10 @@ jedi==0.18.2
     # via ipython
 jinja2==3.1.2
     # via pytest-operator
-jsonschema==4.18.4
-    # via kfp
-jsonschema-specifications==2023.6.1
-    # via jsonschema
+jsonschema==4.17.3
+    # via
+    #   -r requirements-integration.in
+    #   kfp
 juju @ git+https://github.com/DnPlas/python-libjuju@dnplas-pyyaml-6
     # via
     #   -r requirements-integration.in
@@ -222,6 +219,8 @@ pyrfc3339==1.1
     # via
     #   juju
     #   macaroonbakery
+pyrsistent==0.19.3
+    # via jsonschema
 pytest==7.4.0
     # via
     #   -r requirements-integration.in
@@ -246,10 +245,6 @@ pyyaml==6.0.1
     #   kubernetes
     #   lightkube
     #   pytest-operator
-referencing==0.29.3
-    # via
-    #   jsonschema
-    #   jsonschema-specifications
 requests==2.31.0
     # via
     #   google-api-core
@@ -263,10 +258,6 @@ requests-oauthlib==1.3.1
     # via kubernetes
 requests-toolbelt==0.10.1
     # via kfp
-rpds-py==0.8.11
-    # via
-    #   jsonschema
-    #   referencing
 rsa==4.9
     # via google-auth
 six==1.16.0
