@@ -101,6 +101,7 @@ jobs:
         run: |
           mkdir ~/kfp-operators-debug-logs
           df -h | tee df.log
+          bash -c "cp ~/.local/state/charmcraft/log/* ~/kfp-operators-debug-logs/"
           sg microk8s -c "microk8s.kubectl describe nodes | tee ~/kfp-operators-debug-logs/nodes.log"
           sg microk8s -c "juju debug-log --replay | tee ~/kfp-operators-debug-logs/juju-debug-log.log"
           sg microk8s -c "juju status | tee ~/kfp-operators-debug-logs/juju-status.log"
