@@ -104,21 +104,14 @@ jobs:
 
     steps:
       - name: Maximise GH runner space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo docker image prune --all --force
-          sudo swapoff -a
-          sudo rm -f /mnt/swapfile
-          sudo lvcreate -L "4096M" -n swap "buildvg"
-          sudo mkswap "/dev/mapper/buildvg-swap"
-          sudo swapon "/dev/mapper/buildvg-swap"
-          echo "Memory and swap:"
-          free -h
-          swapon --show
-          df -h
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 61440
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
       - name: Check out code
         uses: actions/checkout@v3
       - name: Setup upterm session
