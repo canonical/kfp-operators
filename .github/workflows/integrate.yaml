@@ -103,6 +103,15 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      - name: Maximise GH runner space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+          remove-codeql: 'true'
+	  remove-docker-images: 'true'
       - name: Check out code
         uses: actions/checkout@v3
       - name: Setup upterm session
@@ -152,6 +161,7 @@ jobs:
           mkdir ~/kfp-operators-debug-logs
           juju debug-log --replay | tee ~/kfp-operators-debug-logs/juju-debug-log.log
           juju status | tee ~/kfp-operators-debug-logs/juju-status.log
+          bash -c "cp ~/.local/state/charmcraft/log/* ~/kfp-operators-debug-logs/"
           sg microk8s -c "microk8s.kubectl describe deployments -A | tee ~/kfp-operators-debug-logs/deployments.log"
           sg microk8s -c "microk8s.kubectl describe pods -A | tee ~/kfp-operators-debug-logs/pods.log"
           sg microk8s -c "microk8s.kubectl describe workloads -A | tee ~/kfp-operators-debug-logs/workloads.log"
