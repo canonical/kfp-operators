@@ -51,6 +51,7 @@ K8S_RESOURCE_FILES = [
 ]
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
+KFP_API_SERVICE_NAME = "apiserver"
 
 
 class KfpApiOperator(CharmBase):
@@ -180,11 +181,13 @@ class KfpApiOperator(CharmBase):
     @property
     def _kfp_api_layer(self) -> Layer:
         """Create and return Pebble framework layer."""
+        # The service name should be the same as the one
+        # defined in the Rockcraft project: apiserver
         layer_config = {
             "summary": "kfp-api layer",
             "description": "Pebble config layer for kfp-api",
             "services": {
-                self._container_name: {
+                KFP_API_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "ML Pipeline API Server",
                     "command": f"bash -c '{self._exec_command}'",
