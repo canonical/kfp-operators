@@ -48,6 +48,7 @@ PROBE_PATH = "/apis/v1beta1/healthz"
 
 K8S_RESOURCE_FILES = [
     "src/templates/auth_manifests.yaml.j2",
+    "src/templates/ml-pipeline-service.yaml.j2",
 ]
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
