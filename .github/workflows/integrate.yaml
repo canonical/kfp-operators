@@ -135,7 +135,8 @@ jobs:
           sudo snap refresh juju --revision 22345
 
       # Required until https://github.com/charmed-kubernetes/actions-operator/pull/33 is merged
-      - run: sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
+      - run: |
+          sg microk8s -c "microk8s enable metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'"
 
       # TODO: Remove once the actions-operator does this automatically
       - name: Configure kubectl
@@ -146,10 +147,10 @@ jobs:
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          # Remove destructive-mode once these bugs are fixed:
-          # https://github.com/canonical/charmcraft/issues/554
-          # https://github.com/canonical/craft-providers/issues/96
-          tox -e bundle-integration -- --model kubeflow --destructive-mode
+          # Run integration tests against the 1.7 generic install bundle definition
+          # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
+          # and https://github.com/canonical/charmcraft/issues/1138
+          tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode
 
       - name: Get all
         run: kubectl get all -A
@@ -170,6 +171,9 @@ jobs:
           sg microk8s -c "microk8s.kubectl describe pods -A | tee ~/kfp-operators-debug-logs/pods.log"
           sg microk8s -c "microk8s.kubectl describe workloads -A | tee ~/kfp-operators-debug-logs/workloads.log"
 
-      - name: Get operator logs
-        run: kubectl logs --tail 100 -nkubeflow -ljuju-operator
-        if: failure()
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: kfp-operators-debug-logs
+          path: ~/kfp-operators-debug-logs
