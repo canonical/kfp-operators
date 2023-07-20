@@ -1,8 +1,8 @@
 import logging
-from typing import Optional, List
+from typing import Optional, List, Callable, Any
 
 from jsonschema import ValidationError
-from ops import StatusBase, WaitingStatus, BlockedStatus, ActiveStatus
+from ops import CharmBase, StatusBase, WaitingStatus, BlockedStatus, ActiveStatus
 
 from charmed_kubeflow_chisme.components import Component
 from serialized_data_interface import SerializedDataInterface, get_interface, NoVersionsListed, NoCompatibleVersions
@@ -14,9 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class ObjectStorageRequirerComponent(Component):
-    def __init__(self, *args, relation_name, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, charm: CharmBase, name: str, *args, inputs_getter: Optional[Callable[[], Any]] = None, relation_name, **kwargs):
+        super().__init__(charm, name, *args, inputs_getter=inputs_getter, **kwargs)
         self._relation_name = relation_name
+        self._events_to_observe = [self._charm.on["object-storage"].relation_changed]
 
     def get_data(self) -> dict:
         """Validates and returns the data stored in this relation.
@@ -27,7 +28,6 @@ class ObjectStorageRequirerComponent(Component):
         """
         try:
             interface = self.get_interface()
-            logging.info(f"got interface {interface}")
         # TODO: These messages should be tested and cleaned up
         except (NoVersionsListed, UnversionedRelation) as err:
             msg = str(err)

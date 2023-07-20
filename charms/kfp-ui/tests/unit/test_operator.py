@@ -96,11 +96,8 @@ def test_object_storage_relation_with_data(harness, mocked_lightkube_client):
     harness.charm.leadership_gate_component_item.executed = True
     harness.charm.leadership_gate_component_item.get_status = MagicMock(return_value=ActiveStatus())
 
-    # Add relation with data
+    # Add relation with data.  This should trigger a charm reconciliation due to relation-changed.
     add_sdi_relation_to_harness(harness, "object-storage", data=MOCK_OBJECT_STORAGE_DATA)
-
-    # Act
-    harness.charm.on.install.emit()
 
     # Assert
     assert isinstance(harness.charm.object_storage_relation_component.status, ActiveStatus)
@@ -116,11 +113,8 @@ def test_object_storage_relation_without_data(harness, mocked_lightkube_client):
     harness.charm.leadership_gate_component_item.executed = True
     harness.charm.leadership_gate_component_item.get_status = MagicMock(return_value=ActiveStatus())
 
-    # Add relation with data
+    # Add relation with data.  This should trigger a charm reconciliation due to relation-changed.
     add_sdi_relation_to_harness(harness, "object-storage", data={})
-
-    # Act
-    harness.charm.on.install.emit()
 
     # Assert
     assert isinstance(harness.charm.object_storage_relation_component.status, BlockedStatus)
