@@ -33,7 +33,7 @@ from serialized_data_interface.errors import (
 )
 from serialized_data_interface.sdi import SerializedDataInterface, get_interfaces
 
-from relation_components import ObjectStorageRequirerComponent
+from relation_components import SdiGetterComponent
 
 TEMPLATES_PATH = Path("src/templates")
 K8S_RESOURCE_FILES = [TEMPLATES_PATH / "auth_manifests.yaml.j2"]
@@ -138,10 +138,19 @@ class KfpUiOperator(CharmBase):
         )
 
         self.object_storage_relation_component = self.charm_executor.add(
-            component=ObjectStorageRequirerComponent(
+            component=SdiGetterComponent(
                 charm=self,
                 name="relation:object_storage",
                 relation_name="object-storage",
+            ),
+            depends_on=[self.leadership_gate_component_item]
+        )
+
+        self.kfp_api_relation_component = self.charm_executor.add(
+            component=SdiGetterComponent(
+                charm=self,
+                name="relation:kfp-api",
+                relation_name="kfp-api",
             ),
             depends_on=[self.leadership_gate_component_item]
         )
@@ -170,8 +179,8 @@ class KfpUiOperator(CharmBase):
                     MINIO_NAMESPACE=self.object_storage_relation_component.component.get_data()["namespace"],  # os["namespace"],
                     MINIO_PORT=self.object_storage_relation_component.component.get_data()["port"],  # os["port"],
                     MINIO_SSL=self.object_storage_relation_component.component.get_data()["secure"],  # os["secure"],
-                    ML_PIPELINE_SERVICE_HOST="DUMMY",  # kfp_api["service-name"],
-                    ML_PIPELINE_SERVICE_PORT="DUMMY",  # kfp_api["service-port"],
+                    ML_PIPELINE_SERVICE_HOST=self.kfp_api_relation_component.component.get_data()["service-name"],  # kfp_api["service-name"],
+                    ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation_component.component.get_data()["service-port"],  # kfp_api["service-port"],
                 ),
             ),
             # TODO: add relations

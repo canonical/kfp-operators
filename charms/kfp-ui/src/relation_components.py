@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, List, Callable, Any
+from typing import Optional, List, Callable, Any, Union
 
 from jsonschema import ValidationError
 from ops import CharmBase, StatusBase, WaitingStatus, BlockedStatus, ActiveStatus
@@ -13,29 +13,30 @@ from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
 logger = logging.getLogger(__name__)
 
 
-class ObjectStorageRequirerComponent(Component):
-    def __init__(self, charm: CharmBase, name: str, *args, inputs_getter: Optional[Callable[[], Any]] = None, relation_name, **kwargs):
+class SdiGetterComponent(Component):
+    """Wraps an SDI-backed relation that receives data."""
+    def __init__(self, charm: CharmBase, name: str, relation_name, *args, inputs_getter: Optional[Callable[[], Any]] = None, minimum_related_applications: Optional[int] = 1,  maximum_related_applications: Optional[int] = 1, **kwargs):
+        """TODO: Docstring"""
         super().__init__(charm, name, *args, inputs_getter=inputs_getter, **kwargs)
         self._relation_name = relation_name
-        self._events_to_observe = [self._charm.on["object-storage"].relation_changed]
+        self._minimum_related_applications = minimum_related_applications
+        self._maximum_related_applications = maximum_related_applications
+        # TODO: handle relation-broken
+        self._events_to_observe = [self._charm.on[self._relation_name].relation_changed]
 
-    def get_data(self) -> dict:
+    def get_data(self) -> Union[List[dict], dict]:
         """Validates and returns the data stored in this relation.
 
         Validation asserts that there is data for exactly one related app.
 
-        Raises ErrorWithStatus if data can not be returned.  
+        Raises ErrorWithStatus if data can not be returned.
         """
         try:
             interface = self.get_interface()
         # TODO: These messages should be tested and cleaned up
         except (NoVersionsListed, UnversionedRelation) as err:
-            msg = str(err)
-            logging.error(msg)
             raise ErrorWithStatus(str(err), WaitingStatus) from err
         except NoCompatibleVersions as err:
-            msg = str(err)
-            logging.info(msg)
             raise ErrorWithStatus(str(err), BlockedStatus) from err
         except Exception as err:
             raise ErrorWithStatus(f"Caught unknown error: '{str(err)}'", BlockedStatus) from err
@@ -54,16 +55,14 @@ class ObjectStorageRequirerComponent(Component):
             msg = f"Got ValidationError when interpreting data on relation {self._relation_name}: {val_error}"
             raise ErrorWithStatus(msg, BlockedStatus) from val_error
 
-        if len(unpacked_data) > 1:
-            msg = f"Expected data from 1 application on relation {self._relation_name}, " \
-                  f"got{len(unpacked_data)}"
-            raise ErrorWithStatus(str(msg), BlockedStatus)
+        self.validate_data(unpacked_data)
 
-        if len(unpacked_data) == 0:
-            msg = f"Missing required data from 1 application on relation {self._relation_name}"
-            raise ErrorWithStatus(str(msg), BlockedStatus)
-
-        return unpacked_data[0]
+        # If relation supports exactly 1 relation, return just that relation's data.  Else, return
+        # as a list.
+        if self._minimum_related_applications == self._maximum_related_applications:
+            return unpacked_data[0]
+        else:
+            return unpacked_data
 
     def get_interface(self) -> Optional[SerializedDataInterface]:
         """Returns the SerializedDataInterface object for this interface."""
@@ -91,3 +90,21 @@ class ObjectStorageRequirerComponent(Component):
             return err.status
 
         return ActiveStatus()
+
+    def validate_data(self, data: List[dict]):
+        """Validates the data for this relation, raising if it does not meet requirements."""
+        if self._minimum_related_applications == self._maximum_related_applications:
+            error_msg = f"Expected data from exactly {self._minimum_related_applications} related applications - " \
+                        f"got {len(data)}."
+        else:
+            error_msg = (
+                f"Expected data from {self._minimum_related_applications}-{self._maximum_related_applications} "
+                f"related applications - got {len(data)}."
+            )
+
+        if len(data) > self._maximum_related_applications:
+            raise ErrorWithStatus(str(error_msg), BlockedStatus)
+
+        if len(data) == 0:
+            raise ErrorWithStatus(str(error_msg), BlockedStatus)
+
