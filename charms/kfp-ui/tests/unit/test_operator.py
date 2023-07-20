@@ -24,6 +24,7 @@ from charmed_kubeflow_chisme.components import ComponentGraphItem
 # ops.testing.SIMULATE_CAN_CONNECT = True
 
 MOCK_OBJECT_STORAGE_DATA = {'access-key': 'access-key', 'secret-key': 'secret-key', "service": "service", "namespace": "namespace", "port": 1234, "secure": True,}
+MOCK_KFP_API_DATA = {"service-name": "service-name", "service-port": "1234"}
 
 
 def test_not_leader(harness, mocked_lightkube_client):
@@ -137,6 +138,57 @@ def test_object_storage_relation_without_relation(harness, mocked_lightkube_clie
     assert isinstance(harness.charm.object_storage_relation_component.status, BlockedStatus)
 
 
+def test_kfp_api_relation_with_data(harness, mocked_lightkube_client):
+    """Test that if Leadership is Active, the kfp-api relation operates as expected."""
+    # Arrange
+    harness.begin()
+
+    # Mock:
+    # * leadership_gate_component_item to be active and executed
+    harness.charm.leadership_gate_component_item.executed = True
+    harness.charm.leadership_gate_component_item.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Add relation with data.  This should trigger a charm reconciliation due to relation-changed.
+    add_sdi_relation_to_harness(harness, "kfp-api", data=MOCK_KFP_API_DATA)
+
+    # Assert
+    assert isinstance(harness.charm.kfp_api_relation_component.status, ActiveStatus)
+
+
+def test_kfp_api_relation_without_data(harness, mocked_lightkube_client):
+    """Test that the kfp-api relation goes Blocked if no data is available."""
+    # Arrange
+    harness.begin()
+
+    # Mock:
+    # * leadership_gate_component_item to be active and executed
+    harness.charm.leadership_gate_component_item.executed = True
+    harness.charm.leadership_gate_component_item.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Add relation with data.  This should trigger a charm reconciliation due to relation-changed.
+    add_sdi_relation_to_harness(harness, "kfp-api", data={})
+
+    # Assert
+    assert isinstance(harness.charm.kfp_api_relation_component.status, BlockedStatus)
+
+
+def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
+    """Test that the kfp-api relation goes Blocked if no relation is established."""
+    # Arrange
+    harness.begin()
+
+    # Mock:
+    # * leadership_gate_component_item to be active and executed
+    harness.charm.leadership_gate_component_item.executed = True
+    harness.charm.leadership_gate_component_item.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert
+    assert isinstance(harness.charm.kfp_api_relation_component.status, BlockedStatus)
+
+
 def test_pebble_services_running(harness, mocked_lightkube_client):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
@@ -154,6 +206,8 @@ def test_pebble_services_running(harness, mocked_lightkube_client):
     harness.charm.kubernetes_resources_component_item.get_status = MagicMock(return_value=ActiveStatus())
     harness.charm.object_storage_relation_component.executed = True
     harness.charm.object_storage_relation_component.component.get_data = MagicMock(return_value=MOCK_OBJECT_STORAGE_DATA)
+    harness.charm.kfp_api_relation_component.executed = True
+    harness.charm.kfp_api_relation_component.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
 
     # Act
     harness.charm.on.install.emit()
@@ -171,8 +225,8 @@ def test_pebble_services_running(harness, mocked_lightkube_client):
     assert environment["MINIO_NAMESPACE"] == MOCK_OBJECT_STORAGE_DATA["namespace"]
     assert environment["MINIO_PORT"] == MOCK_OBJECT_STORAGE_DATA["port"]
     assert environment["MINIO_SSL"] == MOCK_OBJECT_STORAGE_DATA["secure"]
-    assert environment["ML_PIPELINE_SERVICE_HOST"] == "DUMMY"
-    assert environment["ML_PIPELINE_SERVICE_PORT"] == "DUMMY"
+    assert environment["ML_PIPELINE_SERVICE_HOST"] == MOCK_KFP_API_DATA["service-name"]
+    assert environment["ML_PIPELINE_SERVICE_PORT"] == MOCK_KFP_API_DATA["service-port"]
 
 
 # def test_image_fetch(harness, oci_resource_data):
