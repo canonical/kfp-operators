@@ -13,7 +13,7 @@ from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
 logger = logging.getLogger(__name__)
 
 
-class SdiGetterComponent(Component):
+class SdiRelationGetterComponent(Component):
     """Wraps an SDI-backed relation that receives data."""
     def __init__(self, charm: CharmBase, name: str, relation_name, *args, inputs_getter: Optional[Callable[[], Any]] = None, minimum_related_applications: Optional[int] = 1,  maximum_related_applications: Optional[int] = 1, **kwargs):
         """TODO: Docstring"""
