@@ -33,7 +33,7 @@ from serialized_data_interface.errors import (
 )
 from serialized_data_interface.sdi import SerializedDataInterface, get_interfaces
 
-from relation_components import SdiGetterComponent
+from relation_components import SdiRelationGetterComponent
 
 TEMPLATES_PATH = Path("src/templates")
 K8S_RESOURCE_FILES = [TEMPLATES_PATH / "auth_manifests.yaml.j2"]
@@ -138,7 +138,7 @@ class KfpUiOperator(CharmBase):
         )
 
         self.object_storage_relation_component = self.charm_executor.add(
-            component=SdiGetterComponent(
+            component=SdiRelationGetterComponent(
                 charm=self,
                 name="relation:object_storage",
                 relation_name="object-storage",
@@ -147,7 +147,7 @@ class KfpUiOperator(CharmBase):
         )
 
         self.kfp_api_relation_component = self.charm_executor.add(
-            component=SdiGetterComponent(
+            component=SdiRelationGetterComponent(
                 charm=self,
                 name="relation:kfp-api",
                 relation_name="kfp-api",
