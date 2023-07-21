@@ -1,5 +1,7 @@
 coverage
+oci-image
+ops
 pytest
 pytest-mock
 pytest-lazy-fixture
--r requirements.txt
+serialized-data-interface
