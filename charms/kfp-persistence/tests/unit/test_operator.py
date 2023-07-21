@@ -1,26 +1,18 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from contextlib import nullcontext as does_not_raise
+from typing import Optional
+from unittest.mock import MagicMock
 
-import ops
 import pytest
 import yaml
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import CheckFailedError, KfpPersistenceOperator
-
-from dataclasses import dataclass
-from typing import Optional
-from unittest.mock import MagicMock, patch
-
-import pytest
-import yaml
-from ops.model import ActiveStatus, WaitingStatus
-from ops.testing import Harness
+from charm import KfpPersistenceOperator
 
 MOCK_KFP_API_DATA = {"service-name": "service-name", "service-port": "1234"}
+
 
 @pytest.fixture
 def harness():
@@ -30,23 +22,19 @@ def harness():
     return harness
 
 
-
-@pytest.fixture()
-def mocked_lightkube_client(mocker):
-    """Mocks the Lightkube Client in charm.py, returning a mock instead."""
-    mocked_lightkube_client = MagicMock()
-    mocked_lightkube_client_class = mocker.patch("charm.lightkube.Client", return_value=mocked_lightkube_client)
-    yield mocked_lightkube_client
-
 def test_not_leader(
     harness,  # noqa F811
 ):
     """Test not a leader scenario."""
     harness.begin_with_initial_hooks()
-    assert harness.charm.model.unit.status == WaitingStatus("[leadership-gate] Waiting for leadership")
+    assert harness.charm.model.unit.status == WaitingStatus(
+        "[leadership-gate] Waiting for leadership"
+    )
+
 
 RELATION_NAME = "kfp-api"
 OTHER_APP_NAME = "kfp-api-provider"
+
 
 def test_kfp_api_relation_with_data(harness):
     """Test that if Leadership is Active, the kfp-api relation operates as expected."""
@@ -63,6 +51,7 @@ def test_kfp_api_relation_with_data(harness):
 
     # Assert
     assert isinstance(harness.charm.kfp_api_relation.status, ActiveStatus)
+
 
 def test_kfp_api_relation_without_data(harness):
     """Test that the kfp-api relation goes Blocked if no data is available."""
@@ -97,6 +86,7 @@ def test_kfp_api_relation_without_relation(harness):
     # Assert
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
+
 def test_pebble_services_running(harness):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
@@ -121,15 +111,18 @@ def test_pebble_services_running(harness):
     service = container.get_service("persistenceagent")
     assert service.is_running()
     # Assert the environment variables that are set from inputs are correctly applied
-    environment = container.get_plan().services['persistenceagent'].environment
+    environment = container.get_plan().services["persistenceagent"].environment
+
+    assert environment["KUBEFLOW_USERID_HEADER"] == "kubeflow-userid"
+
 
 # Helpers
 def add_data_to_sdi_relation(
-        harness: Harness,
-        rel_id: int,
-        other: str,
-        data: Optional[dict] = None,
-        supported_versions: str = "- v1",
+    harness: Harness,
+    rel_id: int,
+    other: str,
+    data: Optional[dict] = None,
+    supported_versions: str = "- v1",
 ) -> None:
     """Add data to an SDI-backed relation."""
     if data is None:
@@ -141,11 +134,10 @@ def add_data_to_sdi_relation(
         {"_supported_versions": supported_versions, "data": yaml.dump(data)},
     )
 
+
 def add_sdi_relation_to_harness(
-        harness: Harness,
-        relation_name: str,
-        other_app: str = "other",
-        data: Optional[dict] = None) -> dict:
+    harness: Harness, relation_name: str, other_app: str = "other", data: Optional[dict] = None
+) -> dict:
     """Relates a new app and unit to an sdi-formatted relation.
 
     Args:

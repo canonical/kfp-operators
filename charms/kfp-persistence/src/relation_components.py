@@ -1,33 +1,39 @@
 import logging
-from typing import Optional, List, Callable, Any, Union
-
-from jsonschema import ValidationError
-from ops import CharmBase, StatusBase, WaitingStatus, BlockedStatus, ActiveStatus
+from typing import Any, Callable, List, Optional, Union
 
 from charmed_kubeflow_chisme.components import Component
-from serialized_data_interface import SerializedDataInterface, get_interface, NoVersionsListed, NoCompatibleVersions
+from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
+from jsonschema import ValidationError
+from ops import ActiveStatus, BlockedStatus, CharmBase, StatusBase, WaitingStatus
+from serialized_data_interface import (
+    NoCompatibleVersions,
+    NoVersionsListed,
+    SerializedDataInterface,
+    get_interface,
+)
 from serialized_data_interface.errors import UnversionedRelation
 
-from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
-
 logger = logging.getLogger(__name__)
+
 
 class SdiRelation(Component):
     """Wraps an SDI-backed relation that receives data.
 
     TO-DO: This relation should be converted to use library.
     """
+
     def __init__(
-            self,
-            charm: CharmBase,
-            name: str,
-            relation_name,
-            *args,
-            inputs_getter: Optional[Callable[[], Any]] = None,
-            minimum_related_applications: Optional[int] = 1,
-            maximum_related_applications: Optional[int] = 1, **kwargs
-        ):
-        """Initalize SDI relation component."""
+        self,
+        charm: CharmBase,
+        name: str,
+        relation_name,
+        *args,
+        inputs_getter: Optional[Callable[[], Any]] = None,
+        minimum_related_applications: Optional[int] = 1,
+        maximum_related_applications: Optional[int] = 1,
+        **kwargs,
+    ):
+        """Initialize SDI relation component."""
         super().__init__(charm, name, *args, inputs_getter=inputs_getter, **kwargs)
         self._relation_name = relation_name
         self._minimum_related_applications = minimum_related_applications
@@ -35,8 +41,6 @@ class SdiRelation(Component):
         self._events_to_observe = [self._charm.on[self._relation_name].relation_created]
         self._events_to_observe = [self._charm.on[self._relation_name].relation_joined]
         self._events_to_observe = [self._charm.on[self._relation_name].relation_changed]
-        #self._events_to_observe = [self._charm.on[self._relation_name].relation_broken]
-        #self._events_to_observe = [self._charm.on[self._relation_name].relation_departed]
 
     def get_data(self) -> Union[List[dict], dict]:
         """Validates and returns the data stored in this relation.
@@ -64,7 +68,10 @@ class SdiRelation(Component):
         except ValidationError as val_error:
             # Validation in .get_data() ensures if data is populated, it matches the schema and is
             # not incomplete
-            msg = f"Got ValidationError when interpreting data on relation {self._relation_name}: {val_error}"
+            msg = (
+                "Got ValidationError when interpreting data on relation"
+                f"{self._relation_name}: {val_error}"
+            )
             raise ErrorWithStatus(msg, BlockedStatus) from val_error
 
         self.validate_data(unpacked_data)
@@ -102,11 +109,14 @@ class SdiRelation(Component):
     def validate_data(self, data: List[dict]):
         """Validates the data for this relation, raising if it does not meet requirements."""
         if self._minimum_related_applications == self._maximum_related_applications:
-            error_msg = f"Expected data from exactly {self._minimum_related_applications} related applications - " \
-                        f"got {len(data)}."
+            error_msg = (
+                f"Expected data from exactly {self._minimum_related_applications}"
+                f" related applications - got {len(data)}."
+            )
         else:
             error_msg = (
-                f"Expected data from {self._minimum_related_applications}-{self._maximum_related_applications} "
+                "Expected data from "
+                f"{self._minimum_related_applications}-{self._maximum_related_applications} "
                 f"related applications - got {len(data)}."
             )
 

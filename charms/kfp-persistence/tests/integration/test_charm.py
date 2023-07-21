@@ -1,15 +1,12 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import json
 import logging
 from pathlib import Path
 
 import pytest
-import requests
 import yaml
 from pytest_operator.plugin import OpsTest
-from tenacity import Retrying, stop_after_attempt, stop_after_delay, wait_exponential
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +15,7 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 
 MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
 KFP_DB_CONFIG = {"database": "mlpipeline"}
+
 
 class TestCharm:
     """Integration test charm"""
@@ -53,9 +51,9 @@ class TestCharm:
         # deploy kfp-api which needs to be related to this charm
         await ops_test.model.deploy(entity_url="kfp-api", channel="2.0/stable", trust=True)
 
-        await ops_test.model.add_relation(f"kfp-api:mysql", "kfp-db:mysql")
-        await ops_test.model.add_relation(f"kfp-api:object-storage", "minio:object-storage")
-        await ops_test.model.add_relation(f"kfp-api:kfp-viz", "kfp-viz:kfp-viz")
+        await ops_test.model.add_relation("kfp-api:mysql", "kfp-db:mysql")
+        await ops_test.model.add_relation("kfp-api:object-storage", "minio:object-storage")
+        await ops_test.model.add_relation("kfp-api:kfp-viz", "kfp-viz:kfp-viz")
 
         await ops_test.model.wait_for_idle(
             apps=["kfp-api", "kfp-db"],

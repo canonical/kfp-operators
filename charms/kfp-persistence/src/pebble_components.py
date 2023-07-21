@@ -1,21 +1,24 @@
-import logging
 import dataclasses
-from ops.pebble import Layer
+import logging
 from typing import Dict
-from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
 
+from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
+from ops.pebble import Layer
 
 logger = logging.getLogger(__name__)
+
 
 @dataclasses.dataclass
 class PesistenceAgentServiceConfig:
     """Defines configuration for PersistenceAgent Service."""
+
     KFP_API_SERVICE_NAME: str
     NAMESPACE: str
 
+
 class PersistenceAgentContainer(PebbleServiceComponent):
-    # TODO: Should this be something we subclass to define settings, or should PebbleServiceComponent just have
-    #  .add_service, .add_check, etc?
+    # TODO: Should this be something we subclass to define settings, or should
+    # PebbleServiceComponent just have .add_service, .add_check, etc?
     def __init__(
         self,
         *args,
@@ -48,25 +51,27 @@ class PersistenceAgentContainer(PebbleServiceComponent):
             f"--namespace={service_config.NAMESPACE}",
             "--ttlSecondsAfterWorkflowFinish=86400",
             "--numWorker=2",
-            f"--mlPipelineAPIServerName={service_config.KFP_API_SERVICE_NAME}"
+            f"--mlPipelineAPIServerName={service_config.KFP_API_SERVICE_NAME}",
         )
 
         # generate and return layer
-        return Layer({
-            "services": {
-                self.service_name: {
-                    "override": "replace",
-                    "summary": "persistenceagent service",
-                    "command": ' '.join(command),
-                    "startup": "enabled",
-                    "environment": self._environment,
-                }
-            },
-            "checks": {
-                "persistenceagent-get": {
-                    "override": "replace",
-                    "period": "30s",
-                    "http": {"url": "http://localhost:8080/metrics"},
-                }
-            },
-        })
+        return Layer(
+            {
+                "services": {
+                    self.service_name: {
+                        "override": "replace",
+                        "summary": "persistenceagent service",
+                        "command": " ".join(command),
+                        "startup": "enabled",
+                        "environment": self._environment,
+                    }
+                },
+                "checks": {
+                    "persistenceagent-get": {
+                        "override": "replace",
+                        "period": "30s",
+                        "http": {"url": "http://localhost:8080/metrics"},
+                    }
+                },
+            }
+        )

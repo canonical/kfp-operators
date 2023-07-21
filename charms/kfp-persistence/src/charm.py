@@ -9,17 +9,13 @@ https://github.com/canonical/kfp-operators/
 
 import logging
 
-from ops.charm import CharmBase
-from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
-
-from ops import EventBase
-
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
+from ops.charm import CharmBase
+from ops.main import main
+
 from pebble_components import PersistenceAgentContainer, PesistenceAgentServiceConfig
 from relation_components import SdiRelation
-
 
 log = logging.getLogger()
 
@@ -31,16 +27,12 @@ class KfpPersistenceOperator(CharmBase):
         """Initialize charm and setup the container."""
         super().__init__(*args, **kwargs)
 
-        # Actions
-        #self.framework.observe(self.on.describe_status_action, self._describe_status_action)
-
         # Charm logic
         self.charm_executor = CharmReconciler(self)
 
         # Components
         self.leadership_gate = self.charm_executor.add(
-            component=LeadershipGateComponent(charm=self, name="leadership-gate"),
-            depends_on=[]
+            component=LeadershipGateComponent(charm=self, name="leadership-gate"), depends_on=[]
         )
 
         self.kfp_api_relation = self.charm_executor.add(
@@ -64,9 +56,11 @@ class KfpPersistenceOperator(CharmBase):
                 # provide function to pebble with which it can get service configuration from
                 # relation
                 service_config_getter=lambda: PesistenceAgentServiceConfig(
-                    KFP_API_SERVICE_NAME=self.kfp_api_relation.component.get_data()["service-name"],
+                    KFP_API_SERVICE_NAME=self.kfp_api_relation.component.get_data()[
+                        "service-name"
+                    ],
                     NAMESPACE=str(self.model.name),
-                )
+                ),
             ),
             depends_on=[self.leadership_gate, self.kfp_api_relation],
         )
@@ -91,6 +85,7 @@ class CheckFailedError(Exception):
         self.msg = msg
         self.status_type = status_type
         self.status = status_type(msg)
+
 
 if __name__ == "__main__":
     main(KfpPersistenceOperator)
