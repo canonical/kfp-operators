@@ -110,9 +110,9 @@ def test_pebble_services_running(harness):
     container = harness.charm.unit.get_container("persistenceagent")
     service = container.get_service("persistenceagent")
     assert service.is_running()
+
     # Assert the environment variables that are set from inputs are correctly applied
     environment = container.get_plan().services["persistenceagent"].environment
-
     assert environment["KUBEFLOW_USERID_HEADER"] == "kubeflow-userid"
 
 
