@@ -31,15 +31,7 @@ class SdiRelationGetterComponent(Component):
 
         Raises ErrorWithStatus if data can not be returned.
         """
-        try:
-            interface = self.get_interface()
-        # TODO: These messages should be tested and cleaned up
-        except (NoVersionsListed, UnversionedRelation) as err:
-            raise ErrorWithStatus(str(err), WaitingStatus) from err
-        except NoCompatibleVersions as err:
-            raise ErrorWithStatus(str(err), BlockedStatus) from err
-        except Exception as err:
-            raise ErrorWithStatus(f"Caught unknown error: '{str(err)}'", BlockedStatus) from err
+        interface = self.get_interface()
 
         if interface is None:
             msg = f"Missing required data from 1 application on relation {self._relation_name}"
@@ -66,7 +58,17 @@ class SdiRelationGetterComponent(Component):
 
     def get_interface(self) -> Optional[SerializedDataInterface]:
         """Returns the SerializedDataInterface object for this interface."""
-        return get_interface(self._charm, self._relation_name)
+        try:
+            interface = get_interface(self._charm, self._relation_name)
+        # TODO: These messages should be tested and cleaned up
+        except (NoVersionsListed, UnversionedRelation) as err:
+            raise ErrorWithStatus(str(err), WaitingStatus) from err
+        except NoCompatibleVersions as err:
+            raise ErrorWithStatus(str(err), BlockedStatus) from err
+        except Exception as err:
+            raise ErrorWithStatus(f"Caught unknown error: '{str(err)}'", BlockedStatus) from err
+
+        return interface
 
     def get_status(self) -> StatusBase:
         """Returns the status of this relation.
