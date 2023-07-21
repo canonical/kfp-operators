@@ -64,7 +64,8 @@ class KfpPersistenceOperator(CharmBase):
                 # provide function to pebble with which it can get service configuration from
                 # relation
                 service_config_getter=lambda: PesistenceAgentServiceConfig(
-                    KFP_API_SERVICE_NAME=self.kfp_api_relation.component.get_data()["service-name"]
+                    KFP_API_SERVICE_NAME=self.kfp_api_relation.component.get_data()["service-name"],
+                    NAMESPACE=str(self.model.name),
                 )
             ),
             depends_on=[self.leadership_gate, self.kfp_api_relation],

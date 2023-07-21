@@ -91,8 +91,6 @@ class SdiRelation(Component):
                 * nothing is related to us (as there is no work to do)
                 * we have one or more relations, and we have sent data to all of them
         """
-        logging.info("in SdiRelationGetter.is_ready")
-
         try:
             # If we successfully get data
             self.get_data()
