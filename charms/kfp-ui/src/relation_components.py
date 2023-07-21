@@ -1,21 +1,35 @@
 import logging
-from typing import Optional, List, Callable, Any, Union
-
-from jsonschema import ValidationError
-from ops import CharmBase, StatusBase, WaitingStatus, BlockedStatus, ActiveStatus
+from typing import Any, Callable, List, Optional, Union
 
 from charmed_kubeflow_chisme.components import Component
-from serialized_data_interface import SerializedDataInterface, get_interface, NoVersionsListed, NoCompatibleVersions
-from serialized_data_interface.errors import UnversionedRelation
-
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
+from jsonschema import ValidationError
+from ops import ActiveStatus, BlockedStatus, CharmBase, StatusBase, WaitingStatus
+from serialized_data_interface import (
+    NoCompatibleVersions,
+    NoVersionsListed,
+    SerializedDataInterface,
+    get_interface,
+)
+from serialized_data_interface.errors import UnversionedRelation
 
 logger = logging.getLogger(__name__)
 
 
 class SdiRelationGetterComponent(Component):
     """Wraps an SDI-backed relation that receives data."""
-    def __init__(self, charm: CharmBase, name: str, relation_name, *args, inputs_getter: Optional[Callable[[], Any]] = None, minimum_related_applications: Optional[int] = 1,  maximum_related_applications: Optional[int] = 1, **kwargs):
+
+    def __init__(
+        self,
+        charm: CharmBase,
+        name: str,
+        relation_name,
+        *args,
+        inputs_getter: Optional[Callable[[], Any]] = None,
+        minimum_related_applications: Optional[int] = 1,
+        maximum_related_applications: Optional[int] = 1,
+        **kwargs,
+    ):
         """TODO: Docstring"""
         super().__init__(charm, name, *args, inputs_getter=inputs_getter, **kwargs)
         self._relation_name = relation_name
@@ -96,8 +110,10 @@ class SdiRelationGetterComponent(Component):
     def validate_data(self, data: List[dict]):
         """Validates the data for this relation, raising if it does not meet requirements."""
         if self._minimum_related_applications == self._maximum_related_applications:
-            error_msg = f"Expected data from exactly {self._minimum_related_applications} related applications - " \
-                        f"got {len(data)}."
+            error_msg = (
+                f"Expected data from exactly {self._minimum_related_applications} related applications - "
+                f"got {len(data)}."
+            )
         else:
             error_msg = (
                 f"Expected data from {self._minimum_related_applications}-{self._maximum_related_applications} "
@@ -112,10 +128,21 @@ class SdiRelationGetterComponent(Component):
 
 
 class IngressRelationComponent(Component):
-    def __init__(self, charm: CharmBase, name: str, relation_name, *args, inputs_getter: Optional[Callable[[], Any]] = None, **kwargs):
+    def __init__(
+        self,
+        charm: CharmBase,
+        name: str,
+        relation_name,
+        *args,
+        inputs_getter: Optional[Callable[[], Any]] = None,
+        **kwargs,
+    ):
         super().__init__(charm, name, *args, inputs_getter=inputs_getter, **kwargs)
         self._relation_name = relation_name
-        self._events_to_observe = [self._charm.on[self._relation_name].relation_created, self._charm.on[self._relation_name].relation_changed]
+        self._events_to_observe = [
+            self._charm.on[self._relation_name].relation_created,
+            self._charm.on[self._relation_name].relation_changed,
+        ]
 
         # TODO: validation: assert exactly one relation?  share that with the above class?
 
@@ -180,19 +207,27 @@ class IngressRelationComponent(Component):
             # We check whether we've sent, on our application side of the relation, the required
             # attributes
             interface_data_dict = interface.get_data()
-            this_apps_interface_data = interface_data_dict[(self.model.get_relation(self._relation_name), self._charm.app)]
+            this_apps_interface_data = interface_data_dict[
+                (self.model.get_relation(self._relation_name), self._charm.app)
+            ]
 
             missing_attributes = []
             # TODO: This could validate the data sent, not just confirm there is something sent.
             #  Would that be too much?
             for attribute in required_attributes:
-                if not (attribute in this_apps_interface_data and this_apps_interface_data[attribute] is not None and this_apps_interface_data[attribute] != ""):
+                if not (
+                    attribute in this_apps_interface_data
+                    and this_apps_interface_data[attribute] is not None
+                    and this_apps_interface_data[attribute] != ""
+                ):
                     missing_attributes.append(attribute)
 
             if missing_attributes:
-                msg = f"Relation is missing attributes {missing_attributes} that we send out." \
-                      f"  This likely is a transient error but if it persists, there could be" \
-                      f" something wrong."
+                msg = (
+                    f"Relation is missing attributes {missing_attributes} that we send out."
+                    f"  This likely is a transient error but if it persists, there could be"
+                    f" something wrong."
+                )
 
                 return WaitingStatus(msg)
 
