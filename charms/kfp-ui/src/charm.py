@@ -33,7 +33,7 @@ from serialized_data_interface.errors import (
 )
 from serialized_data_interface.sdi import SerializedDataInterface, get_interfaces
 
-from relation_components import SdiRelationGetterComponent
+from relation_components import SdiRelationGetterComponent, IngressRelationComponent
 
 TEMPLATES_PATH = Path("src/templates")
 K8S_RESOURCE_FILES = [TEMPLATES_PATH / "auth_manifests.yaml.j2"]
@@ -115,6 +115,14 @@ class KfpUiOperator(CharmBase):
 
         # Charm logic
         self.charm_executor = CharmReconciler(self)
+
+        self.ingress_relation_component = self.charm_executor.add(
+            IngressRelationComponent(
+                charm=self,
+                name="relation:ingress",
+                relation_name="ingress",
+            )
+        )
 
         self.leadership_gate_component_item = self.charm_executor.add(
             component=LeadershipGateComponent(

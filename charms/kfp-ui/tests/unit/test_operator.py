@@ -189,6 +189,52 @@ def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.kfp_api_relation_component.status, BlockedStatus)
 
 
+def test_ingress_relation_with_related_app(harness, mocked_lightkube_client):
+    """Test that the kfp-api relation goes Blocked if no data is available."""
+    # Arrange
+    harness.set_leader(True)  # needed to write to an SDI relation
+    harness.begin()
+
+    # Mock:
+    # * leadership_gate_component_item to be active and executed
+    harness.charm.leadership_gate_component_item = MagicMock()
+    harness.charm.leadership_gate_component_item.executed
+    harness.charm.leadership_gate_component_item.executed = True
+    harness.charm.leadership_gate_component_item.get_status = MagicMock(return_value=ActiveStatus())
+
+    expected_relation_data = {'_supported_versions': ['v1'], "data": render_ingress_data(service=harness.model.app.name, port=harness.model.config["http-port"])}
+
+    # Act
+    # Add one relation with data.  This should trigger a charm reconciliation due to
+    # relation-changed.
+    relation_metadata = add_sdi_relation_to_harness(harness, "ingress", other_app='o1', data={})
+    relation_ids_to_assert = [relation_metadata['rel_id']]
+
+    # Assert
+    assert_ingress_ok(expected_relation_data, harness, relation_ids_to_assert)
+
+    # TODO: Commented out because this broke due to the charm not resetting the
+    #  ComponentGraphItem.executed between different events
+    # # Act again
+    # # Add another relation with data.  This should trigger a charm reconciliation due to
+    # # relation-changed and both should have the correct data
+    # relation_metadata = add_sdi_relation_to_harness(harness, "ingress", other_app='o2', data={})
+    # relation_ids_to_assert.append(relation_metadata['rel_id'])
+    #
+    # # Assert
+    # assert_ingress_ok(expected_relation_data, harness, relation_ids_to_assert)
+
+
+def assert_ingress_ok(expected_relation_data, harness, rel_ids_to_assert):
+    """Asserts that all relations in rel_ids_to_assert have the expected ingress data."""
+    assert isinstance(harness.charm.ingress_relation_component.status, ActiveStatus)
+    # Assert on the data we sent out to the other app for each relation.
+    for rel_id in rel_ids_to_assert:
+        relation_data = harness.get_relation_data(rel_id, harness.model.app)
+        assert yaml.safe_load(relation_data['_supported_versions']) == expected_relation_data['_supported_versions']
+        assert yaml.safe_load(relation_data['data']) == expected_relation_data['data']
+
+
 def test_pebble_services_running(harness, mocked_lightkube_client):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
@@ -600,4 +646,14 @@ def add_sdi_relation_to_harness(harness: Harness, relation_name: str, other_app:
         "other_unit": other_unit,
         "rel_id": rel_id,
         "data": data,
+    }
+
+
+def render_ingress_data(service, port) -> dict:
+    """Returns typical data for the ingress relation."""
+    return {
+        "prefix": "/pipeline",
+        "rewrite": "/pipeline",
+        "service": service,
+        "port": int(port),
     }

@@ -108,3 +108,93 @@ class SdiRelationGetterComponent(Component):
         if len(data) == 0:
             raise ErrorWithStatus(str(error_msg), BlockedStatus)
 
+
+class IngressRelationComponent(Component):
+    def __init__(self, charm: CharmBase, name: str, relation_name, *args, inputs_getter: Optional[Callable[[], Any]] = None, **kwargs):
+        super().__init__(charm, name, *args, inputs_getter=inputs_getter, **kwargs)
+        self._relation_name = relation_name
+        self._events_to_observe = [self._charm.on[self._relation_name].relation_created, self._charm.on[self._relation_name].relation_changed]
+
+        # TODO: validation: assert exactly one relation?  share that with the above class?
+
+    def _configure_app(self, event):
+        """Send data to all related applications."""
+        interface = self.get_interface()
+        if interface is None:
+            return
+
+        interface.send_data(
+            data={
+                "prefix": "/pipeline",
+                "rewrite": "/pipeline",
+                "service": self._charm.model.app.name,  # TODO: Should this be name.namespace?
+                "port": int(self._charm.model.config["http-port"]),
+            }
+        )
+
+    def get_interface(self) -> Optional[SerializedDataInterface]:
+        """Returns the SerializedDataInterface object for this interface."""
+        try:
+            interface = get_interface(self._charm, self._relation_name)
+        # TODO: These messages should be tested and cleaned up
+        except (NoVersionsListed, UnversionedRelation) as err:
+            raise ErrorWithStatus(str(err), WaitingStatus) from err
+        except NoCompatibleVersions as err:
+            raise ErrorWithStatus(str(err), BlockedStatus) from err
+        except Exception as err:
+            raise ErrorWithStatus(f"Caught unknown error: '{str(err)}'", BlockedStatus) from err
+
+        return interface
+
+    def get_status(self) -> StatusBase:
+        """Returns the status of this relation.
+
+        Use this in the charm to inspect the state of the relation and its data.
+
+        Will return:
+            * BlockedStatus: if we have no compatible versions on the relation
+            * WaitingStatus: if we have not yet received a version from the opposite relation
+            * ActiveStatus: if:
+                * nothing is related to us (as there is no work to do)
+                * we have one or more relations, and we have sent data to all of them
+        """
+        required_attributes = ["prefix", "rewrite", "service", "port"]
+        unknown_error_message = (
+            f"Caught unknown exception while checking readiness of {self._relation_name}: "
+        )
+
+        try:
+            interface = self.get_interface()
+        # TODO: These messages should be tested and cleaned up
+        except ErrorWithStatus as err:
+            return err.status
+
+        if interface is None:
+            # Nothing is related to us, so we have nothing to send out.  Relation is Active
+            return ActiveStatus()
+
+        try:
+            # TODO: Handle this differently when you know the syntax is correct
+            # We check whether we've sent, on our application side of the relation, the required
+            # attributes
+            interface_data_dict = interface.get_data()
+            this_apps_interface_data = interface_data_dict[(self.model.get_relation(self._relation_name), self._charm.app)]
+
+            missing_attributes = []
+            # TODO: This could validate the data sent, not just confirm there is something sent.
+            #  Would that be too much?
+            for attribute in required_attributes:
+                if not (attribute in this_apps_interface_data and this_apps_interface_data[attribute] is not None and this_apps_interface_data[attribute] != ""):
+                    missing_attributes.append(attribute)
+
+            if missing_attributes:
+                msg = f"Relation is missing attributes {missing_attributes} that we send out." \
+                      f"  This likely is a transient error but if it persists, there could be" \
+                      f" something wrong."
+
+                return WaitingStatus(msg)
+
+            return ActiveStatus()
+        except Exception as err:
+            logging.info(unknown_error_message)
+            return BlockedStatus(str(unknown_error_message + str(err)))
