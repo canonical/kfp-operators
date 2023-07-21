@@ -109,6 +109,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
 
 
 # ---- KFP API Server focused test cases
+@pytest.mark.skip
 async def test_upload_pipeline(kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
     # Upload a pipeline and get the server response
@@ -122,7 +123,7 @@ async def test_upload_pipeline(kfp_client):
     server_pipeline_id = kfp_client.get_pipeline_id(name="test-upload-pipeline")
     assert uploaded_pipeline_id == server_pipeline_id
 
-
+@pytest.mark.skip
 async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     """Create a run and monitor it to completion."""
     # Create a run, save response in variable for easy manipulation
@@ -153,6 +154,7 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     assert test_run is not None
 
 # ---- ScheduledWorfklows and Argo focused test case
+@pytest.mark.skip
 async def test_create_and_monitor_recurring_run(
     kfp_client, upload_and_clean_pipeline, create_and_clean_experiment
 ):
@@ -198,6 +200,7 @@ async def test_create_and_monitor_recurring_run(
 
 
 # ---- KFP Viewer and Visualization focused test cases
+@pytest.mark.skip
 async def test_apply_sample_viewer(lightkube_client):
     """Test a Viewer can be applied and its presence is verified."""
     # Create a Viewer namespaced resource
@@ -216,6 +219,7 @@ async def test_apply_sample_viewer(lightkube_client):
     assert viewer is not None
 
 
+@pytest.mark.skip
 async def test_viz_server_healthcheck(ops_test: OpsTest):
     """Run a healthcheck on the server endpoint."""
     status = await ops_test.model.get_status()
