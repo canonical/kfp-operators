@@ -1,7 +1,7 @@
 aiohttp
 # Workaround for https://github.com/python-jsonschema/jsonschema/issues/1117
 # and https://github.com/python-jsonschema/jsonschema/issues/1114
-jsonschema<4.18
+jsonschema<4.19
 # Pinning to <3.0 to ensure compatibility with the 2.9 controller version
 # Note: 3.0 is not being maintained anymore
 # FIXME: This is a workaround for https://github.com/juju/python-libjuju/issues/913
