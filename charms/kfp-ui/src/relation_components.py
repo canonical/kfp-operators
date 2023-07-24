@@ -72,17 +72,7 @@ class SdiRelationGetterComponent(Component):
 
     def get_interface(self) -> Optional[SerializedDataInterface]:
         """Returns the SerializedDataInterface object for this interface."""
-        try:
-            interface = get_interface(self._charm, self._relation_name)
-        # TODO: These messages should be tested and cleaned up
-        except (NoVersionsListed, UnversionedRelation) as err:
-            raise ErrorWithStatus(str(err), WaitingStatus) from err
-        except NoCompatibleVersions as err:
-            raise ErrorWithStatus(str(err), BlockedStatus) from err
-        except Exception as err:
-            raise ErrorWithStatus(f"Caught unknown error: '{str(err)}'", BlockedStatus) from err
-
-        return interface
+        return get_sdi_interface(self._charm, self._relation_name)
 
     def get_status(self) -> StatusBase:
         """Returns the status of this relation.
@@ -156,17 +146,7 @@ class SdiRelationSenderComponent(Component):
 
     def get_interface(self) -> Optional[SerializedDataInterface]:
         """Returns the SerializedDataInterface object for this interface."""
-        try:
-            interface = get_interface(self._charm, self._relation_name)
-        # TODO: These messages should be tested and cleaned up
-        except (NoVersionsListed, UnversionedRelation) as err:
-            raise ErrorWithStatus(str(err), WaitingStatus) from err
-        except NoCompatibleVersions as err:
-            raise ErrorWithStatus(str(err), BlockedStatus) from err
-        except Exception as err:
-            raise ErrorWithStatus(f"Caught unknown error: '{str(err)}'", BlockedStatus) from err
-
-        return interface
+        return get_sdi_interface(self._charm, self._relation_name)
 
     def get_status(self) -> StatusBase:
         """Returns the status of this relation.
@@ -228,3 +208,17 @@ class SdiRelationSenderComponent(Component):
         except Exception as err:
             logging.info(unknown_error_message)
             return BlockedStatus(str(unknown_error_message + str(err)))
+
+
+def get_sdi_interface(charm: CharmBase, relation_name: str):
+    try:
+        interface = get_interface(charm, relation_name)
+        # TODO: These messages should be tested and cleaned up
+    except (NoVersionsListed, UnversionedRelation) as err:
+        raise ErrorWithStatus(str(err), WaitingStatus) from err
+    except NoCompatibleVersions as err:
+        raise ErrorWithStatus(str(err), BlockedStatus) from err
+    except Exception as err:
+        raise ErrorWithStatus(f"Caught unknown error: '{str(err)}'", BlockedStatus) from err
+
+    return interface
