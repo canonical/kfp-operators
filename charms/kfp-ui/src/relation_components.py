@@ -180,7 +180,7 @@ class SdiRelationSenderComponent(Component):
                 * nothing is related to us (as there is no work to do)
                 * we have one or more relations, and we have sent data to all of them
         """
-        required_attributes = ["prefix", "rewrite", "service", "port"]
+        required_attributes = self._data_to_send.keys()
         unknown_error_message = (
             f"Caught unknown exception while checking readiness of {self._relation_name}: "
         )
