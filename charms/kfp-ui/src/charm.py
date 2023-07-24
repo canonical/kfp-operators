@@ -116,7 +116,6 @@ class KfpUiOperator(CharmBase):
                 name="relation:ingress",
                 relation_name="ingress",
                 data_to_send={
-                    # TODO: Change this to a getter so it avoids the charm init bug
                     "prefix": "/pipeline",
                     "rewrite": "/pipeline",
                     "service": self.model.app.name,  # TODO: Bug? Should this be name.namespace?
@@ -132,7 +131,6 @@ class KfpUiOperator(CharmBase):
                 name="relation:kfp-ui",
                 relation_name="kfp-ui",
                 data_to_send={
-                    # TODO: Change this to a getter so it avoids the charm init bug
                     "service-name": f"{self.model.app.name}.{self.model.name}",
                     "service-port": self.model.config["http-port"],
                 }
