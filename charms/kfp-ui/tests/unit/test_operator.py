@@ -210,7 +210,7 @@ def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
 
 
 def test_ingress_relation_with_related_app(harness, mocked_lightkube_client):
-    """Test that the kfp-api relation goes Blocked if no data is available."""
+    """Test that the kfp-api relation sends data to related apps and goes Active."""
     # Arrange
     harness.set_leader(True)  # needed to write to an SDI relation
     harness.begin()
@@ -235,12 +235,12 @@ def test_ingress_relation_with_related_app(harness, mocked_lightkube_client):
     relation_ids_to_assert = [relation_metadata["rel_id"]]
 
     # Assert
-    assert_ingress_ok(expected_relation_data, harness, relation_ids_to_assert)
-
-
-def assert_ingress_ok(expected_relation_data, harness, rel_ids_to_assert):
-    """Asserts that all relations in rel_ids_to_assert have the expected ingress data."""
     assert isinstance(harness.charm.ingress_relation_component.status, ActiveStatus)
+    assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
+
+
+def assert_relation_data_send_as_expected(harness, expected_relation_data, rel_ids_to_assert):
+    """Asserts that we have sent the expected data to the given relations."""
     # Assert on the data we sent out to the other app for each relation.
     for rel_id in rel_ids_to_assert:
         relation_data = harness.get_relation_data(rel_id, harness.model.app)
@@ -374,6 +374,14 @@ def render_ingress_data(service, port) -> dict:
     return {
         "prefix": "/pipeline",
         "rewrite": "/pipeline",
+        "service": service,
+        "port": int(port),
+    }
+
+
+def render_kfp_ui_data(service, port) -> dict:
+    """Returns typical data for the kfp-ui relation."""
+    return {
         "service": service,
         "port": int(port),
     }
