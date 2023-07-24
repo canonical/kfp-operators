@@ -28,7 +28,7 @@ from ops.charm import CharmBase
 from ops.main import main
 
 from pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleService
-from relation_components import IngressRelationComponent, SdiRelationGetterComponent
+from relation_components import SdiRelationGetterComponent, SdiRelationSenderComponent
 
 TEMPLATES_PATH = Path("src/templates")
 K8S_RESOURCE_FILES = [TEMPLATES_PATH / "auth_manifests.yaml.j2"]
@@ -103,10 +103,16 @@ class KfpUiOperator(CharmBase):
         self.charm_executor = CharmReconciler(self)
 
         self.ingress_relation_component = self.charm_executor.add(
-            IngressRelationComponent(
+            SdiRelationSenderComponent(
                 charm=self,
                 name="relation:ingress",
                 relation_name="ingress",
+                data_to_send={
+                    "prefix": "/pipeline",
+                    "rewrite": "/pipeline",
+                    "service": self.model.app.name,  # TODO: Bug? Should this be name.namespace?
+                    "port": int(self.model.config["http-port"]),
+                }
             )
         )
 

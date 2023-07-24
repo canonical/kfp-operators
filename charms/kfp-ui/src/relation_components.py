@@ -127,12 +127,13 @@ class SdiRelationGetterComponent(Component):
             raise ErrorWithStatus(str(error_msg), BlockedStatus)
 
 
-class IngressRelationComponent(Component):
+class SdiRelationSenderComponent(Component):
     def __init__(
         self,
         charm: CharmBase,
         name: str,
         relation_name,
+        data_to_send: dict,
         *args,
         inputs_getter: Optional[Callable[[], Any]] = None,
         **kwargs,
@@ -143,8 +144,7 @@ class IngressRelationComponent(Component):
             self._charm.on[self._relation_name].relation_created,
             self._charm.on[self._relation_name].relation_changed,
         ]
-
-        # TODO: validation: assert exactly one relation?  share that with the above class?
+        self._data_to_send = data_to_send
 
     def _configure_app(self, event):
         """Send data to all related applications."""
@@ -152,14 +152,7 @@ class IngressRelationComponent(Component):
         if interface is None:
             return
 
-        interface.send_data(
-            data={
-                "prefix": "/pipeline",
-                "rewrite": "/pipeline",
-                "service": self._charm.model.app.name,  # TODO: Should this be name.namespace?
-                "port": int(self._charm.model.config["http-port"]),
-            }
-        )
+        interface.send_data(data=self._data_to_send)
 
     def get_interface(self) -> Optional[SerializedDataInterface]:
         """Returns the SerializedDataInterface object for this interface."""
