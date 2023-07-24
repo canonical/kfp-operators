@@ -239,6 +239,40 @@ def test_ingress_relation_with_related_app(harness, mocked_lightkube_client):
     assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
 
 
+def test_kfp_ui_relation_with_related_app(harness, mocked_lightkube_client):
+    """Test that the kfp-ui relation sends data to related apps and goes Active."""
+    # Arrange
+    harness.set_leader(True)  # needed to write to an SDI relation
+    model = "model"
+    harness.set_model_name(model)
+    harness.begin()
+
+    # Mock:
+    # * leadership_gate_component_item to be active and executed
+    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
+
+    expected_relation_data = {
+        "_supported_versions": ["v1"],
+        "data": render_kfp_ui_data(
+            app_name=harness.model.app.name,
+            model_name=model,
+            port=harness.model.config["http-port"],
+        ),
+    }
+
+    # Act
+    # Add one relation with data.  This should trigger a charm reconciliation due to
+    # relation-changed.
+    relation_metadata = add_sdi_relation_to_harness(harness, "kfp-ui", other_app="o1", data={})
+    relation_ids_to_assert = [relation_metadata["rel_id"]]
+
+    # Assert
+    assert isinstance(harness.charm.kfp_ui_relation_component.status, ActiveStatus)
+    assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
+
+
 def assert_relation_data_send_as_expected(harness, expected_relation_data, rel_ids_to_assert):
     """Asserts that we have sent the expected data to the given relations."""
     # Assert on the data we sent out to the other app for each relation.
@@ -379,9 +413,9 @@ def render_ingress_data(service, port) -> dict:
     }
 
 
-def render_kfp_ui_data(service, port) -> dict:
+def render_kfp_ui_data(app_name, model_name, port) -> dict:
     """Returns typical data for the kfp-ui relation."""
     return {
-        "service": service,
-        "port": int(port),
+        "service-name": f"{app_name}.{model_name}",
+        "service-port": str(port),
     }
