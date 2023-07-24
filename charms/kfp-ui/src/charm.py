@@ -102,6 +102,14 @@ class KfpUiOperator(CharmBase):
         # Charm logic
         self.charm_executor = CharmReconciler(self)
 
+        self.leadership_gate_component_item = self.charm_executor.add(
+            component=LeadershipGateComponent(
+                charm=self,
+                name="leadership-gate",
+            ),
+            depends_on=[],
+        )
+
         self.ingress_relation_component = self.charm_executor.add(
             SdiRelationSenderComponent(
                 charm=self,
@@ -113,16 +121,19 @@ class KfpUiOperator(CharmBase):
                     "service": self.model.app.name,  # TODO: Bug? Should this be name.namespace?
                     "port": int(self.model.config["http-port"]),
                 }
-            )
+            ),
+            depends_on=[self.leadership_gate_component_item]
         )
 
-        self.leadership_gate_component_item = self.charm_executor.add(
-            component=LeadershipGateComponent(
-                charm=self,
-                name="leadership-gate",
-            ),
-            depends_on=[],
-        )
+        #
+        # self.kfp_ui_relation_component = self.charm_executor.add(
+        #     component=SdiRelationSenderComponent(
+        #         charm=self,
+        #         name="relation:kfp-ui",
+        #         relation_name="kfp-ui",
+        #     ),
+        #     depends_on=[self.leadership_gate_component_item]
+        # )
 
         self.kubernetes_resources_component_item = self.charm_executor.add(
             component=KubernetesComponent(
