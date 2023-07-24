@@ -125,6 +125,11 @@ jobs:
           juju-channel: 2.9/stable
           charmcraft-channel: latest/candidate
 
+      # TODO: Remove once https://bugs.launchpad.net/juju/+bug/2024897 is fixed
+      - name: Refresh Juju snap
+        run: |
+          sudo snap refresh juju --revision 22345
+
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
