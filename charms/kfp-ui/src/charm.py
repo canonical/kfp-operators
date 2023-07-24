@@ -193,22 +193,22 @@ class KfpUiOperator(CharmBase):
                     # minio_secret={"secret": {"name": f"{self.app.name}-minio-secret"}},  # TODO: Is this required?
                     MINIO_HOST=self.object_storage_relation_component.component.get_data()[
                         "service"
-                    ],  # os["service"],
+                    ],
                     MINIO_NAMESPACE=self.object_storage_relation_component.component.get_data()[
                         "namespace"
-                    ],  # os["namespace"],
+                    ],
                     MINIO_PORT=self.object_storage_relation_component.component.get_data()[
                         "port"
-                    ],  # os["port"],
+                    ],
                     MINIO_SSL=self.object_storage_relation_component.component.get_data()[
                         "secure"
-                    ],  # os["secure"],
+                    ],
                     ML_PIPELINE_SERVICE_HOST=self.kfp_api_relation_component.component.get_data()[
                         "service-name"
-                    ],  # kfp_api["service-name"],
+                    ],
                     ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation_component.component.get_data()[
                         "service-port"
-                    ],  # kfp_api["service-port"],
+                    ],
                 ),
             ),
             depends_on=[
