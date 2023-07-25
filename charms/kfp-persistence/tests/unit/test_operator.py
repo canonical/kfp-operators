@@ -43,7 +43,6 @@ def test_kfp_api_relation_with_data(harness):
 
     # Mock:
     # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate.executed = True
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
 
     # Add relation with data.  This should trigger a charm reconciliation due to relation-changed.
@@ -60,7 +59,6 @@ def test_kfp_api_relation_without_data(harness):
 
     # Mock:
     # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate.executed = True
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
 
     # Add relation with data.  This should trigger a charm reconciliation due to relation-changed.
@@ -77,7 +75,6 @@ def test_kfp_api_relation_without_relation(harness):
 
     # Mock:
     # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate.executed = True
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
 
     # Act
@@ -98,9 +95,7 @@ def test_pebble_services_running(harness):
     # * kubernetes_resources_component_item to be active and executed
     # * object_storage_relation_component to be active and executed, and have data that can be
     #   returned
-    harness.charm.leadership_gate.executed = True
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
-    harness.charm.kfp_api_relation.executed = True
     harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
 
     # Act
