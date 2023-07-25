@@ -1,5 +1,5 @@
-ops
 # Use chisme from specific branch during development
 # charmed-kubeflow-chisme
 charmed-kubeflow-chisme @ git+https://github.com/canonical/charmed-kubeflow-chisme.git@add-base-charm
+ops
 serialized-data-interface<0.7
