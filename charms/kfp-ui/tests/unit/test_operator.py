@@ -102,7 +102,11 @@ def test_kubernetes_created_method_2(harness, mocked_lightkube_client):
 
 
 def test_object_storage_relation_with_data(harness, mocked_lightkube_client):
-    """Test that if Leadership is Active, the object storage relation operates as expected."""
+    """Test that if Leadership is Active, the object storage relation operates as expected.
+
+    Note: See test_relation_components.py for an alternative way of unit testing Components without
+          mocking the regular charm.
+    """
     # Arrange
     harness.begin()
 
