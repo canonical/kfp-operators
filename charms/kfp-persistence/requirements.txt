@@ -46,7 +46,7 @@ lightkube-models==1.27.1.4
     # via lightkube
 markupsafe==2.1.3
     # via jinja2
-ops==1.5.5
+ops==2.4.1
     # via
     #   -r ./requirements.in
     #   charmed-kubeflow-chisme
@@ -79,5 +79,7 @@ tenacity==8.2.2
     # via charmed-kubeflow-chisme
 urllib3==2.0.4
     # via requests
+websocket-client==1.6.1
+    # via ops
 zipp==3.16.2
     # via importlib-resources

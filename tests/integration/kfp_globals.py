@@ -15,7 +15,6 @@ KFP_CHARMS = [
     "kfp-ui",
     "kfp-viewer",
     "kfp-viz",
-    "kfp-profile-controller",
 ]
 
 # Variables for uploading/creating pipelines/experiments/runs

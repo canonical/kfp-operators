@@ -4,5 +4,5 @@ charmed-kubeflow-chisme @ git+https://github.com/canonical/charmed-kubeflow-chis
 # Workaround for https://github.com/python-jsonschema/jsonschema/issues/1117
 # and https://github.com/python-jsonschema/jsonschema/issues/1114
 jsonschema<4.18
-ops<2
+ops
 serialized-data-interface
