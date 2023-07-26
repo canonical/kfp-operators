@@ -73,7 +73,8 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
-        timeout=2400,
+        timeout=3600,
+        idle_period=120,
     )
 
     # Wait for kfp-* Deployment to be active and idle.
