@@ -5,9 +5,7 @@
 #    pip-compile ./requirements-unit.in
 #
 attrs==23.1.0
-    # via
-    #   jsonschema
-    #   referencing
+    # via jsonschema
 certifi==2023.7.22
     # via requests
 charset-normalizer==3.2.0
@@ -19,20 +17,21 @@ exceptiongroup==1.1.2
 idna==3.4
     # via requests
 importlib-resources==6.0.0
-    # via
-    #   jsonschema
-    #   jsonschema-specifications
+    # via jsonschema
 iniconfig==2.0.0
     # via pytest
 jsonschema==4.17.3
     # via
-    #   -r ./requirements-unit.in
+    #   -r ./requirements.in
     #   serialized-data-interface
 oci-image==1.0.0
-    # via -r ./requirements-unit.in
+    # via
+    #   -r ./requirements-unit.in
+    #   -r ./requirements.in
 ops==2.4.1
     # via
     #   -r ./requirements-unit.in
+    #   -r ./requirements.in
     #   serialized-data-interface
 packaging==23.1
     # via pytest
@@ -53,12 +52,13 @@ pytest-mock==3.11.1
     # via -r ./requirements-unit.in
 pyyaml==6.0.1
     # via
+    #   -r ./requirements-unit.in
     #   ops
     #   serialized-data-interface
 requests==2.31.0
     # via serialized-data-interface
 serialized-data-interface==0.7.0
-    # via -r ./requirements-unit.in
+    # via -r ./requirements.in
 tomli==2.0.1
     # via pytest
 urllib3==2.0.4
