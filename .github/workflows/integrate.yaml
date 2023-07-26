@@ -70,6 +70,7 @@ jobs:
       fail-fast: false
       matrix:
         charm:
+          - kfp-persistence
           - kfp-profile-controller
           - kfp-api
     steps:
@@ -143,6 +144,9 @@ jobs:
         run: |
           sg microk8s -c "microk8s config > ~/.kube/config"
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer

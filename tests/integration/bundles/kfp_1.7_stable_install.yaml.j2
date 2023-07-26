@@ -24,9 +24,11 @@ applications:
     trust: true
   kfp-db:
     charm: mysql-k8s
-    channel: 8.0/stable
+    channel: 8.0/edge
     scale: 1
     constraints: mem=250M
+    options:
+      profile: testing
     trust: true
   minio:
     charm: minio
