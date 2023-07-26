@@ -34,7 +34,7 @@ pyyaml==6.0.1
     #   serialized-data-interface
 requests==2.31.0
     # via serialized-data-interface
-serialized-data-interface==0.6.0
+serialized-data-interface==0.7.0
     # via -r ./requirements.in
 urllib3==2.0.4
     # via requests

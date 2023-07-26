@@ -37,9 +37,7 @@ importlib-resources==6.0.0
 jinja2==3.1.2
     # via charmed-kubeflow-chisme
 jsonschema==4.17.3
-    # via
-    #   -r ./requirements.in
-    #   serialized-data-interface
+    # via serialized-data-interface
 lightkube==0.14.0
     # via
     #   -r ./requirements.in
@@ -74,7 +72,7 @@ ruamel-yaml==0.17.32
     # via charmed-kubeflow-chisme
 ruamel-yaml-clib==0.2.7
     # via ruamel-yaml
-serialized-data-interface==0.6.0
+serialized-data-interface==0.7.0
     # via -r ./requirements.in
 sniffio==1.3.0
     # via

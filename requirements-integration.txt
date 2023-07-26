@@ -202,7 +202,7 @@ pyasn1-modules==0.3.0
     # via google-auth
 pycparser==2.21
     # via cffi
-pydantic==1.10.11
+pydantic==1.10.12
     # via kfp
 pygments==2.15.1
     # via ipython
