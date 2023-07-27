@@ -84,7 +84,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # FIXME: This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
     # Also https://github.com/juju/python-libjuju/issues/900
     @tenacity.retry(
-        wait=tenacity.wait_exponential(multiplier=2, min=1, max=15),
+        wait=tenacity.wait_exponential(multiplier=2, min=1, max=30),
         stop=tenacity.stop_after_delay(900),
         reraise=True,
     )
