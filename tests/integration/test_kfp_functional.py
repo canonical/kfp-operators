@@ -73,7 +73,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
-        timeout=6400,
+        timeout=3600,
         idle_period=120,
     )
 
@@ -102,7 +102,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         assert kfp_deployment.status.availableReplicas == 1
 
     for component in KFP_CHARMS:
-        if component == "kfp-api":
+        if component == "kfp-api" or component == "kfp-persistence":
             # The issue seems to be happening only with podspec charms,
             # nothing to do for kfp-api
             continue
