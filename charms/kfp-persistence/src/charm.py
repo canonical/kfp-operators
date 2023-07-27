@@ -65,7 +65,7 @@ class KfpPersistenceOperator(CharmBase):
             depends_on=[self.leadership_gate, self.kfp_api_relation],
         )
 
-        self.charm_executor.install(self)
+        self.charm_executor.install_default_event_handlers(self)
 
     def get_all_status(self):
         """Convenience function for getting a list of all statuses for this charm's executor.
