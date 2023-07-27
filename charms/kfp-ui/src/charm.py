@@ -220,7 +220,7 @@ class KfpUiOperator(CharmBase):
         )
         # TODO: Add kfp-ui relation (send_ui_info)
 
-        self.charm_executor.install(self)
+        self.charm_executor.install_default_event_handlers()
 
 
 if __name__ == "__main__":
