@@ -73,7 +73,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
-        timeout=4800,
+        timeout=6400,
         idle_period=120,
     )
 

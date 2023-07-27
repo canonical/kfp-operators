@@ -56,7 +56,7 @@ class TestCharm:
             "mysql-k8s",
             channel="8.0/stable",
             series="jammy",
-            constraints="mem=250M",
+            constraints="mem=1G",
             trust=True,
         )
         await ops_test.model.wait_for_idle(
