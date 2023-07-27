@@ -104,7 +104,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     for component in KFP_CHARMS:
         if component == "kfp-api" or component == "kfp-persistence":
             # The issue seems to be happening only with podspec charms,
-            # nothing to do for kfp-api
+            # nothing to do for kfp-api and kfp-persistence
             continue
         assert_get_kfp_deployment(kfp_component=component)
 
