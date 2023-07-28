@@ -8,6 +8,47 @@ on:
         required: true
 
 jobs:
+  integration:
+    name: Integration tests (microk8s)
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        charm:
+          - kfp-api
+    steps:
+      # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
+      # Ideally we'd use self-hosted runners, but this effort is still not stable
+      # This action will remove unused software (dotnet, haskell, android libs, codeql,
+      # and docker images) from the GH runner, which will liberate around 60 GB of storage
+      # distributed in 40GB for root and around 20 for a mnt point.
+      - name: Maximise GH runner space
+        uses: easimon/maximize-build-space@v7
+        with:
+          root-reserve-mb: 40960
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+      - uses: actions/checkout@v3
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+          channel: 1.24/stable
+          juju-channel: 2.9/stable
+          charmcraft-channel: latest/candidate
+
+      - run: |
+          sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
+
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: kfp-operators-debug-logs
+          path: ~/kfp-operators-debug-logs
   lib-check:
     name: Check libraries
     strategy:
