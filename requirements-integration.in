@@ -8,7 +8,7 @@ jsonschema<4.18
 # please pin to a released python-libjuju ASAP.
 juju @ git+https://github.com/DnPlas/python-libjuju@dnplas-pyyaml-6
 # Need this version of kfp to work with kfp 2.0.0-alpha.7
-kfp==1.8.22
+kfp==2.1.2
 lightkube
 pytest
 pyyaml
