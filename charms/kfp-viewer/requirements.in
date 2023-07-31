@@ -2,4 +2,4 @@ ops
 oci-image
 # current implementation is not compatible
 # with SDI>0.3.
-serliazed-data-interface<0.4
+serialized-data-interface<0.4
