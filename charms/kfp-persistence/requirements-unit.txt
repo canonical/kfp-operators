@@ -9,54 +9,19 @@ anyio==3.7.1
     #   -r ./requirements.txt
     #   httpcore
 attrs==23.1.0
-    # via
-    #   -r ./requirements.txt
-    #   jsonschema
+    # via jsonschema
 certifi==2023.7.22
-    # via
-    #   -r ./requirements.txt
-    #   httpcore
-    #   httpx
-    #   requests
-charmed-kubeflow-chisme @ git+https://github.com/canonical/charmed-kubeflow-chisme.git@add-base-charm
-    # via -r ./requirements.txt
+    # via requests
 charset-normalizer==3.2.0
-    # via
-    #   -r ./requirements.txt
-    #   requests
+    # via requests
 coverage==7.2.7
     # via -r ./requirements-unit.in
-deepdiff==6.2.1
-    # via
-    #   -r ./requirements.txt
-    #   charmed-kubeflow-chisme
 exceptiongroup==1.1.2
-    # via
-    #   -r ./requirements.txt
-    #   anyio
-    #   pytest
-h11==0.14.0
-    # via
-    #   -r ./requirements.txt
-    #   httpcore
-httpcore==0.17.3
-    # via
-    #   -r ./requirements.txt
-    #   httpx
-httpx==0.24.1
-    # via
-    #   -r ./requirements.txt
-    #   lightkube
+    # via pytest
 idna==3.4
-    # via
-    #   -r ./requirements.txt
-    #   anyio
-    #   httpx
-    #   requests
+    # via requests
 importlib-resources==6.0.0
-    # via
-    #   -r ./requirements.txt
-    #   jsonschema
+    # via jsonschema
 iniconfig==2.0.0
     # via pytest
 jinja2==3.1.2
@@ -64,25 +29,15 @@ jinja2==3.1.2
     #   -r ./requirements.txt
     #   charmed-kubeflow-chisme
 jsonschema==4.17.3
+    # via serialized-data-interface
+oci-image==1.0.0
     # via
-    #   -r ./requirements.txt
-    #   serialized-data-interface
-lightkube==0.14.0
-    # via
-    #   -r ./requirements.txt
-    #   charmed-kubeflow-chisme
-lightkube-models==1.27.1.4
-    # via
-    #   -r ./requirements.txt
-    #   lightkube
-markupsafe==2.1.3
-    # via
-    #   -r ./requirements.txt
-    #   jinja2
+    #   -r ./requirements-unit.in
+    #   -r ./requirements.in
 ops==2.4.1
     # via
-    #   -r ./requirements.txt
-    #   charmed-kubeflow-chisme
+    #   -r ./requirements-unit.in
+    #   -r ./requirements.in
     #   serialized-data-interface
 ordered-set==4.1.0
     # via
@@ -91,15 +46,11 @@ ordered-set==4.1.0
 packaging==23.1
     # via pytest
 pkgutil-resolve-name==1.3.10
-    # via
-    #   -r ./requirements.txt
-    #   jsonschema
+    # via jsonschema
 pluggy==1.2.0
     # via pytest
 pyrsistent==0.19.3
-    # via
-    #   -r ./requirements.txt
-    #   jsonschema
+    # via jsonschema
 pytest==7.4.0
     # via
     #   -r ./requirements-unit.in
@@ -111,45 +62,18 @@ pytest-mock==3.11.1
     # via -r ./requirements-unit.in
 pyyaml==6.0.1
     # via
-    #   -r ./requirements.txt
-    #   lightkube
+    #   -r ./requirements-unit.in
     #   ops
     #   serialized-data-interface
 requests==2.31.0
-    # via
-    #   -r ./requirements.txt
-    #   serialized-data-interface
-ruamel-yaml==0.17.32
-    # via
-    #   -r ./requirements.txt
-    #   charmed-kubeflow-chisme
-ruamel-yaml-clib==0.2.7
-    # via
-    #   -r ./requirements.txt
-    #   ruamel-yaml
+    # via serialized-data-interface
 serialized-data-interface==0.7.0
-    # via -r ./requirements.txt
-sniffio==1.3.0
-    # via
-    #   -r ./requirements.txt
-    #   anyio
-    #   httpcore
-    #   httpx
-tenacity==8.2.2
-    # via
-    #   -r ./requirements.txt
-    #   charmed-kubeflow-chisme
+    # via -r ./requirements.in
 tomli==2.0.1
     # via pytest
 urllib3==2.0.4
-    # via
-    #   -r ./requirements.txt
-    #   requests
+    # via requests
 websocket-client==1.6.1
-    # via
-    #   -r ./requirements.txt
-    #   ops
+    # via ops
 zipp==3.16.2
-    # via
-    #   -r ./requirements.txt
-    #   importlib-resources
+    # via importlib-resources
