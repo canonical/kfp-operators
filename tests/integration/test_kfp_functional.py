@@ -76,37 +76,6 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         timeout=1800,
     )
 
-    # Wait for kfp-* Deployment to be active and idle.
-    # If a kfp charm is ever migrated to sidecar, and the above issue is still
-    # there, appropriate changes must be done on this method for checking the readiness
-    # of the application.
-    # FIXME: This is a workaround for issue https://bugs.launchpad.net/juju/+bug/1981833
-    # Also https://github.com/juju/python-libjuju/issues/900
-    @tenacity.retry(
-        wait=tenacity.wait_exponential(multiplier=2, min=1, max=15),
-        stop=tenacity.stop_after_delay(900),
-        reraise=True,
-    )
-    def assert_get_kfp_deployment(kfp_component: str):
-        """Asserts the deployment of kfp_component is ready and available."""
-        log.info(f"Waiting for {kfp_component} to be ready and available")
-        # Get Deployment, the namespace should always be kubeflow
-        kfp_deployment = lightkube_client.get(Deployment, name=kfp_component, namespace="kubeflow")
-
-        # Verify the deployment exists
-        assert kfp_deployment is not None
-
-        # Verify the readiness and availability
-        assert kfp_deployment.status.readyReplicas == 1
-        assert kfp_deployment.status.availableReplicas == 1
-
-    for component in KFP_CHARMS:
-        if component == "kfp-api":
-            # The issue seems to be happening only with podspec charms,
-            # nothing to do for kfp-api
-            continue
-        assert_get_kfp_deployment(kfp_component=component)
-
 
 # ---- KFP API Server focused test cases
 async def test_upload_pipeline(kfp_client):
