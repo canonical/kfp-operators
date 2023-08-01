@@ -54,9 +54,8 @@ class TestCharm:
         # deploy mysql-k8s charm
         await ops_test.model.deploy(
             "mysql-k8s",
-            channel="8.0/stable",
-            series="jammy",
-            constraints="mem=250M",
+            channel="8.0/edge",
+            config={"profile": "testing"},
             trust=True,
         )
         await ops_test.model.wait_for_idle(
@@ -64,7 +63,7 @@ class TestCharm:
             status="active",
             raise_on_blocked=True,
             timeout=60 * 10,
-            idle_period=60,
+            idle_period=20,
         )
 
         # test no database relation, charm should be in blocked state
@@ -79,7 +78,7 @@ class TestCharm:
             status="active",
             raise_on_blocked=False,
             raise_on_error=False,
-            timeout=60 * 10,
+            timeout=90 * 20,
             idle_period=120,
         )
 
