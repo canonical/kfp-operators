@@ -17,7 +17,7 @@ from charmed_kubeflow_chisme.components import (
     KubernetesComponent,
     LeadershipGateComponent,
     SdiRelationBroadcasterComponent,
-    SdiRelationDataReceiverComponent
+    SdiRelationDataReceiverComponent,
 )
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
@@ -119,9 +119,9 @@ class KfpUiOperator(CharmBase):
                     "rewrite": "/pipeline",
                     "service": self.model.app.name,  # TODO: Bug? Should this be name.namespace?
                     "port": int(self.model.config["http-port"]),
-                }
+                },
             ),
-            depends_on=[self.leadership_gate]
+            depends_on=[self.leadership_gate],
         )
 
         self.kfp_ui_relation = self.charm_reconciler.add(
@@ -132,9 +132,9 @@ class KfpUiOperator(CharmBase):
                 data_to_send={
                     "service-name": f"{self.model.app.name}.{self.model.name}",
                     "service-port": self.model.config["http-port"],
-                }
+                },
             ),
-            depends_on=[self.leadership_gate]
+            depends_on=[self.leadership_gate],
         )
 
         self.kubernetes_resources = self.charm_reconciler.add(
@@ -189,19 +189,10 @@ class KfpUiOperator(CharmBase):
                 inputs_getter=lambda: MlPipelineUiInputs(
                     ALLOW_CUSTOM_VISUALIZATIONS=self.model.config["allow-custom-visualizations"],
                     HIDE_SIDENAV=self.model.config["hide-sidenav"],
-                    # minio_secret={"secret": {"name": f"{self.app.name}-minio-secret"}},  # TODO: Is this required?
-                    MINIO_HOST=self.object_storage_relation.component.get_data()[
-                        "service"
-                    ],
-                    MINIO_NAMESPACE=self.object_storage_relation.component.get_data()[
-                        "namespace"
-                    ],
-                    MINIO_PORT=self.object_storage_relation.component.get_data()[
-                        "port"
-                    ],
-                    MINIO_SSL=self.object_storage_relation.component.get_data()[
-                        "secure"
-                    ],
+                    MINIO_HOST=self.object_storage_relation.component.get_data()["service"],
+                    MINIO_NAMESPACE=self.object_storage_relation.component.get_data()["namespace"],
+                    MINIO_PORT=self.object_storage_relation.component.get_data()["port"],
+                    MINIO_SSL=self.object_storage_relation.component.get_data()["secure"],
                     ML_PIPELINE_SERVICE_HOST=self.kfp_api_relation.component.get_data()[
                         "service-name"
                     ],

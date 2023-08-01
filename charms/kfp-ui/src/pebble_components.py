@@ -1,6 +1,5 @@
 import dataclasses
 import logging
-from typing import Dict
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
 from ops.pebble import Layer
@@ -47,8 +46,8 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             "ARGO_ARCHIVE_BUCKETNAME": "mlpipeline",
                             "ARGO_ARCHIVE_LOGS": "false",
                             "ARGO_ARCHIVE_PREFIX": "logs",
-                            # TODO: This should come from relation to kfp-profile-controller.  It is the name/port
-                            #  of the user-specific artifact accessor
+                            # TODO: This should come from relation to kfp-profile-controller.
+                            #  It is the name/port of the user-specific artifact accessor
                             "ARTIFACTS_SERVICE_PROXY_NAME": "ml-pipeline-ui-artifact",
                             "ARTIFACTS_SERVICE_PROXY_PORT": "80",
                             "ARTIFACTS_SERVICE_PROXY_ENABLED": "true",
@@ -73,9 +72,11 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             "ML_PIPELINE_SERVICE_HOST": inputs.ML_PIPELINE_SERVICE_HOST,
                             "ML_PIPELINE_SERVICE_PORT": inputs.ML_PIPELINE_SERVICE_PORT,
                             "STREAM_LOGS_FROM_SERVER_API": "false",
-                            # TODO: Think there's a file here we should copy in.  Workload's logs show an error on
-                            #  start for this
-                            "VIEWER_TENSORBOARD_POD_TEMPLATE_SPEC_PATH": "/etc/config/viewer-pod-template.json",
+                            # TODO: Think there's a file here we should copy in.  Workload's logs
+                            #  show an error on start for this
+                            "VIEWER_TENSORBOARD_POD_TEMPLATE_SPEC_PATH": (
+                                "/etc/config/viewer-pod-template.json"
+                            ),
                             "VIEWER_TENSORBOARD_TF_IMAGE_NAME": "tensorflow/tensorflow",
                         },
                     }
@@ -91,7 +92,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
             }
         )
 
-        logger.debug(f"computed layer as:")
+        logger.debug("computed layer as:")
         logger.debug(layer.to_dict())
 
         return layer

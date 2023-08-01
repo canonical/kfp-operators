@@ -22,12 +22,10 @@ from typing import Optional
 
 import pytest
 import yaml
+from charmed_kubeflow_chisme.components import CharmReconciler, SdiRelationDataReceiverComponent
 from ops.charm import CharmBase
 from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
-
-from charmed_kubeflow_chisme.components import CharmReconciler, SdiRelationDataReceiverComponent
-
 
 MOCK_OBJECT_STORAGE_DATA = {
     "access-key": "access-key",
