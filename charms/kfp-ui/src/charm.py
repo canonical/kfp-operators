@@ -25,8 +25,7 @@ from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
     KubeflowDashboardLinksRequirer,
 )
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
-from ops.charm import CharmBase
-from ops.main import main
+from ops import BoundEvent, CharmBase, main
 
 from pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleService
 
@@ -97,6 +96,9 @@ class KfpUiOperator(CharmBase):
                 ),
             ],
         )
+
+        # Handle charm upgrade
+        self.framework.observe(self.on.upgrade_charm, self.upgrade_charm)
 
         # Charm logic
         self.charm_reconciler = CharmReconciler(self)
@@ -210,6 +212,15 @@ class KfpUiOperator(CharmBase):
         )
 
         self.charm_reconciler.install_default_event_handlers()
+
+    def upgrade_charm(self, _: BoundEvent):
+        """Handler for an upgrade-charm event.
+
+        This handler should do anything required for upgrade that is not already covered by a
+        regular Component in self.charm_reconciler.
+        """
+        logger.info("Handling the upgrade-charm event.")
+        logger.info("No action needed for upgrade.  Continuing.")
 
 
 if __name__ == "__main__":
