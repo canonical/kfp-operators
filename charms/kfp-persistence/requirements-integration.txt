@@ -178,7 +178,7 @@ requests-oauthlib==1.3.1
     # via kubernetes
 rsa==4.9
     # via google-auth
-selenium==4.10.0
+selenium==4.11.2
     # via
     #   -r ./requirements-integration.in
     #   selenium-wire
