@@ -26,8 +26,7 @@ from ops.charm import CharmBase
 from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
-from charmed_kubeflow_chisme.components import CharmReconciler
-from relation_components import SdiRelationGetterComponent
+from charmed_kubeflow_chisme.components import CharmReconciler, SdiRelationDataReceiverComponent
 
 
 MOCK_OBJECT_STORAGE_DATA = {
@@ -125,7 +124,7 @@ class MockCharmForObjectStorageRelation(CharmBase):
         self.charm_executor = CharmReconciler(self)
 
         self.object_storage_relation_component = self.charm_executor.add(
-            component=SdiRelationGetterComponent(
+            component=SdiRelationDataReceiverComponent(
                 charm=self,
                 name="relation:object_storage",
                 relation_name="object-storage",
@@ -150,7 +149,7 @@ class MockCharmForKfpApiRelation(CharmBase):
         self.charm_executor = CharmReconciler(self)
 
         self.kfp_api_relation_component = self.charm_executor.add(
-            component=SdiRelationGetterComponent(
+            component=SdiRelationDataReceiverComponent(
                 charm=self,
                 name="relation:kfp-api",
                 relation_name="kfp-api",
