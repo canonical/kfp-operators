@@ -16,6 +16,8 @@ from charmed_kubeflow_chisme.components import (
     ContainerFileTemplate,
     KubernetesComponent,
     LeadershipGateComponent,
+    SdiRelationBroadcasterComponent,
+    SdiRelationDataReceiverComponent
 )
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
@@ -23,12 +25,10 @@ from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
     KubeflowDashboardLinksRequirer,
 )
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
-from oci_image import OCIImageResource
 from ops.charm import CharmBase
 from ops.main import main
 
 from pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleService
-from relation_components import SdiRelationGetterComponent, SdiRelationSenderComponent
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ class KfpUiOperator(CharmBase):
         )
 
         self.ingress_relation = self.charm_reconciler.add(
-            SdiRelationSenderComponent(
+            SdiRelationBroadcasterComponent(
                 charm=self,
                 name="relation:ingress",
                 relation_name="ingress",
@@ -125,7 +125,7 @@ class KfpUiOperator(CharmBase):
         )
 
         self.kfp_ui_relation = self.charm_reconciler.add(
-            SdiRelationSenderComponent(
+            SdiRelationBroadcasterComponent(
                 charm=self,
                 name="relation:kfp-ui",
                 relation_name="kfp-ui",
@@ -153,7 +153,7 @@ class KfpUiOperator(CharmBase):
         )
 
         self.object_storage_relation = self.charm_reconciler.add(
-            component=SdiRelationGetterComponent(
+            component=SdiRelationDataReceiverComponent(
                 charm=self,
                 name="relation:object_storage",
                 relation_name="object-storage",
@@ -162,7 +162,7 @@ class KfpUiOperator(CharmBase):
         )
 
         self.kfp_api_relation = self.charm_reconciler.add(
-            component=SdiRelationGetterComponent(
+            component=SdiRelationDataReceiverComponent(
                 charm=self,
                 name="relation:kfp-api",
                 relation_name="kfp-api",
