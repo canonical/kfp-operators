@@ -30,6 +30,8 @@ from ops.main import main
 from pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleService
 from relation_components import SdiRelationGetterComponent, SdiRelationSenderComponent
 
+logger = logging.getLogger(__name__)
+
 TEMPLATES_PATH = Path("src/templates")
 K8S_RESOURCE_FILES = [TEMPLATES_PATH / "auth_manifests.yaml.j2"]
 
@@ -47,9 +49,6 @@ class KfpUiOperator(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-
-        self.log = logging.getLogger()
-        self.image = OCIImageResource(self, "oci-image")
 
         # add links in kubeflow-dashboard sidebar
         self.kubeflow_dashboard_sidebar = KubeflowDashboardLinksRequirer(
@@ -100,9 +99,9 @@ class KfpUiOperator(CharmBase):
         )
 
         # Charm logic
-        self.charm_executor = CharmReconciler(self)
+        self.charm_reconciler = CharmReconciler(self)
 
-        self.leadership_gate_component_item = self.charm_executor.add(
+        self.leadership_gate = self.charm_reconciler.add(
             component=LeadershipGateComponent(
                 charm=self,
                 name="leadership-gate",
@@ -110,7 +109,7 @@ class KfpUiOperator(CharmBase):
             depends_on=[],
         )
 
-        self.ingress_relation_component = self.charm_executor.add(
+        self.ingress_relation = self.charm_reconciler.add(
             SdiRelationSenderComponent(
                 charm=self,
                 name="relation:ingress",
@@ -122,10 +121,10 @@ class KfpUiOperator(CharmBase):
                     "port": int(self.model.config["http-port"]),
                 }
             ),
-            depends_on=[self.leadership_gate_component_item]
+            depends_on=[self.leadership_gate]
         )
 
-        self.kfp_ui_relation_component = self.charm_executor.add(
+        self.kfp_ui_relation = self.charm_reconciler.add(
             SdiRelationSenderComponent(
                 charm=self,
                 name="relation:kfp-ui",
@@ -135,10 +134,10 @@ class KfpUiOperator(CharmBase):
                     "service-port": self.model.config["http-port"],
                 }
             ),
-            depends_on=[self.leadership_gate_component_item]
+            depends_on=[self.leadership_gate]
         )
 
-        self.kubernetes_resources_component_item = self.charm_executor.add(
+        self.kubernetes_resources = self.charm_reconciler.add(
             component=KubernetesComponent(
                 charm=self,
                 name="kubernetes:auth",
@@ -150,28 +149,28 @@ class KfpUiOperator(CharmBase):
                 context_callable=lambda: {"app_name": self.app.name, "namespace": self.model.name},
                 lightkube_client=lightkube.Client(),  # TODO: Make this easier to test on
             ),
-            depends_on=[self.leadership_gate_component_item],
+            depends_on=[self.leadership_gate],
         )
 
-        self.object_storage_relation_component = self.charm_executor.add(
+        self.object_storage_relation = self.charm_reconciler.add(
             component=SdiRelationGetterComponent(
                 charm=self,
                 name="relation:object_storage",
                 relation_name="object-storage",
             ),
-            depends_on=[self.leadership_gate_component_item],
+            depends_on=[self.leadership_gate],
         )
 
-        self.kfp_api_relation_component = self.charm_executor.add(
+        self.kfp_api_relation = self.charm_reconciler.add(
             component=SdiRelationGetterComponent(
                 charm=self,
                 name="relation:kfp-api",
                 relation_name="kfp-api",
             ),
-            depends_on=[self.leadership_gate_component_item],
+            depends_on=[self.leadership_gate],
         )
 
-        self.ml_pipeline_ui_container = self.charm_executor.add(
+        self.ml_pipeline_ui_container = self.charm_reconciler.add(
             component=MlPipelineUiPebbleService(
                 charm=self,
                 name="container:ml-pipeline-ui",  # This feels a bit redundant, but will read
@@ -191,36 +190,35 @@ class KfpUiOperator(CharmBase):
                     ALLOW_CUSTOM_VISUALIZATIONS=self.model.config["allow-custom-visualizations"],
                     HIDE_SIDENAV=self.model.config["hide-sidenav"],
                     # minio_secret={"secret": {"name": f"{self.app.name}-minio-secret"}},  # TODO: Is this required?
-                    MINIO_HOST=self.object_storage_relation_component.component.get_data()[
+                    MINIO_HOST=self.object_storage_relation.component.get_data()[
                         "service"
                     ],
-                    MINIO_NAMESPACE=self.object_storage_relation_component.component.get_data()[
+                    MINIO_NAMESPACE=self.object_storage_relation.component.get_data()[
                         "namespace"
                     ],
-                    MINIO_PORT=self.object_storage_relation_component.component.get_data()[
+                    MINIO_PORT=self.object_storage_relation.component.get_data()[
                         "port"
                     ],
-                    MINIO_SSL=self.object_storage_relation_component.component.get_data()[
+                    MINIO_SSL=self.object_storage_relation.component.get_data()[
                         "secure"
                     ],
-                    ML_PIPELINE_SERVICE_HOST=self.kfp_api_relation_component.component.get_data()[
+                    ML_PIPELINE_SERVICE_HOST=self.kfp_api_relation.component.get_data()[
                         "service-name"
                     ],
-                    ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation_component.component.get_data()[
+                    ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation.component.get_data()[
                         "service-port"
                     ],
                 ),
             ),
             depends_on=[
-                self.leadership_gate_component_item,
-                self.kubernetes_resources_component_item,
-                self.object_storage_relation_component,
-                self.kfp_api_relation_component,
+                self.leadership_gate,
+                self.kubernetes_resources,
+                self.object_storage_relation,
+                self.kfp_api_relation,
             ],
         )
-        # TODO: Add kfp-ui relation (send_ui_info)
 
-        self.charm_executor.install_default_event_handlers()
+        self.charm_reconciler.install_default_event_handlers()
 
 
 if __name__ == "__main__":

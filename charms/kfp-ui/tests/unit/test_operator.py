@@ -51,11 +51,11 @@ def test_kubernetes_created_method_1(harness, mocked_lightkube_client):
     # Need to mock the leadership-gate to be active, and the kubernetes auth component so that it
     # sees the expected resources when calling _get_missing_kubernetes_resources
 
-    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+    harness.charm.leadership_gate.get_status = MagicMock(
         return_value=ActiveStatus()
     )
     # TODO: This feels too broad.  Is there a better way to test/mock this?
-    harness.charm.kubernetes_resources_component_item.component._get_missing_kubernetes_resources = MagicMock(
+    harness.charm.kubernetes_resources.component._get_missing_kubernetes_resources = MagicMock(
         return_value=[]
     )
 
@@ -64,7 +64,7 @@ def test_kubernetes_created_method_1(harness, mocked_lightkube_client):
 
     # Assert
     assert mocked_lightkube_client.apply.call_count == 2
-    assert isinstance(harness.charm.kubernetes_resources_component_item.status, ActiveStatus)
+    assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
 
 
 def test_kubernetes_created_method_2(harness, mocked_lightkube_client):
@@ -83,11 +83,11 @@ def test_kubernetes_created_method_2(harness, mocked_lightkube_client):
     # sees the expected resources when calling _get_missing_kubernetes_resources
     # In python 3.9, we don't need to nest the with blocks
     with patch.object(
-        harness.charm.leadership_gate_component_item, "get_status", return_value=ActiveStatus()
+        harness.charm.leadership_gate, "get_status", return_value=ActiveStatus()
     ):
         # TODO: This feels too broad.  Is there a better way to test/mock this?
         with patch.object(
-            harness.charm.kubernetes_resources_component_item.component,
+            harness.charm.kubernetes_resources.component,
             "_get_missing_kubernetes_resources",
             return_value=[],
         ):
@@ -97,7 +97,7 @@ def test_kubernetes_created_method_2(harness, mocked_lightkube_client):
             # Assert
             assert mocked_lightkube_client.apply.call_count == 2
             assert isinstance(
-                harness.charm.kubernetes_resources_component_item.status, ActiveStatus
+                harness.charm.kubernetes_resources.status, ActiveStatus
             )
 
 
@@ -111,8 +111,8 @@ def test_object_storage_relation_with_data(harness, mocked_lightkube_client):
     harness.begin()
 
     # Mock:
-    # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(
         return_value=ActiveStatus()
     )
 
@@ -120,7 +120,7 @@ def test_object_storage_relation_with_data(harness, mocked_lightkube_client):
     add_sdi_relation_to_harness(harness, "object-storage", data=MOCK_OBJECT_STORAGE_DATA)
 
     # Assert
-    assert isinstance(harness.charm.object_storage_relation_component.status, ActiveStatus)
+    assert isinstance(harness.charm.object_storage_relation.status, ActiveStatus)
 
 
 def test_object_storage_relation_without_data(harness, mocked_lightkube_client):
@@ -129,8 +129,8 @@ def test_object_storage_relation_without_data(harness, mocked_lightkube_client):
     harness.begin()
 
     # Mock:
-    # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(
         return_value=ActiveStatus()
     )
 
@@ -138,7 +138,7 @@ def test_object_storage_relation_without_data(harness, mocked_lightkube_client):
     add_sdi_relation_to_harness(harness, "object-storage", data={})
 
     # Assert
-    assert isinstance(harness.charm.object_storage_relation_component.status, BlockedStatus)
+    assert isinstance(harness.charm.object_storage_relation.status, BlockedStatus)
 
 
 def test_object_storage_relation_without_relation(harness, mocked_lightkube_client):
@@ -147,8 +147,8 @@ def test_object_storage_relation_without_relation(harness, mocked_lightkube_clie
     harness.begin()
 
     # Mock:
-    # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(
         return_value=ActiveStatus()
     )
 
@@ -156,7 +156,7 @@ def test_object_storage_relation_without_relation(harness, mocked_lightkube_clie
     harness.charm.on.install.emit()
 
     # Assert
-    assert isinstance(harness.charm.object_storage_relation_component.status, BlockedStatus)
+    assert isinstance(harness.charm.object_storage_relation.status, BlockedStatus)
 
 
 def test_kfp_api_relation_with_data(harness, mocked_lightkube_client):
@@ -165,8 +165,8 @@ def test_kfp_api_relation_with_data(harness, mocked_lightkube_client):
     harness.begin()
 
     # Mock:
-    # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(
         return_value=ActiveStatus()
     )
 
@@ -174,7 +174,7 @@ def test_kfp_api_relation_with_data(harness, mocked_lightkube_client):
     add_sdi_relation_to_harness(harness, "kfp-api", data=MOCK_KFP_API_DATA)
 
     # Assert
-    assert isinstance(harness.charm.kfp_api_relation_component.status, ActiveStatus)
+    assert isinstance(harness.charm.kfp_api_relation.status, ActiveStatus)
 
 
 def test_kfp_api_relation_without_data(harness, mocked_lightkube_client):
@@ -183,8 +183,8 @@ def test_kfp_api_relation_without_data(harness, mocked_lightkube_client):
     harness.begin()
 
     # Mock:
-    # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(
         return_value=ActiveStatus()
     )
 
@@ -192,7 +192,7 @@ def test_kfp_api_relation_without_data(harness, mocked_lightkube_client):
     add_sdi_relation_to_harness(harness, "kfp-api", data={})
 
     # Assert
-    assert isinstance(harness.charm.kfp_api_relation_component.status, BlockedStatus)
+    assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
 def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
@@ -201,8 +201,8 @@ def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
     harness.begin()
 
     # Mock:
-    # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(
         return_value=ActiveStatus()
     )
 
@@ -210,7 +210,7 @@ def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
     harness.charm.on.install.emit()
 
     # Assert
-    assert isinstance(harness.charm.kfp_api_relation_component.status, BlockedStatus)
+    assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
 def test_ingress_relation_with_related_app(harness, mocked_lightkube_client):
@@ -220,8 +220,8 @@ def test_ingress_relation_with_related_app(harness, mocked_lightkube_client):
     harness.begin()
 
     # Mock:
-    # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(
         return_value=ActiveStatus()
     )
 
@@ -239,7 +239,7 @@ def test_ingress_relation_with_related_app(harness, mocked_lightkube_client):
     relation_ids_to_assert = [relation_metadata["rel_id"]]
 
     # Assert
-    assert isinstance(harness.charm.ingress_relation_component.status, ActiveStatus)
+    assert isinstance(harness.charm.ingress_relation.status, ActiveStatus)
     assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
 
 
@@ -252,8 +252,8 @@ def test_kfp_ui_relation_with_related_app(harness, mocked_lightkube_client):
     harness.begin()
 
     # Mock:
-    # * leadership_gate_component_item to be active and executed
-    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(
         return_value=ActiveStatus()
     )
 
@@ -273,7 +273,7 @@ def test_kfp_ui_relation_with_related_app(harness, mocked_lightkube_client):
     relation_ids_to_assert = [relation_metadata["rel_id"]]
 
     # Assert
-    assert isinstance(harness.charm.kfp_ui_relation_component.status, ActiveStatus)
+    assert isinstance(harness.charm.kfp_ui_relation.status, ActiveStatus)
     assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
 
 
@@ -296,20 +296,20 @@ def test_pebble_services_running(harness, mocked_lightkube_client):
     harness.set_can_connect("ml-pipeline-ui", True)
 
     # Mock:
-    # * leadership_gate_component_item to have get_status=>Active
-    # * kubernetes_resources_component_item to have get_status=>Active
-    # * object_storage_relation_component to return mock data, making the item go active
-    # * kfp_api_relation_component to return mock data, making the item go active
-    harness.charm.leadership_gate_component_item.get_status = MagicMock(
+    # * leadership_gate to have get_status=>Active
+    # * kubernetes_resources to have get_status=>Active
+    # * object_storage_relation to return mock data, making the item go active
+    # * kfp_api_relation to return mock data, making the item go active
+    harness.charm.leadership_gate.get_status = MagicMock(
         return_value=ActiveStatus()
     )
-    harness.charm.kubernetes_resources_component_item.get_status = MagicMock(
+    harness.charm.kubernetes_resources.get_status = MagicMock(
         return_value=ActiveStatus()
     )
-    harness.charm.object_storage_relation_component.component.get_data = MagicMock(
+    harness.charm.object_storage_relation.component.get_data = MagicMock(
         return_value=MOCK_OBJECT_STORAGE_DATA
     )
-    harness.charm.kfp_api_relation_component.component.get_data = MagicMock(
+    harness.charm.kfp_api_relation.component.get_data = MagicMock(
         return_value=MOCK_KFP_API_DATA
     )
 
