@@ -10,7 +10,7 @@ applications:
   kfp-profile-controller:  { charm: ch:kfp-profile-controller, channel: latest/edge, scale: 1 }
   kfp-persistence:         { charm: ch:kfp-persistence, channel: latest/edge, scale: 1, trust: true }
   kfp-schedwf:             { charm: ch:kfp-schedwf, channel: latest/edge,                    scale: 1 }
-  kfp-ui:                  { charm: ch:kfp-ui, channel: latest/edge,                         scale: 1 }
+  kfp-ui:                  { charm: ch:kfp-ui, channel: latest/edge, trust: true,            scale: 1 }
   kfp-viewer:              { charm: ch:kfp-viewer, channel: latest/edge, trust: true         scale: 1 }
   kfp-viz:                 { charm: ch:kfp-viz, channel: latest/edge,                        scale: 1 }
 {%- else %}
