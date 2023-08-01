@@ -31,19 +31,19 @@ class KfpPersistenceOperator(CharmBase):
         super().__init__(*args, **kwargs)
 
         # Charm logic
-        self.charm_executor = CharmReconciler(self)
+        self.charm_reconciler = CharmReconciler(self)
 
         # Components
-        self.leadership_gate = self.charm_executor.add(
+        self.leadership_gate = self.charm_reconciler.add(
             component=LeadershipGateComponent(charm=self, name="leadership-gate"), depends_on=[]
         )
 
-        self.kfp_api_relation = self.charm_executor.add(
+        self.kfp_api_relation = self.charm_reconciler.add(
             component=SdiRelation(charm=self, name="relation:kfp-api", relation_name="kfp-api"),
             depends_on=[self.leadership_gate],
         )
 
-        self.persistenceagent_container = self.charm_executor.add(
+        self.persistenceagent_container = self.charm_reconciler.add(
             component=PebbleServicePersistenceAgentContainer(
                 charm=self,
                 name="container:persistenceagent",
@@ -68,7 +68,7 @@ class KfpPersistenceOperator(CharmBase):
             depends_on=[self.leadership_gate, self.kfp_api_relation],
         )
 
-        self.charm_executor.install_default_event_handlers()
+        self.charm_reconciler.install_default_event_handlers()
 
     def get_all_status(self):
         """Convenience function for getting a list of all statuses for this charm's executor.
