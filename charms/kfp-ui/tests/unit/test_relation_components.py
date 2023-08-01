@@ -132,7 +132,7 @@ class MockCharmForObjectStorageRelation(CharmBase):
             ),
         )
 
-        self.charm_executor.install(self)
+        self.charm_executor.install_default_event_handlers()
 
 
 @pytest.fixture
@@ -157,7 +157,7 @@ class MockCharmForKfpApiRelation(CharmBase):
             ),
         )
 
-        self.charm_executor.install(self)
+        self.charm_executor.install_default_event_handlers()
 
 
 @pytest.fixture
