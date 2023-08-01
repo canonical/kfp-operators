@@ -14,8 +14,11 @@ from charmed_kubeflow_chisme.components.leadership_gate_component import Leaders
 from ops.charm import CharmBase
 from ops.main import main
 
-from pebble_components import PebbleServicePersistenceAgentContainer, PesistenceAgentServiceConfig
-from relation_components import SdiRelation
+from components.pebble_components import (
+  PebbleServicePersistenceAgentContainer,
+  PesistenceAgentServiceConfig,
+)
+from components.relation_components import SdiRelation
 
 log = logging.getLogger()
 
