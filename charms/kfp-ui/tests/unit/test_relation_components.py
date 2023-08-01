@@ -119,9 +119,9 @@ def test_kfp_api_relation_without_relation(harness_for_kfp_api_relation):
 class MockCharmForObjectStorageRelation(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
-        self.charm_executor = CharmReconciler(self)
+        self.charm_reconciler = CharmReconciler(self)
 
-        self.object_storage_relation_component = self.charm_executor.add(
+        self.object_storage_relation_component = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
                 charm=self,
                 name="relation:object_storage",
@@ -129,7 +129,7 @@ class MockCharmForObjectStorageRelation(CharmBase):
             ),
         )
 
-        self.charm_executor.install_default_event_handlers()
+        self.charm_reconciler.install_default_event_handlers()
 
 
 @pytest.fixture
@@ -144,9 +144,9 @@ def harness_for_object_storage_relation() -> Harness:
 class MockCharmForKfpApiRelation(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
-        self.charm_executor = CharmReconciler(self)
+        self.charm_reconciler = CharmReconciler(self)
 
-        self.kfp_api_relation_component = self.charm_executor.add(
+        self.kfp_api_relation_component = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
                 charm=self,
                 name="relation:kfp-api",
@@ -154,7 +154,7 @@ class MockCharmForKfpApiRelation(CharmBase):
             ),
         )
 
-        self.charm_executor.install_default_event_handlers()
+        self.charm_reconciler.install_default_event_handlers()
 
 
 @pytest.fixture
