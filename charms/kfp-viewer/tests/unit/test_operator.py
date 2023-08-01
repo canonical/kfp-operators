@@ -1,12 +1,10 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from contextlib import nullcontext as does_not_raise
+from unittest.mock import MagicMock
 
 import ops
 import pytest
-import yaml
-from oci_image import MissingResourceError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
@@ -15,40 +13,88 @@ from charm import KfpViewer
 ops.testing.SIMULATE_CAN_CONNECT = True
 
 
-def test_not_leader(harness):
+def test_not_leader(
+    harness,
+    mocked_lightkube_client,
+):
+    """Test that charm waits for leadership."""
     harness.begin_with_initial_hooks()
-    assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
-
-
-def test_wrong_model(harness):
-    harness.set_leader()
-    harness.set_model_name("wrong-name")
-    harness.begin_with_initial_hooks()
-    assert harness.charm.model.unit.status == BlockedStatus(
-        "kfp-viewer must be deployed to model named `kubeflow`"
+    assert harness.charm.model.unit.status == WaitingStatus(
+        "[leadership-gate] Waiting for leadership"
     )
 
 
-def test_image_fetch(harness, oci_resource_data):
-    harness.begin()
-    with pytest.raises(MissingResourceError):
-        harness.charm.image.fetch()
-
-    harness.add_oci_resource(**oci_resource_data)
-    with does_not_raise():
-        harness.charm.image.fetch()
-
-
-def test_install_with_all_inputs(harness, oci_resource_data):
-    harness.set_leader()
-    harness.set_model_name("kubeflow")
-    harness.add_oci_resource(**oci_resource_data)
-
+def test_wrong_model(harness, mocked_lightkube_client):
+    """Test that charm blocks when it is not deployed to a model named `kubeflow`."""
+    harness.set_leader(True)
+    harness.set_model_name("wrong-name")
     harness.begin_with_initial_hooks()
+    assert harness.charm.model.unit.status == BlockedStatus(
+        "[model-name-gate] kfp-viewer must be deployed to model named `kubeflow`"
+    )
 
-    # confirm that we can serialize the pod spec and that the unit is active
-    yaml.safe_dump(harness.get_pod_spec())
-    assert harness.charm.model.unit.status == ActiveStatus()
+
+def test_kubernetes_component_created(harness, mocked_lightkube_client):
+    """Test that Kubernetes component is created when we have leadership."""
+    harness.set_leader(True)
+    harness.set_model_name("kubeflow")
+    harness.begin()
+
+    # Mock get_missing_kubernetes_resources to always return an empty list.
+    kubernetes_resources_component_item = harness.charm.kubernetes_resources_component_item
+    kubernetes_resources_component_item.component._get_missing_kubernetes_resources = MagicMock(
+        return_value=[]
+    )
+
+    harness.charm.on.install.emit()
+
+    assert isinstance(harness.charm.kubernetes_resources_component_item.status, ActiveStatus)
+
+    # Assert that expected amount of Kubernetes resources were created
+    assert mocked_lightkube_client.apply.call_count == 4
+
+
+def test_pebble_service_container_running(harness, mocked_lightkube_client):
+    """Test that the pebble service of the charm's kfp-viewer container is running."""
+    harness.set_leader(True)
+    harness.set_model_name("kubeflow")
+    harness.begin()
+    harness.set_can_connect("kfp-viewer", True)
+
+    harness.charm.kubernetes_resources_component_item.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
+
+    harness.charm.on.install.emit()
+
+    assert isinstance(harness.charm.unit.status, ActiveStatus)
+
+    container = harness.charm.unit.get_container("kfp-viewer")
+    # Assert that sidecar container is up and its service is running
+    assert container.get_service("controller").is_running()
+
+    # Assert the environment variables that are set from inputs are correctly applied
+    environment = container.get_plan().services["controller"].environment
+    assert environment["MAX_NUM_VIEWERS"] == harness.charm.config.get("max-num-viewers")
+    assert environment["MINIO_NAMESPACE"] == str(harness.charm._namespace).lower()
+
+
+def test_install_before_pebble_service_container(harness, mocked_lightkube_client):
+    """Test that charm waits when install event happens before pebble-service-container is ready."""
+    harness.set_leader(True)
+    harness.set_model_name("kubeflow")
+    harness.begin()
+
+    harness.charm.kubernetes_resources_component_item.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
+
+    harness.charm.on.install.emit()
+
+    # but charm is waiting on PebbleComponent
+    assert harness.charm.model.unit.status == WaitingStatus(
+        "[pebble-service-container] Waiting for Pebble to be ready."
+    )
 
 
 @pytest.fixture
@@ -56,13 +102,9 @@ def harness():
     return Harness(KfpViewer)
 
 
-@pytest.fixture
-def oci_resource_data():
-    return {
-        "resource_name": "oci-image",
-        "contents": {
-            "registrypath": "ci-test",
-            "username": "",
-            "password": "",
-        },
-    }
+@pytest.fixture()
+def mocked_lightkube_client(mocker):
+    """Mocks the Lightkube Client in charm.py, returning a mock instead."""
+    mocked_lightkube_client = MagicMock()
+    mocker.patch("charm.lightkube.Client", return_value=mocked_lightkube_client)
+    yield mocked_lightkube_client
