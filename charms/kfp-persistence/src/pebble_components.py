@@ -16,18 +16,16 @@ class PesistenceAgentServiceConfig:
     NAMESPACE: str
 
 
-class PersistenceAgentContainer(PebbleServiceComponent):
+class PebbleServicePersistenceAgentContainer(PebbleServiceComponent):
     # TODO: Should this be something we subclass to define settings, or should
     # PebbleServiceComponent just have .add_service, .add_check, etc?
     def __init__(
         self,
         *args,
         environment: Dict[str, str],
-        service_config_getter,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self._get_service_config = service_config_getter
         self._environment = environment
 
     def get_layer(self) -> Layer:
@@ -38,7 +36,7 @@ class PersistenceAgentContainer(PebbleServiceComponent):
         logger.info("PersistenceAgentContainer: create layer")
 
         # retrieve up-to-date service configuration as setup by charm
-        service_config: PesistenceAgentServiceConfig = self._get_service_config()
+        service_config: PesistenceAgentServiceConfig = self._inputs_getter()
 
         if len(service_config.KFP_API_SERVICE_NAME) == 0 or len(service_config.NAMESPACE) == 0:
             logger.info("PersistenceAgentContainer: configuration is not available")

@@ -14,7 +14,7 @@ from charmed_kubeflow_chisme.components.leadership_gate_component import Leaders
 from ops.charm import CharmBase
 from ops.main import main
 
-from pebble_components import PersistenceAgentContainer, PesistenceAgentServiceConfig
+from pebble_components import PebbleServicePersistenceAgentContainer, PesistenceAgentServiceConfig
 from relation_components import SdiRelation
 
 log = logging.getLogger()
@@ -41,7 +41,7 @@ class KfpPersistenceOperator(CharmBase):
         )
 
         self.persistenceagent_container = self.charm_executor.add(
-            component=PersistenceAgentContainer(
+            component=PebbleServicePersistenceAgentContainer(
                 charm=self,
                 name="container:persistenceagent",
                 container_name="persistenceagent",
@@ -55,7 +55,7 @@ class KfpPersistenceOperator(CharmBase):
                 },
                 # provide function to pebble with which it can get service configuration from
                 # relation
-                service_config_getter=lambda: PesistenceAgentServiceConfig(
+                inputs_getter=lambda: PesistenceAgentServiceConfig(
                     KFP_API_SERVICE_NAME=self.kfp_api_relation.component.get_data()[
                         "service-name"
                     ],

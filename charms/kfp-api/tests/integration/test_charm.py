@@ -54,22 +54,6 @@ class TestCharm:
         )
         await ops_test.model.deploy(entity_url="kfp-viz", channel="2.0/stable", trust=True)
 
-        # deploy mysql-k8s charm
-        await ops_test.model.deploy(
-            "mysql-k8s",
-            channel="8.0/stable",
-            series="jammy",
-            constraints="mem=1G",
-            trust=True,
-        )
-        await ops_test.model.wait_for_idle(
-            apps=["mysql-k8s"],
-            status="active",
-            raise_on_blocked=True,
-            timeout=60 * 10,
-            idle_period=60,
-        )
-
         # FIXME: This assertion belongs to unit tests
         # test no database relation, charm should be in blocked state
         # assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
