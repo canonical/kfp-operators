@@ -15,8 +15,8 @@ from ops.charm import CharmBase
 from ops.main import main
 
 from components.pebble_components import (
-  PebbleServicePersistenceAgentContainer,
-  PesistenceAgentServiceConfig,
+    PebbleServicePersistenceAgentContainer,
+    PesistenceAgentServiceConfig,
 )
 from components.relation_components import SdiRelation
 
