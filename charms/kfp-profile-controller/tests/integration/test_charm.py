@@ -37,7 +37,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
         channel="latest/edge",
         trust=True,
     )
-    
+
     await ops_test.model.deploy(
         built_charm_path, application_name=CHARM_NAME, resources=resources, trust=True
     )
