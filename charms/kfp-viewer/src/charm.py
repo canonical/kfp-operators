@@ -20,7 +20,7 @@ from lightkube.resources.rbac_authorization_v1 import Role, RoleBinding
 from ops.charm import CharmBase
 from ops.main import main
 
-from components.model_name_gate_component import ModelNameGate
+from components.model_name_gate_component import ModelNameGateComponent
 from components.pebble_component import PebbleServiceContainerComponent
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class KfpViewer(CharmBase):
         )
 
         self.model_name_gate = self.charm_reconciler.add(
-            component=ModelNameGate(
+            component=ModelNameGateComponent(
                 charm=self,
                 name="model-name-gate",
             ),
