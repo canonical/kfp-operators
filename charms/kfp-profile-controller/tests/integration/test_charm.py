@@ -10,14 +10,14 @@ import pytest
 import yaml
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource
-from lightkube.resources.core_v1 import Namespace, Pod, Secret, ServiceAccount
+from lightkube.resources.core_v1 import Namespace, Secret, ServiceAccount
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
 
 logger = logging.getLogger(__name__)
 
-APP_NAME = "kfp-profile-controller"
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
+CHARM_NAME = METADATA["name"]
 
 MINIO_APP_NAME = "minio"
 MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
@@ -28,19 +28,17 @@ async def test_build_and_deploy(ops_test: OpsTest):
     built_charm_path = await ops_test.build_charm("./")
     logger.info(f"Built charm {built_charm_path}")
 
-    image_path = METADATA["resources"]["oci-image"]["upstream-source"]
-    resources = {"oci-image": image_path}
+    image_path = METADATA["resources"]["kfp-profile-controller"]["upstream-source"]
+    resources = {"kfp-profile-controller": image_path}
 
     await ops_test.model.deploy(
-        entity_url=built_charm_path,
-        application_name=APP_NAME,
-        resources=resources,
+        built_charm_path, application_name=CHARM_NAME, resources=resources, trust=True
     )
 
     # Deploy required relations
     await ops_test.model.deploy(entity_url=MINIO_APP_NAME, config=MINIO_CONFIG)
     await ops_test.model.add_relation(
-        f"{APP_NAME}:object-storage",
+        f"{CHARM_NAME}:object-storage",
         f"{MINIO_APP_NAME}:object-storage",
     )
 
@@ -58,8 +56,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
         trust=True,
     )
 
-    # Maybe: await ops_test.model.wait_for_idle(raise_on_error=False, raise_on_blocked=True) ?
-    await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME], status="active", raise_on_blocked=False, timeout=60 * 10
+    )
 
 
 @pytest.mark.abort_on_fail
@@ -71,7 +70,7 @@ async def test_profile_and_resources_creation(lightkube_client, profile):
 
 @pytest.fixture(scope="session")
 def lightkube_client() -> lightkube.Client:
-    client = lightkube.Client(field_manager=f"{APP_NAME}")
+    client = lightkube.Client(field_manager=f"{CHARM_NAME}")
     create_global_resource(group="kubeflow.org", version="v1", kind="Profile", plural="profiles")
     return client
 
@@ -164,19 +163,11 @@ async def test_model_resources(ops_test: OpsTest):
         ops_test=ops_test,
     )
 
-    await assert_workload_running(ops_test)
-
-
-async def assert_workload_running(ops_test):
-    lightkube_client = lightkube.Client()
-    pod_status = lightkube_client.get(Pod, f"{APP_NAME}-operator-0", namespace=ops_test.model_name)
-    assert pod_status.status.phase == "Running"
-
 
 async def assert_minio_secret(access_key, secret_key, ops_test):
     lightkube_client = lightkube.Client()
     secret = lightkube_client.get(
-        Secret, f"{APP_NAME}-minio-credentials", namespace=ops_test.model_name
+        Secret, f"{CHARM_NAME}-minio-credentials", namespace=ops_test.model_name
     )
     assert b64decode(secret.data["MINIO_ACCESS_KEY"]).decode("utf-8") == access_key
     assert b64decode(secret.data["MINIO_SECRET_KEY"]).decode("utf-8") == secret_key
@@ -192,6 +183,6 @@ async def test_minio_config_changed(ops_test: OpsTest):
     )
     await ops_test.model.wait_for_idle(status="active", timeout=600)
 
-    assert_minio_secret(minio_access_key, minio_secret_key, ops_test)
+    await assert_minio_secret(minio_access_key, minio_secret_key, ops_test)
 
-    assert ops_test.model.applications[APP_NAME].units[0].workload_status == "active"
+    assert ops_test.model.applications[CHARM_NAME].units[0].workload_status == "active"

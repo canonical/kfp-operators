@@ -1,13 +1,18 @@
+# Learn more about charmcraft.yaml configuration at:
+# https://juju.is/docs/sdk/charmcraft-config
 type: "charm"
 bases:
   - build-on:
-      - name: "ubuntu"
-        channel: "20.04"
+    - name: "ubuntu"
+      channel: "20.04"
     run-on:
-      - name: "ubuntu"
-        channel: "20.04"
+    - name: "ubuntu"
+      channel: "20.04"
 parts:
   charm:
     prime:
       - ./files/upstream/sync.py
+    build-packages:
+    - git  # To install packages directly from github.  Remove when not needed
     charm-python-packages: [setuptools, pip]  # Fixes install of some packages
+    charm-binary-python-packages: [jsonschema<4.18]

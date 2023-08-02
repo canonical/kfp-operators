@@ -3,12 +3,13 @@ summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   Machine learning (ML) toolkit that is dedicated to making deployments
   of ML workflows on Kubernetes simple, portable, and scalable.
-min-juju-version: "2.9.0"
-series: [kubernetes]
+containers:
+  kfp-profile-controller:
+    resource: kfp-profile-controller
 resources:
-  oci-image:
+  kfp-profile-controller:
     type: oci-image
-    description: Backing OCI image
+    description: Backing OCI image for kfp-profile-controller
     upstream-source: python:3.7
   # NOTE: If bumping KFP version, see also KFP_IMAGES_VERSION in charm.py.  That variable must also be updated
 requires:
