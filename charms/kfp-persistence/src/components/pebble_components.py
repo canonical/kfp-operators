@@ -1,6 +1,7 @@
 import dataclasses
 import logging
 from typing import Dict
+from ops import ActiveStatus, StatusBase, WaitingStatus
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
 from ops.pebble import Layer
@@ -17,14 +18,14 @@ class PesistenceAgentServiceConfig:
 
 
 class PebbleServicePersistenceAgentContainer(PebbleServiceComponent):
-    # TODO: Should this be something we subclass to define settings, or should
-    # PebbleServiceComponent just have .add_service, .add_check, etc?
+    """Pebble Service for Persistence Agent Container."""
     def __init__(
         self,
         *args,
         environment: Dict[str, str],
         **kwargs,
     ):
+        """Initialize component."""
         super().__init__(*args, **kwargs)
         self._environment = environment
 
@@ -36,10 +37,14 @@ class PebbleServicePersistenceAgentContainer(PebbleServiceComponent):
         logger.info("PersistenceAgentContainer: create layer")
 
         # retrieve up-to-date service configuration as setup by charm
-        service_config: PesistenceAgentServiceConfig = self._inputs_getter()
+        try:
+            service_config: PesistenceAgentServiceConfig = self._inputs_getter()
+        except Exception as err:
+            logger.error("PersistenceAgentContainer: configuration is not provided")
+            return None
 
         if len(service_config.KFP_API_SERVICE_NAME) == 0 or len(service_config.NAMESPACE) == 0:
-            logger.info("PersistenceAgentContainer: configuration is not available")
+            logger.info("PersistenceAgentContainer: configuration is not valid")
             return None
 
         # setup command with parameters provided in configuration
@@ -73,3 +78,17 @@ class PebbleServicePersistenceAgentContainer(PebbleServiceComponent):
                 },
             }
         )
+
+    def get_status(self) -> StatusBase:
+        """Return status."""
+        # validate configuration availability
+        try:
+            service_config: PesistenceAgentServiceConfig = self._inputs_getter()
+        except Exception as err:
+            return WaitingStatus("Configuration is not provided")
+
+        # validate values
+        if len(service_config.KFP_API_SERVICE_NAME) == 0 or len(service_config.NAMESPACE) == 0:
+            return WaitingStatus("Configuration is not valid")
+
+        return ActiveStatus()

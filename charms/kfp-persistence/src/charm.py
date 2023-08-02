@@ -11,8 +11,7 @@ import logging
 
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
-from ops.charm import CharmBase
-from ops.main import main
+from ops import BoundEvent, CharmBase, main
 
 from components.pebble_components import (
     PebbleServicePersistenceAgentContainer,
@@ -29,6 +28,9 @@ class KfpPersistenceOperator(CharmBase):
     def __init__(self, *args, **kwargs):
         """Initialize charm and setup the container."""
         super().__init__(*args, **kwargs)
+
+        # Handle charm upgrade
+        self.framework.observe(self.on.upgrade_charm, self.upgrade_charm)
 
         # Charm logic
         self.charm_reconciler = CharmReconciler(self)
@@ -70,13 +72,14 @@ class KfpPersistenceOperator(CharmBase):
 
         self.charm_reconciler.install_default_event_handlers()
 
-    def get_all_status(self):
-        """Convenience function for getting a list of all statuses for this charm's executor.
+    def upgrade_charm(self, _: BoundEvent):
+        """Handler for an upgrade-charm event.
 
-        This is more for debugging.  Having an action would be useful to summarise this too on a
-        running charm.
+        This handler should do anything required for upgrade that is not already covered by a
+        regular Component in self.charm_reconciler.
         """
-        return self.charm_executor.component_graph.status_prioritiser.all()
+        log.info("Handling the upgrade-charm event.")
+        log.info("No action needed for upgrade.  Continuing.")
 
 
 class CheckFailedError(Exception):
