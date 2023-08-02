@@ -39,6 +39,49 @@ CONFIG_JSON_DESTINATION_PATH = "/config/config.json"
 VIEWER_POD_TEMPLATE_FILE = TEMPLATES_PATH / "viewer-pod-template.json"
 VIEWER_JSON_DESTINATION_PATH = "/etc/config/viewer-pod-template.json"
 
+DASHBOARD_LINKS = [
+    DashboardLink(
+        text="Experiments (KFP)",
+        link="/pipeline/#/experiments",
+        type="item",
+        icon="done-all",
+        location="menu",
+    ),
+    DashboardLink(
+        text="Pipelines",
+        link="/pipeline/#/pipelines",
+        type="item",
+        icon="kubeflow:pipeline-centered",
+        location="menu",
+    ),
+    DashboardLink(
+        text="Runs",
+        link="/pipeline/#/runs",
+        type="item",
+        icon="maps:directions-run",
+        location="menu",
+    ),
+    DashboardLink(
+        text="Recurring Runs",
+        link="/pipeline/#/recurringruns",
+        type="item",
+        icon="device:access-alarm",
+        location="menu",
+    ),
+    DashboardLink(
+        text="Upload a pipeline",
+        desc="Pipelines",
+        link="/pipeline/",
+        location="quick",
+    ),
+    DashboardLink(
+        text="View all pipeline runs",
+        desc="Pipelines",
+        link="/pipeline/#/runs",
+        location="quick",
+    ),
+]
+
 
 class KfpUiOperator(CharmBase):
     """Charm for the Kubeflow Pipelines UI.
@@ -53,48 +96,7 @@ class KfpUiOperator(CharmBase):
         self.kubeflow_dashboard_sidebar = KubeflowDashboardLinksRequirer(
             charm=self,
             relation_name="dashboard-links",
-            dashboard_links=[
-                DashboardLink(
-                    text="Experiments (KFP)",
-                    link="/pipeline/#/experiments",
-                    type="item",
-                    icon="done-all",
-                    location="menu",
-                ),
-                DashboardLink(
-                    text="Pipelines",
-                    link="/pipeline/#/pipelines",
-                    type="item",
-                    icon="kubeflow:pipeline-centered",
-                    location="menu",
-                ),
-                DashboardLink(
-                    text="Runs",
-                    link="/pipeline/#/runs",
-                    type="item",
-                    icon="maps:directions-run",
-                    location="menu",
-                ),
-                DashboardLink(
-                    text="Recurring Runs",
-                    link="/pipeline/#/recurringruns",
-                    type="item",
-                    icon="device:access-alarm",
-                    location="menu",
-                ),
-                DashboardLink(
-                    text="Upload a pipeline",
-                    desc="Pipelines",
-                    link="/pipeline/",
-                    location="quick",
-                ),
-                DashboardLink(
-                    text="View all pipeline runs",
-                    desc="Pipelines",
-                    link="/pipeline/#/runs",
-                    location="quick",
-                ),
-            ],
+            dashboard_links=DASHBOARD_LINKS,
         )
 
         # Handle charm upgrade
