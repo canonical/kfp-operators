@@ -5,9 +5,9 @@ description: |
   of ML workflows on Kubernetes simple, portable, and scalable.
 containers:
   kfp-profile-controller:
-    resource: kfp-profile-controller
+    resource: oci-image
 resources:
-  kfp-profile-controller:
+  oci-image:
     type: oci-image
     description: Backing OCI image for kfp-profile-controller
     upstream-source: python:3.7

@@ -28,9 +28,16 @@ async def test_build_and_deploy(ops_test: OpsTest):
     built_charm_path = await ops_test.build_charm("./")
     logger.info(f"Built charm {built_charm_path}")
 
-    image_path = METADATA["resources"]["kfp-profile-controller"]["upstream-source"]
-    resources = {"kfp-profile-controller": image_path}
+    image_path = METADATA["resources"]["oci-image"]["upstream-source"]
+    resources = {"oci-image": image_path}
 
+    await ops_test.model.deploy(
+        entity_url="metacontroller-operator",
+        # TODO: Revert once metacontroller stable supports k8s 1.22
+        channel="latest/edge",
+        trust=True,
+    )
+    
     await ops_test.model.deploy(
         built_charm_path, application_name=CHARM_NAME, resources=resources, trust=True
     )
@@ -46,12 +53,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.deploy(
         entity_url="kubeflow-profiles",
         # TODO: Revert once kubeflow-profiles stable supports k8s 1.22
-        channel="latest/edge",
-        trust=True,
-    )
-    await ops_test.model.deploy(
-        entity_url="metacontroller-operator",
-        # TODO: Revert once metacontroller stable supports k8s 1.22
         channel="latest/edge",
         trust=True,
     )
