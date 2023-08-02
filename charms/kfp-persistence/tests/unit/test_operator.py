@@ -1,11 +1,10 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
-import yaml
+from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
@@ -109,57 +108,3 @@ def test_pebble_services_running(harness):
     # Assert the environment variables that are set from inputs are correctly applied
     environment = container.get_plan().services["persistenceagent"].environment
     assert environment["KUBEFLOW_USERID_HEADER"] == "kubeflow-userid"
-
-
-# Helpers
-def add_data_to_sdi_relation(
-    harness: Harness,
-    rel_id: int,
-    other: str,
-    data: Optional[dict] = None,
-    supported_versions: str = "- v1",
-) -> None:
-    """Add data to an SDI-backed relation."""
-    if data is None:
-        data = {}
-
-    harness.update_relation_data(
-        rel_id,
-        other,
-        {"_supported_versions": supported_versions, "data": yaml.dump(data)},
-    )
-
-
-def add_sdi_relation_to_harness(
-    harness: Harness, relation_name: str, other_app: str = "other", data: Optional[dict] = None
-) -> dict:
-    """Relates a new app and unit to an sdi-formatted relation.
-
-    Args:
-        harness: the Harness to add a relation to
-        relation_name: the name of the relation
-        other_app: the name of the other app that is relating to our charm
-        data: (optional) the data added to this relation
-
-    Returns dict of:
-    * other (str): The name of the other app
-    * other_unit (str): The name of the other unit
-    * rel_id (int): The relation id
-    * data (dict): The relation data put to the relation
-    """
-    if data is None:
-        data = {}
-
-    other_unit = f"{other_app}/0"
-    rel_id = harness.add_relation(relation_name, other_app)
-
-    harness.add_relation_unit(rel_id, other_unit)
-
-    add_data_to_sdi_relation(harness, rel_id, other_app, data)
-
-    return {
-        "other_app": other_app,
-        "other_unit": other_unit,
-        "rel_id": rel_id,
-        "data": data,
-    }

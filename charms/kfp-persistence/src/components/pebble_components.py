@@ -3,7 +3,7 @@ import logging
 from typing import Dict
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
-from ops import ActiveStatus, StatusBase, WaitingStatus
+from ops import StatusBase, WaitingStatus
 from ops.pebble import Layer
 
 logger = logging.getLogger(__name__)
@@ -92,4 +92,4 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
         if len(service_config.KFP_API_SERVICE_NAME) == 0 or len(service_config.NAMESPACE) == 0:
             return WaitingStatus("Configuration is not valid")
 
-        return ActiveStatus()
+        return super().get_status()
