@@ -11,13 +11,15 @@ import logging
 
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
+from charmed_kubeflow_chisme.components.serialised_data_interface_components import (
+    SdiRelationDataReceiverComponent,
+)
 from ops import BoundEvent, CharmBase, main
 
 from components.pebble_components import (
-    PebbleServicePersistenceAgentContainer,
+    PersistenceAgentPebbleService,
     PesistenceAgentServiceConfig,
 )
-from components.relation_components import SdiRelation
 
 log = logging.getLogger()
 
@@ -41,12 +43,14 @@ class KfpPersistenceOperator(CharmBase):
         )
 
         self.kfp_api_relation = self.charm_reconciler.add(
-            component=SdiRelation(charm=self, name="relation:kfp-api", relation_name="kfp-api"),
+            component=SdiRelationDataReceiverComponent(
+                charm=self, name="relation:kfp-api", relation_name="kfp-api"
+            ),
             depends_on=[self.leadership_gate],
         )
 
         self.persistenceagent_container = self.charm_reconciler.add(
-            component=PebbleServicePersistenceAgentContainer(
+            component=PersistenceAgentPebbleService(
                 charm=self,
                 name="container:persistenceagent",
                 container_name="persistenceagent",

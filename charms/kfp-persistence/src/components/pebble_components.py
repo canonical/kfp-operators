@@ -17,7 +17,7 @@ class PesistenceAgentServiceConfig:
     NAMESPACE: str
 
 
-class PebbleServicePersistenceAgentContainer(PebbleServiceComponent):
+class PersistenceAgentPebbleService(PebbleServiceComponent):
     """Pebble Service for Persistence Agent Container."""
 
     def __init__(

@@ -37,12 +37,13 @@ class TestCharm:
         )
 
         await ops_test.model.deploy(
-            entity_url="charmed-osm-mariadb-k8s",
+            entity_url="mysql-k8s",
             application_name="kfp-db",
-            config=KFP_DB_CONFIG,
-            channel="latest/stable",
+            config={"profile": "testing"},
+            channel="8.0/edge",
             trust=True,
         )
+
         await ops_test.model.deploy(
             entity_url="minio", config=MINIO_CONFIG, channel="ckf-1.7/stable", trust=True
         )
@@ -51,7 +52,7 @@ class TestCharm:
         # deploy kfp-api which needs to be related to this charm
         await ops_test.model.deploy(entity_url="kfp-api", channel="2.0/stable", trust=True)
 
-        await ops_test.model.add_relation("kfp-api:mysql", "kfp-db:mysql")
+        await ops_test.model.add_relation("kfp-api:relational-db", "kfp-db:database")
         await ops_test.model.add_relation("kfp-api:object-storage", "minio:object-storage")
         await ops_test.model.add_relation("kfp-api:kfp-viz", "kfp-viz:kfp-viz")
 
@@ -60,7 +61,7 @@ class TestCharm:
             status="active",
             raise_on_blocked=False,
             raise_on_error=False,
-            timeout=60 * 10,
+            timeout=90 * 30,
             idle_period=30,
         )
 
