@@ -281,17 +281,25 @@ def mocked_lightkube_client(mocker):
 def add_data_to_sdi_relation(
     harness: Harness,
     rel_id: int,
-    other: str,
+    app_name: str,
     data: Optional[dict] = None,
     supported_versions: str = "- v1",
 ) -> None:
-    """Add data to an SDI-backed relation."""
+    """Add data to an SDI-backed relation.
+
+    Args:
+        harness: the test harness in use
+        rel_id: the relation id of the relation to add data to
+        app_name: the name of the app who is adding data to the relation, typically the other app
+        data: dict of the data to add
+        supported_versions: yaml formatted string of SDI supported versions to add to the relation
+    """
     if data is None:
         data = {}
 
     harness.update_relation_data(
         rel_id,
-        other,
+        app_name,
         {"_supported_versions": supported_versions, "data": yaml.dump(data)},
     )
 
