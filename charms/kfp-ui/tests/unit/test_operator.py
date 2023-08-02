@@ -2,11 +2,11 @@
 # See LICENSE file for licensing details.
 import dataclasses
 from typing import Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import yaml
-from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
+from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
 from charm import KfpUiOperator
