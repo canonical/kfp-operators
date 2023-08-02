@@ -2,7 +2,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Charm for the Kubeflow Pipelines Viewer.
+"""Charm for the Kubeflow Pipelines Viewer CRD controller.
 
 https://github.com/canonical/kfp-operators
 """
@@ -30,6 +30,7 @@ K8S_RESOURCE_FILES = ["src/templates/auth_manifests.yaml.j2", "src/templates/crd
 
 class KfpViewer(CharmBase):
     def __init__(self, *args):
+        """Charm for the Kubeflow Pipelines Viewer CRD controller."""
         super().__init__(*args)
 
         self.charm_reconciler = CharmReconciler(self)
