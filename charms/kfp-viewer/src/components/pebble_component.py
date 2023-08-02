@@ -16,12 +16,15 @@ class PebbleServiceContainerComponent(PebbleServiceComponent):
         environment: Dict[str, str],
         **kwargs,
     ):
+        """Pebble service container component in order to configure Pebble layer"""
         super().__init__(*args, **kwargs)
         self.environment = environment
-        self.max_num_viewers = environment["MAX_NUM_VIEWERS"]
-        self.namespace = environment["MINIO_NAMESPACE"]
 
     def get_layer(self) -> Layer:
+        """Defines and returns Pebble layer configuration
+
+        This method is required for subclassing PebbleServiceContainer
+        """
         logger.info("PebbleServiceComponent.get_layer executing")
         return Layer(
             {
@@ -34,8 +37,8 @@ class PebbleServiceContainerComponent(PebbleServiceComponent):
                         "command": (
                             "/bin/controller"
                             " -logtostderr=true"
-                            f" -max_num_viewers={self.max_num_viewers}"
-                            f" --namespace={self.namespace}"
+                            f" -max_num_viewers={self.environment['MAX_NUM_VIEWERS']}"
+                            f" --namespace={self.environment['MINIO_NAMESPACE']}"
                         ),
                         "startup": "enabled",
                         "environment": self.environment,
