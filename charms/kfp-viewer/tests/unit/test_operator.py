@@ -41,14 +41,12 @@ def test_kubernetes_component_created(harness, mocked_lightkube_client):
     harness.begin()
 
     # Mock get_missing_kubernetes_resources to always return an empty list.
-    kubernetes_resources_component_item = harness.charm.kubernetes_resources_component_item
-    kubernetes_resources_component_item.component._get_missing_kubernetes_resources = MagicMock(
-        return_value=[]
-    )
+    kubernetes_resources = harness.charm.kubernetes_resources
+    kubernetes_resources.component._get_missing_kubernetes_resources = MagicMock(return_value=[])
 
     harness.charm.on.install.emit()
 
-    assert isinstance(harness.charm.kubernetes_resources_component_item.status, ActiveStatus)
+    assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
 
     # Assert that expected amount of Kubernetes resources were created
     assert mocked_lightkube_client.apply.call_count == 4
@@ -61,9 +59,7 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
     harness.begin()
     harness.set_can_connect("kfp-viewer", True)
 
-    harness.charm.kubernetes_resources_component_item.get_status = MagicMock(
-        return_value=ActiveStatus()
-    )
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
 
     harness.charm.on.install.emit()
 
@@ -85,9 +81,7 @@ def test_install_before_pebble_service_container(harness, mocked_lightkube_clien
     harness.set_model_name("kubeflow")
     harness.begin()
 
-    harness.charm.kubernetes_resources_component_item.get_status = MagicMock(
-        return_value=ActiveStatus()
-    )
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
 
     harness.charm.on.install.emit()
 

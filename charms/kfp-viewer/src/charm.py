@@ -35,7 +35,7 @@ class KfpViewer(CharmBase):
         self.charm_reconciler = CharmReconciler(self)
         self._namespace = self.model.name
 
-        self.leadership_gate_component_item = self.charm_reconciler.add(
+        self.leadership_gate = self.charm_reconciler.add(
             component=LeadershipGateComponent(
                 charm=self,
                 name="leadership-gate",
@@ -43,15 +43,15 @@ class KfpViewer(CharmBase):
             depends_on=[],
         )
 
-        self.model_name_gate_component_item = self.charm_reconciler.add(
+        self.model_name_gate = self.charm_reconciler.add(
             component=ModelNameGate(
                 charm=self,
                 name="model-name-gate",
             ),
-            depends_on=[self.leadership_gate_component_item],
+            depends_on=[self.leadership_gate],
         )
 
-        self.kubernetes_resources_component_item = self.charm_reconciler.add(
+        self.kubernetes_resources = self.charm_reconciler.add(
             component=KubernetesComponent(
                 charm=self,
                 name="kubernetes:auth-and-crds",
@@ -63,10 +63,10 @@ class KfpViewer(CharmBase):
                 context_callable=lambda: {"app_name": self.app.name, "namespace": self._namespace},
                 lightkube_client=lightkube.Client(),
             ),
-            depends_on=[self.leadership_gate_component_item],
+            depends_on=[self.leadership_gate],
         )
 
-        self.pebble_service_container_component = self.charm_reconciler.add(
+        self.pebble_service_container = self.charm_reconciler.add(
             component=PebbleServiceContainerComponent(
                 charm=self,
                 name="pebble-service-container",
@@ -77,7 +77,7 @@ class KfpViewer(CharmBase):
                     "MINIO_NAMESPACE": self._namespace,
                 },
             ),
-            depends_on=[self.kubernetes_resources_component_item],
+            depends_on=[self.kubernetes_resources],
         )
 
         self.charm_reconciler.install_default_event_handlers()
