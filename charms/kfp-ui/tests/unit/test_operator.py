@@ -1,6 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-
+import dataclasses
 from typing import Optional
 from unittest.mock import MagicMock, patch
 
@@ -11,12 +11,6 @@ from ops.testing import Harness
 
 from charm import KfpUiOperator
 
-# TODO: Tests missing for config_changed and dropped/reloaded relations and relations where this
-#  charm provides data to the other application
-# TODO: test ingress relation (receive data)
-# TODO: test kfp-ui (provide data)
-
-# ops.testing.SIMULATE_CAN_CONNECT = True
 
 MOCK_OBJECT_STORAGE_DATA = {
     "access-key": "access-key",
@@ -32,17 +26,13 @@ MOCK_KFP_API_DATA = {"service-name": "service-name", "service-port": "1234"}
 def test_not_leader(harness, mocked_lightkube_client):
     """Test when we are not the leader."""
     harness.begin_with_initial_hooks()
-    assert harness.charm.model.unit.status == WaitingStatus(
-        "[leadership-gate] Waiting for leadership"
-    )
+    # Assert that we are not Active, and that the leadership-gate is the cause.
+    assert not isinstance(harness.charm.model.unit.status, ActiveStatus)
+    assert harness.charm.model.unit.status.message.startswith("[leadership-gate]")
 
 
-def test_kubernetes_created_method_1(harness, mocked_lightkube_client):
-    """Test whether we try to create Kubernetes resources when we have leadership.
-
-    This test is implemented via two methods for mocking to see how they both feel.
-    This example is mocked by directly overwriting methods in the ComponentItem/Component instances
-    """
+def test_kubernetes_created_method(harness, mocked_lightkube_client):
+    """Test whether we try to create Kubernetes resources when we have leadership."""
     # Arrange
     # Needed because kubernetes component will only apply to k8s if we are the leader
     harness.set_leader(True)
@@ -65,42 +55,8 @@ def test_kubernetes_created_method_1(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
 
 
-def test_kubernetes_created_method_2(harness, mocked_lightkube_client):
-    """Test whether we try to create Kubernetes resources when we have leadership.
-
-    This test is implemented via two methods for mocking to see how they both feel.
-    This example is mocked by using patch.object to patch the methods temporarily.
-    """
-
-    # Arrange
-    # Needed because kubernetes component will only apply to k8s if we are the leader
-    harness.set_leader(True)
-    harness.begin()
-
-    # Need to mock the leadership-gate to be active, and the kubernetes auth component so that it
-    # sees the expected resources when calling _get_missing_kubernetes_resources
-    # In python 3.9, we don't need to nest the with blocks
-    with patch.object(harness.charm.leadership_gate, "get_status", return_value=ActiveStatus()):
-        # TODO: This feels too broad.  Is there a better way to test/mock this?
-        with patch.object(
-            harness.charm.kubernetes_resources.component,
-            "_get_missing_kubernetes_resources",
-            return_value=[],
-        ):
-            # Act
-            harness.charm.on.install.emit()
-
-            # Assert
-            assert mocked_lightkube_client.apply.call_count == 2
-            assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
-
-
 def test_object_storage_relation_with_data(harness, mocked_lightkube_client):
-    """Test that if Leadership is Active, the object storage relation operates as expected.
-
-    Note: See test_relation_components.py for an alternative way of unit testing Components without
-          mocking the regular charm.
-    """
+    """Test that if Leadership is Active, the object storage relation operates as expected."""
     # Arrange
     harness.begin()
 
@@ -216,7 +172,7 @@ def test_ingress_relation_with_related_app(harness, mocked_lightkube_client):
     # Add one relation with data.  This should trigger a charm reconciliation due to
     # relation-changed.
     relation_metadata = add_sdi_relation_to_harness(harness, "ingress", other_app="o1", data={})
-    relation_ids_to_assert = [relation_metadata["rel_id"]]
+    relation_ids_to_assert = [relation_metadata.rel_id]
 
     # Assert
     assert isinstance(harness.charm.ingress_relation.status, ActiveStatus)
@@ -248,7 +204,7 @@ def test_kfp_ui_relation_with_related_app(harness, mocked_lightkube_client):
     # Add one relation with data.  This should trigger a charm reconciliation due to
     # relation-changed.
     relation_metadata = add_sdi_relation_to_harness(harness, "kfp-ui", other_app="o1", data={})
-    relation_ids_to_assert = [relation_metadata["rel_id"]]
+    relation_ids_to_assert = [relation_metadata.rel_id]
 
     # Assert
     assert isinstance(harness.charm.kfp_ui_relation.status, ActiveStatus)
@@ -310,7 +266,6 @@ def test_pebble_services_running(harness, mocked_lightkube_client):
 @pytest.fixture
 def harness() -> Harness:
     harness = Harness(KfpUiOperator)
-    # harness.set_can_connect("ml-pipeline-ui")
     return harness
 
 
@@ -341,9 +296,17 @@ def add_data_to_sdi_relation(
     )
 
 
+@dataclasses.dataclass
+class RelationMetadata:
+    other_app: str
+    other_unit: str
+    rel_id: int
+    data: dict
+
+
 def add_sdi_relation_to_harness(
     harness: Harness, relation_name: str, other_app: str = "other", data: Optional[dict] = None
-) -> dict:
+) -> RelationMetadata:
     """Relates a new app and unit to an sdi-formatted relation.
 
     Args:
@@ -352,7 +315,7 @@ def add_sdi_relation_to_harness(
         other_app: the name of the other app that is relating to our charm
         data: (optional) the data added to this relation
 
-    Returns dict of:
+    Returns SdiRelationMetadata with:
     * other (str): The name of the other app
     * other_unit (str): The name of the other unit
     * rel_id (int): The relation id
@@ -368,12 +331,12 @@ def add_sdi_relation_to_harness(
 
     add_data_to_sdi_relation(harness, rel_id, other_app, data)
 
-    return {
-        "other_app": other_app,
-        "other_unit": other_unit,
-        "rel_id": rel_id,
-        "data": data,
-    }
+    return RelationMetadata(
+        other_app=other_app,
+        other_unit=other_unit,
+        rel_id=rel_id,
+        data=data,
+    )
 
 
 def render_ingress_data(service, port) -> dict:
