@@ -121,7 +121,7 @@ class KfpUiOperator(CharmBase):
                 data_to_send={
                     "prefix": "/pipeline",
                     "rewrite": "/pipeline",
-                    "service": self.model.app.name,  # TODO: Bug? Should this be name.namespace?
+                    "service": self.model.app.name,
                     "port": int(self.model.config["http-port"]),
                 },
             ),
