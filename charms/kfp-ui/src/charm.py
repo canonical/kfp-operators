@@ -99,9 +99,6 @@ class KfpUiOperator(CharmBase):
             dashboard_links=DASHBOARD_LINKS,
         )
 
-        # Handle charm upgrade
-        self.framework.observe(self.on.upgrade_charm, self.upgrade_charm)
-
         # Charm logic
         self.charm_reconciler = CharmReconciler(self)
 
@@ -214,15 +211,6 @@ class KfpUiOperator(CharmBase):
         )
 
         self.charm_reconciler.install_default_event_handlers()
-
-    def upgrade_charm(self, _: BoundEvent):
-        """Handler for an upgrade-charm event.
-
-        This handler should do anything required for upgrade that is not already covered by a
-        regular Component in self.charm_reconciler.
-        """
-        logger.info("Handling the upgrade-charm event.")
-        logger.info("No action needed for upgrade.  Continuing.")
 
 
 if __name__ == "__main__":
