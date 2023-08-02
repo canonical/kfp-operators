@@ -1,9 +1,9 @@
 import dataclasses
 import logging
 from typing import Dict
-from ops import ActiveStatus, StatusBase, WaitingStatus
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
+from ops import ActiveStatus, StatusBase, WaitingStatus
 from ops.pebble import Layer
 
 logger = logging.getLogger(__name__)
@@ -19,6 +19,7 @@ class PesistenceAgentServiceConfig:
 
 class PebbleServicePersistenceAgentContainer(PebbleServiceComponent):
     """Pebble Service for Persistence Agent Container."""
+
     def __init__(
         self,
         *args,
@@ -40,7 +41,7 @@ class PebbleServicePersistenceAgentContainer(PebbleServiceComponent):
         try:
             service_config: PesistenceAgentServiceConfig = self._inputs_getter()
         except Exception as err:
-            logger.error("PersistenceAgentContainer: configuration is not provided")
+            logger.error(f"PersistenceAgentContainer: configuration is not provided: {err}")
             return None
 
         if len(service_config.KFP_API_SERVICE_NAME) == 0 or len(service_config.NAMESPACE) == 0:
@@ -85,7 +86,7 @@ class PebbleServicePersistenceAgentContainer(PebbleServiceComponent):
         try:
             service_config: PesistenceAgentServiceConfig = self._inputs_getter()
         except Exception as err:
-            return WaitingStatus("Configuration is not provided")
+            return WaitingStatus(f"Configuration is not provided: {err}")
 
         # validate values
         if len(service_config.KFP_API_SERVICE_NAME) == 0 or len(service_config.NAMESPACE) == 0:
