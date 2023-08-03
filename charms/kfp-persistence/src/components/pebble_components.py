@@ -35,18 +35,16 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
 
         This method is required for subclassing PebbleServiceComponent
         """
-        logger.info("PersistenceAgentContainer: create layer")
+        logger.info(f"{self.name}: create layer")
 
         # retrieve up-to-date service configuration as setup by charm
         try:
             service_config: PesistenceAgentServiceConfig = self._inputs_getter()
         except Exception as err:
-            logger.error(f"PersistenceAgentContainer: configuration is not provided: {err}")
-            return None
+            raise ValueError(f"{self.name}: configuration is not provided") from err
 
         if len(service_config.KFP_API_SERVICE_NAME) == 0 or len(service_config.NAMESPACE) == 0:
-            logger.info("PersistenceAgentContainer: configuration is not valid")
-            return None
+            raise ValueError(f"{self.name}: configuration is not valid") from err
 
         # setup command with parameters provided in configuration
         command = (
