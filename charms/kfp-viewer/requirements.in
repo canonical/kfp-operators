@@ -1,8 +1,3 @@
-# Workaround for https://github.com/python-jsonschema/jsonschema/issues/1117
-# and https://github.com/python-jsonschema/jsonschema/issues/1114
-jsonschema<4.18
 ops
 lightkube
-# Use chisme from specific branch until base charm feature is merged and released
-# When github repo is removed, please remove git package from charmcraft build as well.
-charmed-kubeflow-chisme @ git+https://github.com/canonical/charmed-kubeflow-chisme.git@add-base-charm
+charmed-kubeflow-chisme >= 0.2.0
