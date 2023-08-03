@@ -1,12 +1,11 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
-import yaml
-from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
+from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
+from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
 from charm import KfpProfileControllerOperator
@@ -50,66 +49,12 @@ def mocked_lightkube_client(mocker):
     yield mocked_lightkube_client
 
 
-# Helpers
-def add_data_to_sdi_relation(
-    harness: Harness,
-    rel_id: int,
-    other: str,
-    data: Optional[dict] = None,
-    supported_versions: str = "- v1",
-) -> None:
-    """Add data to an SDI-backed relation."""
-    if data is None:
-        data = {}
-
-    harness.update_relation_data(
-        rel_id,
-        other,
-        {"_supported_versions": supported_versions, "data": yaml.dump(data)},
-    )
-
-
-def add_sdi_relation_to_harness(
-    harness: Harness, relation_name: str, other_app: str = "other", data: Optional[dict] = None
-) -> dict:
-    """Relates a new app and unit to an sdi-formatted relation.
-
-    Args:
-        harness: the Harness to add a relation to
-        relation_name: the name of the relation
-        other_app: the name of the other app that is relating to our charm
-        data: (optional) the data added to this relation
-
-    Returns dict of:
-    * other (str): The name of the other app
-    * other_unit (str): The name of the other unit
-    * rel_id (int): The relation id
-    * data (dict): The relation data put to the relation
-    """
-    if data is None:
-        data = {}
-
-    other_unit = f"{other_app}/0"
-    rel_id = harness.add_relation(relation_name, other_app)
-
-    harness.add_relation_unit(rel_id, other_unit)
-
-    add_data_to_sdi_relation(harness, rel_id, other_app, data)
-
-    return {
-        "other_app": other_app,
-        "other_unit": other_unit,
-        "rel_id": rel_id,
-        "data": data,
-    }
-
-
 def test_not_leader(harness, mocked_lightkube_client):
     """Test when we are not the leader."""
     harness.begin_with_initial_hooks()
-    assert harness.charm.model.unit.status == WaitingStatus(
-        "[leadership-gate] Waiting for leadership"
-    )
+    # Assert that we are not Active, and that the leadership-gate is the cause.
+    assert not isinstance(harness.charm.model.unit.status, ActiveStatus)
+    assert harness.charm.model.unit.status.message.startswith("[leadership-gate]")
 
 
 def test_object_storage_relation_with_data(harness, mocked_lightkube_client):
@@ -165,11 +110,7 @@ def test_object_storage_relation_without_relation(harness, mocked_lightkube_clie
 
 
 def test_kubernetes_created_method(harness, mocked_lightkube_client):
-    """Test whether we try to create Kubernetes resources when we have leadership.
-
-    This test is implemented via two methods for mocking to see how they both feel.
-    This example is mocked by directly overwriting methods in the ComponentItem/Component instances
-    """
+    """Test whether we try to create Kubernetes resources when we have leadership."""
     # Arrange
     # Needed because kubernetes component will only apply to k8s if we are the leader
     harness.set_leader(True)

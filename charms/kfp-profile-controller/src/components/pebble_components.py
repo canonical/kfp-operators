@@ -27,14 +27,27 @@ class KfpProfileControllerInputs:
 
 class KfpProfileControllerPebbleService(PebbleServiceComponent):
     def get_layer(self) -> Layer:
+        try:
+            inputs: KfpProfileControllerInputs = self._inputs_getter()
+        except Exception as err:
+            logger.error(
+                f"KfpProfileControllerContainer: inputs are not correctly provided: {err}"
+            )
+            return None
+
+        if (
+            len(inputs.MINIO_SECRET_KEY) == 0
+            or len(inputs.MINIO_ACCESS_KEY) == 0
+            or len(inputs.MINIO_HOST) == 0
+            or len(inputs.MINIO_NAMESPACE) == 0
+        ):
+            logger.info("KfpProfileControllerContainer: inputs are not correctly provided")
+            return None
+
         """Pebble configuration layer for kfp-profile-controller."""
-        # TODO: Make this built-in, use the service/container names
-        logger.info("MlPipelineUiPebbleService.get_layer executing")
-        inputs: KfpProfileControllerInputs = self._inputs_getter()
         layer = Layer(
             {
                 "services": {
-                    # TODO: should this be an attribute?  Or handled somehow else?
                     self.service_name: {
                         "override": "replace",
                         "summary": "entry point for kfp-profile-controller",
@@ -58,8 +71,5 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                 }
             }
         )
-
-        logger.debug("Computed layer as:")
-        logger.debug(layer.to_dict())
 
         return layer

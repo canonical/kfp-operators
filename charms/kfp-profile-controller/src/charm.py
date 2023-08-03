@@ -13,7 +13,10 @@ from base64 import b64encode
 from pathlib import Path
 
 import lightkube
-from charmed_kubeflow_chisme.components import ContainerFileTemplate
+from charmed_kubeflow_chisme.components import (
+    ContainerFileTemplate,
+    SdiRelationDataReceiverComponent,
+)
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
@@ -27,7 +30,6 @@ from components.pebble_components import (
     KfpProfileControllerInputs,
     KfpProfileControllerPebbleService,
 )
-from components.sdi_relation_component import SdiRelationGetterComponent
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +70,7 @@ class KfpProfileControllerOperator(CharmBase):
         )
 
         self.object_storage_relation = self.charm_reconciler.add(
-            component=SdiRelationGetterComponent(
+            component=SdiRelationDataReceiverComponent(
                 charm=self,
                 name="relation:object_storage",
                 relation_name="object-storage",

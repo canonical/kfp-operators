@@ -15,4 +15,4 @@ parts:
     build-packages:
     - git  # To install packages directly from github.  Remove when not needed
     charm-python-packages: [setuptools, pip]  # Fixes install of some packages
-    charm-binary-python-packages: [jsonschema<4.18]
+
