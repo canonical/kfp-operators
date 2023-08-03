@@ -31,9 +31,6 @@ class KfpPersistenceOperator(CharmBase):
         """Initialize charm and setup the container."""
         super().__init__(*args, **kwargs)
 
-        # Handle charm upgrade
-        self.framework.observe(self.on.upgrade_charm, self.upgrade_charm)
-
         # Charm logic
         self.charm_reconciler = CharmReconciler(self)
 
@@ -75,15 +72,6 @@ class KfpPersistenceOperator(CharmBase):
         )
 
         self.charm_reconciler.install_default_event_handlers()
-
-    def upgrade_charm(self, _: BoundEvent):
-        """Handler for an upgrade-charm event.
-
-        This handler should do anything required for upgrade that is not already covered by a
-        regular Component in self.charm_reconciler.
-        """
-        log.info("Handling the upgrade-charm event.")
-        log.info("No action needed for upgrade.  Continuing.")
 
 
 class CheckFailedError(Exception):
