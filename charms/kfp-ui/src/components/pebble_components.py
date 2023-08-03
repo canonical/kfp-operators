@@ -2,10 +2,7 @@ import dataclasses
 import logging
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
-from ops import BlockedStatus
 from ops.pebble import Layer
-
-from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
 
 logger = logging.getLogger(__name__)
 
