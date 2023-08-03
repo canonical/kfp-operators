@@ -1,5 +1,5 @@
 # Workaround for https://github.com/python-jsonschema/jsonschema/issues/1117
 # and https://github.com/python-jsonschema/jsonschema/issues/1114
-charmed-kubeflow-chisme
+charmed-kubeflow-chisme >= 0.2.0
 ops
 serialized-data-interface
