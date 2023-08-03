@@ -73,9 +73,9 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
-        timeout=1800,
+        timeout=3600,
+        idle_period=120,
     )
-
 
 # ---- KFP API Server focused test cases
 async def test_upload_pipeline(kfp_client):
@@ -90,7 +90,6 @@ async def test_upload_pipeline(kfp_client):
     # Get pipeline id by name, default='sample-pipeline'
     server_pipeline_id = kfp_client.get_pipeline_id(name="test-upload-pipeline")
     assert uploaded_pipeline_id == server_pipeline_id
-
 
 async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     """Create a run and monitor it to completion."""
