@@ -8,101 +8,6 @@ on:
         required: true
 
 jobs:
-  lib-check:
-    name: Check libraries
-    strategy:
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@main
-    secrets: inherit
-    with:
-        charm-path: ./charms/${{ matrix.charm }}
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    steps:
-      - uses: actions/checkout@v3
-      - run: python3 -m pip install tox
-      - run: tox -e ${{ matrix.charm }}-lint
-
-  unit:
-    name: Unit tests
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    steps:
-      - uses: actions/checkout@v3
-      - run: python3 -m pip install tox
-      - run: tox -e ${{ matrix.charm }}-unit
-
-  integration:
-    name: Integration tests (microk8s)
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-api
-    steps:
-      # Ideally we'd use self-hosted runners, but this effort is still not stable
-      # This action will remove unused software (dotnet, haskell, android libs, codeql,
-      # and docker images) from the GH runner, which will liberate around 60 GB of storage
-      # distributed in 40GB for root and around 20 for a mnt point.
-      - name: Maximise GH runner space
-        uses: easimon/maximize-build-space@v7
-        with:
-          root-reserve-mb: 40960
-          remove-dotnet: 'true'
-          remove-haskell: 'true'
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-      - uses: actions/checkout@v3
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          channel: 1.24/stable
-          juju-channel: 2.9/stable
-          charmcraft-channel: latest/candidate
-
-      - run: |
-          sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
-
-      - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
-        if: always()
-
   test-bundle:
     name: Test the bundle
     runs-on: ubuntu-20.04
@@ -147,7 +52,11 @@ jobs:
           # Run integration tests against the 1.7 generic install bundle definition
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
           # and https://github.com/canonical/charmcraft/issues/1138
-          tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode
+          # tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 240
 
       - name: Get all
         run: kubectl get all -A

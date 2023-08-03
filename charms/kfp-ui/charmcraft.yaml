@@ -12,6 +12,4 @@ parts:
   charm:
     build-packages:
     - git  # To install packages directly from github.  Remove when not needed
-    - rustc  # Required for jsonschema's dependency, which is used by sdi.  Remove when we remove sdi
-    - cargo  # Required for jsonschema's dependency, which is used by sdi.  Remove when we remove sdi
     charm-python-packages: [setuptools, pip]  # Fixes install of some packages
