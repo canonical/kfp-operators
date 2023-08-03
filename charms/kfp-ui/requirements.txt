@@ -13,7 +13,7 @@ certifi==2023.7.22
     #   httpcore
     #   httpx
     #   requests
-charmed-kubeflow-chisme @ git+https://github.com/canonical/charmed-kubeflow-chisme.git@add-base-charm
+charmed-kubeflow-chisme==0.2.0
     # via -r requirements.in
 charset-normalizer==3.2.0
     # via requests
@@ -37,9 +37,7 @@ importlib-resources==6.0.0
 jinja2==3.1.2
     # via charmed-kubeflow-chisme
 jsonschema==4.17.3
-    # via
-    #   -r requirements.in
-    #   serialized-data-interface
+    # via serialized-data-interface
 lightkube==0.14.0
     # via charmed-kubeflow-chisme
 lightkube-models==1.27.1.4

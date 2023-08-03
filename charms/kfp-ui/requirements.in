@@ -1,10 +1,5 @@
 # Workaround for https://github.com/python-jsonschema/jsonschema/issues/1117
 # and https://github.com/python-jsonschema/jsonschema/issues/1114
-jsonschema<4.18
-# Use chisme from specific branch during development
-# FIXME: Use chisme from specific branch during development
-# Also remove the `git` build package from charmcraft.yaml when this is removed
-# charmed-kubeflow-chisme
-charmed-kubeflow-chisme @ git+https://github.com/canonical/charmed-kubeflow-chisme.git@add-base-charm
+charmed-kubeflow-chisme
 ops
 serialized-data-interface
