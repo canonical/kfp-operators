@@ -14,7 +14,7 @@ from charmed_kubeflow_chisme.components.leadership_gate_component import Leaders
 from charmed_kubeflow_chisme.components.serialised_data_interface_components import (
     SdiRelationDataReceiverComponent,
 )
-from ops import BoundEvent, CharmBase, main
+from ops import CharmBase, main
 
 from components.pebble_components import (
     PersistenceAgentPebbleService,
