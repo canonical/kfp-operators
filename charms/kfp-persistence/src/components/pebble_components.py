@@ -44,7 +44,8 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
             raise ValueError(f"{self.name}: configuration is not provided") from err
 
         if len(service_config.KFP_API_SERVICE_NAME) == 0 or len(service_config.NAMESPACE) == 0:
-            raise ValueError(f"{self.name}: configuration is not valid") from err
+            logger.info(f"{self.name}: configuration is not valid")
+            return None
 
         # setup command with parameters provided in configuration
         command = (
