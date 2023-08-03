@@ -2,7 +2,10 @@ import dataclasses
 import logging
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
+from ops import BlockedStatus
 from ops.pebble import Layer
+
+from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +28,10 @@ class MlPipelineUiInputs:
 class MlPipelineUiPebbleService(PebbleServiceComponent):
     def get_layer(self) -> Layer:
         """Pebble configuration layer for ml-pipeline-ui."""
-        # TODO: Make this built-in, use the service/container names
-        logger.info("MlPipelineUiPebbleService.get_layer executing")
-        inputs: MlPipelineUiInputs = self._inputs_getter()
+        try:
+            inputs: MlPipelineUiInputs = self._inputs_getter()
+        except Exception as err:
+            raise ValueError("Failed to get inputs for Pebble container.") from err
         layer = Layer(
             {
                 "services": {
