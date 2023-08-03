@@ -25,7 +25,7 @@ from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
     KubeflowDashboardLinksRequirer,
 )
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
-from ops import BoundEvent, CharmBase, main
+from ops import CharmBase, main
 
 from components.pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleService
 
