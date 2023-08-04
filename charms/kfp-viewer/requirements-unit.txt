@@ -36,6 +36,8 @@ idna==3.4
     #   anyio
     #   httpx
     #   requests
+importlib-resources==6.0.0
+    # via jsonschema
 iniconfig==2.0.0
     # via pytest
 jinja2==3.1.2
@@ -102,3 +104,5 @@ urllib3==2.0.4
     # via requests
 websocket-client==1.6.1
     # via ops
+zipp==3.16.2
+    # via importlib-resources
