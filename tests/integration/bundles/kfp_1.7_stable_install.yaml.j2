@@ -53,6 +53,7 @@ applications:
     charm: kfp-persistence
     channel: 2.0/stable
     scale: 1
+    trust: true
   kfp-schedwf:
     charm: kfp-schedwf
     channel: 2.0/stable
@@ -65,6 +66,7 @@ applications:
     charm: kfp-viewer
     channel: 2.0/stable
     scale: 1
+    trust: true
   kfp-viz:
     charm: kfp-viz
     channel: 2.0/stable
@@ -79,6 +81,7 @@ applications:
     charm: {{ kfp_persistence }}
     resources: {{ kfp_persistence_resources }}
     scale: 1
+    trust: true
   kfp-schedwf:
     charm: {{ kfp_schedwf }}
     resources: {{ kfp_schedwf_resources }}
@@ -91,6 +94,7 @@ applications:
     charm: {{ kfp_viewer }}
     resources: {{ kfp_viewer_resources }}
     scale: 1
+    trust: true
   kfp-viz:
     charm: {{ kfp_viz }}
     resources: {{ kfp_viz_resources }}
