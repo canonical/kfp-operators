@@ -13,7 +13,7 @@ certifi==2023.7.22
     #   httpcore
     #   httpx
     #   requests
-charmed-kubeflow-chisme @ git+https://github.com/canonical/charmed-kubeflow-chisme.git@add-base-charm
+charmed-kubeflow-chisme==0.2.0
     # via -r requirements.in
 charset-normalizer==3.2.0
     # via requests

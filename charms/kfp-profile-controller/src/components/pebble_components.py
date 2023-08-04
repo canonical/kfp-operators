@@ -30,10 +30,7 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
         try:
             inputs: KfpProfileControllerInputs = self._inputs_getter()
         except Exception as err:
-            logger.error(
-                f"KfpProfileControllerContainer: inputs are not correctly provided: {err}"
-            )
-            return None
+            raise ValueError(f"{self.name}: inputs are not correctly provided") from err
 
         if (
             len(inputs.MINIO_SECRET_KEY) == 0
@@ -41,8 +38,7 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
             or len(inputs.MINIO_HOST) == 0
             or len(inputs.MINIO_NAMESPACE) == 0
         ):
-            logger.info("KfpProfileControllerContainer: inputs are not correctly provided")
-            return None
+            raise ValueError(f"{self.name}: inputs are not correctly provided")
 
         """Pebble configuration layer for kfp-profile-controller."""
         layer = Layer(
