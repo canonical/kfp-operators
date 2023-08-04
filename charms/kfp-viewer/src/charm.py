@@ -72,10 +72,8 @@ class KfpViewer(CharmBase):
                 name="kfp-viewer-pebble-service",
                 container_name="kfp-viewer",
                 service_name="controller",
-                environment={
-                    "MAX_NUM_VIEWERS": self.model.config["max-num-viewers"],
-                    "MINIO_NAMESPACE": self._namespace,
-                },
+                max_num_viewers=self.model.config["max-num-viewers"],
+                minio_namespace=self._namespace
             ),
             depends_on=[self.kubernetes_resources],
         )
