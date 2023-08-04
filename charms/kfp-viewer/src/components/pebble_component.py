@@ -1,7 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 import logging
-from typing import Dict
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
 from ops.pebble import Layer
@@ -21,7 +20,7 @@ class KfpViewerPebbleService(PebbleServiceComponent):
         super().__init__(*args, **kwargs)
         self.max_num_viewers = max_num_viewers
         self.minio_namespace = minio_namespace
-        self.environment={
+        self.environment = {
             "MAX_NUM_VIEWERS": max_num_viewers,
             "MINIO_NAMESPACE": minio_namespace,
         }

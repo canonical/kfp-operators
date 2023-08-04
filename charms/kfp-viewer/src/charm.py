@@ -73,7 +73,7 @@ class KfpViewer(CharmBase):
                 container_name="kfp-viewer",
                 service_name="controller",
                 max_num_viewers=self.model.config["max-num-viewers"],
-                minio_namespace=self._namespace
+                minio_namespace=self._namespace,
             ),
             depends_on=[self.kubernetes_resources],
         )
