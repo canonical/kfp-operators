@@ -48,6 +48,7 @@ ops==2.5.0
     # via
     #   -r requirements.in
     #   charmed-kubeflow-chisme
+
     #   serialized-data-interface
 ordered-set==4.1.0
     # via deepdiff
