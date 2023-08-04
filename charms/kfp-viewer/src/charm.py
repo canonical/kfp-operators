@@ -21,7 +21,7 @@ from ops.charm import CharmBase
 from ops.main import main
 
 from components.model_name_gate_component import ModelNameGateComponent
-from components.pebble_component import PebbleServiceContainerComponent
+from components.pebble_component import KfpViewerPebbleService
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +68,9 @@ class KfpViewer(CharmBase):
         )
 
         self.pebble_service_container = self.charm_reconciler.add(
-            component=PebbleServiceContainerComponent(
+            component=KfpViewerPebbleService(
                 charm=self,
-                name="pebble-service-container",
+                name="kfp-viewer-pebble-service",
                 container_name="kfp-viewer",
                 service_name="controller",
                 environment={

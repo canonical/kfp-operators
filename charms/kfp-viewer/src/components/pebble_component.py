@@ -9,7 +9,7 @@ from ops.pebble import Layer
 logger = logging.getLogger(__name__)
 
 
-class PebbleServiceContainerComponent(PebbleServiceComponent):
+class KfpViewerPebbleService(PebbleServiceComponent):
     def __init__(
         self,
         *args,

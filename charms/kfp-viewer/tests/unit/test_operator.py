@@ -87,7 +87,7 @@ def test_install_before_pebble_service_container(harness, mocked_lightkube_clien
 
     # but charm is waiting on PebbleComponent
     assert harness.charm.model.unit.status == WaitingStatus(
-        "[pebble-service-container] Waiting for Pebble to be ready."
+        "[kfp-viewer-pebble-service] Waiting for Pebble to be ready."
     )
 
 
