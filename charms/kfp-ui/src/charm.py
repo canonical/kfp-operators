@@ -24,6 +24,8 @@ from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
     DashboardLink,
     KubeflowDashboardLinksRequirer,
 )
+from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
+from lightkube.models.core_v1 import ServicePort
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from ops import CharmBase, main
 
@@ -97,6 +99,12 @@ class KfpUiOperator(CharmBase):
             charm=self,
             relation_name="dashboard-links",
             dashboard_links=DASHBOARD_LINKS,
+        )
+
+        # expose dashboard's port
+        http_port = ServicePort(int(self.model.config["http-port"]), name="http")
+        self.service_patcher = KubernetesServicePatch(
+            self, [http_port], service_name=f"{self.model.app.name}"
         )
 
         # Charm logic
