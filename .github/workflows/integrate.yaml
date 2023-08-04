@@ -53,10 +53,10 @@ jobs:
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
           # and https://github.com/canonical/charmcraft/issues/1138
           # tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 240
+#
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
+#        timeout-minutes: 240
 
       - name: Get all
         run: kubectl get all -A
