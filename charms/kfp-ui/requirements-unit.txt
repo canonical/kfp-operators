@@ -61,7 +61,7 @@ pytest-lazy-fixture==0.6.3
     # via -r ./requirements-unit.in
 pytest-mock==3.11.1
     # via -r ./requirements-unit.in
-pyyaml==6.0
+pyyaml==6.0.1
     # via
     #   -r ./requirements.txt
     #   ops
@@ -70,7 +70,7 @@ requests==2.31.0
     # via
     #   -r ./requirements.txt
     #   serialized-data-interface
-serialized-data-interface==0.6.0
+serialized-data-interface==0.7.0
     # via -r ./requirements.txt
 tomli==2.0.1
     # via pytest
