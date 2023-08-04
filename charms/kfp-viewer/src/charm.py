@@ -13,6 +13,7 @@ import lightkube
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
+from charmed_kubeflow_chisme.components.model_name_gate_component import ModelNameGateComponent
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from lightkube.resources.core_v1 import ServiceAccount
@@ -20,7 +21,6 @@ from lightkube.resources.rbac_authorization_v1 import Role, RoleBinding
 from ops.charm import CharmBase
 from ops.main import main
 
-from components.model_name_gate_component import ModelNameGateComponent
 from components.pebble_component import KfpViewerPebbleService
 
 logger = logging.getLogger(__name__)
@@ -46,8 +46,7 @@ class KfpViewer(CharmBase):
 
         self.model_name_gate = self.charm_reconciler.add(
             component=ModelNameGateComponent(
-                charm=self,
-                name="model-name-gate",
+                charm=self, name="model-name-gate", model_name="kubeflow"
             ),
             depends_on=[self.leadership_gate],
         )

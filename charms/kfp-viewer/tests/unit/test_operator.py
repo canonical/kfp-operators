@@ -30,7 +30,7 @@ def test_wrong_model(harness, mocked_lightkube_client):
     harness.set_model_name("wrong-name")
     harness.begin_with_initial_hooks()
     assert harness.charm.model.unit.status == BlockedStatus(
-        "[model-name-gate] kfp-viewer must be deployed to model named `kubeflow`"
+        "[model-name-gate] Charm must be deployed to model named kubeflow"
     )
 
 
