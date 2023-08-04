@@ -87,7 +87,7 @@ class TestCharm:
             apps=["mysql-k8s"],
             status="active",
             raise_on_blocked=True,
-            timeout=90 * 20,
+            timeout=90 * 30,
             idle_period=20,
         )
 

@@ -24,6 +24,7 @@ def render_bundle(ops_test: OpsTest, bundle_path: Path, context: dict, no_build:
     # Render the bundle and get its path
     # The pytest-operator will save it in `self.tmp_path / "bundles"`
     logger.debug(f"Rendering the bundle in {bundle_path} with context {context}")
+    logger.debug(f"Saving in {ops_test.tmp_path}")
     rendered_bundle_path = ops_test.render_bundle(bundle_path, context=context)
     logger.debug(f"Rendered bundle saved in {rendered_bundle_path}")
     return rendered_bundle_path
