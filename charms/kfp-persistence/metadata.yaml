@@ -3,6 +3,7 @@ summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   Machine learning (ML) toolkit that is dedicated to making deployments
   of ML workflows on Kubernetes simple, portable, and scalable.
+docs: https://discourse.charmhub.io/t/11185
 containers:
   persistenceagent:
     resource: oci-image
