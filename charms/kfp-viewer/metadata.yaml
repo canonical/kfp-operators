@@ -2,7 +2,6 @@ name: kfp-viewer
 summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   The Kubeflow Pipelines UI offers built-in support for several types of visualizations, which you can use to provide rich performance evaluation and comparison data.
-
 docs: https://discourse.charmhub.io/t/11188
 website: https://charmhub.io/kfp-viewer
 source: https://github.com/canonical/kfp-operators
