@@ -38,9 +38,6 @@ def test_kubernetes_component_created(harness, mocked_lightkube_client):
 
     # Assert that expected amount of apply calls were made
     # This simulates the Kubernetes resources being created
-    # FIXME: FAILED tests/unit/test_operator.py::test_kubernetes_component_created -
-    # AssertionError: assert 4 == 2
-    # I expect only two apply calls on install because I'm only applying two k8s resources
     assert mocked_lightkube_client.apply.call_count == 4
 
 
@@ -95,8 +92,6 @@ def test_install_before_pebble_service_container(harness, mocked_lightkube_clien
 
     harness.charm.on.install.emit()
 
-    # FIXME: this fix should be in the base charm, we should set the unit
-    # to maintenance status instead.
     # Assert charm is waiting on PebbleComponent
     assert harness.charm.model.unit.status == WaitingStatus(
         "[kfp-schedwf-pebble-service] Waiting for Pebble to be ready."
