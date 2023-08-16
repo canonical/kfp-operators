@@ -14,7 +14,7 @@ anyio==3.7.1
     # via httpcore
 asttokens==2.2.1
     # via stack-data
-async-timeout==4.0.2
+async-timeout==4.0.3
     # via aiohttp
 attrs==23.1.0
     # via
@@ -114,7 +114,7 @@ idna==3.4
     #   httpx
     #   requests
     #   yarl
-importlib-resources==6.0.0
+importlib-resources==6.0.1
     # via jsonschema
 iniconfig==2.0.0
     # via pytest
@@ -204,7 +204,7 @@ pycparser==2.21
     # via cffi
 pydantic==1.10.12
     # via kfp
-pygments==2.15.1
+pygments==2.16.1
     # via ipython
 pymacaroons==0.13.0
     # via macaroonbakery
@@ -328,7 +328,7 @@ websocket-client==1.6.1
     # via kubernetes
 websockets==7.0
     # via juju
-wheel==0.41.0
+wheel==0.41.1
     # via strip-hints
 wrapt==1.15.0
     # via deprecated
