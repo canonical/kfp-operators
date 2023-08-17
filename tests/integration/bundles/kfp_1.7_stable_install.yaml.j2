@@ -104,6 +104,7 @@ applications:
     charm: {{ kfp_viz }}
     resources: {{ kfp_viz_resources }}
     scale: 1
+    trust: true
 {%- endif %}
 relations:
 - - kfp-api:kfp-api
