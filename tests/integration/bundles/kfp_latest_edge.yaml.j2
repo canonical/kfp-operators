@@ -47,6 +47,7 @@ applications:
     charm: {{ kfp_viz }}
     resources: {{ kfp_viz_resources }}
     scale: 1
+    trust: true
 {%- endif %}
 relations:
 - [argo-controller:object-storage, minio:object-storage]
