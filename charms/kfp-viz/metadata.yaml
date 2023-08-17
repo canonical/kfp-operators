@@ -3,12 +3,13 @@ summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   Machine learning (ML) toolkit that is dedicated to making deployments
   of ML workflows on Kubernetes simple, portable, and scalable.
-series: [kubernetes]
-min-juju-version: "2.9.0"
+containers:
+  ml-pipeline-visualizationserver:
+    resource: ml-pipeline-visualizationserver
 resources:
-  oci-image:
+  ml-pipeline-visualizationserver:
     type: oci-image
-    description: Backing OCI image
+    description: OCI image for ml-pipeline-visualizationserver
     upstream-source: gcr.io/ml-pipeline/visualization-server:2.0.0-alpha.7
 provides:
   kfp-viz:
