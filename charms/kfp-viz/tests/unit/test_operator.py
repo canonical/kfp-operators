@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 import yaml
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
-from ops.model import ActiveStatus
+from ops.model import ActiveStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import KfpVizOperator
@@ -25,16 +25,21 @@ def test_not_leader(harness, mocked_kubernetes_service_patch):
 
 def test_pebble_service_container_running(harness, mocked_kubernetes_service_patch):
     """Test that the pebble service of the charm's kfp-visualization container is running."""
+    # Arrange
     harness.set_leader(True)
     harness.begin()
     harness.set_can_connect("ml-pipeline-visualizationserver", True)
 
+    # Mock:
+    # * leadership_gate to have get_status=>Active
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
 
+    # Act
     harness.charm.on.install.emit()
 
     assert isinstance(harness.charm.unit.status, ActiveStatus)
 
+    # Assert
     container = harness.charm.unit.get_container("ml-pipeline-visualizationserver")
     # Assert that sidecar container is up and its service is running
     assert container.get_service("vis-server").is_running()
@@ -82,6 +87,25 @@ def assert_relation_data_send_as_expected(harness, expected_relation_data, rel_i
             == expected_relation_data["_supported_versions"]
         )
         assert yaml.safe_load(relation_data["data"]) == expected_relation_data["data"]
+
+
+def test_install_before_pebble_service_container(harness, mocked_kubernetes_service_patch):
+    """Test that charm waits when install event happens before pebble-service-container is ready."""
+    # Arrange
+    harness.set_leader(True)
+    harness.begin()
+
+    # Mock:
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert charm is waiting on PebbleComponent
+    assert harness.charm.model.unit.status == WaitingStatus(
+        "[kfp-viz-pebble-service] Waiting for Pebble to be ready."
+    )
 
 
 @pytest.fixture
