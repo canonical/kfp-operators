@@ -62,6 +62,9 @@ class KfpVizOperator(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
+        # The service_name should be consistent with the rock predefined
+        # service name to be able to re-use it, do not change it unless
+        # it changes in the corresponding Rockcraft project.
         self.ml_pipeline_visualizationserver_container = self.charm_reconciler.add(
             component=KfpVizPebbleService(
                 charm=self,
