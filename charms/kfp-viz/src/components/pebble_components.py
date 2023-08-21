@@ -1,3 +1,6 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 import logging
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
@@ -27,7 +30,7 @@ class KfpVizPebbleService(PebbleServiceComponent):
                         "timeout": "60s",
                         "threshold": 3,
                         "http": {
-                            "url": f"http://localhost:{self.charm.model.config['http-port']}"
+                            "url": f"http://localhost:{self._charm.model.config['http-port']}"
                         },
                     }
                 },
