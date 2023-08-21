@@ -45,7 +45,7 @@ K8S_RESOURCE_FILES = [
     "src/templates/secrets.yaml.j2",
 ]
 KFP_DEFAULT_PIPELINE_ROOT = ""
-KFP_IMAGES_VERSION = "2.0.0-alpha.7"
+KFP_IMAGES_VERSION = "2.0.1"
 METADATA_GRPC_SERVICE_HOST = "mlmd.kubeflow"
 METADATA_GRPC_SERVICE_PORT = "8080"
 NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"

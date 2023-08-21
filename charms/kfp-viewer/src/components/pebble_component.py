@@ -13,16 +13,15 @@ class KfpViewerPebbleService(PebbleServiceComponent):
         self,
         *args,
         max_num_viewers: str,
-        minio_namespace: str,
         **kwargs,
     ):
         """Pebble service container component in order to configure Pebble layer"""
         super().__init__(*args, **kwargs)
         self.max_num_viewers = max_num_viewers
-        self.minio_namespace = minio_namespace
+        self.namespace = ""
         self.environment = {
             "MAX_NUM_VIEWERS": max_num_viewers,
-            "MINIO_NAMESPACE": minio_namespace,
+            "NAMESPACE": self.namespace,
         }
 
     def get_layer(self) -> Layer:
@@ -43,7 +42,7 @@ class KfpViewerPebbleService(PebbleServiceComponent):
                             "/bin/controller"
                             " -logtostderr=true"
                             f" -max_num_viewers={self.max_num_viewers}"
-                            f" --namespace={self.minio_namespace}"
+                            f" --namespace={self.namespace}"
                         ),
                         "startup": "enabled",
                         "environment": self.environment,

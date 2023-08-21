@@ -1,16 +1,12 @@
-# Source manifests/apps/pipeline/upstream/base/pipeline/ml-pipeline-viewer-crd-**.yaml
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: {{ app_name }}
-  namespace: {{ namespace }}
----
+# Source manifests/apps/pipeline/upstream/base/installs/multi-user/viewer-controller/cluster-role**.yaml
+# These manifest files have been modified to suit the needs of the charm; the app label, metadata name,
+# and namespace fields will be rendered with information from the application and the model.
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
-  name: {{ app_name }}
-  namespace: {{ namespace }}
+  labels:
+    app: {{ app_name }}
+  name: {{ app_name }}-role
 rules:
 - apiGroups:
   - '*'
@@ -40,14 +36,24 @@ rules:
   - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
-  name: {{ app_name }}
-  namespace: {{ namespace }}
+  labels:
+    app: {{ app_name }}
+  name: {{ app_name }}-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: {{ app_name }}
+  kind: ClusterRole
+  name: {{ app_name }}-role
 subjects:
 - kind: ServiceAccount
-  name: {{ app_name }}
+  name: {{ app_name }}-sa
+  namespace: {{ namespace }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: {{ app_name }}
+  name: {{ app_name }}-sa
+  namespace: {{ namespace }}

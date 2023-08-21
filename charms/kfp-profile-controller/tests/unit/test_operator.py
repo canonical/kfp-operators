@@ -23,7 +23,7 @@ EXPECTED_ENVIRONMENT = {
     "CONTROLLER_PORT": 80,
     "DISABLE_ISTIO_SIDECAR": "false",
     "KFP_DEFAULT_PIPELINE_ROOT": "",
-    "KFP_VERSION": "2.0.0-alpha.7",
+    "KFP_VERSION": "2.0.1",
     "METADATA_GRPC_SERVICE_HOST": "mlmd.kubeflow",
     "METADATA_GRPC_SERVICE_PORT": "8080",
     "MINIO_ACCESS_KEY": "access-key",
@@ -31,7 +31,6 @@ EXPECTED_ENVIRONMENT = {
     "MINIO_NAMESPACE": "namespace",
     "MINIO_PORT": 1234,
     "MINIO_SECRET_KEY": "secret-key",
-    "minio-secret": '{"secret": {"name": ' '"kfp-profile-controller-minio-credentials"}}',
 }
 
 

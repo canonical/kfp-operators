@@ -1,4 +1,4 @@
-# Source manifests/apps/pipeline/upstream/base/installs/multi-user/persistence-agent/
+# Source manifests/apps/pipeline/upstream/base/installs/multi-user/persistence-agent/cluster-role**.yaml
 # These manifest files have been modified to suit the needs of the charm; the app label, metadata name,
 # and namespace fields will be rendered with information from the application and the model.
 apiVersion: rbac.authorization.k8s.io/v1
@@ -41,6 +41,8 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  labels:
+    app: {{ app_name }}
   name: {{ app_name }}-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
