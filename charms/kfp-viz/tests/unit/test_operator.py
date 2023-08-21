@@ -11,8 +11,7 @@ from ops.testing import Harness
 
 from charm import KfpVizOperator
 
-# TODO: Tests missing for config_changed and dropped/reloaded relations and relations where this
-#  charm provides data to the other application
+# TODO: Tests missing for dropped/reloaded relations
 
 
 def test_not_leader(harness, mocked_kubernetes_service_patch):
@@ -24,7 +23,8 @@ def test_not_leader(harness, mocked_kubernetes_service_patch):
 
 
 def test_pebble_service_container_running(harness, mocked_kubernetes_service_patch):
-    """Test that the pebble service of the charm's kfp-visualization container is running."""
+    """Test that the pebble service of the charm's kfp-visualization
+    container is running on install."""
     # Arrange
     harness.set_leader(True)
     harness.begin()
@@ -40,6 +40,28 @@ def test_pebble_service_container_running(harness, mocked_kubernetes_service_pat
     assert isinstance(harness.charm.unit.status, ActiveStatus)
 
     # Assert
+    container = harness.charm.unit.get_container("ml-pipeline-visualizationserver")
+    # Assert that sidecar container is up and its service is running
+    assert container.get_service("vis-server").is_running()
+
+
+def test_pebble_service_is_replanned_on_config_changed(harness, mocked_kubernetes_service_patch):
+    """Test that the pebble service of the charm's kfp-visualization
+    container is running on config_changed."""
+    # Arrange
+    harness.set_leader(True)
+    harness.begin()
+    harness.set_can_connect("ml-pipeline-visualizationserver", True)
+
+    # Mock:
+    # * leadership_gate to have get_status=>Active
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Act
+    harness.charm.on.config_changed.emit()
+
+    assert isinstance(harness.charm.unit.status, ActiveStatus)
+
     container = harness.charm.unit.get_container("ml-pipeline-visualizationserver")
     # Assert that sidecar container is up and its service is running
     assert container.get_service("vis-server").is_running()
@@ -75,18 +97,6 @@ def test_kfp_viz_relation_with_related_app(harness, mocked_kubernetes_service_pa
     # Assert
     assert isinstance(harness.charm.kfp_viz_relation.status, ActiveStatus)
     assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
-
-
-def assert_relation_data_send_as_expected(harness, expected_relation_data, rel_ids_to_assert):
-    """Asserts that we have sent the expected data to the given relations."""
-    # Assert on the data we sent out to the other app for each relation.
-    for rel_id in rel_ids_to_assert:
-        relation_data = harness.get_relation_data(rel_id, harness.model.app)
-        assert (
-            yaml.safe_load(relation_data["_supported_versions"])
-            == expected_relation_data["_supported_versions"]
-        )
-        assert yaml.safe_load(relation_data["data"]) == expected_relation_data["data"]
 
 
 def test_install_before_pebble_service_container(harness, mocked_kubernetes_service_patch):
@@ -128,3 +138,17 @@ def render_kfp_viz_data(app_name, model_name, port) -> dict:
         "service-name": f"{app_name}.{model_name}",
         "service-port": str(port),
     }
+
+
+def assert_relation_data_send_as_expected(
+    harness_object, expected_relation_data, rel_ids_to_assert
+):
+    """Asserts that we have sent the expected data to the given relations."""
+    # Assert on the data we sent out to the other app for each relation.
+    for rel_id in rel_ids_to_assert:
+        relation_data = harness_object.get_relation_data(rel_id, harness_object.model.app)
+        assert (
+            yaml.safe_load(relation_data["_supported_versions"])
+            == expected_relation_data["_supported_versions"]
+        )
+        assert yaml.safe_load(relation_data["data"]) == expected_relation_data["data"]
