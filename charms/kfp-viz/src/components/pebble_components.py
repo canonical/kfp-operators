@@ -22,7 +22,4 @@ class KfpVizPebbleService(PebbleServiceComponent):
             }
         )
 
-        logger.debug("computed layer as:")
-        logger.debug(layer.to_dict())
-
         return layer
