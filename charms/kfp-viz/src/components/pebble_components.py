@@ -15,7 +15,7 @@ class KfpVizPebbleService(PebbleServiceComponent):
                     self.service_name: {
                         "override": "replace",
                         "summary": "entry point for ml-pipeline-visualizationserver",
-                        "command": "python3 server.py",  # Must be a string
+                        "command": "python3.6 server.py",  # Must be a string
                         "startup": "enabled",
                     }
                 }
