@@ -97,6 +97,7 @@ jobs:
           charmcraft-channel: latest/candidate
 
       - run: |
+          juju model-config logging-config="<root>=INFO;unit=DEBUG"
           sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
 
       - name: Collect charm debug artifacts
@@ -164,6 +165,7 @@ jobs:
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
+          juju model-config logging-config="<root>=INFO;unit=DEBUG"
           # Run integration tests against the 1.7 generic install bundle definition
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
           # and https://github.com/canonical/charmcraft/issues/1138
