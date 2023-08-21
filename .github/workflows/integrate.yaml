@@ -147,7 +147,7 @@ jobs:
           # Run integration tests against the 1.7 generic install bundle definition
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
           # and https://github.com/canonical/charmcraft/issues/1138
-          tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode
+          tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode --keep-models || (juju debug-log --replay | tee ~/kfp-operators-debug-logs/juju-debug-log-fast.log && sg microk8s -c "microk8s.kubectl describe pods -A | tee ~/kfp-operators-debug-logs/pods-fast.log")
 
       - name: Get all
         run: kubectl get all -A
@@ -157,9 +157,18 @@ jobs:
         run: juju status
         if: failure()
 
-      - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+      - name: Save relevant debug artifacts
         if: always()
+        run: |
+          mkdir ~/kfp-operators-debug-logs
+          juju debug-log --replay | tee ~/kfp-operators-debug-logs/juju-debug-log.log
+          juju status | tee ~/kfp-operators-debug-logs/juju-status.log
+          bash -c "cp ~/.local/state/charmcraft/log/* ~/kfp-operators-debug-logs/"
+          bash -c "df -h | tee ~/kfp-operators-debug-logs/df.log"
+          bash -c "free -h | tee ~/kfp-operators-debug-logs/free.log"
+          sg microk8s -c "microk8s.kubectl describe deployments -A | tee ~/kfp-operators-debug-logs/deployments.log"
+          sg microk8s -c "microk8s.kubectl describe pods -A | tee ~/kfp-operators-debug-logs/pods.log"
+          sg microk8s -c "microk8s.kubectl describe workloads -A | tee ~/kfp-operators-debug-logs/workloads.log"
 
       - name: Upload debug artifacts
         if: always()
