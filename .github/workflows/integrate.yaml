@@ -128,7 +128,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: kfp-operators-debug-logs-individual
+          name: kfp-operators-debug-logs-${{ matrix.charm }}-individual
           path: ~/kfp-operators-debug-logs
 
   test-bundle:
