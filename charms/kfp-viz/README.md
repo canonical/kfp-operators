@@ -8,6 +8,6 @@ Visualization (see [CharmHub](https://charmhub.io/?q=kfp-viz)).
 
 To install Kubeflow Pipelines Visualization, run:
 
-    juju deploy kfp-viz
+    juju deploy kfp-viz --trust
 
 For more information, see https://juju.is/docs

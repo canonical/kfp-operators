@@ -14,10 +14,8 @@
 #   * Pinning a version of a python package/lib shared with requirements.in
 #     must not introduce any incompatibilities.
 coverage
-oci-image
 ops
 pytest
 pytest-mock
-pytest-lazy-fixture
 pyyaml
 -r requirements.in

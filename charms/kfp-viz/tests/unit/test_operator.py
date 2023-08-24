@@ -1,83 +1,121 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from contextlib import nullcontext as does_not_raise
+from unittest.mock import MagicMock
 
-import ops
 import pytest
 import yaml
-from oci_image import MissingResourceError
+from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from ops.model import ActiveStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import KfpVizOperator
 
-# TODO: Tests missing for config_changed and dropped/reloaded relations and relations where this
-#  charm provides data to the other application
-
-ops.testing.SIMULATE_CAN_CONNECT = True
+# TODO: Tests missing for dropped/reloaded relations
 
 
-def test_not_leader(harness):
+def test_not_leader(harness, mocked_kubernetes_service_patch):
+    """Test when we are not the leader."""
     harness.begin_with_initial_hooks()
-    assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
+    # Assert that we are not Active, and that the leadership-gate is the cause.
+    assert not isinstance(harness.charm.model.unit.status, ActiveStatus)
+    assert harness.charm.model.unit.status.message.startswith("[leadership-gate]")
 
 
-def test_image_fetch(harness, oci_resource_data):
+def test_pebble_service_container_running(harness, mocked_kubernetes_service_patch):
+    """Test that the pebble service of the charm's kfp-visualization
+    container is running on install."""
+    # Arrange
+    harness.set_leader(True)
     harness.begin()
-    with pytest.raises(MissingResourceError):
-        harness.charm.image.fetch()
+    harness.set_can_connect("ml-pipeline-visualizationserver", True)
 
-    harness.add_oci_resource(**oci_resource_data)
-    with does_not_raise():
-        harness.charm.image.fetch()
+    # Mock:
+    # * leadership_gate to have get_status=>Active
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Act
+    harness.charm.on.install.emit()
+
+    assert isinstance(harness.charm.unit.status, ActiveStatus)
+
+    # Assert
+    container = harness.charm.unit.get_container("ml-pipeline-visualizationserver")
+    # Assert that sidecar container is up and its service is running
+    assert container.get_service("vis-server").is_running()
 
 
-# TODO: kfp-viz (provide data)
+def test_pebble_service_is_replanned_on_config_changed(harness, mocked_kubernetes_service_patch):
+    """Test that the pebble service of the charm's kfp-visualization
+    container is running on config_changed."""
+    # Arrange
+    harness.set_leader(True)
+    harness.begin()
+    harness.set_can_connect("ml-pipeline-visualizationserver", True)
+
+    # Mock:
+    # * leadership_gate to have get_status=>Active
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Act
+    harness.charm.on.config_changed.emit()
+
+    assert isinstance(harness.charm.unit.status, ActiveStatus)
+
+    container = harness.charm.unit.get_container("ml-pipeline-visualizationserver")
+    # Assert that sidecar container is up and its service is running
+    assert container.get_service("vis-server").is_running()
 
 
-def test_install_with_all_inputs(harness, oci_resource_data):
-    harness.set_leader()
-    http_port = "1234"
-    model_name = "test_model"
-    harness.set_model_name(model_name)
-    harness.update_config({"http-port": http_port})
+def test_kfp_viz_relation_with_related_app(harness, mocked_kubernetes_service_patch):
+    """Test that the kfp-viz relation sends data to related apps and goes Active."""
+    # Arrange
+    harness.set_leader(True)  # needed to write to an SDI relation
+    model = "model"
+    harness.set_model_name(model)
+    harness.begin()
 
-    kfpviz_relation_name = "kfp-viz"
+    # Mock:
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
 
-    harness.set_leader()
-
-    # Set up required relations
-    # Future: convert these to fixtures and share with the tests above
-    harness.add_oci_resource(**oci_resource_data)
-
-    relation_version_data = {"_supported_versions": "- v1"}
-
-    # example kfp-viz provider relation
-    kfpviz_rel_id = harness.add_relation(
-        kfpviz_relation_name, f"{kfpviz_relation_name}-subscriber"
-    )
-    harness.add_relation_unit(kfpviz_rel_id, f"{kfpviz_relation_name}-subscriber/0")
-    harness.update_relation_data(
-        kfpviz_rel_id, f"{kfpviz_relation_name}-subscriber", relation_version_data
-    )
-
-    harness.begin_with_initial_hooks()
-    this_app_name = harness.charm.model.app.name
-
-    # Test that we sent expected data to kfp-viz relation
-    kfpviz_expected_versions = ["v1"]
-    kfpviz_expected_data = {
-        "service-name": f"{this_app_name}.{model_name}",
-        "service-port": http_port,
+    expected_relation_data = {
+        "_supported_versions": ["v1"],
+        "data": render_kfp_viz_data(
+            app_name=harness.model.app.name,
+            model_name=model,
+            port=harness.model.config["http-port"],
+        ),
     }
-    kfpviz_sent_data = harness.get_relation_data(kfpviz_rel_id, this_app_name)
-    assert yaml.safe_load(kfpviz_sent_data["_supported_versions"]) == kfpviz_expected_versions
-    assert yaml.safe_load(kfpviz_sent_data["data"]) == kfpviz_expected_data
 
-    # confirm that we can serialize the pod spec and that the unit is active
-    yaml.safe_dump(harness.get_pod_spec())
-    assert harness.charm.model.unit.status == ActiveStatus()
+    # Act
+    # Add one relation with data.  This should trigger a charm reconciliation due to
+    # relation-changed.
+    relation_metadata = add_sdi_relation_to_harness(harness, "kfp-viz", other_app="o1", data={})
+    relation_ids_to_assert = [relation_metadata.rel_id]
+
+    # Assert
+    assert isinstance(harness.charm.kfp_viz_relation.status, ActiveStatus)
+    assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
+
+
+def test_install_before_pebble_service_container(harness, mocked_kubernetes_service_patch):
+    """Test that charm waits when install event happens before pebble-service-container is ready."""
+    # Arrange
+    harness.set_leader(True)
+    harness.begin()
+
+    # Mock:
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert charm is waiting on PebbleComponent
+    assert harness.charm.model.unit.status == WaitingStatus(
+        "[kfp-viz-pebble-service] Waiting for Pebble to be ready."
+    )
 
 
 @pytest.fixture
@@ -85,13 +123,32 @@ def harness():
     return Harness(KfpVizOperator)
 
 
-@pytest.fixture
-def oci_resource_data():
+@pytest.fixture()
+def mocked_kubernetes_service_patch(mocker):
+    """Mocks the KubernetesServicePatch for the charm."""
+    mocked_kubernetes_service_patch = mocker.patch(
+        "charm.KubernetesServicePatch", lambda x, y, service_name: None
+    )
+    yield mocked_kubernetes_service_patch
+
+
+def render_kfp_viz_data(app_name, model_name, port) -> dict:
+    """Returns typical data for the kfp-viz relation."""
     return {
-        "resource_name": "oci-image",
-        "contents": {
-            "registrypath": "ci-test",
-            "username": "",
-            "password": "",
-        },
+        "service-name": f"{app_name}.{model_name}",
+        "service-port": str(port),
     }
+
+
+def assert_relation_data_send_as_expected(
+    harness_object, expected_relation_data, rel_ids_to_assert
+):
+    """Asserts that we have sent the expected data to the given relations."""
+    # Assert on the data we sent out to the other app for each relation.
+    for rel_id in rel_ids_to_assert:
+        relation_data = harness_object.get_relation_data(rel_id, harness_object.model.app)
+        assert (
+            yaml.safe_load(relation_data["_supported_versions"])
+            == expected_relation_data["_supported_versions"]
+        )
+        assert yaml.safe_load(relation_data["data"]) == expected_relation_data["data"]

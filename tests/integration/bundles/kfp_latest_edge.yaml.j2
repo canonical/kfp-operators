@@ -12,7 +12,7 @@ applications:
   kfp-schedwf:             { charm: ch:kfp-schedwf, channel: latest/edge, scale: 1, trust: true}
   kfp-ui:                  { charm: ch:kfp-ui, channel: latest/edge, trust: true,            scale: 1 }
   kfp-viewer:              { charm: ch:kfp-viewer, channel: latest/edge, trust: true         scale: 1 }
-  kfp-viz:                 { charm: ch:kfp-viz, channel: latest/edge,                        scale: 1 }
+  kfp-viz:                 { charm: ch:kfp-viz, channel: latest/edge, trust: true         scale: 1 }
 {%- else %}
   kfp-api:
     charm: {{ kfp_api }}
@@ -47,6 +47,7 @@ applications:
     charm: {{ kfp_viz }}
     resources: {{ kfp_viz_resources }}
     scale: 1
+    trust: true
 {%- endif %}
 relations:
 - [argo-controller:object-storage, minio:object-storage]
