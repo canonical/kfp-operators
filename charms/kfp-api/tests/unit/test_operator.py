@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
-from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import KFP_API_SERVICE_NAME, ErrorWithStatus, KfpApiOperator
@@ -572,3 +572,39 @@ class TestCharm:
                 "db_host": "host",
                 "db_port": "1234",
             }
+
+    def test_relational_db_relation_broken(
+        self,
+        mocked_resource_handler,
+        mocked_lightkube_client,
+        mocked_kubernetes_service_patcher,
+        harness: Harness,
+    ):
+        """Test that a relation broken event is properly handled."""
+        database = MagicMock()
+        fetch_relation_data = MagicMock(side_effect=KeyError())
+        database.fetch_relation_data = fetch_relation_data
+        harness.model.get_relation = MagicMock(
+            side_effect=self._get_relation_db_only_side_effect_func
+        )
+
+        rel_name = "relational-db"
+        rel_id = harness.add_relation(rel_name, "relational-db-provider")
+
+        harness.begin()
+        harness.set_leader(True)
+        harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
+
+        assert harness.model.unit.status == WaitingStatus("Waiting for relational-db data")
+
+        harness.charm.database = database
+        del harness.model.get_relation
+
+        harness._emit_relation_broken(rel_name, rel_id, "kfp-api")
+
+        assert harness.model.unit.status == BlockedStatus(
+            "Please add required database relation: eg. relational-db"
+        )
+
+        harness.charm.on.remove.emit()
+        assert harness.model.unit.status == MaintenanceStatus("K8S resources removed")
