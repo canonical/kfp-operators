@@ -58,9 +58,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     # Wait for everything to deploy
-    await ops_test.model.wait_for_idle(
-        status="active", raise_on_blocked=False, timeout=60 * 10
-    )
+    await ops_test.model.wait_for_idle(status="active", raise_on_blocked=False, timeout=60 * 10)
 
 
 @pytest.mark.abort_on_fail
