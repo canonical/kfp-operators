@@ -9,18 +9,19 @@ https://github.com/canonical/kfp-operators
 
 import logging
 
-from oci_image import OCIImageResource, OCIImageResourceError
+from charmed_kubeflow_chisme.components import (
+    CharmReconciler,
+    LeadershipGateComponent,
+    SdiRelationBroadcasterComponent,
+)
+from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
+from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
-from serialized_data_interface.errors import (
-    NoCompatibleVersions,
-    NoVersionsListed,
-    RelationDataError,
-)
-from serialized_data_interface.sdi import get_interfaces
 
-log = logging.getLogger()
+from components.pebble_components import KfpVizPebbleService
+
+logger = logging.getLogger()
 
 
 class KfpVizOperator(CharmBase):
@@ -32,119 +33,48 @@ class KfpVizOperator(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
 
-        self.log = logging.getLogger()
-        self.image = OCIImageResource(self, "oci-image")
+        http_port = ServicePort(int(self.model.config["http-port"]), name="http")
+        self.service_patcher = KubernetesServicePatch(
+            self, [http_port], service_name=f"{self.model.app.name}"
+        )
 
-        self.framework.observe(self.on.install, self._main)
-        self.framework.observe(self.on.upgrade_charm, self._main)
-        self.framework.observe(self.on.config_changed, self._main)
-        self.framework.observe(self.on.leader_elected, self._main)
-        self.framework.observe(self.on["kfp-viz"].relation_changed, self._main)
+        # Charm logic
+        self.charm_reconciler = CharmReconciler(self)
 
-    def _send_viz_info(self, interfaces):
-        if interfaces["kfp-viz"]:
-            interfaces["kfp-viz"].send_data(
-                {
+        self.leadership_gate = self.charm_reconciler.add(
+            component=LeadershipGateComponent(
+                charm=self,
+                name="leadership-gate",
+            ),
+            depends_on=[],
+        )
+
+        self.kfp_viz_relation = self.charm_reconciler.add(
+            SdiRelationBroadcasterComponent(
+                charm=self,
+                name="relation:kfp-viz",
+                relation_name="kfp-viz",
+                data_to_send={
                     "service-name": f"{self.model.app.name}.{self.model.name}",
                     "service-port": self.model.config["http-port"],
-                }
-            )
-
-    def _main(self, event):
-        # Set up all relations/fetch required data
-        try:
-            self._check_leader()
-            interfaces = self._get_interfaces()
-            image_details = self.image.fetch()
-        except (CheckFailedError, OCIImageResourceError) as check_failed:
-            self.model.unit.status = check_failed.status
-            self.log.info(str(check_failed.status))
-            return
-
-        self._send_viz_info(interfaces)
-
-        port = self.model.config["http-port"]
-        self.model.unit.status = MaintenanceStatus("Setting pod spec")
-        self.model.pod.set_spec(
-            {
-                "version": 3,
-                "containers": [
-                    {
-                        "name": "ml-pipeline-visualizationserver",
-                        "imageDetails": image_details,
-                        "ports": [
-                            {
-                                "name": "http",
-                                "containerPort": int(port),
-                            },
-                        ],
-                        "kubernetes": {
-                            "readinessProbe": {
-                                "exec": {
-                                    "command": [
-                                        "wget",
-                                        "-q",
-                                        "-S",
-                                        "-O",
-                                        "-",
-                                        f"http://localhost:{port}/",
-                                    ]
-                                },
-                                "initialDelaySeconds": 3,
-                                "periodSeconds": 5,
-                                "timeoutSeconds": 2,
-                            },
-                            "livenessProbe": {
-                                "exec": {
-                                    "command": [
-                                        "wget",
-                                        "-q",
-                                        "-S",
-                                        "-O",
-                                        "-",
-                                        f"http://localhost:{port}/",
-                                    ]
-                                },
-                                "initialDelaySeconds": 3,
-                                "periodSeconds": 5,
-                                "timeoutSeconds": 2,
-                            },
-                        },
-                    }
-                ],
-            },
+                },
+            ),
+            depends_on=[self.leadership_gate],
         )
-        self.model.unit.status = ActiveStatus()
 
-    def _check_leader(self):
-        if not self.unit.is_leader():
-            # We can't do anything useful when not the leader, so do nothing.
-            raise CheckFailedError("Waiting for leadership", WaitingStatus)
+        # The service_name should be consistent with the rock predefined
+        # service name to be able to re-use it, do not change it unless
+        # it changes in the corresponding Rockcraft project.
+        self.ml_pipeline_visualizationserver_container = self.charm_reconciler.add(
+            component=KfpVizPebbleService(
+                charm=self,
+                name="kfp-viz-pebble-service",
+                container_name="ml-pipeline-visualizationserver",
+                service_name="vis-server",
+            )
+        )
 
-    def _get_interfaces(self):
-        # Remove this abstraction when SDI adds .status attribute to NoVersionsListed,
-        # NoCompatibleVersionsListed:
-        # https://github.com/canonical/serialized-data-interface/issues/26
-        try:
-            interfaces = get_interfaces(self)
-        except NoVersionsListed as err:
-            raise CheckFailedError(str(err), WaitingStatus)
-        except NoCompatibleVersions as err:
-            raise CheckFailedError(str(err), BlockedStatus)
-        except RelationDataError as err:
-            raise CheckFailedError(str(err), BlockedStatus)
-        return interfaces
-
-
-class CheckFailedError(Exception):
-    """Raise this exception if one of the checks in main fails."""
-
-    def __init__(self, msg, status_type=None):
-        super().__init__()
-
-        self.msg = msg
-        self.status_type = status_type
-        self.status = status_type(msg)
+        self.charm_reconciler.install_default_event_handlers()
 
 
 if __name__ == "__main__":

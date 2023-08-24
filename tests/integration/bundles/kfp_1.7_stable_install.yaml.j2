@@ -73,6 +73,7 @@ applications:
     charm: kfp-viz
     channel: 2.0/stable
     scale: 1
+    trust: true
 {% else %}
   kfp-api:
     charm: {{ kfp_api }}
@@ -103,6 +104,7 @@ applications:
     charm: {{ kfp_viz }}
     resources: {{ kfp_viz_resources }}
     scale: 1
+    trust: true
 {%- endif %}
 relations:
 - - kfp-api:kfp-api
