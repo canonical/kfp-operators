@@ -57,8 +57,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
         trust=True,
     )
 
+    # Wait for everything to deploy
     await ops_test.model.wait_for_idle(
-        apps=[CHARM_NAME], status="active", raise_on_blocked=False, timeout=60 * 10
+        status="active", raise_on_blocked=False, timeout=60 * 10
     )
 
 
