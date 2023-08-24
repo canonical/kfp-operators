@@ -174,6 +174,9 @@ class TestCharm:
         )
         assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
 
+        # remove redundant relation
+        await ops_test.juju("remove-relation", f"{APP_NAME}:mysql", "kfp-db:mysql")
+
     async def test_prometheus_grafana_integration(self, ops_test: OpsTest):
         """Deploy prometheus, grafana and required relations, then test the metrics."""
         prometheus = "prometheus-k8s"
@@ -240,3 +243,8 @@ class TestCharm:
         wait=wait_exponential(multiplier=1, min=1, max=10),
         reraise=True,
     )
+
+    async def test_remove_application(self, ops_test: OpsTest):
+        """Test that the application can be removed successfully."""
+        await ops_test.model.remove_application(app_name=APP_NAME, block_until_done=True)
+        assert APP_NAME not in ops_test.model.applications
