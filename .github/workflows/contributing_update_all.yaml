@@ -1,0 +1,13 @@
+name: "Update all Contributing Files"
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday at midnight UTC
+  workflow_dispatch:
+  push:
+
+jobs:
+  update-contributing:
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/contributing_update_all.yaml@main
+    with:
+      branch: 'main'
