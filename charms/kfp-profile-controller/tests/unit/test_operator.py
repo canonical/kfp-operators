@@ -49,7 +49,16 @@ def mocked_lightkube_client(mocker):
     yield mocked_lightkube_client
 
 
-def test_not_leader(harness, mocked_lightkube_client):
+@pytest.fixture()
+def mocked_kubernetes_service_patch(mocker):
+    """Mocks the KubernetesServicePatch for the charm."""
+    mocked_kubernetes_service_patch = mocker.patch(
+        "charm.KubernetesServicePatch", lambda x, y, service_name: None
+    )
+    yield mocked_kubernetes_service_patch
+
+
+def test_not_leader(harness, mocked_lightkube_client, mocked_kubernetes_service_patch):
     """Test when we are not the leader."""
     harness.begin_with_initial_hooks()
     # Assert that we are not Active, and that the leadership-gate is the cause.
@@ -57,7 +66,9 @@ def test_not_leader(harness, mocked_lightkube_client):
     assert harness.charm.model.unit.status.message.startswith("[leadership-gate]")
 
 
-def test_object_storage_relation_with_data(harness, mocked_lightkube_client):
+def test_object_storage_relation_with_data(
+    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
     """Test that if Leadership is Active, the object storage relation operates as expected.
 
     Note: See test_relation_components.py for an alternative way of unit testing Components without
@@ -77,7 +88,9 @@ def test_object_storage_relation_with_data(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.object_storage_relation.status, ActiveStatus)
 
 
-def test_object_storage_relation_without_data(harness, mocked_lightkube_client):
+def test_object_storage_relation_without_data(
+    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
     """Test that the object storage relation goes Blocked if no data is available."""
     # Arrange
     harness.begin()
@@ -93,7 +106,9 @@ def test_object_storage_relation_without_data(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.object_storage_relation.status, BlockedStatus)
 
 
-def test_object_storage_relation_without_relation(harness, mocked_lightkube_client):
+def test_object_storage_relation_without_relation(
+    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
     """Test that the object storage relation goes Blocked if no relation is established."""
     # Arrange
     harness.begin()
@@ -109,7 +124,9 @@ def test_object_storage_relation_without_relation(harness, mocked_lightkube_clie
     assert isinstance(harness.charm.object_storage_relation.status, BlockedStatus)
 
 
-def test_kubernetes_created_method(harness, mocked_lightkube_client):
+def test_kubernetes_created_method(
+    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
     """Test whether we try to create Kubernetes resources when we have leadership."""
     # Arrange
     # Needed because kubernetes component will only apply to k8s if we are the leader
@@ -136,7 +153,9 @@ def test_kubernetes_created_method(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
 
 
-def test_pebble_services_running(harness, mocked_lightkube_client):
+def test_pebble_services_running(
+    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
     harness.begin()
