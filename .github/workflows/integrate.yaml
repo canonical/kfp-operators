@@ -97,7 +97,7 @@ jobs:
           charmcraft-channel: latest/candidate
 
       - run: |
-          tox -e ${{ matrix.charm }}-integration
+          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration"
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
@@ -142,7 +142,7 @@ jobs:
           # Run integration tests against the 1.7 generic install bundle definition
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
           # and https://github.com/canonical/charmcraft/issues/1138
-          tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode
+          sg snap_microk8s -c "tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode"
 
       - name: Get all
         run: kubectl get all -A
