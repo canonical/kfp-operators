@@ -92,12 +92,12 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.24/stable
-          juju-channel: 2.9/stable
+          channel: 1.25-strict/stable
+          juju-channel: 3.1/stable
           charmcraft-channel: latest/candidate
 
       - run: |
-          sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
+          tox -e ${{ matrix.charm }}-integration
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
@@ -130,15 +130,10 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.24/stable
-          juju-channel: 2.9/stable
+          channel: 1.25-strict/stable
+          juju-channel: 3.1/stable
           charmcraft-channel: latest/candidate
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
-
-      # TODO: Remove once https://bugs.launchpad.net/juju/+bug/2024897 is fixed
-      - name: Refresh Juju snap
-        run: |
-          sudo snap refresh juju --revision 22345
 
       - name: Run test
         run: |
