@@ -45,7 +45,9 @@ jinja2==3.1.2
 jsonschema==4.17.3
     # via serialized-data-interface
 lightkube==0.14.0
-    # via charmed-kubeflow-chisme
+    # via
+    #   -r requirements.in
+    #   charmed-kubeflow-chisme
 lightkube-models==1.27.1.4
     # via lightkube
 markupsafe==2.1.3

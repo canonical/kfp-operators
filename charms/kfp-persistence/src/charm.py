@@ -9,11 +9,16 @@ https://github.com/canonical/kfp-operators/
 
 import logging
 
+import lightkube
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
+from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.components.serialised_data_interface_components import (
     SdiRelationDataReceiverComponent,
 )
+from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
+from lightkube.resources.core_v1 import ServiceAccount
+from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from ops import CharmBase, main
 
 from components.pebble_components import (
@@ -22,6 +27,8 @@ from components.pebble_components import (
 )
 
 log = logging.getLogger()
+
+K8S_RESOURCE_FILES = ["src/templates/auth_manifests.yaml.j2"]
 
 
 class KfpPersistenceOperator(CharmBase):
@@ -42,6 +49,21 @@ class KfpPersistenceOperator(CharmBase):
         self.kfp_api_relation = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
                 charm=self, name="relation:kfp-api", relation_name="kfp-api"
+            ),
+            depends_on=[self.leadership_gate],
+        )
+
+        self.kubernetes_resources = self.charm_reconciler.add(
+            component=KubernetesComponent(
+                charm=self,
+                name="kubernetes:auth",
+                resource_templates=K8S_RESOURCE_FILES,
+                krh_resource_types={ClusterRole, ClusterRoleBinding, ServiceAccount},
+                krh_labels=create_charm_default_labels(
+                    self.app.name, self.model.name, scope="auth"
+                ),
+                context_callable=lambda: {"app_name": self.app.name, "namespace": self.model.name},
+                lightkube_client=lightkube.Client(),
             ),
             depends_on=[self.leadership_gate],
         )
@@ -68,7 +90,7 @@ class KfpPersistenceOperator(CharmBase):
                     NAMESPACE=str(self.model.name),
                 ),
             ),
-            depends_on=[self.leadership_gate, self.kfp_api_relation],
+            depends_on=[self.leadership_gate, self.kfp_api_relation, self.kubernetes_resources],
         )
 
         self.charm_reconciler.install_default_event_handlers()
