@@ -9,8 +9,9 @@ import lightkube
 import pytest
 import yaml
 from lightkube import codecs
-from lightkube.generic_resource import create_global_resource
-from lightkube.resources.core_v1 import Namespace, Secret, ServiceAccount
+from lightkube.generic_resource import create_global_resource, create_namespaced_resource
+from lightkube.resources.apps_v1 import Deployment
+from lightkube.resources.core_v1 import ConfigMap, Namespace, Secret, Service, ServiceAccount
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
 
@@ -22,6 +23,10 @@ CHARM_NAME = METADATA["name"]
 MINIO_APP_NAME = "minio"
 MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
 
+PodDefault = create_namespaced_resource(
+    group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
+)
+
 
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest):
@@ -30,6 +35,13 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
     image_path = METADATA["resources"]["oci-image"]["upstream-source"]
     resources = {"oci-image": image_path}
+
+    # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
+    await ops_test.model.deploy(entity_url="admission-webhook", channel="latest/edge", trust=True)
+    # TODO: The webhook charm must be active before the metacontroller is deployed, due to the bug
+    # described here: https://github.com/canonical/metacontroller-operator/issues/86
+    # Drop this wait_for_idle once the above issue is closed
+    await ops_test.model.wait_for_idle(apps=["admission-webhook"], status="active")
 
     await ops_test.model.deploy(
         entity_url="metacontroller-operator",
@@ -186,3 +198,19 @@ async def test_minio_config_changed(ops_test: OpsTest):
     await assert_minio_secret(minio_access_key, minio_secret_key, ops_test)
 
     assert ops_test.model.applications[CHARM_NAME].units[0].workload_status == "active"
+
+
+async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
+    """Test that the sync webhook deploys the desired resources."""
+    # skipping kfp-launcher ConfigMap since the charm hardcodes KFP_DEFAULT_PIPELINE_ROOT to ""
+    desired_resources = [
+        (ConfigMap, "metadata-grpc-configmap"),
+        (Deployment, "ml-pipeline-visualizationserver"),
+        (Service, "ml-pipeline-visualizationserver"),
+        (Deployment, "ml-pipeline-ui-artifact"),
+        (Service, "ml-pipeline-ui-artifact"),
+        (PodDefault, "access-ml-pipeline"),
+        (Secret, "mlpipeline-minio-artifact"),
+    ]
+    for resource, name in desired_resources:
+        lightkube_client.get(resource, name=name, namespace=profile)

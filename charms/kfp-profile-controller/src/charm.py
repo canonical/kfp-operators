@@ -21,7 +21,9 @@ from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
+from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from lightkube.generic_resource import create_global_resource
+from lightkube.models.core_v1 import ServicePort
 from lightkube.resources.core_v1 import Secret
 from ops.charm import CharmBase
 from ops.main import main
@@ -58,6 +60,12 @@ class KfpProfileControllerOperator(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
+
+        # expose controller's port
+        http_port = ServicePort(CONTROLLER_PORT, name="http")
+        self.service_patcher = KubernetesServicePatch(
+            self, [http_port], service_name=f"{self.model.app.name}"
+        )
 
         self.charm_reconciler = CharmReconciler(self)
 
