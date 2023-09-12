@@ -21,9 +21,15 @@ def harness():
     return harness
 
 
-def test_not_leader(
-    harness,  # noqa F811
-):
+@pytest.fixture()
+def mocked_lightkube_client(mocker):
+    """Mocks the Lightkube Client in charm.py, returning a mock instead."""
+    mocked_lightkube_client = MagicMock()
+    mocker.patch("charm.lightkube.Client", return_value=mocked_lightkube_client)
+    yield mocked_lightkube_client
+
+
+def test_not_leader(harness, mocked_lightkube_client):
     """Test not a leader scenario."""
     harness.begin_with_initial_hooks()
     assert harness.charm.model.unit.status == WaitingStatus(
@@ -35,7 +41,7 @@ RELATION_NAME = "kfp-api"
 OTHER_APP_NAME = "kfp-api-provider"
 
 
-def test_kfp_api_relation_with_data(harness):
+def test_kfp_api_relation_with_data(harness, mocked_lightkube_client):
     """Test that if Leadership is Active, the kfp-api relation operates as expected."""
     # Arrange
     harness.begin()
@@ -51,7 +57,7 @@ def test_kfp_api_relation_with_data(harness):
     assert isinstance(harness.charm.kfp_api_relation.status, ActiveStatus)
 
 
-def test_kfp_api_relation_without_data(harness):
+def test_kfp_api_relation_without_data(harness, mocked_lightkube_client):
     """Test that the kfp-api relation goes Blocked if no data is available."""
     # Arrange
     harness.begin()
@@ -67,7 +73,7 @@ def test_kfp_api_relation_without_data(harness):
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
-def test_kfp_api_relation_without_relation(harness):
+def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
     """Test that the kfp-api relation goes Blocked if no relation is established."""
     # Arrange
     harness.begin()
@@ -83,7 +89,7 @@ def test_kfp_api_relation_without_relation(harness):
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
-def test_pebble_services_running(harness):
+def test_pebble_services_running(harness, mocked_lightkube_client):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
     harness.begin()
