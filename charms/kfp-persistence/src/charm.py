@@ -65,7 +65,6 @@ class KfpPersistenceOperator(CharmBase):
                     KFP_API_SERVICE_NAME=self.kfp_api_relation.component.get_data()[
                         "service-name"
                     ],
-                    NAMESPACE=str(self.model.name),
                 ),
             ),
             depends_on=[self.leadership_gate, self.kfp_api_relation],

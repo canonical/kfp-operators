@@ -14,7 +14,6 @@ class PesistenceAgentServiceConfig:
     """Defines configuration for PersistenceAgent Service."""
 
     KFP_API_SERVICE_NAME: str
-    NAMESPACE: str
 
 
 class PersistenceAgentPebbleService(PebbleServiceComponent):
@@ -43,7 +42,7 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
         except Exception as err:
             raise ValueError(f"{self.name}: configuration is not provided") from err
 
-        if len(service_config.KFP_API_SERVICE_NAME) == 0 or len(service_config.NAMESPACE) == 0:
+        if len(service_config.KFP_API_SERVICE_NAME) == 0:
             logger.info(f"{self.name}: configuration is not valid")
             return None
 
@@ -51,7 +50,7 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
         command = (
             "persistence_agent",
             "--logtostderr=true",
-            f"--namespace={service_config.NAMESPACE}",
+            "--namespace=",
             "--ttlSecondsAfterWorkflowFinish=86400",
             "--numWorker=2",
             f"--mlPipelineAPIServerName={service_config.KFP_API_SERVICE_NAME}",
@@ -88,7 +87,7 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
             return WaitingStatus(f"Configuration is not provided: {err}")
 
         # validate values
-        if len(service_config.KFP_API_SERVICE_NAME) == 0 or len(service_config.NAMESPACE) == 0:
+        if len(service_config.KFP_API_SERVICE_NAME) == 0:
             return WaitingStatus("Configuration is not valid")
 
         return super().get_status()
