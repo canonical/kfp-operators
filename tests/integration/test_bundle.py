@@ -64,7 +64,10 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
     await ops_test.model.deploy("minio", channel="ckf-1.7/stable", trust=True)
     await ops_test.model.deploy(
             "charmed-osm-mariadb-k8s", application_name="kfp-db", channel="latest/stable", trust=True
+    
     )
+    await ops_test.model.relate("argo-controller", "minio")
+
     await ops_test.model.wait_for_idle(
         apps=["argo-controller", "minio", "kfp-db"],
         status="active",
@@ -91,7 +94,6 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
     await ops_test.model.relate("kfp-api", "minio")
     await ops_test.model.relate("kfp-profile-controller", "minio")
     await ops_test.model.relate("kfp-ui", "minio")
-    await ops_test.model.relate("argo-controller", "minio")
 
     # Wait for everything to be up.  Note, at time of writing these charms would naturally go
     # into blocked during deploy while waiting for each other to satisfy relations, so we don't
