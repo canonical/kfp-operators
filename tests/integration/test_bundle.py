@@ -57,14 +57,6 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
     if rc != 0:
         raise RuntimeError(f"Failed to deploy bundle.  Got stdout:\n{stderr}\nand stderr:\n{stderr}")
 
-    # deploy all KFP charms that were built locally
-    for charm, path in built_charms.items():
-        metadata_file = Path(f"./charms/{charm}/metadata.yaml")
-        metadata = yaml.safe_load(metadata_file.read_text())
-        image_path = metadata["resources"]["oci-image"]["upstream-source"]
-        resources = {"oci-image": image_path}
-        await ops_test.model.deploy(charm, resources=resources, trust=True)
-
     # deploy argo-controller, minio separately, because those are PodSpec
     # charms and cannot be deployed as part of a bundle
     # for details refer to https://github.com/canonical/bundle-kubeflow/issues/693
@@ -73,6 +65,21 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
     await ops_test.model.deploy(
             "charmed-osm-mariadb-k8s", application_name="kfp-db", channel="latest/stable", trust=True
     )
+    await ops_test.model.wait_for_idle(
+        apps=["argo-controller", "minio", "kfp-db"],
+        status="active",
+        raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
+        raise_on_error=True,
+        timeout=2400
+    )
+
+    # deploy all KFP charms that were built locally
+    for charm, path in built_charms.items():
+        metadata_file = Path(f"./charms/{charm}/metadata.yaml")
+        metadata = yaml.safe_load(metadata_file.read_text())
+        image_path = metadata["resources"]["oci-image"]["upstream-source"]
+        resources = {"oci-image": image_path}
+        await ops_test.model.deploy(charm, resources=resources, trust=True)
 
     # add relations
     await ops_test.model.relate("kfp-api", "kfp-db")
@@ -93,7 +100,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
-        timeout=1800,
+        timeout=2400,
     )
 
 
