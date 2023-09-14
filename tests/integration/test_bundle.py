@@ -65,14 +65,17 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
         resources = {"oci-image": image_path}
         await ops_test.model.deploy(charm, resources=resources, trust=True)
 
-    # deploy argo-controller and minio separately, because those are PodSpec
+    # deploy argo-controller, minio separately, because those are PodSpec
     # charms and cannot be deployed as part of a bundle
     # for details refer to https://github.com/canonical/bundle-kubeflow/issues/693
     await ops_test.model.deploy("argo-controller", channel="3.3/stable", trust=True)
     await ops_test.model.deploy("minio", channel="ckf-1.7/stable", trust=True)
+    await ops_test.model.deploy(
+            "charmed-osm-mariadb-k8s", application_name="kfp-db", channel="latest/stable", trust=True
+    )
 
     # add relations
-    await ops_test.model.relate("kfp-api:relational-db", "kfp-db:database")
+    await ops_test.model.relate("kfp-api", "kfp-db")
     await ops_test.model.relate("kfp-api:kfp-api", "kfp-persistence:kfp-api")
     await ops_test.model.relate("kfp-api:kfp-api", "kfp-ui:kfp-api")
     await ops_test.model.relate("kfp-api:kfp-viz", "kfp-viz:kfp-viz")

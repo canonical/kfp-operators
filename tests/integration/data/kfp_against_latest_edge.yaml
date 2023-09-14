@@ -24,13 +24,11 @@ applications:
 #    charm: ch:kfp-api
 #    scale: 1
 #    trust: true
-  kfp-db:
-    charm: mysql-k8s
-    channel: 8.0/edge
-    scale: 1
-    options:
-      profile: testing
-    trust: true
+#  kfp-db:
+#    charm: charmed-osm-mariadb-k8s
+#    channel: latest/stable
+#    scale: 1
+#    trust: true
 #  kfp-persistence:
 #    channel: latest/edge
 #    charm: ch:kfp-persistence
