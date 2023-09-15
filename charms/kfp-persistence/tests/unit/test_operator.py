@@ -21,7 +21,7 @@ def harness():
     return harness
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture()
 def mocked_lightkube_client(mocker):
     """Mocks the Lightkube Client in charm.py, returning a mock instead."""
     mocked_lightkube_client = MagicMock()
