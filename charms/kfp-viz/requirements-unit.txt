@@ -82,7 +82,7 @@ websocket-client==1.6.3
     # via
     #   -r ./charms/kfp-viz/requirements.txt
     #   ops
-zipp==3.16.2
+zipp==3.17.0
     # via
     #   -r ./charms/kfp-viz/requirements.txt
     #   importlib-resources

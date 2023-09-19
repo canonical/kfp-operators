@@ -78,7 +78,7 @@ urllib3==2.0.4
     # via
     #   -r ./charms/kfp-persistence/requirements.txt
     #   requests
-zipp==3.16.2
+zipp==3.17.0
     # via
     #   -r ./charms/kfp-persistence/requirements.txt
     #   importlib-resources

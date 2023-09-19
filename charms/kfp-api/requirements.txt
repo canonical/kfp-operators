@@ -89,5 +89,5 @@ urllib3==2.0.4
     # via requests
 websocket-client==1.6.3
     # via ops
-zipp==3.16.2
+zipp==3.17.0
     # via importlib-resources

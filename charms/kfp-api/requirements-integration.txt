@@ -45,7 +45,7 @@ charset-normalizer==3.2.0
     # via
     #   -r ./charms/kfp-api/requirements.txt
     #   requests
-cryptography==41.0.3
+cryptography==41.0.4
     # via
     #   paramiko
     #   pyopenssl
@@ -318,7 +318,7 @@ trio==0.22.2
     #   trio-websocket
 trio-websocket==0.10.4
     # via selenium
-typing-extensions==4.7.1
+typing-extensions==4.8.0
     # via
     #   ipython
     #   typing-inspect
@@ -343,7 +343,7 @@ wsproto==1.2.0
     # via
     #   selenium-wire
     #   trio-websocket
-zipp==3.16.2
+zipp==3.17.0
     # via
     #   -r ./charms/kfp-api/requirements.txt
     #   importlib-resources

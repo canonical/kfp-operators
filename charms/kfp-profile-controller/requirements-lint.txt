@@ -55,7 +55,7 @@ tomli==2.0.1
     #   -r ./charms/kfp-profile-controller/requirements-fmt.txt
     #   black
     #   pyproject-flake8
-typing-extensions==4.7.1
+typing-extensions==4.8.0
     # via
     #   -r ./charms/kfp-profile-controller/requirements-fmt.txt
     #   black
