@@ -76,7 +76,7 @@ class KfpApiOperator(CharmBase):
             f"--sampleconfig={SAMPLE_CONFIG} "
             "-logtostderr=true "
         )
-        self._container_name = "ml-pipeline-api-server"
+        self._container_name = "apiserver"
         self._database_name = "mlpipeline"
         self._container = self.unit.get_container(self._container_name)
 
