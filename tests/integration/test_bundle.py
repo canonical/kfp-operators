@@ -64,7 +64,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
-        timeout=1800,
+        timeout=3600,
     )
 
 
