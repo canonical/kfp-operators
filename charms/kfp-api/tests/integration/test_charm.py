@@ -67,7 +67,7 @@ class TestCharm:
             status="active",
             raise_on_blocked=False,
             raise_on_error=False,
-            timeout=90 * 220,
+            timeout=90 * 20,
         )
 
     # FIXME: this test case belongs in unit tests as it is asserting the status of the
