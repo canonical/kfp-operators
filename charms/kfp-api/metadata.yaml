@@ -9,7 +9,7 @@ website: https://charmhub.io/kfp-api
 source: https://github.com/canonical/kfp-operators
 issues: https://github.com/canonical/kfp-operators/issues
 containers:
-  ml-pipeline-api-server:
+  apiserver:
     resource: oci-image
 resources:
   oci-image:
