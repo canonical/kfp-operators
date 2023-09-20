@@ -100,7 +100,7 @@ class KfpApiOperator(CharmBase):
         # setup events to be handled by main event handler
         self.framework.observe(self.on.leader_elected, self._on_event)
         self.framework.observe(self.on.config_changed, self._on_event)
-        self.framework.observe(self.on.ml_pipeline_api_server_pebble_ready, self._on_event)
+        self.framework.observe(self.on.apiserver_pebble_ready, self._on_event)
         change_events = [
             self.on["object-storage"].relation_changed,
             self.on["kfp-viz"].relation_changed,
