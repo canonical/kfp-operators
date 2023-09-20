@@ -1,6 +1,6 @@
 applications:
   argo-controller:
-    channel: latest/edge
+    channel: 3.3/stable
     charm: ch:argo-controller
     scale: 1
     trust: true
