@@ -155,7 +155,7 @@ class KfpUiOperator(CharmBase):
                 },
                 "containers": [
                     {
-                        "name": "ml-pipeline-ui",
+                        "name": "ml-frontend",
                         "imageDetails": image_details,
                         "ports": [
                             {
