@@ -3,6 +3,7 @@ summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   The Kubeflow Pipelines visualization service is responsible for generating
   a visualization from a request provided by the API server.
+docs: https://discourse.charmhub.io/t/8230
 containers:
   ml-pipeline-visualizationserver:
     resource: oci-image
