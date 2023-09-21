@@ -9,7 +9,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: charmedkubeflow/frontend:2.0.0-alpha.7_22.04_1
+    upstream-source: charmedkubeflow/frontend:2.0.0_22.04_1
 requires:
   object-storage:
     interface: object-storage
