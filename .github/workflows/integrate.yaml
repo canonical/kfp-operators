@@ -27,7 +27,7 @@ jobs:
 
   lint:
     name: Lint
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -46,7 +46,7 @@ jobs:
 
   unit:
     name: Unit tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -65,7 +65,7 @@ jobs:
 
   integration:
     name: Integration tests (microk8s)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -104,7 +104,7 @@ jobs:
 
   test-bundle:
     name: Test the bundle
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
 
     steps:
       # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
