@@ -12,7 +12,7 @@ charset-normalizer==3.2.0
     # via requests
 idna==3.4
     # via requests
-importlib-resources==6.0.1
+importlib-resources==6.1.0
     # via jsonschema
 jsonschema==4.17.3
     # via serialized-data-interface
@@ -34,7 +34,7 @@ requests==2.31.0
     # via serialized-data-interface
 serialized-data-interface==0.7.0
     # via -r ./charms/kfp-persistence/requirements.in
-urllib3==2.0.4
+urllib3==2.0.5
     # via requests
-zipp==3.16.2
+zipp==3.17.0
     # via importlib-resources

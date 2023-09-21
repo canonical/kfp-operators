@@ -24,7 +24,7 @@ idna==3.4
     # via
     #   -r ./charms/kfp-persistence/requirements.txt
     #   requests
-importlib-resources==6.0.1
+importlib-resources==6.1.0
     # via
     #   -r ./charms/kfp-persistence/requirements.txt
     #   jsonschema
@@ -74,11 +74,11 @@ serialized-data-interface==0.7.0
     # via -r ./charms/kfp-persistence/requirements.txt
 tomli==2.0.1
     # via pytest
-urllib3==2.0.4
+urllib3==2.0.5
     # via
     #   -r ./charms/kfp-persistence/requirements.txt
     #   requests
-zipp==3.16.2
+zipp==3.17.0
     # via
     #   -r ./charms/kfp-persistence/requirements.txt
     #   importlib-resources

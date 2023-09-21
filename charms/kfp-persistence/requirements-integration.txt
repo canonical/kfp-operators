@@ -37,7 +37,7 @@ charset-normalizer==3.2.0
     # via
     #   -r ./charms/kfp-persistence/requirements.txt
     #   requests
-cryptography==41.0.3
+cryptography==41.0.4
     # via
     #   paramiko
     #   pyopenssl
@@ -69,7 +69,7 @@ idna==3.4
     #   -r ./charms/kfp-persistence/requirements.txt
     #   requests
     #   trio
-importlib-resources==6.0.1
+importlib-resources==6.1.0
     # via
     #   -r ./charms/kfp-persistence/requirements.txt
     #   jsonschema
@@ -254,13 +254,13 @@ trio==0.22.2
     #   trio-websocket
 trio-websocket==0.10.4
     # via selenium
-typing-extensions==4.7.1
+typing-extensions==4.8.0
     # via
     #   ipython
     #   typing-inspect
 typing-inspect==0.9.0
     # via juju
-urllib3[socks]==2.0.4
+urllib3[socks]==2.0.5
     # via
     #   -r ./charms/kfp-persistence/requirements.txt
     #   kubernetes
@@ -276,7 +276,7 @@ wsproto==1.2.0
     # via
     #   selenium-wire
     #   trio-websocket
-zipp==3.16.2
+zipp==3.17.0
     # via
     #   -r ./charms/kfp-persistence/requirements.txt
     #   importlib-resources
