@@ -1,8 +1,9 @@
 applications:
   argo-controller:
-    channel: latest/edge
+    channel: 3.3/stable
     charm: ch:argo-controller
     scale: 1
+    trust: true
   istio-ingressgateway:
     _github_repo_name: istio-operators
     channel: latest/edge
