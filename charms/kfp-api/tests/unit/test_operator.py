@@ -41,7 +41,7 @@ def harness() -> Harness:
     harness = Harness(KfpApiOperator)
 
     # setup container networking simulation
-    harness.set_can_connect("ml-pipeline-api-server", True)
+    harness.set_can_connect("apiserver", True)
 
     return harness
 
@@ -53,7 +53,7 @@ class TestCharm:
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_not_leader(self, k8s_resource_handler: MagicMock, harness: Harness):
         harness.begin_with_initial_hooks()
-        harness.container_pebble_ready("ml-pipeline-api-server")
+        harness.container_pebble_ready("apiserver")
         assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
 
     @pytest.mark.parametrize(
@@ -110,7 +110,7 @@ class TestCharm:
     ):
         harness.set_leader(True)
         harness.begin()
-        harness.container_pebble_ready("ml-pipeline-api-server")
+        harness.container_pebble_ready("apiserver")
 
         mysql_app = "mysql_app"
         mysql_unit = f"{mysql_app}/0"
@@ -133,7 +133,7 @@ class TestCharm:
     def test_mysql_relation_too_many_relations(self, harness: Harness):
         harness.set_leader(True)
         harness.begin()
-        harness.container_pebble_ready("ml-pipeline-api-server")
+        harness.container_pebble_ready("apiserver")
 
         mysql_app = "mysql_app"
         mysql_unit = f"{mysql_app}/0"
@@ -151,7 +151,7 @@ class TestCharm:
     def test_kfp_viz_relation_missing(self, harness: Harness):
         harness.set_leader(True)
         harness.begin()
-        harness.container_pebble_ready("ml-pipeline-api-server")
+        harness.container_pebble_ready("apiserver")
 
         # check for correct error message when retrieving missing relation data
         interfaces = harness.charm._get_interfaces()
@@ -311,7 +311,7 @@ class TestCharm:
     ):
         harness.set_leader(True)
         harness.begin()
-        harness.container_pebble_ready("ml-pipeline-api-server")
+        harness.container_pebble_ready("apiserver")
 
         other_app = "other-app"
         other_unit = f"{other_app}/0"
@@ -393,7 +393,7 @@ class TestCharm:
         harness.update_relation_data(kfpapi_rel_id, "kfp-api-subscriber", kfpapi_data)
 
         harness.begin_with_initial_hooks()
-        harness.container_pebble_ready("ml-pipeline-api-server")
+        harness.container_pebble_ready("apiserver")
         this_app_name = harness.charm.model.app.name
 
         # Test that we sent data to anyone subscribing to us
@@ -413,12 +413,12 @@ class TestCharm:
         k8s_resource_handler.apply.assert_called()
 
         # test Pebble
-        assert harness.charm.container.get_service("ml-pipeline-api-server").is_running()
-        pebble_plan = harness.get_container_pebble_plan("ml-pipeline-api-server")
+        assert harness.charm.container.get_service("apiserver").is_running()
+        pebble_plan = harness.get_container_pebble_plan("apiserver")
         assert pebble_plan
         assert pebble_plan.services
         pebble_plan_info = pebble_plan.to_dict()
-        pebble_exec_command = pebble_plan_info["services"]["ml-pipeline-api-server"]["command"]
+        pebble_exec_command = pebble_plan_info["services"]["apiserver"]["command"]
         exec_command = (
             # TODO: Remove 'sleep' as soon as a fix for
             # https://github.com/canonical/pebble/issues/240 is provided
@@ -429,7 +429,7 @@ class TestCharm:
             "-logtostderr=true "
         )
         assert pebble_exec_command == f"bash -c '{exec_command}'"
-        test_env = pebble_plan_info["services"]["ml-pipeline-api-server"]["environment"]
+        test_env = pebble_plan_info["services"]["apiserver"]["environment"]
         # there should be 1 environment variable
         assert 1 == len(test_env)
         assert "test_model" == test_env["POD_NAMESPACE"]
@@ -450,7 +450,7 @@ class TestCharm:
         """Test update status handler."""
         harness.set_leader(True)
         harness.begin_with_initial_hooks()
-        harness.container_pebble_ready("ml-pipeline-api-server")
+        harness.container_pebble_ready("apiserver")
 
         # test successful update status
         _apply_k8s_resources.reset_mock()

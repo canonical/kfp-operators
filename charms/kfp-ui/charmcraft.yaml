@@ -11,3 +11,12 @@ bases:
 parts:
   charm:
     charm-python-packages: [setuptools, pip]  # Fixes install of some packages
+    # add binary packages due to https://github.com/pypa/setuptools_scm/issues/918
+    charm-binary-python-packages:
+      - anyio
+      - attrs
+      - httpcore
+      - httpx
+      - "jsonschema==4.17.3"
+      - "tenacity==8.2.3"
+      - "urllib3==2.0.5"
