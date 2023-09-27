@@ -483,7 +483,15 @@ class KfpApiOperator(CharmBase):
         self._get_db_relation("relational-db")
 
         # retrieve database data from library
-        relation_data = self.database.fetch_relation_data()
+        try:
+            # if called in response to a '*-relation-broken' event, this will raise an exception
+            relation_data = self.database.fetch_relation_data()
+        except KeyError:
+            self.logger.error("Failed to retrieve relation data from library")
+            raise GenericCharmRuntimeError(
+                "Failed to retrieve relational-db data. This is to be expected if executed in"
+                " response to a '*-relation-broken' event"
+            )
         # parse data in relation
         # this also validates expected data by means of KeyError exception
         for val in relation_data.values():
