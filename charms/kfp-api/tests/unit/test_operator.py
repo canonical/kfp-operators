@@ -11,6 +11,8 @@ from ops.testing import Harness
 
 from charm import ErrorWithStatus, KfpApiOperator
 
+KFP_API_CONTAINER_NAME = "apiserver"
+
 
 @pytest.fixture()
 def mocked_resource_handler(mocker):
