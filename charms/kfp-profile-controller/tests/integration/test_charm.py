@@ -47,6 +47,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
         entity_url="metacontroller-operator",
         # TODO: Revert once metacontroller stable supports k8s 1.22
         channel="latest/edge",
+        # Remove this config option after the metacontroller-operator is updated to v3
         config={"metacontroller-image": "docker.io/metacontrollerio/metacontroller:v3.0.0"},
         trust=True,
     )
