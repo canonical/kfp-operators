@@ -41,7 +41,8 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
                         "override": "replace",
                         "summary": "scheduled workflow controller service",
                         "startup": "enabled",
-                        "command": f"/bin/controller --logtostderr=true --namespace={self.namespace}",
+                        "command": "/bin/controller --logtostderr=true"
+                        " --namespace={self.namespace}",
                         "environment": self.environment,
                     }
                 },
