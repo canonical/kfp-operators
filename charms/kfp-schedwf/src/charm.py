@@ -68,6 +68,7 @@ class KfpSchedwf(CharmBase):
                 container_name="ml-pipeline-scheduledworkflow",
                 service_name="controller",
                 timezone=self.model.config["timezone"],
+                namespace=self.model.name,
             ),
             depends_on=[self.kubernetes_resources],
         )
