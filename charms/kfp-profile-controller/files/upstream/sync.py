@@ -144,7 +144,7 @@ def server_factory(visualization_server_image,
     Returns an HTTPServer populated with Handler with customized settings
     """
     class Controller(BaseHTTPRequestHandler):
-        def sync(self, parent, children):
+        def sync(self, parent, attachments):
             logger.info("Got new request")
 
             # parent is a namespace
@@ -155,7 +155,7 @@ def server_factory(visualization_server_image,
 
             if pipeline_enabled != "true":
                 logger.info(f"Namespace not in scope, no action taken (metadata.labels.pipelines.kubeflow.org/enabled = {pipeline_enabled}, must be 'true')")
-                return {"status": {}, "children": []}
+                return {"status": {}, "attachments": []}
 
             desired_configmap_count = 1
             desired_resources = []
@@ -177,13 +177,13 @@ def server_factory(visualization_server_image,
             # Compute status based on observed state.
             desired_status = {
                 "kubeflow-pipelines-ready":
-                    len(children["Secret.v1"]) == 1 and
-                    len(children["ConfigMap.v1"]) == desired_configmap_count and
-                    len(children["Deployment.apps/v1"]) == 2 and
-                    len(children["Service.v1"]) == 2 and
+                    len(attachments["Secret.v1"]) == 1 and
+                    len(attachments["ConfigMap.v1"]) == desired_configmap_count and
+                    len(attachments["Deployment.apps/v1"]) == 2 and
+                    len(attachments["Service.v1"]) == 2 and
                     # TODO CANONICAL: This only works if istio is available.  Disabled for now
-                    # len(children["DestinationRule.networking.istio.io/v1alpha3"]) == 1 and
-                    # len(children["AuthorizationPolicy.security.istio.io/v1beta1"]) == 1 and
+                    # len(attachments["DestinationRule.networking.istio.io/v1alpha3"]) == 1 and
+                    # len(attachments["AuthorizationPolicy.security.istio.io/v1beta1"]) == 1 and
                     "True" or "False"
             }
 
@@ -470,13 +470,14 @@ def server_factory(visualization_server_image,
                 },
             })
 
-            return {"status": desired_status, "children": desired_resources}
+            return {"status": desired_status, "attachments": desired_resources}
 
         def do_POST(self):
             # Serve the sync() function as a JSON webhook.
             observed = json.loads(
                 self.rfile.read(int(self.headers.get("content-length"))))
-            desired = self.sync(observed["parent"], observed["children"])
+            logger.info(f"Request is  {observed}")
+            desired = self.sync(observed["object"], observed["attachments"])
 
             self.send_response(200)
             self.send_header("Content-type", "application/json")

@@ -35,8 +35,8 @@ from components.pebble_components import (
 
 logger = logging.getLogger(__name__)
 
-CompositeController = create_global_resource(
-    "metacontroller.k8s.io", "v1alpha1", "CompositeController", "compositecontrollers"
+DecoratorController = create_global_resource(
+    "metacontroller.k8s.io", "v1alpha1", "DecoratorController", "decoratorcontrollers"
 )
 CONTROLLER_PORT = 80
 DISABLE_ISTIO_SIDECAR = "false"
@@ -48,6 +48,7 @@ KFP_DEFAULT_PIPELINE_ROOT = ""
 KFP_IMAGES_VERSION = "2.0.0-alpha.7"
 METADATA_GRPC_SERVICE_HOST = "mlmd.kubeflow"
 METADATA_GRPC_SERVICE_PORT = "8080"
+NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"
 SYNC_CODE_FILE = Path("files/upstream/sync.py")
 SYNC_CODE_DESTINATION_PATH = "/hooks/sync.py"
 
@@ -91,7 +92,7 @@ class KfpProfileControllerOperator(CharmBase):
                 charm=self,
                 name="kubernetes:secrets-and-compositecontroller",
                 resource_templates=K8S_RESOURCE_FILES,
-                krh_resource_types={Secret, CompositeController},
+                krh_resource_types={Secret, DecoratorController},
                 krh_labels=create_charm_default_labels(
                     self.app.name,
                     self.model.name,
@@ -111,6 +112,7 @@ class KfpProfileControllerOperator(CharmBase):
                         )
                     ).decode("utf-8"),
                     "minio_secret_name": f"{self.model.app.name}-minio-credentials",
+                    "label": NAMESPACE_LABEL,
                 },
                 lightkube_client=lightkube.Client(),
             ),
