@@ -29,6 +29,14 @@ def mocked_lightkube_client(mocker):
     yield mocked_lightkube_client
 
 
+@pytest.fixture()
+def mocked_kubernetes_client(mocker):
+    """Mocks the kubernetes client in sa token component."""
+    mocked_kubernetes_client = MagicMock()
+    mocker.patch("charm.SaTokenComponent.kubernetes_client")
+    yield mocked_kubernetes_client
+
+
 def test_not_leader(harness, mocked_lightkube_client):
     """Test not a leader scenario."""
     harness.begin_with_initial_hooks()
@@ -89,7 +97,7 @@ def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
-def test_pebble_services_running(harness, mocked_lightkube_client):
+def test_pebble_services_running(harness, mocked_lightkube_client, mocked_kubernetes_client):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
     harness.begin()
@@ -101,6 +109,7 @@ def test_pebble_services_running(harness, mocked_lightkube_client):
     # * object_storage_relation_component to be active and executed, and have data that can be
     #   returned
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.sa_token.get_status = MagicMock(return_value=ActiveStatus())
     harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
 
     # Act
