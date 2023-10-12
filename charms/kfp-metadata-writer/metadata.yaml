@@ -1,0 +1,33 @@
+name: kfp-metadata-writer
+summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
+description: |
+  Machine learning (ML) toolkit that is dedicated to making deployments
+  of ML workflows on Kubernetes simple, portable, and scalable.
+docs: https://discourse.charmhub.io/t/12108
+website: https://charmhub.io/kfp-metadata-writer
+source: https://github.com/canonical/kfp-operators
+containers:
+  kfp-metadata-writer:
+    resource: oci-image
+resources:
+  oci-image:
+    type: oci-image
+    description: OCI image for KFP Metadata Writer
+    upstream-source: gcr.io/ml-pipeline/metadata-writer:2.0.1
+requires:
+  grpc:
+    interface: grpc
+    schema:
+      v1:
+        provides:
+          type: object
+          properties:
+            service:
+              type: string
+            port:
+              type: string
+          required:
+          - service
+          - port
+    versions: [v1]
+    __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/grpc.yaml

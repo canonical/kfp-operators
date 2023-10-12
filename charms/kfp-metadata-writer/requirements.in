@@ -1,0 +1,4 @@
+charmed-kubeflow-chisme >= 0.2.0
+lightkube
+ops
+serialized-data-interface
