@@ -193,3 +193,16 @@ async def test_viz_server_healthcheck(ops_test: OpsTest):
     result_status, result_text = await fetch_response(url=f"http://{url}:8888", headers=headers)
 
     assert result_status == 200
+
+
+# ---- KFP UI focused test cases
+async def test_ui_server_healthcheck(ops_test: OpsTest):
+    """Run a healthcheck on the ui server endpoint."""
+    status = await ops_test.model.get_status()
+    units = status["applications"]["kfp-ui"]["units"]
+    url = units["kfp-ui/0"]["address"]
+    headers = {"kubeflow-userid": "user"}
+    import pdb; pdb.set_trace()
+    result_status, result_text = await fetch_response(url=f"http://{url}:3000", headers=headers)
+
+    assert result_status == 200
