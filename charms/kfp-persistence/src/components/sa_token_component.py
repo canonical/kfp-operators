@@ -115,4 +115,4 @@ class SaTokenComponent(Component):
         """
         if not Path(self._path, self._filename).is_file():
             raise GenericCharmRuntimeError("SA token file is not present in charm")
-        return ActiveStatus
+        return ActiveStatus()
