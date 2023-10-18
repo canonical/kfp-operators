@@ -96,10 +96,23 @@ class SaTokenComponent(Component):
         with open(Path(path, filename), "w") as token_file:
             token_file.write(token)
 
-    def get_status(self) -> StatusBase:
-        """Return the status of this component."""
+    def _configure_app_leader(self, event) -> None:
+        """Generate and save the SA token file.
+
+            Raises:
+                GenericCharmRuntimeError if the file could not be created.
+        """
         try:
             self._generate_and_save_token(self._path, self._filename)
         except (RuntimeError, ApiException) as e:
             raise GenericCharmRuntimeError("Failed to create and save sa token") from e
-        return ActiveStatus()
+
+    def get_status(self) -> StatusBase:
+        """Return ActiveStatus if the SA token file is present.
+
+            Raises:
+                GenericCharmRuntimeError if the file is not present in the charm.
+        """
+        if not Path(self._path, self._filename).is_file():
+            raise GenericCharmRuntimeError("SA token file is not present in charm")
+        return ActiveStatus
