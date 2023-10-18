@@ -91,7 +91,7 @@ class KfpPersistenceOperator(CharmBase):
                 path=SA_TOKEN_PATH,
                 expiration=4294967296,
             ),
-            depends_on=[self.kubernetes_resources],
+            depends_on=[self.leadership_gate, self.kubernetes_resources],
         )
         self.persistenceagent_container = self.charm_reconciler.add(
             component=PersistenceAgentPebbleService(
