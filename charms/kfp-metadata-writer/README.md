@@ -8,6 +8,6 @@ Metadata Writer (see [CharmHub](https://charmhub.io/?q=kfp-metadata-writer)).
 
 To install Kubeflow Pipelines Metadata Writer, run:
 
-    juju deploy kfp-metadata-writer
+    juju deploy kfp-metadata-writer --trust
 
 For more information, see https://juju.is/docs
