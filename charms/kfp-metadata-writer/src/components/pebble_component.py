@@ -26,10 +26,10 @@ class KfpMetadataWriterPebbleService(PebbleServiceComponent):
     ):
         """Pebble service container component in order to configure Pebble layer
 
-            Args:
-                namespace_to_watch (str): The namespace in which the metadata-writer workload
-                will look for pods. Matching upstream manifests, this defaults to "" in order
-                for the component to look for pods in all namespaces.
+        Args:
+            namespace_to_watch (str): The namespace in which the metadata-writer workload
+            will look for pods. Matching upstream manifests, this defaults to "" in order
+            for the component to look for pods in all namespaces.
         """
         self.namespace_to_watch = namespace_to_watch
         super().__init__(*args, **kwargs)
