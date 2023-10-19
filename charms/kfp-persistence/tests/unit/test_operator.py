@@ -1,9 +1,10 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+from charmed_kubeflow_chisme.exceptions import GenericCharmRuntimeError
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
@@ -27,6 +28,14 @@ def mocked_lightkube_client(mocker):
     mocked_lightkube_client = MagicMock()
     mocker.patch("charm.lightkube.Client", return_value=mocked_lightkube_client)
     yield mocked_lightkube_client
+
+
+@pytest.fixture()
+def mocked_kubernetes_client(mocker):
+    """Mocks the kubernetes client in sa token component."""
+    mocked_kubernetes_client = MagicMock()
+    mocker.patch("charm.SaTokenComponent.kubernetes_client")
+    yield mocked_kubernetes_client
 
 
 def test_not_leader(harness, mocked_lightkube_client):
@@ -89,6 +98,33 @@ def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
+def test_no_sa_token_file(harness, mocked_kubernetes_client, mocked_lightkube_client):
+    """Test the unit status when the SA token file is missing."""
+    harness.begin()
+    harness.set_can_connect("persistenceagent", True)
+
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.kubernetes_resources.component.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
+    add_sdi_relation_to_harness(harness, "kfp-api", data=MOCK_KFP_API_DATA)
+    harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
+
+    with pytest.raises(GenericCharmRuntimeError) as err:
+        harness.charm.sa_token.get_status()
+
+    assert err.value.msg == "SA token file is not present in charm"
+    # The base charm arbitrarily sets the unit status to BlockedStatus
+    # We should fix this in charmed-kubeflow-chisme as it doesn't really
+    # show the actual error and can be misleading
+    assert isinstance(harness.charm.unit.status, BlockedStatus)
+    assert (
+        harness.charm.unit.status.message
+        == "[sa-token:persistenceagent] Failed to compute status.  See logs for details."
+    )
+
+
+@patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/persistenceagent-sa-token")
 def test_pebble_services_running(harness, mocked_lightkube_client):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
@@ -101,6 +137,7 @@ def test_pebble_services_running(harness, mocked_lightkube_client):
     # * object_storage_relation_component to be active and executed, and have data that can be
     #   returned
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.sa_token.get_status = MagicMock(return_value=ActiveStatus())
     harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
 
     # Act
