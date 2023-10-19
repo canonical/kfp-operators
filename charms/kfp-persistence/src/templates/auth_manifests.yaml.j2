@@ -54,5 +54,7 @@ subjects:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ app_name }}-sa
+  labels:
+    app: {{ app_name }}
+  name: {{ sa_name }}
   namespace: {{ namespace }}
