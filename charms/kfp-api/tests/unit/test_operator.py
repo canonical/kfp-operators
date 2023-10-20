@@ -108,6 +108,7 @@ class TestCharm:
         expected_returned_data,
         expected_raises,
         expected_status,
+        mocked_lightkube_client,
         harness: Harness,
     ):
         harness.set_leader(True)
@@ -132,7 +133,7 @@ class TestCharm:
             harness.charm._get_db_data()
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_mysql_relation_too_many_relations(self, harness: Harness):
+    def test_mysql_relation_too_many_relations(self, mocked_lightkube_client, harness: Harness):
         harness.set_leader(True)
         harness.begin()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
@@ -150,7 +151,7 @@ class TestCharm:
         )
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_kfp_viz_relation_missing(self, harness: Harness):
+    def test_kfp_viz_relation_missing(self, mocked_lightkube_client, harness: Harness):
         harness.set_leader(True)
         harness.begin()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
@@ -309,6 +310,7 @@ class TestCharm:
         expected_returned_data,
         expected_raises,
         expected_status,
+        mocked_lightkube_client,
         harness: Harness,
     ):
         harness.set_leader(True)
@@ -432,21 +434,17 @@ class TestCharm:
         )
         assert pebble_exec_command == f"bash -c '{exec_command}'"
         test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
-        # there should be 1 environment variable
-        assert 1 == len(test_env)
         assert "test_model" == test_env["POD_NAMESPACE"]
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator._apply_k8s_resources")
     @patch("charm.KfpApiOperator._check_status")
-    @patch("charm.KfpApiOperator._generate_config")
-    @patch("charm.KfpApiOperator._upload_files_to_container")
+    @patch("charm.KfpApiOperator._generate_environment")
     def test_update_status(
         self,
         _apply_k8s_resources: MagicMock,
         _check_status: MagicMock,
-        _generate_config: MagicMock,
-        _upload_files_to_conainer: MagicMock,
+        _generate_environment: MagicMock,
         harness: Harness,
     ):
         """Test update status handler."""
@@ -456,11 +454,9 @@ class TestCharm:
 
         # test successful update status
         _apply_k8s_resources.reset_mock()
-        _upload_files_to_conainer.reset_mock()
         harness.charm.on.update_status.emit()
         # this will enforce the design in which main event handler is executed in update-status
         _apply_k8s_resources.assert_called()
-        _upload_files_to_conainer.assert_called()
         # check status should be called
         _check_status.assert_called()
 

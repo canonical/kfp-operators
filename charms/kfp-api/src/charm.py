@@ -7,7 +7,6 @@
 https://github.com/canonical/kfp-operators/
 """
 
-import json
 import logging
 from pathlib import Path
 
@@ -175,9 +174,7 @@ class KfpApiOperator(CharmBase):
     @property
     def service_environment(self):
         """Return environment variables based on model configuration."""
-        ret_env_vars = {"POD_NAMESPACE": self.model.name}
-
-        return ret_env_vars
+        return self._generate_environment()
 
     @property
     def _kfp_api_layer(self) -> Layer:
@@ -210,64 +207,60 @@ class KfpApiOperator(CharmBase):
 
         return Layer(layer_config)
 
-    def _generate_config(self, interfaces):
-        """Generate configuration based on supplied data.
+    def _generate_environment(self) -> dict:
+        """Generate environment based on supplied data.
 
         Configuration is generated based on:
         - Supplied interfaces.
         - Database data: from MySQL relation data or from data platform library.
         - Model configuration.
+
+        Return:
+            env_vars(dict): a dictionary of environment variables for the api server.
         """
 
-        config = self.model.config
         try:
+            interfaces = self._get_interfaces()
             db_data = self._get_db_data()
-            os = self._get_object_storage(interfaces)
-            viz = self._get_viz(interfaces)
+            object_storage = self._get_object_storage(interfaces)
+            viz_data = self._get_viz(interfaces)
         except ErrorWithStatus as error:
             self.logger.error("Failed to generate container configuration.")
             raise error
 
-        # at this point all data is correctly populated and proper config can be generated
-        config_json = {
-            "DBConfig": {
-                "ConMaxLifeTime": "120s",
-                "DBName": db_data["db_name"],
-                "DriverName": "mysql",
-                "GroupConcatMaxLen": "4194304",
-                "Host": db_data["db_host"],
-                "Password": db_data["db_password"],
-                "Port": db_data["db_port"],
-                "User": db_data["db_username"],
-            },
-            "ObjectStoreConfig": {
-                "AccessKey": os["access-key"],
-                "BucketName": config["object-store-bucket-name"],
-                "Host": f"{os['service']}.{os['namespace']}",
-                "Multipart": {"Disable": "true"},
-                "PipelinePath": "pipelines",
-                "Port": str(os["port"]),
-                "Region": "",
-                "SecretAccessKey": os["secret-key"],
-                "Secure": str(os["secure"]).lower(),
-            },
-            "ARCHIVE_CONFIG_LOG_FILE_NAME": config["log-archive-filename"],
-            "ARCHIVE_CONFIG_LOG_PATH_PREFIX": config["log-archive-prefix"],
-            "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": str(
-                config["auto-update-default-version"]
-            ).lower(),
-            "CACHE_IMAGE": config["cache-image"],
-            "CACHE_NODE_RESTRICTIONS": "false",
-            "CacheEnabled": str(config["cache-enabled"]).lower(),
-            "DefaultPipelineRunnerServiceAccount": config["runner-sa"],
-            "InitConnectionTimeout": config["init-connection-timeout"],
+        env_vars = {
+            "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": self.model.config[
+                "auto-update-default-version"
+            ],
+            "KFP_API_SERVICE_NAME": "apiserver",
             "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
             "KUBEFLOW_USERID_PREFIX": "",
+            "POD_NAMESPACE": self.model.name,
+            "OBJECTSTORECONFIG_SECURE": "false",
+            "OBJECTSTORECONFIG_BUCKETNAME": self.model.config[
+                "object-store-bucket-name"
+            ],  # mlpipeline
+            "DBCONFIG_USER": db_data["db_username"],  # root
+            "DBCONFIG_PASSWORD": db_data["db_password"],
+            "DBCONFIG_DBNAME": db_data["db_name"],
+            "DBCONFIG_HOST": db_data["db_host"],
+            "DBCONFIG_PORT": db_data["db_port"],
+            "DBCONFIG_CONMAXLIFETIME": "120s",  # 120s
+            "DB_DRIVER_NAME": "mysql",  # mysql
+            "DBCONFIG_MYSQLCONFIG_USER": db_data["db_username"],  # root
+            "DBCONFIG_MYSQLCONFIG_PASSWORD": db_data["db_password"],
+            "DBCONFIG_MYSQLCONFIG_DBNAME": db_data["db_name"],  # mlpipeline
+            "DBCONFIG_MYSQLCONFIG_HOST": db_data["db_host"],  # mysql
+            "DBCONFIG_MYSQLCONFIG_PORT": db_data["db_port"],  # 3306
+            "OBJECTSTORECONFIG_ACCESSKEY": object_storage["access-key"],
+            "OBJECTSTORECONFIG_SECRETACCESSKEY": object_storage["secret-key"],
+            "DEFAULTPIPELINERUNNERSERVICEACCOUNT": "default-editor",
             "MULTIUSER": "true",
-            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": viz["service-name"],
-            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": viz["service-port"],
+            "VISUALIZATIONSERVICE_NAME": viz_data["service-name"],
+            "VISUALIZATIONSERVICE_PORT": viz_data["service-port"],
         }
-        return config_json
+
+        return env_vars
 
     def _check_container_connection(self, container: Container) -> None:
         """Check if connection can be made with container.
@@ -300,28 +293,6 @@ class KfpApiOperator(CharmBase):
                 )
                 raise ErrorWithStatus("Workload failed health check", MaintenanceStatus)
             self.model.unit.status = ActiveStatus()
-
-    def _upload_files_to_container(self, config_json):
-        """Upload required files to container."""
-        try:
-            self._check_container_connection(self.container)
-        except ErrorWithStatus as error:
-            self.model.unit.status = error.status
-            raise error
-        try:
-            with open("src/sample_config.json", "r") as sample_config:
-                file_content = sample_config.read()
-                self.container.push(SAMPLE_CONFIG, file_content, make_dirs=True)
-        except ErrorWithStatus as error:
-            self.logger.error("Failed to upload sample config to container.")
-            raise error
-        try:
-            file_content = json.dumps(config_json)
-            config = CONFIG_DIR / "config.json"
-            self.container.push(config, file_content, make_dirs=True)
-        except ErrorWithStatus as error:
-            self.logger.error("Failed to upload config to container.")
-            raise error
 
     def _send_info(self, interfaces):
         if interfaces["kfp-api"]:
@@ -680,12 +651,9 @@ class KfpApiOperator(CharmBase):
         # Set up all relations/fetch required data
         try:
             self._check_leader()
-            interfaces = self._get_interfaces()
-            config_json = self._generate_config(interfaces)
-            self._upload_files_to_container(config_json)
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             update_layer(self._container_name, self._container, self._kfp_api_layer, self.logger)
-            self._send_info(interfaces)
+            self._send_info(self._get_interfaces())
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
             self.logger.error(f"Failed to handle {event} with error: {err}")
