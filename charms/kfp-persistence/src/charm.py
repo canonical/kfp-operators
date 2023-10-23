@@ -106,8 +106,6 @@ class KfpPersistenceOperator(CharmBase):
                     )
                 ],
                 environment={
-                    # Upstream defines this in the configmap persistenceagent-config-*
-                    "MULTIUSER": "true",
                     "NAMESPACE": "",
                 },
                 # provide function to pebble with which it can get service configuration from
