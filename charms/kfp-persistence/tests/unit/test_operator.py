@@ -153,4 +153,4 @@ def test_pebble_services_running(harness, mocked_lightkube_client):
     assert environment["NAMESPACE"] == ""
     assert environment["MULTIUSER"] == "true"
     assert environment["KUBEFLOW_USERID_HEADER"] == "kubeflow-userid"
-    assert environment["KUBEFLOW_USERID_PREFIX"] == "kubeflow-userid"
+    assert environment["KUBEFLOW_USERID_PREFIX"] == ""
