@@ -32,11 +32,12 @@ rules:
   verbs:
   - report
 - apiGroups:
-  - ''
+    - pipelines.kubeflow.org
   resources:
-  - namespaces
+    - runs
   verbs:
-  - get
+    - reportMetrics
+    - readArtifact
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

@@ -11,7 +11,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: gcr.io/ml-pipeline/persistenceagent:2.0.1
+    upstream-source: gcr.io/ml-pipeline/persistenceagent:2.0.2
 requires:
   kfp-api:
     interface: k8s-service
