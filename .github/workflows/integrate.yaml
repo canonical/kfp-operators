@@ -94,7 +94,7 @@ jobs:
           provider: microk8s
           channel: 1.25-strict/stable
           juju-channel: 3.1/stable
-          charmcraft-channel: latest/candidate
+          charmcraft-channel: latest/edge
 
       - run: |
           sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration"
@@ -132,7 +132,7 @@ jobs:
           provider: microk8s
           channel: 1.25-strict/stable
           juju-channel: 3.1/stable
-          charmcraft-channel: latest/candidate
+          charmcraft-channel: latest/edge
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
       - name: Run test
