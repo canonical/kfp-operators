@@ -453,7 +453,7 @@ def server_factory(visualization_server_image,
                         }
                     }
                 },
-                # This AuthorizationPolicy was added from [TODO: link PR]
+                # This AuthorizationPolicy was added from https://github.com/canonical/kfp-operators/pull/356
                 # to fix https://github.com/canonical/notebook-operators/issues/311
                 # and https://github.com/canonical/kfp-operators/issues/355.
                 # Remove when istio sidecars are implemented.
