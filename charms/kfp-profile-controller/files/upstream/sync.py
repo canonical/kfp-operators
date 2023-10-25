@@ -453,6 +453,29 @@ def server_factory(visualization_server_image,
                         }
                     }
                 },
+                # This AuthorizationPolicy was added from https://github.com/canonical/kfp-operators/pull/356
+                # to fix https://github.com/canonical/notebook-operators/issues/311
+                # and https://github.com/canonical/kfp-operators/issues/355.
+                # Remove when istio sidecars are implemented.
+                {
+                    "apiVersion": "security.istio.io/v1beta1",
+                    "kind": "AuthorizationPolicy",
+                    "metadata": {"name": "ns-owner-access-istio-charmed", "namespace": namespace},
+                    "spec": {
+                        "rules": [
+                            {
+                                "when": [
+                                    {"key": "request.headers[kubeflow-userid]", "values": ["*"]}
+                                ]
+                            },
+                            {
+                                "to": [
+                                    {"operation": {"methods": ["GET"], "paths": ["*/api/kernels"]}}
+                                ]
+                            },
+                        ]
+                    },
+                },
             ]
             print('Received request:\n', json.dumps(parent, indent=2, sort_keys=True))
             print('Desired resources except secrets:\n', json.dumps(desired_resources, indent=2, sort_keys=True))
