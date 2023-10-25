@@ -74,7 +74,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
         timeout=3600,
-        idle_period=120,
+        idle_period=30,
     )
 
 # ---- KFP API Server focused test cases
