@@ -48,7 +48,7 @@ roleRef:
   name: {{ app_name }}-role
 subjects:
 - kind: ServiceAccount
-  name: {{ app_name }}-sa
+  name: {{ sa_name }}
   namespace: {{ namespace }}
 ---
 apiVersion: v1
