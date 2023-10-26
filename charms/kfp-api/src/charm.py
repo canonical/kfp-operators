@@ -23,14 +23,7 @@ from lightkube.generic_resource import load_in_cluster_generic_resources
 from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import (
-    ActiveStatus,
-    BlockedStatus,
-    Container,
-    MaintenanceStatus,
-    ModelError,
-    WaitingStatus,
-)
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, ModelError, WaitingStatus
 from ops.pebble import CheckStatus, Layer
 from serialized_data_interface import (
     NoCompatibleVersions,
@@ -237,9 +230,7 @@ class KfpApiOperator(CharmBase):
             "KUBEFLOW_USERID_PREFIX": "",
             "POD_NAMESPACE": self.model.name,
             "OBJECTSTORECONFIG_SECURE": "false",
-            "OBJECTSTORECONFIG_BUCKETNAME": self.model.config[
-                "object-store-bucket-name"
-            ],
+            "OBJECTSTORECONFIG_BUCKETNAME": self.model.config["object-store-bucket-name"],
             "DBCONFIG_USER": db_data["db_username"],
             "DBCONFIG_PASSWORD": db_data["db_password"],
             "DBCONFIG_DBNAME": db_data["db_name"],
