@@ -49,7 +49,7 @@ KFP_IMAGES_VERSION = "2.0.2"
 # This service name must be the Service from the mlmd-operator
 # FIXME: leaving it hardcoded now, but we should share this
 # host and port through relation data
-METADATA_GRPC_SERVICE_HOST = "metadata-grpc-service"
+METADATA_GRPC_SERVICE_HOST = "metadata-grpc-service.kubeflow"
 METADATA_GRPC_SERVICE_PORT = "8080"
 NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"
 SYNC_CODE_FILE = Path("files/upstream/sync.py")
