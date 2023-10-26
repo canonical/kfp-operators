@@ -232,7 +232,7 @@ class KfpApiOperator(CharmBase):
             "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": self.model.config[
                 "auto-update-default-version"
             ],
-            "KFP_API_SERVICE_NAME": f"KFP_API_SERVICE_NAME",
+            "KFP_API_SERVICE_NAME": KFP_API_SERVICE_NAME,
             "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
             "KUBEFLOW_USERID_PREFIX": "",
             "POD_NAMESPACE": self.model.name,
