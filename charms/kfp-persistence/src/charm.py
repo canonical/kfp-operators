@@ -110,6 +110,9 @@ class KfpPersistenceOperator(CharmBase):
                     "KUBEFLOW_USERID_PREFIX": "",
                     # Upstream defines this in the configmap persistenceagent-config-*
                     "MULTIUSER": "true",
+                    "NAMESPACE": "",
+                    "TTL_SECONDS_AFTER_WORKFLOW_FINISH": "86400",
+                    "NUM_WORKERS": "2",
                 },
                 # provide function to pebble with which it can get service configuration from
                 # relation

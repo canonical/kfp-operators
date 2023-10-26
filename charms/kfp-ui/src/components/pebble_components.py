@@ -13,7 +13,8 @@ class MlPipelineUiInputs:
 
     ALLOW_CUSTOM_VISUALIZATIONS: bool
     HIDE_SIDENAV: bool
-    # minio_secret: Dict[str, Dict[str, str]]  # TODO: Is this required?
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
     MINIO_HOST: str
     MINIO_NAMESPACE: str
     MINIO_PORT: str
@@ -65,7 +66,8 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             "KUBEFLOW_USERID_PREFIX": "",
                             "METADATA_ENVOY_SERVICE_SERVICE_HOST": "localhost",
                             "METADATA_ENVOY_SERVICE_SERVICE_PORT": "9090",
-                            # "minio-secret": inputs.minio_secret,  # TODO: Is this required?
+                            "MINIO_ACCESS_KEY": f"{inputs.MINIO_ACCESS_KEY}",
+                            "MINIO_SECRET_KEY": inputs.MINIO_SECRET_KEY,
                             "MINIO_HOST": inputs.MINIO_HOST,
                             "MINIO_NAMESPACE": inputs.MINIO_NAMESPACE,
                             "MINIO_PORT": inputs.MINIO_PORT,

@@ -41,7 +41,7 @@ options:
       Used if service account is left unspecified when creating a run
   init-connection-timeout:
     type: string
-    default: '5s'
+    default: '6m'
     description: |
       Connection timeout used when initializing clients for related services.
       The format used can be anything accepted by `time.ParseDuration`.
