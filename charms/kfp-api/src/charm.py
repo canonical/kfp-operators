@@ -232,26 +232,26 @@ class KfpApiOperator(CharmBase):
             "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": self.model.config[
                 "auto-update-default-version"
             ],
-            "KFP_API_SERVICE_NAME": "apiserver",
+            "KFP_API_SERVICE_NAME": f"KFP_API_SERVICE_NAME",
             "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
             "KUBEFLOW_USERID_PREFIX": "",
             "POD_NAMESPACE": self.model.name,
             "OBJECTSTORECONFIG_SECURE": "false",
             "OBJECTSTORECONFIG_BUCKETNAME": self.model.config[
                 "object-store-bucket-name"
-            ],  # mlpipeline
-            "DBCONFIG_USER": db_data["db_username"],  # root
+            ],
+            "DBCONFIG_USER": db_data["db_username"],
             "DBCONFIG_PASSWORD": db_data["db_password"],
             "DBCONFIG_DBNAME": db_data["db_name"],
             "DBCONFIG_HOST": db_data["db_host"],
             "DBCONFIG_PORT": db_data["db_port"],
-            "DBCONFIG_CONMAXLIFETIME": "120s",  # 120s
-            "DB_DRIVER_NAME": "mysql",  # mysql
-            "DBCONFIG_MYSQLCONFIG_USER": db_data["db_username"],  # root
+            "DBCONFIG_CONMAXLIFETIME": "120s",
+            "DB_DRIVER_NAME": "mysql",
+            "DBCONFIG_MYSQLCONFIG_USER": db_data["db_username"],
             "DBCONFIG_MYSQLCONFIG_PASSWORD": db_data["db_password"],
-            "DBCONFIG_MYSQLCONFIG_DBNAME": db_data["db_name"],  # mlpipeline
-            "DBCONFIG_MYSQLCONFIG_HOST": db_data["db_host"],  # mysql
-            "DBCONFIG_MYSQLCONFIG_PORT": db_data["db_port"],  # 3306
+            "DBCONFIG_MYSQLCONFIG_DBNAME": db_data["db_name"],
+            "DBCONFIG_MYSQLCONFIG_HOST": db_data["db_host"],
+            "DBCONFIG_MYSQLCONFIG_PORT": db_data["db_port"],
             "OBJECTSTORECONFIG_ACCESSKEY": object_storage["access-key"],
             "OBJECTSTORECONFIG_SECRETACCESSKEY": object_storage["secret-key"],
             "DEFAULTPIPELINERUNNERSERVICEACCOUNT": "default-editor",
@@ -264,18 +264,6 @@ class KfpApiOperator(CharmBase):
         }
 
         return env_vars
-
-    def _check_container_connection(self, container: Container) -> None:
-        """Check if connection can be made with container.
-
-        Args:
-            container: the named container in a unit to check.
-
-        Raises:
-            ErrorWithStatus if the connection cannot be made.
-        """
-        if not container.can_connect():
-            raise ErrorWithStatus("Pod startup is not complete", MaintenanceStatus)
 
     def _check_status(self):
         """Check status of workload and set status accordingly."""
