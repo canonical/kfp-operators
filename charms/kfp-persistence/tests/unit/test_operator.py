@@ -150,4 +150,9 @@ def test_pebble_services_running(harness, mocked_lightkube_client):
 
     # Assert the environment variables that are set from inputs are correctly applied
     environment = container.get_plan().services["persistenceagent"].environment
+    assert environment["NAMESPACE"] == ""
+    assert environment["MULTIUSER"] == "true"
     assert environment["KUBEFLOW_USERID_HEADER"] == "kubeflow-userid"
+    assert environment["KUBEFLOW_USERID_PREFIX"] == ""
+    assert environment["TTL_SECONDS_AFTER_WORKFLOW_FINISH"] == "86400"
+    assert environment["NUM_WORKERS"] == "2"

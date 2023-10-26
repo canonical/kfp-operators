@@ -8,7 +8,15 @@ from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
-from charm import KfpProfileControllerOperator
+from charm import (
+    CONTROLLER_PORT,
+    DISABLE_ISTIO_SIDECAR,
+    KFP_DEFAULT_PIPELINE_ROOT,
+    KFP_IMAGES_VERSION,
+    METADATA_GRPC_SERVICE_HOST,
+    METADATA_GRPC_SERVICE_PORT,
+    KfpProfileControllerOperator,
+)
 
 MOCK_OBJECT_STORAGE_DATA = {
     "access-key": "access-key",
@@ -20,18 +28,17 @@ MOCK_OBJECT_STORAGE_DATA = {
 }
 
 EXPECTED_ENVIRONMENT = {
-    "CONTROLLER_PORT": 80,
-    "DISABLE_ISTIO_SIDECAR": "false",
-    "KFP_DEFAULT_PIPELINE_ROOT": "",
-    "KFP_VERSION": "2.0.0-alpha.7",
-    "METADATA_GRPC_SERVICE_HOST": "mlmd.kubeflow",
-    "METADATA_GRPC_SERVICE_PORT": "8080",
-    "MINIO_ACCESS_KEY": "access-key",
-    "MINIO_HOST": "service",
-    "MINIO_NAMESPACE": "namespace",
-    "MINIO_PORT": 1234,
-    "MINIO_SECRET_KEY": "secret-key",
-    "minio-secret": '{"secret": {"name": ' '"kfp-profile-controller-minio-credentials"}}',
+    "CONTROLLER_PORT": CONTROLLER_PORT,
+    "DISABLE_ISTIO_SIDECAR": DISABLE_ISTIO_SIDECAR,
+    "KFP_DEFAULT_PIPELINE_ROOT": KFP_DEFAULT_PIPELINE_ROOT,
+    "KFP_VERSION": KFP_IMAGES_VERSION,
+    "METADATA_GRPC_SERVICE_HOST": METADATA_GRPC_SERVICE_HOST,
+    "METADATA_GRPC_SERVICE_PORT": METADATA_GRPC_SERVICE_PORT,
+    "MINIO_ACCESS_KEY": MOCK_OBJECT_STORAGE_DATA["access-key"],
+    "MINIO_HOST": MOCK_OBJECT_STORAGE_DATA["service"],
+    "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
+    "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
+    "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
 }
 
 

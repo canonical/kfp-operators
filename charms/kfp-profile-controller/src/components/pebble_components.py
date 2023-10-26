@@ -50,7 +50,6 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                         "command": "python /hooks/sync.py",  # Must be a string
                         "startup": "enabled",
                         "environment": {
-                            "minio-secret": inputs.MINIO_SECRET,
                             "MINIO_HOST": inputs.MINIO_HOST,
                             "MINIO_PORT": inputs.MINIO_PORT,
                             "MINIO_NAMESPACE": inputs.MINIO_NAMESPACE,
