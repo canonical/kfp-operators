@@ -362,31 +362,33 @@ class TestCharm:
         harness.update_relation_data(mysql_rel_id, "mysql-provider/0", mysql_data)
 
         # object storage relation
-        os_data = {
-            "_supported_versions": "- v1",
-            "data": yaml.dump(
-                {
-                    "access-key": "access-key",
-                    "namespace": "namespace",
-                    "port": 1234,
-                    "secret-key": "secret-key",
-                    "secure": True,
-                    "service": "service",
-                }
-            ),
+        objectstorage_data = {
+            "access-key": "access-key",
+            "namespace": "namespace",
+            "port": 1234,
+            "secret-key": "secret-key",
+            "secure": True,
+            "service": "service",
         }
-        os_rel_id = harness.add_relation("object-storage", "storage-provider")
-        harness.add_relation_unit(os_rel_id, "storage-provider/0")
-        harness.update_relation_data(os_rel_id, "storage-provider", os_data)
+        objectstorage_data_dict = {
+            "_supported_versions": "- v1",
+            "data": yaml.dump(objectstorage_data),
+        }
+        objectstorage_rel_id = harness.add_relation("object-storage", "storage-provider")
+        harness.add_relation_unit(objectstorage_rel_id, "storage-provider/0")
+        harness.update_relation_data(
+            objectstorage_rel_id, "storage-provider", objectstorage_data_dict
+        )
 
         # kfp-viz relation
         kfp_viz_data = {
-            "_supported_versions": "- v1",
-            "data": yaml.dump({"service-name": "unset", "service-port": "1234"}),
+            "service-name": "viz-service",
+            "service-port": "1234",
         }
+        kfp_viz_data_dict = {"_supported_versions": "- v1", "data": yaml.dump(kfp_viz_data)}
         kfp_viz_id = harness.add_relation("kfp-viz", "kfp-viz")
         harness.add_relation_unit(kfp_viz_id, "kfp-viz/0")
-        harness.update_relation_data(kfp_viz_id, "kfp-viz", kfp_viz_data)
+        harness.update_relation_data(kfp_viz_id, "kfp-viz", kfp_viz_data_dict)
 
         # example kfp-api provider relation
         kfpapi_data = {
@@ -433,7 +435,42 @@ class TestCharm:
             "-logtostderr=true "
         )
         assert pebble_exec_command == f"bash -c '{exec_command}'"
+
+        expected_env = {
+            "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": harness.charm.config[
+                "auto-update-default-version"
+            ],
+            "KFP_API_SERVICE_NAME": KFP_API_SERVICE_NAME,
+            "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
+            "KUBEFLOW_USERID_PREFIX": "",
+            "POD_NAMESPACE": harness.charm.model.name,
+            "OBJECTSTORECONFIG_SECURE": "false",
+            "OBJECTSTORECONFIG_BUCKETNAME": harness.charm.config["object-store-bucket-name"],
+            "DBCONFIG_USER": "root",
+            "DBCONFIG_PASSWORD": mysql_data["root_password"],
+            "DBCONFIG_DBNAME": mysql_data["database"],
+            "DBCONFIG_HOST": mysql_data["host"],
+            "DBCONFIG_PORT": mysql_data["port"],
+            "DBCONFIG_CONMAXLIFETIME": "120s",
+            "DB_DRIVER_NAME": "mysql",
+            "DBCONFIG_MYSQLCONFIG_USER": "root",
+            "DBCONFIG_MYSQLCONFIG_PASSWORD": mysql_data["root_password"],
+            "DBCONFIG_MYSQLCONFIG_DBNAME": mysql_data["database"],
+            "DBCONFIG_MYSQLCONFIG_HOST": mysql_data["host"],
+            "DBCONFIG_MYSQLCONFIG_PORT": mysql_data["port"],
+            "OBJECTSTORECONFIG_ACCESSKEY": objectstorage_data["access-key"],
+            "OBJECTSTORECONFIG_SECRETACCESSKEY": objectstorage_data["secret-key"],
+            "DEFAULTPIPELINERUNNERSERVICEACCOUNT": "default-editor",
+            "MULTIUSER": "true",
+            "VISUALIZATIONSERVICE_NAME": kfp_viz_data["service-name"],
+            "VISUALIZATIONSERVICE_PORT": kfp_viz_data["service-port"],
+            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": kfp_viz_data["service-name"],
+            "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": kfp_viz_data["service-port"],
+            "CACHE_IMAGE": harness.charm.config["cache-image"],
+        }
         test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
+
+        assert test_env == expected_env
         assert "test_model" == test_env["POD_NAMESPACE"]
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
