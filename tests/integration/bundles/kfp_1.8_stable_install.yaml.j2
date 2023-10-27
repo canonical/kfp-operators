@@ -8,20 +8,10 @@ applications:
     charm: argo-server
     channel: 3.3/stable
     scale: 1
-  istio-ingressgateway:
-    charm: istio-gateway
-    channel: 1.16/stable
+  envoy:
+    charm: envoy
+    channel: 2.0/stable
     scale: 1
-    options:
-      kind: ingress
-    trust: true
-  istio-pilot:
-    charm: istio-pilot
-    channel: 1.16/stable
-    scale: 1
-    options:
-      default-gateway: kubeflow-gateway
-    trust: true
   kfp-db:
     charm: mysql-k8s
     channel: 8.0/stable
@@ -29,55 +19,69 @@ applications:
     options:
       profile: testing
     trust: true
+  mlmd:
+    charm: minio
+    channel: 1.14/stable
+    scale: 1
   minio:
     charm: minio
-    channel: ckf-1.7/stable
+    channel: ckf-1.8/stable
     scale: 1
   kubeflow-profiles:
     charm: kubeflow-profiles
-    channel: 1.7/stable
+    channel: 1.8/stable
     scale: 1
     trust: true
   kubeflow-roles:
     charm: kubeflow-roles
-    channel: 1.7/stable
+    channel: 1.8/stable
     scale: 1
     trust: true
 {%- if local_build == false %}
   kfp-api:
     charm: kfp-api
-    channel: 2.0-alpha.7/stable
+    channel: 2.0/stable
+    scale: 1
+    trust: true
+  kfp-metadata-writer:
+    charm: kfp-metadata-writer
+    channel: 2.0/stable
     scale: 1
     trust: true
   kfp-persistence:
     charm: kfp-persistence
-    channel: 2.0-alpha.7/stable
+    channel: 2.0/stable
     scale: 1
     trust: true
   kfp-schedwf:
     charm: kfp-schedwf
-    channel: 2.0-alpha.7/stable
+    channel: 2.0/stable
     scale: 1
     trust: true
   kfp-ui:
     charm: kfp-ui
-    channel: 2.0-alpha.7/stable
+    channel: 2.0/stable
     scale: 1
     trust: true
   kfp-viewer:
     charm: kfp-viewer
-    channel: 2.0-alpha.7/stable
+    channel: 2.0/stable
     scale: 1
     trust: true
   kfp-viz:
     charm: kfp-viz
-    channel: 2.0-alpha.7/stable
+    channel: 2.0/stable
     scale: 1
     trust: true
 {% else %}
   kfp-api:
     charm: {{ kfp_api }}
     resources: {{ kfp_api_resources }}
+    scale: 1
+    trust: true
+  kfp-metadata-writer:
+    charm: {{ kfp_metadata_writer }}
+    resources: {{ kfp_metadata_writer_resources }}
     scale: 1
     trust: true
   kfp-persistence:
@@ -111,14 +115,14 @@ relations:
   - kfp-persistence:kfp-api
 - - kfp-api:kfp-viz
   - kfp-viz:kfp-viz
-- - istio-pilot:istio-pilot
-  - istio-ingressgateway:istio-pilot
 - - kfp-api:relational-db
   - kfp-db:database
 - - kfp-api:object-storage
   - minio:object-storage
-- - istio-pilot:ingress
-  - kfp-ui:ingress
+- - mlmd:grpc
+  - kfp-metadata-writer:grpc
+- - mlmd:grpc
+  - envoy:grpc
 - - kfp-api:kfp-api
   - kfp-ui:kfp-api
 - - kfp-ui:object-storage
