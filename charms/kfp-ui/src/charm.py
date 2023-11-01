@@ -26,6 +26,7 @@ from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
 )
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from lightkube.models.core_v1 import ServicePort
+from lightkube.resources.core_v1 import ServiceAccount
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from ops import CharmBase, main
 
@@ -151,9 +152,9 @@ class KfpUiOperator(CharmBase):
                 charm=self,
                 name="kubernetes:auth",
                 resource_templates=K8S_RESOURCE_FILES,
-                krh_resource_types={ClusterRole, ClusterRoleBinding},
+                krh_resource_types={ClusterRole, ClusterRoleBinding, ServiceAccount},
                 krh_labels=create_charm_default_labels(
-                    self.app.name, self.model.name, scope="auth-and-crds"
+                    self.app.name, self.model.name, scope="auth"
                 ),
                 context_callable=lambda: {"app_name": self.app.name, "namespace": self.model.name},
                 lightkube_client=lightkube.Client(),  # TODO: Make this easier to test on
@@ -198,6 +199,12 @@ class KfpUiOperator(CharmBase):
                 inputs_getter=lambda: MlPipelineUiInputs(
                     ALLOW_CUSTOM_VISUALIZATIONS=self.model.config["allow-custom-visualizations"],
                     HIDE_SIDENAV=self.model.config["hide-sidenav"],
+                    MINIO_ACCESS_KEY=self.object_storage_relation.component.get_data()[
+                        "access-key"
+                    ],
+                    MINIO_SECRET_KEY=self.object_storage_relation.component.get_data()[
+                        "secret-key"
+                    ],
                     MINIO_HOST=self.object_storage_relation.component.get_data()["service"],
                     MINIO_NAMESPACE=self.object_storage_relation.component.get_data()["namespace"],
                     MINIO_PORT=self.object_storage_relation.component.get_data()["port"],

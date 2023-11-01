@@ -16,7 +16,7 @@ from charmed_kubeflow_chisme.components.leadership_gate_component import Leaders
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from lightkube.resources.core_v1 import ServiceAccount
-from lightkube.resources.rbac_authorization_v1 import Role, RoleBinding
+from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from ops.charm import CharmBase
 from ops.main import main
 
@@ -48,7 +48,12 @@ class KfpSchedwf(CharmBase):
                 charm=self,
                 name="kubernetes:auth-and-crds",
                 resource_templates=K8S_RESOURCE_FILES,
-                krh_resource_types={CustomResourceDefinition, Role, RoleBinding, ServiceAccount},
+                krh_resource_types={
+                    ClusterRole,
+                    ClusterRoleBinding,
+                    CustomResourceDefinition,
+                    ServiceAccount,
+                },
                 krh_labels=create_charm_default_labels(
                     self.app.name, self.model.name, scope="auth-and-crds"
                 ),

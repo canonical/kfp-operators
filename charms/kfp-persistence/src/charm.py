@@ -8,11 +8,13 @@ https://github.com/canonical/kfp-operators/
 """
 
 import logging
+from pathlib import Path
 
 import lightkube
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
+from charmed_kubeflow_chisme.components.pebble_component import ContainerFileTemplate
 from charmed_kubeflow_chisme.components.serialised_data_interface_components import (
     SdiRelationDataReceiverComponent,
 )
@@ -25,10 +27,16 @@ from components.pebble_components import (
     PersistenceAgentPebbleService,
     PesistenceAgentServiceConfig,
 )
+from components.sa_token_component import SaTokenComponent
 
 log = logging.getLogger()
 
 K8S_RESOURCE_FILES = ["src/templates/auth_manifests.yaml.j2"]
+SA_NAME = "ml-pipeline-persistenceagent"
+SA_TOKEN_PATH = "src/"
+SA_TOKEN_FILENAME = "persistenceagent-sa-token"
+SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
+SA_TOKEN_DESTINATION_PATH = f"/var/run/secrets/kubeflow/tokens/{SA_TOKEN_FILENAME}"
 
 
 class KfpPersistenceOperator(CharmBase):
@@ -62,24 +70,49 @@ class KfpPersistenceOperator(CharmBase):
                 krh_labels=create_charm_default_labels(
                     self.app.name, self.model.name, scope="auth"
                 ),
-                context_callable=lambda: {"app_name": self.app.name, "namespace": self.model.name},
+                context_callable=lambda: {
+                    "app_name": self.app.name,
+                    "namespace": self.model.name,
+                    "sa_name": SA_NAME,
+                },
                 lightkube_client=lightkube.Client(),
             ),
             depends_on=[self.leadership_gate],
         )
 
+        self.sa_token = self.charm_reconciler.add(
+            component=SaTokenComponent(
+                charm=self,
+                name="sa-token:persistenceagent",
+                audiences=["pipelines.kubeflow.org"],
+                sa_name=SA_NAME,
+                sa_namespace=self.model.name,
+                filename=SA_TOKEN_FILENAME,
+                path=SA_TOKEN_PATH,
+                expiration=4294967296,
+            ),
+            depends_on=[self.leadership_gate, self.kubernetes_resources],
+        )
         self.persistenceagent_container = self.charm_reconciler.add(
             component=PersistenceAgentPebbleService(
                 charm=self,
                 name="container:persistenceagent",
                 container_name="persistenceagent",
                 service_name="persistenceagent",
-                files_to_push=[],
+                files_to_push=[
+                    ContainerFileTemplate(
+                        source_template_path=SA_TOKEN_FULL_PATH,
+                        destination_path=SA_TOKEN_DESTINATION_PATH,
+                    )
+                ],
                 environment={
                     "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
                     "KUBEFLOW_USERID_PREFIX": "",
                     # Upstream defines this in the configmap persistenceagent-config-*
                     "MULTIUSER": "true",
+                    "NAMESPACE": "",
+                    "TTL_SECONDS_AFTER_WORKFLOW_FINISH": "86400",
+                    "NUM_WORKERS": "2",
                 },
                 # provide function to pebble with which it can get service configuration from
                 # relation
@@ -89,7 +122,12 @@ class KfpPersistenceOperator(CharmBase):
                     ],
                 ),
             ),
-            depends_on=[self.leadership_gate, self.kfp_api_relation, self.kubernetes_resources],
+            depends_on=[
+                self.leadership_gate,
+                self.kfp_api_relation,
+                self.kubernetes_resources,
+                self.sa_token,
+            ],
         )
 
         self.charm_reconciler.install_default_event_handlers()

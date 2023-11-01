@@ -14,6 +14,7 @@ jobs:
       matrix:
         charm:
           - kfp-api
+          - kfp-metadata-writer
           - kfp-persistence
           - kfp-profile-controller
           - kfp-schedwf
@@ -33,6 +34,7 @@ jobs:
       matrix:
         charm:
           - kfp-api
+          - kfp-metadata-writer
           - kfp-persistence
           - kfp-profile-controller
           - kfp-schedwf
@@ -52,6 +54,7 @@ jobs:
       matrix:
         charm:
           - kfp-api
+          - kfp-metadata-writer
           - kfp-persistence
           - kfp-profile-controller
           - kfp-schedwf

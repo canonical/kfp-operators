@@ -14,4 +14,7 @@ spec:
     protocol: TCP
     targetPort: 8888
   selector:
-    app.kubernetes.io/name: {{ service }}
+    # This selector ensures this Service identifies
+    # the kfp-api Pod correctly as ti will have
+    # the same tag
+    app.kubernetes.io/name: {{ app_name }}
