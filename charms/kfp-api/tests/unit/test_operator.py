@@ -11,7 +11,7 @@ from ops.testing import Harness
 
 from charm import KFP_API_SERVICE_NAME, ErrorWithStatus, KfpApiOperator
 
-KFP_API_CONTAINER_NAME = "ml-pipeline-api-server"
+KFP_API_CONTAINER_NAME = "apiserver"
 
 
 @pytest.fixture()
