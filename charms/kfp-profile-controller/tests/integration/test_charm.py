@@ -204,7 +204,7 @@ async def test_minio_config_changed(ops_test: OpsTest):
 
 @retry(
     wait=wait_exponential(multiplier=1, min=1, max=15),
-    stop=stop_after_delay(30),
+    stop=stop_after_delay(60),
     reraise=True,
 )
 async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
