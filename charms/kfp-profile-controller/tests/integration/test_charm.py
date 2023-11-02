@@ -202,6 +202,11 @@ async def test_minio_config_changed(ops_test: OpsTest):
     assert ops_test.model.applications[CHARM_NAME].units[0].workload_status == "active"
 
 
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=15),
+    stop=stop_after_delay(30),
+    reraise=True,
+)
 async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
     """Test that the sync webhook deploys the desired resources."""
     # skipping kfp-launcher ConfigMap since the charm hardcodes KFP_DEFAULT_PIPELINE_ROOT to ""
