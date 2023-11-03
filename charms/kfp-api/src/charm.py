@@ -248,7 +248,6 @@ class KfpApiOperator(CharmBase):
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": viz_data["service-name"],
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": viz_data["service-port"],
             "CACHE_IMAGE": self.model.config["cache-image"],
-
             # Configurations charmed-kubeflow adds to those of upstream
             "ARCHIVE_CONFIG_LOG_FILE_NAME": self.model.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": self.model.config["log-archive-prefix"],
