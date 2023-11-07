@@ -13,5 +13,5 @@ jobs:
     uses: ./.github/workflows/bundle_tests.yaml
 
   test-bundle-actions-operator:
-    name: Test the bundle
+    name: Test the bundle actions operator
     uses: ./.github/workflows/bundle_tests_actions_operator.yaml

@@ -11,7 +11,7 @@ on:
 
 jobs:
   test-bundle:
-    name: Bundle functional tests
+    name: Bundle functional tests actions operator
     runs-on: [self-hosted, linux, X64, jammy, two-xlarge]
     timeout-minutes: 200
     steps:
