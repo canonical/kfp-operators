@@ -1,0 +1,34 @@
+# Run bundle integration tests
+# This workflow has been separated from integrate.yaml due to the verbosity
+# of the steps, as we have to manually configure the operator environment.
+# This is a workaround that should be changed when the charmed-kubernetes/actions-operator
+# works correctly on self hosted runners.
+# TODO: move this workflow to canonical/charmed-kubeflow-workflows
+name: Bundle integration tests actions operator
+
+on:
+  workflow_call:
+
+jobs:
+  test-bundle:
+    name: Bundle functional tests
+    runs-on: [self-hosted, linux, X64, jammy, two-xlarge]
+    timeout-minutes: 200
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup operator environment
+      uses: charmed-kubernetes/actions-operator@main
+      with:
+        provider: microk8s
+        channel: 1.25-strict/stable
+        juju-channel: 3.1/stable
+        charmcraft-channel: latest/candidate
+
+      - name: echo
+        run: echo hello world
+
+      - name: microk8s status
+        run: microk8s status
+
+      - name: juju version
+        run: juju version
