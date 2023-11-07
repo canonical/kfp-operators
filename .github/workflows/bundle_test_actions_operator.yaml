@@ -15,20 +15,20 @@ jobs:
     runs-on: [self-hosted, linux, X64, jammy, two-xlarge]
     timeout-minutes: 200
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup operator environment
-      uses: charmed-kubernetes/actions-operator@main
-      with:
-        provider: microk8s
-        channel: 1.25-strict/stable
-        juju-channel: 3.1/stable
-        charmcraft-channel: latest/candidate
+      - uses: actions/checkout@v3
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+          channel: 1.25-strict/stable
+          juju-channel: 3.1/stable
+          charmcraft-channel: latest/candidate
 
-      - name: echo
-        run: echo hello world
+        - name: echo
+          run: echo hello world
 
-      - name: microk8s status
-        run: microk8s status
+        - name: microk8s status
+          run: microk8s status
 
-      - name: juju version
-        run: juju version
+        - name: juju version
+          run: juju version
