@@ -1,0 +1,37 @@
+apiVersion: metacontroller.k8s.io/v1alpha1
+kind: DecoratorController
+metadata:
+  name: kubeflow-pipelines-profile-controller
+spec:
+  attachments:
+  - apiVersion: v1
+    resource: secrets
+    updateStrategy:
+      method: InPlace
+  - apiVersion: v1
+    resource: configmaps
+    updateStrategy:
+      method: OnDelete
+  - apiVersion: apps/v1
+    resource: deployments
+    updateStrategy:
+      method: InPlace
+  - apiVersion: v1
+    resource: services
+    updateStrategy:
+      method: InPlace
+  - apiVersion: kubeflow.org/v1alpha1
+    resource: poddefaults
+    updateStrategy:
+      method: InPlace
+  hooks:
+    sync:
+      webhook:
+        url: {{ sync_webhook_url }}
+  resources:
+  - apiVersion: v1
+    resource: namespaces
+    labelSelector:
+      matchExpressions:
+      - {key: {{ label }}, operator: Exists}
+  resyncPeriodSeconds: 3600

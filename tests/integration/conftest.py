@@ -30,7 +30,7 @@ PROFILE_FILE = yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
 KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def forward_kfp_ui():
     """Port forward the kfp-ui service."""
     kfp_ui_process = subprocess.Popen(
@@ -46,7 +46,7 @@ def forward_kfp_ui():
     kfp_ui_process.terminate()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def apply_profile(lightkube_client):
     """Apply a Profile simulating a user."""
     # Create a Viewer namespaced resource
@@ -73,7 +73,7 @@ def apply_profile(lightkube_client):
             raise api_error
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def kfp_client(apply_profile, forward_kfp_ui) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Instantiate the KFP Client
@@ -82,7 +82,7 @@ def kfp_client(apply_profile, forward_kfp_ui) -> kfp.Client:
     return client
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def lightkube_client() -> lightkube.Client:
     """Returns a lightkube Client that can talk to the K8s API."""
     client = lightkube.Client(field_manager="kfp-operators")

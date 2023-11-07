@@ -3,16 +3,15 @@ summary: Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK
 description: |
   Machine learning (ML) toolkit that is dedicated to making deployments
   of ML workflows on Kubernetes simple, portable, and scalable.
-min-juju-version: "2.9.0"
-series: [kubernetes]
-deployment:
-  type: stateless
-  service: omit
+docs: https://discourse.charmhub.io/t/11185
+containers:
+  persistenceagent:
+    resource: oci-image
 resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: gcr.io/ml-pipeline/persistenceagent:2.0.0-alpha.7
+    upstream-source: charmedkubeflow/persistenceagent:2.0.0-alpha.7_22.04_1
 requires:
   kfp-api:
     interface: k8s-service

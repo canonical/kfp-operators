@@ -7,12 +7,12 @@ applications:
   kfp-db:                  { charm: ch:mysql-k8s, channel: 8.0/stable, scale: 1, constraints: mem=2G}
 {%- if local_build == false %}
   kfp-api:                 { charm: ch:kfp-api, channel: latest/edge, scale: 1, trust: true}
-  kfp-profile-controller:  { charm: ch:kfp-profile-controller, channel: latest/edge, scale: 1 }
-  kfp-persistence:         { charm: ch:kfp-persistence, channel: latest/edge,                scale: 1 }
-  kfp-schedwf:             { charm: ch:kfp-schedwf, channel: latest/edge,                    scale: 1 }
-  kfp-ui:                  { charm: ch:kfp-ui, channel: latest/edge,                         scale: 1 }
-  kfp-viewer:              { charm: ch:kfp-viewer, channel: latest/edge,                     scale: 1 }
-  kfp-viz:                 { charm: ch:kfp-viz, channel: latest/edge,                        scale: 1 }
+  kfp-profile-controller:  { charm: ch:kfp-profile-controller, channel: latest/edge, scale: 1, trust: true }
+  kfp-persistence:         { charm: ch:kfp-persistence, channel: latest/edge, scale: 1, trust: true }
+  kfp-schedwf:             { charm: ch:kfp-schedwf, channel: latest/edge, scale: 1, trust: true}
+  kfp-ui:                  { charm: ch:kfp-ui, channel: latest/edge, trust: true,            scale: 1 }
+  kfp-viewer:              { charm: ch:kfp-viewer, channel: latest/edge, trust: true         scale: 1 }
+  kfp-viz:                 { charm: ch:kfp-viz, channel: latest/edge, trust: true         scale: 1 }
 {%- else %}
   kfp-api:
     charm: {{ kfp_api }}
@@ -23,6 +23,7 @@ applications:
     charm: {{ kfp_persistence }}
     resources: {{ kfp_persistence_resources }}
     scale: 1
+    trust: true
   kfp-profile-controller:
     charm: {{ kfp_profile_controller }}
     resources: {{ kfp_profile_controller_resources }}
@@ -31,18 +32,22 @@ applications:
     charm: {{ kfp_schedwf }}
     resources: {{ kfp_schedwf_resources }}
     scale: 1
+    trust: true
   kfp-ui:
     charm: {{ kfp_ui }}
     resources: {{ kfp_ui_resources }}
     scale: 1
+    trust: true
   kfp-viewer:
     charm: {{ kfp_viewer }}
     resources: {{ kfp_viewer_resources }}
     scale: 1
+    trust: true
   kfp-viz:
     charm: {{ kfp_viz }}
     resources: {{ kfp_viz_resources }}
     scale: 1
+    trust: true
 {%- endif %}
 relations:
 - [argo-controller:object-storage, minio:object-storage]

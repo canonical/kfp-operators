@@ -70,33 +70,38 @@ jobs:
       fail-fast: false
       matrix:
         charm:
+          - kfp-persistence
           - kfp-profile-controller
           - kfp-api
     steps:
+      # Ideally we'd use self-hosted runners, but this effort is still not stable
+      # This action will remove unused software (dotnet, haskell, android libs, codeql,
+      # and docker images) from the GH runner, which will liberate around 60 GB of storage
+      # distributed in 40GB for root and around 20 for a mnt point.
+      - name: Maximise GH runner space
+        uses: easimon/maximize-build-space@v7
+        with:
+          root-reserve-mb: 40960
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
       - uses: actions/checkout@v3
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.24/stable
-          juju-channel: 2.9/stable
+          channel: 1.25-strict/stable
+          juju-channel: 3.1/stable
           charmcraft-channel: latest/candidate
 
-      # TODO: Remove once the actions-operator does this automatically
-      - name: Configure kubectl
-        run: |
-          sg microk8s -c "microk8s config > ~/.kube/config"
-
       - run: |
-          sg microk8s -c "tox -e ${{ matrix.charm }}-integration"
+          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration"
 
-      # Collect debug logs if failed
-      - name: Dump Juju/k8s logs on failure
-        uses: canonical/charm-logdump-action@main
-        if: failure()
-        with:
-          app: ${{ matrix.charm }}
-          model: testing
+      - name: Collect charm debug artifacts
+        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+        if: always()
 
   test-bundle:
     name: Test the bundle

@@ -48,9 +48,11 @@ PROBE_PATH = "/apis/v1beta1/healthz"
 
 K8S_RESOURCE_FILES = [
     "src/templates/auth_manifests.yaml.j2",
+    "src/templates/ml-pipeline-service.yaml.j2",
 ]
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
+KFP_API_SERVICE_NAME = "apiserver"
 
 
 class KfpApiOperator(CharmBase):
@@ -180,11 +182,13 @@ class KfpApiOperator(CharmBase):
     @property
     def _kfp_api_layer(self) -> Layer:
         """Create and return Pebble framework layer."""
+        # The service name should be the same as the one
+        # defined in the Rockcraft project: apiserver
         layer_config = {
             "summary": "kfp-api layer",
             "description": "Pebble config layer for kfp-api",
             "services": {
-                self._container_name: {
+                KFP_API_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "ML Pipeline API Server",
                     "command": f"bash -c '{self._exec_command}'",
@@ -482,7 +486,15 @@ class KfpApiOperator(CharmBase):
         self._get_db_relation("relational-db")
 
         # retrieve database data from library
-        relation_data = self.database.fetch_relation_data()
+        try:
+            # if called in response to a '*-relation-broken' event, this will raise an exception
+            relation_data = self.database.fetch_relation_data()
+        except KeyError:
+            self.logger.error("Failed to retrieve relation data from library")
+            raise GenericCharmRuntimeError(
+                "Failed to retrieve relational-db data. This is to be expected if executed in"
+                " response to a '*-relation-broken' event"
+            )
         # parse data in relation
         # this also validates expected data by means of KeyError exception
         for val in relation_data.values():

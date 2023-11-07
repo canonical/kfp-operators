@@ -1,137 +1,84 @@
 #!/usr/bin/env python3
-# Copyright 2021 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Charm for the Kubeflow Pipelines Viewer.
+"""Charm for the Kubeflow Pipelines Viewer CRD controller.
 
 https://github.com/canonical/kfp-operators
 """
 
 import logging
-from pathlib import Path
 
-import yaml
-from oci_image import OCIImageResource, OCIImageResourceError
+import lightkube
+from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
+from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
+from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
+from charmed_kubeflow_chisme.components.model_name_gate_component import ModelNameGateComponent
+from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
+from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
+from lightkube.resources.core_v1 import ServiceAccount
+from lightkube.resources.rbac_authorization_v1 import Role, RoleBinding
 from ops.charm import CharmBase
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 
-log = logging.getLogger()
+from components.pebble_component import KfpViewerPebbleService
+
+logger = logging.getLogger(__name__)
+
+K8S_RESOURCE_FILES = ["src/templates/auth_manifests.yaml.j2", "src/templates/crds.yaml.j2"]
 
 
 class KfpViewer(CharmBase):
-    """Charm for the Kubeflow Pipelines Viewer.
-
-    https://github.com/canonical/kfp-operators
-    """
-
     def __init__(self, *args):
+        """Charm for the Kubeflow Pipelines Viewer CRD controller."""
         super().__init__(*args)
 
-        self.log = logging.getLogger()
-        self.image = OCIImageResource(self, "oci-image")
+        self.charm_reconciler = CharmReconciler(self)
+        self._namespace = self.model.name
 
-        self.framework.observe(self.on.install, self._main)
-        self.framework.observe(self.on.upgrade_charm, self._main)
-        self.framework.observe(self.on.config_changed, self._main)
-        self.framework.observe(self.on.leader_elected, self._main)
-
-    def _main(self, event):
-        try:
-            self._check_leader()
-            self._check_model_name()
-            image_details = self.image.fetch()
-        except (CheckFailedError, OCIImageResourceError) as check_failed:
-            self.model.unit.status = check_failed.status
-            self.log.info(str(check_failed.status))
-            return
-
-        self.model.unit.status = MaintenanceStatus("Setting pod spec")
-        self.model.pod.set_spec(
-            {
-                "version": 3,
-                "serviceAccount": {
-                    "roles": [
-                        {
-                            "rules": [
-                                {
-                                    "apiGroups": ["*"],
-                                    "resources": ["deployments", "services"],
-                                    "verbs": [
-                                        "create",
-                                        "get",
-                                        "list",
-                                        "watch",
-                                        "update",
-                                        "patch",
-                                        "delete",
-                                    ],
-                                },
-                                {
-                                    "apiGroups": ["kubeflow.org"],
-                                    "resources": ["viewers", "viewers/finalizers"],
-                                    "verbs": [
-                                        "create",
-                                        "get",
-                                        "list",
-                                        "watch",
-                                        "update",
-                                        "patch",
-                                        "delete",
-                                    ],
-                                },
-                            ],
-                        }
-                    ]
-                },
-                "containers": [
-                    {
-                        "name": "ml-pipeline-viewer-crd",
-                        "imageDetails": image_details,
-                        "envConfig": {
-                            "MAX_NUM_VIEWERS": self.model.config["max-num-viewers"],
-                            "MINIO_NAMESPACE": self.model.name,
-                        },
-                    }
-                ],
-            },
-            k8s_resources={
-                "kubernetesResources": {
-                    "customResourceDefinitions": [
-                        {"name": crd["metadata"]["name"], "spec": crd["spec"]}
-                        for crd in yaml.safe_load_all(Path("src/crds.yaml").read_text())
-                    ],
-                }
-            },
+        self.leadership_gate = self.charm_reconciler.add(
+            component=LeadershipGateComponent(
+                charm=self,
+                name="leadership-gate",
+            ),
+            depends_on=[],
         )
-        self.model.unit.status = ActiveStatus()
 
-    def _check_leader(self):
-        if not self.unit.is_leader():
-            # We can't do anything useful when not the leader, so do nothing.
-            raise CheckFailedError("Waiting for leadership", WaitingStatus)
+        self.model_name_gate = self.charm_reconciler.add(
+            component=ModelNameGateComponent(
+                charm=self, name="model-name-gate", model_name="kubeflow"
+            ),
+            depends_on=[self.leadership_gate],
+        )
 
-    def _check_model_name(self):
-        """Raises BlockedStatus if the model name is not kubeflow.
+        self.kubernetes_resources = self.charm_reconciler.add(
+            component=KubernetesComponent(
+                charm=self,
+                name="kubernetes:auth-and-crds",
+                resource_templates=K8S_RESOURCE_FILES,
+                krh_resource_types={CustomResourceDefinition, Role, RoleBinding, ServiceAccount},
+                krh_labels=create_charm_default_labels(
+                    self.app.name, self.model.name, scope="auth-and-crds"
+                ),
+                context_callable=lambda: {"app_name": self.app.name, "namespace": self._namespace},
+                lightkube_client=lightkube.Client(),
+            ),
+            depends_on=[self.leadership_gate],
+        )
 
-        This is because some elements of the viewer are hard coded to use the kubeflow namespace
-        """
-        if self.model.name != "kubeflow":
-            raise CheckFailedError(
-                "kfp-viewer must be deployed to model named `kubeflow`",
-                BlockedStatus,
-            )
+        self.pebble_service_container = self.charm_reconciler.add(
+            component=KfpViewerPebbleService(
+                charm=self,
+                name="kfp-viewer-pebble-service",
+                container_name="kfp-viewer",
+                service_name="controller",
+                max_num_viewers=self.model.config["max-num-viewers"],
+                minio_namespace=self._namespace,
+            ),
+            depends_on=[self.kubernetes_resources],
+        )
 
-
-class CheckFailedError(Exception):
-    """Raise this exception if one of the checks in main fails."""
-
-    def __init__(self, msg, status_type=None):
-        super().__init__()
-
-        self.msg = msg
-        self.status_type = status_type
-        self.status = status_type(msg)
+        self.charm_reconciler.install_default_event_handlers()
 
 
 if __name__ == "__main__":

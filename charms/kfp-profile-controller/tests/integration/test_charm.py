@@ -1,4 +1,4 @@
-# Copyright 2021 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 import logging
@@ -9,18 +9,23 @@ import lightkube
 import pytest
 import yaml
 from lightkube import codecs
-from lightkube.generic_resource import create_global_resource
-from lightkube.resources.core_v1 import Namespace, Pod, Secret, ServiceAccount
+from lightkube.generic_resource import create_global_resource, create_namespaced_resource
+from lightkube.resources.apps_v1 import Deployment
+from lightkube.resources.core_v1 import ConfigMap, Namespace, Secret, Service, ServiceAccount
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
 
 logger = logging.getLogger(__name__)
 
-APP_NAME = "kfp-profile-controller"
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
+CHARM_NAME = METADATA["name"]
 
 MINIO_APP_NAME = "minio"
 MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
+
+PodDefault = create_namespaced_resource(
+    group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
+)
 
 
 @pytest.mark.abort_on_fail
@@ -31,16 +36,30 @@ async def test_build_and_deploy(ops_test: OpsTest):
     image_path = METADATA["resources"]["oci-image"]["upstream-source"]
     resources = {"oci-image": image_path}
 
+    # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
+    await ops_test.model.deploy(entity_url="admission-webhook", channel="latest/edge", trust=True)
+    # TODO: The webhook charm must be active before the metacontroller is deployed, due to the bug
+    # described here: https://github.com/canonical/metacontroller-operator/issues/86
+    # Drop this wait_for_idle once the above issue is closed
+    await ops_test.model.wait_for_idle(apps=["admission-webhook"], status="active")
+
     await ops_test.model.deploy(
-        entity_url=built_charm_path,
-        application_name=APP_NAME,
-        resources=resources,
+        entity_url="metacontroller-operator",
+        # TODO: Revert once metacontroller stable supports k8s 1.22
+        channel="latest/edge",
+        # Remove this config option after the metacontroller-operator is updated to v3
+        config={"metacontroller-image": "docker.io/metacontrollerio/metacontroller:v3.0.0"},
+        trust=True,
+    )
+
+    await ops_test.model.deploy(
+        built_charm_path, application_name=CHARM_NAME, resources=resources, trust=True
     )
 
     # Deploy required relations
     await ops_test.model.deploy(entity_url=MINIO_APP_NAME, config=MINIO_CONFIG)
     await ops_test.model.add_relation(
-        f"{APP_NAME}:object-storage",
+        f"{CHARM_NAME}:object-storage",
         f"{MINIO_APP_NAME}:object-storage",
     )
 
@@ -51,15 +70,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
         channel="latest/edge",
         trust=True,
     )
-    await ops_test.model.deploy(
-        entity_url="metacontroller-operator",
-        # TODO: Revert once metacontroller stable supports k8s 1.22
-        channel="latest/edge",
-        trust=True,
-    )
 
-    # Maybe: await ops_test.model.wait_for_idle(raise_on_error=False, raise_on_blocked=True) ?
-    await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
+    # Wait for everything to deploy
+    await ops_test.model.wait_for_idle(status="active", raise_on_blocked=False, timeout=60 * 10)
 
 
 @pytest.mark.abort_on_fail
@@ -71,7 +84,7 @@ async def test_profile_and_resources_creation(lightkube_client, profile):
 
 @pytest.fixture(scope="session")
 def lightkube_client() -> lightkube.Client:
-    client = lightkube.Client(field_manager=f"{APP_NAME}")
+    client = lightkube.Client(field_manager=f"{CHARM_NAME}")
     create_global_resource(group="kubeflow.org", version="v1", kind="Profile", plural="profiles")
     return client
 
@@ -164,19 +177,11 @@ async def test_model_resources(ops_test: OpsTest):
         ops_test=ops_test,
     )
 
-    await assert_workload_running(ops_test)
-
-
-async def assert_workload_running(ops_test):
-    lightkube_client = lightkube.Client()
-    pod_status = lightkube_client.get(Pod, f"{APP_NAME}-operator-0", namespace=ops_test.model_name)
-    assert pod_status.status.phase == "Running"
-
 
 async def assert_minio_secret(access_key, secret_key, ops_test):
     lightkube_client = lightkube.Client()
     secret = lightkube_client.get(
-        Secret, f"{APP_NAME}-minio-credentials", namespace=ops_test.model_name
+        Secret, f"{CHARM_NAME}-minio-credentials", namespace=ops_test.model_name
     )
     assert b64decode(secret.data["MINIO_ACCESS_KEY"]).decode("utf-8") == access_key
     assert b64decode(secret.data["MINIO_SECRET_KEY"]).decode("utf-8") == secret_key
@@ -192,6 +197,22 @@ async def test_minio_config_changed(ops_test: OpsTest):
     )
     await ops_test.model.wait_for_idle(status="active", timeout=600)
 
-    assert_minio_secret(minio_access_key, minio_secret_key, ops_test)
+    await assert_minio_secret(minio_access_key, minio_secret_key, ops_test)
 
-    assert ops_test.model.applications[APP_NAME].units[0].workload_status == "active"
+    assert ops_test.model.applications[CHARM_NAME].units[0].workload_status == "active"
+
+
+async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
+    """Test that the sync webhook deploys the desired resources."""
+    # skipping kfp-launcher ConfigMap since the charm hardcodes KFP_DEFAULT_PIPELINE_ROOT to ""
+    desired_resources = [
+        (ConfigMap, "metadata-grpc-configmap"),
+        (Deployment, "ml-pipeline-visualizationserver"),
+        (Service, "ml-pipeline-visualizationserver"),
+        (Deployment, "ml-pipeline-ui-artifact"),
+        (Service, "ml-pipeline-ui-artifact"),
+        (PodDefault, "access-ml-pipeline"),
+        (Secret, "mlpipeline-minio-artifact"),
+    ]
+    for resource, name in desired_resources:
+        lightkube_client.get(resource, name=name, namespace=profile)
