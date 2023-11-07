@@ -23,12 +23,13 @@ jobs:
           channel: 1.25-strict/stable
           juju-channel: 3.1/stable
           charmcraft-channel: latest/candidate
+          microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
-      - name: echo
-        run: echo hello world
-
-      - name: microk8s status
-        run: sg snap_microk8s -c "microk8s status"
-
-      - name: juju version
-        run: juju version
+      - name: Run test
+        run: |
+          # Requires the model to be called kubeflow due to kfp-viewer
+          juju add-model kubeflow
+          # Run integration tests against the 1.7 generic install bundle definition
+          # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
+          # and https://github.com/canonical/charmcraft/issues/1138
+          sg snap_microk8s -c "tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode"
