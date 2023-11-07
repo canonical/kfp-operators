@@ -28,7 +28,7 @@ jobs:
         run: echo hello world
 
       - name: microk8s status
-        run: microk8s status
+        run: sg snap_microk8s -c "microk8s status"
 
       - name: juju version
         run: juju version
