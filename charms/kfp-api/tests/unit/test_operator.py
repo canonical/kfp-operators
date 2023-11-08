@@ -9,7 +9,7 @@ import yaml
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import KFP_API_SERVICE_NAME, ErrorWithStatus, KfpApiOperator
+from charm import APISERVER_SVC_NAME, KFP_API_SERVICE_NAME, ErrorWithStatus, KfpApiOperator
 
 KFP_API_CONTAINER_NAME = "apiserver"
 
@@ -51,7 +51,7 @@ def harness() -> Harness:
 class TestCharm:
     """Test class for KfamApiOperator."""
 
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KubernetesServicePatch", lambda x, ports, service_name: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_not_leader(self, k8s_resource_handler: MagicMock, harness: Harness):
         harness.begin_with_initial_hooks()
@@ -101,7 +101,7 @@ class TestCharm:
             ),
         ),
     )
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KubernetesServicePatch", lambda x, ports, service_name: None)
     def test_mysql_relation(
         self,
         relation_data,
@@ -132,7 +132,7 @@ class TestCharm:
         with does_not_raise():
             harness.charm._get_db_data()
 
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KubernetesServicePatch", lambda x, ports, service_name: None)
     def test_mysql_relation_too_many_relations(self, mocked_lightkube_client, harness: Harness):
         harness.set_leader(True)
         harness.begin()
@@ -150,7 +150,7 @@ class TestCharm:
             "Too many mysql relations. Relation mysql is deprecated."
         )
 
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KubernetesServicePatch", lambda x, ports, service_name: None)
     def test_kfp_viz_relation_missing(self, mocked_lightkube_client, harness: Harness):
         harness.set_leader(True)
         harness.begin()
@@ -302,7 +302,7 @@ class TestCharm:
             ),
         ),
     )
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KubernetesServicePatch", lambda x, ports, service_name: None)
     def test_relations_that_provide_data(
         self,
         relation_name,
@@ -333,7 +333,7 @@ class TestCharm:
         else:
             assert partial_relation_data.value.status == expected_status
 
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KubernetesServicePatch", lambda x, ports, service_name: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_install_with_all_inputs_and_pebble(
         self,
@@ -400,12 +400,11 @@ class TestCharm:
 
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
-        this_app_name = harness.charm.model.app.name
 
         # Test that we sent data to anyone subscribing to us
         kfpapi_expected_versions = ["v1"]
         kfpapi_expected_data = {
-            "service-name": f"{this_app_name}.{model_name}",
+            "service-name": f"{APISERVER_SVC_NAME}.{model_name}",
             "service-port": service_port,
         }
         kfpapi_sent_data = harness.get_relation_data(kfpapi_rel_id, "kfp-api")
@@ -479,7 +478,7 @@ class TestCharm:
         assert test_env == expected_env
         assert "test_model" == test_env["POD_NAMESPACE"]
 
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KubernetesServicePatch", lambda x, ports, service_name: None)
     @patch("charm.KfpApiOperator._apply_k8s_resources")
     @patch("charm.KfpApiOperator._check_status")
     @patch("charm.KfpApiOperator._generate_environment")

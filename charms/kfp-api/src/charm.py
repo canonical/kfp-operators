@@ -38,9 +38,9 @@ SAMPLE_CONFIG = CONFIG_DIR / "sample_config.json"
 METRICS_PATH = "/metrics"
 PROBE_PATH = "/apis/v1beta1/healthz"
 
+APISERVER_SVC_NAME = "ml-pipeline"
 K8S_RESOURCE_FILES = [
     "src/templates/auth_manifests.yaml.j2",
-    "src/templates/ml-pipeline-service.yaml.j2",
 ]
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
@@ -87,7 +87,8 @@ class KfpApiOperator(CharmBase):
         http_port = ServicePort(int(self._http_port), name="http-port")
         self.service_patcher = KubernetesServicePatch(
             self,
-            [grpc_port, http_port],
+            ports=[grpc_port, http_port],
+            service_name=APISERVER_SVC_NAME,
         )
 
         # setup events to be handled by main event handler
@@ -290,7 +291,7 @@ class KfpApiOperator(CharmBase):
         if interfaces["kfp-api"]:
             interfaces["kfp-api"].send_data(
                 {
-                    "service-name": f"{self.model.app.name}.{self.model.name}",
+                    "service-name": f"{APISERVER_SVC_NAME}.{self.model.name}",
                     "service-port": self.model.config["http-port"],
                 }
             )
