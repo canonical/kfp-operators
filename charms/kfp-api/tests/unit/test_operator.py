@@ -468,7 +468,9 @@ class TestCharm:
             # https://github.com/kubeflow/pipelines/issues/9689, described more in
             # https://github.com/canonical/minio-operator/pull/151
             # They're included here so that when the upstream issue is fixed we don't break
-            "OBJECTSTORECONFIG_HOST": f"{objectstorage_data['service']}.{objectstorage_data['namespace']}",
+            "OBJECTSTORECONFIG_HOST": (
+                f"{objectstorage_data['service']}.{objectstorage_data['namespace']}"
+            ),
             "OBJECTSTORECONFIG_PORT": str(objectstorage_data["port"]),
             "OBJECTSTORECONFIG_REGION": "",
         }
