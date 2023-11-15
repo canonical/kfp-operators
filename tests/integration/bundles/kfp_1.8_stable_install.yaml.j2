@@ -4,6 +4,7 @@ applications:
     charm: argo-controller
     channel: 3.3/stable
     scale: 1
+    trust: true
   argo-server:
     charm: argo-server
     channel: 3.3/stable
@@ -12,6 +13,20 @@ applications:
     charm: envoy
     channel: 2.0/stable
     scale: 1
+  istio-ingressgateway:
+    charm: istio-gateway
+    channel: 1.17/stable
+    scale: 1
+    options:
+      kind: ingress
+    trust: true
+  istio-pilot:
+    charm: istio-pilot
+    channel: 1.17/stable
+    scale: 1
+    options:
+      default-gateway: kubeflow-gateway
+    trust: true
   kfp-db:
     charm: mysql-k8s
     channel: 8.0/stable
@@ -129,3 +144,9 @@ relations:
   - minio:object-storage
 - - argo-controller:object-storage
   - minio:object-storage
+- - istio-pilot:istio-pilot
+  - istio-ingressgateway:istio-pilot
+- - istio-pilot:ingress
+  - kfp-ui:ingress
+- - istio-pilot:ingress
+  - envoy:ingress
