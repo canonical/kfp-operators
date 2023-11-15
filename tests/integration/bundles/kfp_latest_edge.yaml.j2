@@ -22,6 +22,11 @@ applications:
     options:
       default-gateway: kubeflow-gateway
     trust: true
+  kubeflow-roles:
+    charm: kubeflow-roles
+    channel: latest/edge
+    scale: 1
+    trust: true
 {%- if local_build == false %}
   kfp-api:                 { charm: ch:kfp-api, channel: latest/edge, scale: 1, trust: true}
   kfp-metadata-writer:     { charm: ch:kfp-metadata-writer, channel: latest/edge, scale: 1, trust: true}
