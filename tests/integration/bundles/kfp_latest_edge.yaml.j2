@@ -8,6 +8,20 @@ applications:
   mlmd:                    { charm: ch:mlmd, channel: latest/edge, scale: 1 }
   envoy:                   { charm: ch:envoy, channel: latest/edge, scale: 1 }
   kubeflow-profiles:       { charm: ch:kubeflow-profiles, channel: latest/edge, scale: 1, trust: true }
+  istio-ingressgateway:
+    charm: istio-gateway
+    channel: latest/edge
+    scale: 1
+    options:
+      kind: ingress
+    trust: true
+  istio-pilot:
+    charm: istio-pilot
+    channel: latest/edge
+    scale: 1
+    options:
+      default-gateway: kubeflow-gateway
+    trust: true
 {%- if local_build == false %}
   kfp-api:                 { charm: ch:kfp-api, channel: latest/edge, scale: 1, trust: true}
   kfp-metadata-writer:     { charm: ch:kfp-metadata-writer, channel: latest/edge, scale: 1, trust: true}
