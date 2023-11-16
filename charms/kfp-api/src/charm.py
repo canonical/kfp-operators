@@ -222,6 +222,7 @@ class KfpApiOperator(CharmBase):
             raise error
 
         env_vars = {
+            # Configurations that are also defined in the upstream manifests
             "AUTO_UPDATE_PIPELINE_DEFAULT_VERSION": self.model.config[
                 "auto-update-default-version"
             ],
@@ -231,11 +232,6 @@ class KfpApiOperator(CharmBase):
             "POD_NAMESPACE": self.model.name,
             "OBJECTSTORECONFIG_SECURE": "false",
             "OBJECTSTORECONFIG_BUCKETNAME": self.model.config["object-store-bucket-name"],
-            "DBCONFIG_USER": db_data["db_username"],
-            "DBCONFIG_PASSWORD": db_data["db_password"],
-            "DBCONFIG_DBNAME": db_data["db_name"],
-            "DBCONFIG_HOST": db_data["db_host"],
-            "DBCONFIG_PORT": db_data["db_port"],
             "DBCONFIG_CONMAXLIFETIME": "120s",
             "DB_DRIVER_NAME": "mysql",
             "DBCONFIG_MYSQLCONFIG_USER": db_data["db_username"],
@@ -252,6 +248,20 @@ class KfpApiOperator(CharmBase):
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": viz_data["service-name"],
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": viz_data["service-port"],
             "CACHE_IMAGE": self.model.config["cache-image"],
+            # Configurations charmed-kubeflow adds to those of upstream
+            "ARCHIVE_CONFIG_LOG_FILE_NAME": self.model.config["log-archive-filename"],
+            "ARCHIVE_CONFIG_LOG_PATH_PREFIX": self.model.config["log-archive-prefix"],
+            # OBJECTSTORECONFIG_HOST and _PORT set the object storage configurations,
+            # taking precedence over configuration in the config.json or
+            # MINIO_SERVICE_SERVICE_* environment variables.
+            # NOTE: While OBJECTSTORECONFIG_HOST and _PORT control the object store
+            # that the apiserver connects to, other parts of kfp currently cannot use
+            # object stores with arbitrary names.  See
+            # https://github.com/kubeflow/pipelines/issues/9689 and
+            # https://github.com/canonical/minio-operator/pull/151 for more details.
+            "OBJECTSTORECONFIG_HOST": f"{object_storage['service']}.{object_storage['namespace']}",
+            "OBJECTSTORECONFIG_PORT": str(object_storage["port"]),
+            "OBJECTSTORECONFIG_REGION": "",
         }
 
         return env_vars
