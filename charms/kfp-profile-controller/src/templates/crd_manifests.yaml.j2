@@ -23,14 +23,16 @@ spec:
     resource: services
     updateStrategy:
       method: InPlace
-  - apiVersion: networking.istio.io/v1alpha3
-    resource: destinationrules
-    updateStrategy:
-      method: InPlace
-  - apiVersion: security.istio.io/v1beta1
-    resource: authorizationpolicies
-    updateStrategy:
-      method: InPlace
+  # istio objects are intentionally omitted from Charmed Kubeflow.
+  # kfp-profile-controller currently does not use them, see in the sync.py.
+  # - apiVersion: networking.istio.io/v1alpha3
+  #   resource: destinationrules
+  #   updateStrategy:
+  #     method: InPlace
+  # - apiVersion: security.istio.io/v1beta1
+  #   resource: authorizationpolicies
+  #   updateStrategy:
+  #     method: InPlace
   hooks:
     sync:
       webhook:
