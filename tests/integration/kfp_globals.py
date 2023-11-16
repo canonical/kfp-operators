@@ -12,6 +12,7 @@ KFP_CHARMS = [
     "kfp-api",
     "kfp-metadata-writer",
     "kfp-persistence",
+    "kfp-profile-controller",
     "kfp-schedwf",
     "kfp-ui",
     "kfp-viewer",

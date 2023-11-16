@@ -31,6 +31,7 @@ applications:
   kfp-api:                 { charm: ch:kfp-api, channel: latest/edge, scale: 1, trust: true}
   kfp-metadata-writer:     { charm: ch:kfp-metadata-writer, channel: latest/edge, scale: 1, trust: true}
   kfp-persistence:         { charm: ch:kfp-persistence, channel: latest/edge, scale: 1, trust: true }
+  kfp-profile-controller:  { charm: ch:kfp-profile-controller, channel: latest/edge, scale: 1, trust: true }
   kfp-schedwf:             { charm: ch:kfp-schedwf, channel: latest/edge, scale: 1, trust: true}
   kfp-ui:                  { charm: ch:kfp-ui, channel: latest/edge, trust: true,            scale: 1 }
   kfp-viewer:              { charm: ch:kfp-viewer, channel: latest/edge, trust: true         scale: 1 }
@@ -49,6 +50,11 @@ applications:
   kfp-persistence:
     charm: {{ kfp_persistence }}
     resources: {{ kfp_persistence_resources }}
+    scale: 1
+    trust: true
+  kfp-profile-controller:
+    charm: {{ kfp_profile_controller }}
+    resources: {{ kfp_profile_controller_resources }}
     scale: 1
     trust: true
   kfp-schedwf:
@@ -84,3 +90,4 @@ relations:
 - [kfp-metadata-writer:grpc, mlmd:grpc]
 - [envoy:ingress, istio-pilot:ingress]
 - [istio-ingressgateway:istio-pilot, istio-pilot:istio-pilot]
+- [kfp-profile-controller:object-storage, minio:object-storage]
