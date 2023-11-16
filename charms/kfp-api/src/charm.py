@@ -252,11 +252,11 @@ class KfpApiOperator(CharmBase):
             "ARCHIVE_CONFIG_LOG_FILE_NAME": self.model.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": self.model.config["log-archive-prefix"],
             # OBJECTSTORECONFIG_HOST and _PORT set the object storage configurations,
-            # taking precedence over configuration in the config.json or 
-            # MINIO_SERVICE_SERVICE_* environment variables.  
+            # taking precedence over configuration in the config.json or
+            # MINIO_SERVICE_SERVICE_* environment variables.
             # NOTE: While OBJECTSTORECONFIG_HOST and _PORT control the object store
             # that the apiserver connects to, other parts of kfp currently cannot use
-            # object stores with arbitrary names.  See 
+            # object stores with arbitrary names.  See
             # https://github.com/kubeflow/pipelines/issues/9689 and
             # https://github.com/canonical/minio-operator/pull/151 for more details.
             "OBJECTSTORECONFIG_HOST": f"{object_storage['service']}.{object_storage['namespace']}",
