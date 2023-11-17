@@ -77,14 +77,6 @@ class KfpApiOperator(CharmBase):
         self._database_name = "mlpipeline"
         self._container = self.unit.get_container(self._container_name)
 
-        # setup context to be used for updating K8S resources
-        self._context = {
-            "app_name": self._name,
-            "namespace": self._namespace,
-            "service": self._name,
-            "grpc_port": self._grcp_port,
-            "http_port": self._http_port,
-        }
         self._k8s_resource_handler = None
 
         grpc_port = ServicePort(int(self._grcp_port), name="grpc-port")
@@ -159,6 +151,21 @@ class KfpApiOperator(CharmBase):
     def container(self):
         """Return container."""
         return self._container
+
+    @property
+    def _context(self):
+        """Return the context used for generating kubernetes resources."""
+        interfaces = self._get_interfaces()
+        os = self._get_object_storage(interfaces)
+
+        context = {
+            "app_name": self._name,
+            "namespace": self._namespace,
+            "service": self._name,
+            "grpc_port": self._grcp_port,
+            "http_port": self._http_port,
+        }
+        return context
 
     @property
     def k8s_resource_handler(self):
