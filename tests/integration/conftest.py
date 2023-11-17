@@ -6,8 +6,8 @@ import subprocess
 import time
 from pathlib import Path
 
-from helpers.k8s_resources import apply_manifests
-from kfp_globals import *
+from .helpers.k8s_resources import apply_manifests
+from .kfp_globals import *
 
 import kfp
 import kfp_server_api
@@ -87,38 +87,6 @@ def lightkube_client() -> lightkube.Client:
     """Returns a lightkube Client that can talk to the K8s API."""
     client = lightkube.Client(field_manager="kfp-operators")
     return client
-
-
-@pytest.fixture(scope="function")
-def upload_and_clean_pipeline(kfp_client: kfp.Client):
-    """Upload an arbitrary pipeline and remove after test case execution."""
-    # The pipeline that will be uploaded is a v2 pipeline, this should
-    # not affect the test execution or its results
-    pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
-        uploadfile=SAMPLE_PIPELINE["v2"], name=SAMPLE_PIPELINE_NAME
-    )
-    pipeline_version_id = (
-        kfp_client.list_pipeline_versions(pipeline_upload_response.pipeline_id)
-        .pipeline_versions[0]
-        .pipeline_version_id
-    )
-
-    yield pipeline_upload_response, pipeline_version_id
-
-    kfp_client.delete_pipeline_version(pipeline_upload_response.pipeline_id, pipeline_version_id)
-    kfp_client.delete_pipeline(pipeline_upload_response.pipeline_id)
-
-
-@pytest.fixture(scope="function")
-def create_and_clean_experiment(kfp_client: kfp.Client):
-    """Create an experiment and remove after test case execution."""
-    experiment_response = kfp_client.create_experiment(
-        name="test-experiment", namespace=KUBEFLOW_PROFILE_NAMESPACE
-    )
-
-    yield experiment_response
-
-    kfp_client.delete_experiment(experiment_id=experiment_response.experiment_id)
 
 
 def pytest_addoption(parser: Parser):

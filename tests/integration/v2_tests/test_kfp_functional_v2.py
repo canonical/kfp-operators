@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-"""Functional tests for kfp-operators."""
+"""Functional tests for kfp-operators with the KFP SDK v2."""
 import logging
 import time
 from pathlib import Path
 
-from helpers.bundle_mgmt import render_bundle, deploy_bundle
-from helpers.k8s_resources import apply_manifests, fetch_response
-from helpers.localize_bundle import get_resources_from_charm_file
-from kfp_globals import (
+from ..helpers.bundle_mgmt import render_bundle, deploy_bundle
+from ..helpers.k8s_resources import apply_manifests, fetch_response
+from ..helpers.localize_bundle import get_resources_from_charm_file
+from ..kfp_globals import (
     CHARM_PATH_TEMPLATE,
     KFP_CHARMS,
     KUBEFLOW_PROFILE_NAMESPACE,
@@ -25,7 +25,7 @@ from lightkube.generic_resource import create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
 from pytest_operator.plugin import OpsTest
 
-
+KFP_SDK_VERSION="v2"
 log = logging.getLogger(__name__)
 
 @pytest.mark.abort_on_fail
@@ -78,15 +78,12 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
 
 
 # ---- KFP API Server focused test cases
-@pytest.mark.parametrize(
-    "pipeline_name, kfp_version",
-    [("test-upload-pipeline-v1", "v1"), ("test-upload-pipeline-v2", "v2")],
-)
-async def test_upload_pipeline(pipeline_name, kfp_version, kfp_client):
+async def test_upload_pipeline(kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
     # Upload a pipeline and get the server response
+    pipeline_name = f"test-pipeline-sdk-{KFP_SDK_VERSION}"
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
-        uploadfile=SAMPLE_PIPELINE[kfp_version], name=pipeline_name
+        uploadfile=SAMPLE_PIPELINE[KFP_SDK_VERSION], name=pipeline_name,
     )
     # Upload a pipeline and get its ID
     uploaded_pipeline_id = pipeline_upload_response.pipeline_id
@@ -96,8 +93,7 @@ async def test_upload_pipeline(pipeline_name, kfp_version, kfp_client):
     assert uploaded_pipeline_id == server_pipeline_id
 
 
-@pytest.mark.parametrize("kfp_version", ["v1", "v2"])
-async def test_create_and_monitor_run(kfp_version, kfp_client, create_and_clean_experiment):
+async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment):
     """Create a run and monitor it to completion."""
     # Create a run, save response in variable for easy manipulation
     # Create an experiment for this run
@@ -106,26 +102,18 @@ async def test_create_and_monitor_run(kfp_version, kfp_client, create_and_clean_
     # Create a run from a pipeline file (SAMPLE_PIPELINE) and an experiment (create_experiment).
     # This call uses the 'default' kubeflow service account to be able to edit Workflows
     create_run_response = kfp_client.create_run_from_pipeline_package(
-        pipeline_file=SAMPLE_PIPELINE[kfp_version],
+        pipeline_file=SAMPLE_PIPELINE[KFP_SDK_VERSION],
         arguments={},
-        run_name=f"test-run-sdk-{kfp_version}",
+        run_name=f"test-run-sdk-{KFP_SDK_VERSION}",
         experiment_name=experiment_response.display_name,
         namespace=KUBEFLOW_PROFILE_NAMESPACE,
     )
 
-    # FIXME: waiting_for_run_completion timeouts on GitHub runners
-    # Related issue: https://github.com/canonical/kfp-operators/issues/244
     # Monitor the run to completion, the pipeline should not be executed in
     # more than 300 seconds as it is a very simple operation
     monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=600)
 
     assert monitor_response.state == "SUCCEEDED"
-
-    # TODO: remove after checking the above assertion passes in GH runners
-    # At least get the run and extract some data while the previous check
-    # works properly on the GitHub runners
-    # test_run = kfp_client.get_run(create_run_response.run_id)
-    # assert test_run is not None
 
 
 # ---- ScheduledWorfklows and Argo focused test case
