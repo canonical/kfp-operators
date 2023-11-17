@@ -620,6 +620,7 @@ class TestCharm:
         harness: Harness,
     ):
         """Test that a relation broken event is properly handled."""
+        # Arrange
         database = MagicMock()
         fetch_relation_data = MagicMock(side_effect=KeyError())
         database.fetch_relation_data = fetch_relation_data
@@ -631,7 +632,22 @@ class TestCharm:
         rel_id = harness.add_relation(rel_name, "relational-db-provider")
 
         harness.begin()
+
+        # Mock the object storage data access to keep it from blocking the charm
+        # Cannot mock by adding a relation to the harness because harness.model.get_relation is
+        # mocked above to be specific to the db relation.  This test's mocks could use a refactor.
+        objectstorage_data = {
+            "access-key": "access-key",
+            "namespace": "namespace",
+            "port": 1234,
+            "secret-key": "secret-key",
+            "secure": True,
+            "service": "service",
+        }
+        harness.charm._get_object_storage = MagicMock(return_value=objectstorage_data)
         harness.set_leader(True)
+
+        # Act and Assert
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
 
         assert harness.model.unit.status == WaitingStatus("Waiting for relational-db data")
