@@ -109,7 +109,7 @@ async def test_create_and_monitor_run(kfp_version, kfp_client, create_and_clean_
     create_run_response = kfp_client.create_run_from_pipeline_package(
         pipeline_file=SAMPLE_PIPELINE[kfp_version],
         arguments={},
-        run_name=f"test-run-{kfp_version}",
+        run_name=f"test-run-sdk-{kfp_version}",
         experiment_name=experiment_response.name,
         namespace=KUBEFLOW_PROFILE_NAMESPACE,
     )
