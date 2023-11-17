@@ -28,7 +28,6 @@ from pytest_operator.plugin import OpsTest
 
 log = logging.getLogger(__name__)
 
-
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     """Build and deploy kfp-operators charms."""
@@ -87,10 +86,10 @@ async def test_upload_pipeline(pipeline_name, kfp_version, kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
     # Upload a pipeline and get the server response
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
-        uploadfile=SAMPLE_FILE[kfp_version], name=pipeline_name
+        uploadfile=SAMPLE_PIPELINE[kfp_version], name=pipeline_name
     )
     # Upload a pipeline and get its ID
-    uploaded_pipeline_id = pipeline_upload_response.id
+    uploaded_pipeline_id = pipeline_upload_response.pipeline_id
 
     # Get pipeline id by name, default='sample-pipeline'
     server_pipeline_id = kfp_client.get_pipeline_id(name=pipeline_name)
@@ -110,7 +109,7 @@ async def test_create_and_monitor_run(kfp_version, kfp_client, create_and_clean_
         pipeline_file=SAMPLE_PIPELINE[kfp_version],
         arguments={},
         run_name=f"test-run-sdk-{kfp_version}",
-        experiment_name=experiment_response.name,
+        experiment_name=experiment_response.display_name,
         namespace=KUBEFLOW_PROFILE_NAMESPACE,
     )
 
@@ -118,14 +117,15 @@ async def test_create_and_monitor_run(kfp_version, kfp_client, create_and_clean_
     # Related issue: https://github.com/canonical/kfp-operators/issues/244
     # Monitor the run to completion, the pipeline should not be executed in
     # more than 300 seconds as it is a very simple operation
-    # monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=600)
+    monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=600)
 
-    # assert monitor_response.run.status == "Succeeded"
+    assert monitor_response.state == "SUCCEEDED"
 
+    # TODO: remove after checking the above assertion passes in GH runners
     # At least get the run and extract some data while the previous check
     # works properly on the GitHub runners
-    test_run = kfp_client.get_run(create_run_response.run_id).run
-    assert test_run is not None
+    # test_run = kfp_client.get_run(create_run_response.run_id)
+    # assert test_run is not None
 
 
 # ---- ScheduledWorfklows and Argo focused test case
@@ -135,7 +135,7 @@ async def test_create_and_monitor_recurring_run(
     """Create a recurring run and monitor it to completion."""
 
     # Upload a pipeline from file
-    pipeline_response = upload_and_clean_pipeline
+    pipeline_response, pipeline_version_id = upload_and_clean_pipeline
 
     # Create an experiment for this run
     experiment_response = create_and_clean_experiment
@@ -144,17 +144,19 @@ async def test_create_and_monitor_recurring_run(
     # This call uses the 'default' kubeflow service account to be able to edit ScheduledWorkflows
     # This ScheduledWorkflow (Recurring Run) will run once every two seconds
     create_recurring_run_response = kfp_client.create_recurring_run(
-        experiment_id=experiment_response.id,
+        experiment_id=experiment_response.experiment_id,
         job_name="recurring-job-1",
-        pipeline_id=pipeline_response.id,
+        pipeline_id=pipeline_response.pipeline_id,
+        version_id=pipeline_version_id,
         enabled=True,
         cron_expression="*/2 * * * * *",
         max_concurrency=1,
     )
 
     recurring_job = create_recurring_run_response
+
     # Assert the job is enabled
-    assert recurring_job.enabled is True
+    assert recurring_job.status == "ENABLED"
 
     # Assert the job executes once every two seconds
     assert recurring_job.trigger.cron_schedule.cron == "*/2 * * * * *"
@@ -167,10 +169,11 @@ async def test_create_and_monitor_recurring_run(
     # following assertion to fail
     # Related issue: https://github.com/canonical/kfp-operators/issues/244
     # Disable the job after few runs
-    kfp_client.disable_job(recurring_job.id)
+
+    kfp_client.disable_recurring_run(recurring_job.recurring_run_id)
 
     # Assert the job is disabled
-    # assert recurring_job.enabled is False
+    # assert recurring_job.status is "DISABLED"
 
 
 # ---- KFP Viewer and Visualization focused test cases
