@@ -92,8 +92,10 @@ def lightkube_client() -> lightkube.Client:
 @pytest.fixture(scope="function")
 def upload_and_clean_pipeline(kfp_client: kfp.Client):
     """Upload an arbitrary pipeline and remove after test case execution."""
+    # The pipeline that will be uploaded is a v2 pipelline, this should
+    # not affect the test execution or its results
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
-        uploadfile=SAMPLE_PIPELINE, name=SAMPLE_PIPELINE_NAME
+            uploadfile=SAMPLE_PIPELINE["v2"], name=SAMPLE_PIPELINE_NAME
     )
 
     yield pipeline_upload_response
