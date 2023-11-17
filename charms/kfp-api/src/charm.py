@@ -45,6 +45,7 @@ PROBE_PATH = "/apis/v1beta1/healthz"
 K8S_RESOURCE_FILES = [
     "src/templates/auth_manifests.yaml.j2",
     "src/templates/ml-pipeline-service.yaml.j2",
+    "src/templates/minio-service.yaml.j2",
 ]
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
@@ -164,6 +165,9 @@ class KfpApiOperator(CharmBase):
             "service": self._name,
             "grpc_port": self._grcp_port,
             "http_port": self._http_port,
+            # Must include .svc.cluster.local for DNS resolution
+            "minio_url": f"{os['service']}.{os['namespace']}.svc.cluster.local",
+            "minio_port": str(os["port"]),
         }
         return context
 
@@ -563,10 +567,15 @@ class KfpApiOperator(CharmBase):
                 raise GenericCharmRuntimeError("K8S resources creation failed") from error
         self.model.unit.status = MaintenanceStatus("K8S resources created")
 
-    def _on_install(self, _):
+    def _on_install(self, event):
         """Installation only tasks."""
-        # deploy K8S resources to speed up deployment
-        self._apply_k8s_resources()
+        try:
+            # deploy K8S resources early to speed up deployment
+            self._apply_k8s_resources()
+        except ErrorWithStatus as err:
+            self.model.unit.status = err.status
+            self.logger.error(f"Failed to handle {event} with error: {err}")
+            return
 
     def _on_upgrade(self, _):
         """Perform upgrade steps."""

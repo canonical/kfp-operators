@@ -663,3 +663,52 @@ class TestCharm:
 
         harness.charm.on.remove.emit()
         assert harness.model.unit.status == MaintenanceStatus("K8S resources removed")
+
+    def test_minio_service_rendered_as_expected(
+        self,
+        mocked_kubernetes_service_patcher,
+        harness: Harness,
+    ):
+        # Arrange
+
+        # object storage relation
+        objectstorage_data = {
+            "access-key": "access-key",
+            "namespace": "namespace",
+            "port": 1234,
+            "secret-key": "secret-key",
+            "secure": True,
+            "service": "service",
+        }
+        objectstorage_data_dict = {
+            "_supported_versions": "- v1",
+            "data": yaml.dump(objectstorage_data),
+        }
+        objectstorage_rel_id = harness.add_relation("object-storage", "storage-provider")
+        harness.add_relation_unit(objectstorage_rel_id, "storage-provider/0")
+        harness.update_relation_data(
+            objectstorage_rel_id, "storage-provider", objectstorage_data_dict
+        )
+
+        harness.set_leader(True)
+        harness.set_model_name("model")
+        harness.begin()
+
+        # Act
+        krh = harness.charm.k8s_resource_handler
+        manifests = krh.render_manifests()
+
+        # Assert that manifests include a Service(name='minio-service'), and that it has the
+        # expected configuration data from object-storage
+        minio_service = next(
+            (m for m in manifests if m.kind == "Service" and m.metadata.name == "minio-service"),
+            None,
+        )
+        assert minio_service.metadata.namespace == harness.charm.model.name
+        assert (
+            minio_service.spec.externalName
+            == f"{objectstorage_data['service']}.{objectstorage_data['namespace']}"
+            f".svc.cluster.local"
+        )
+        assert len(minio_service.spec.ports) == 1
+        assert minio_service.spec.ports[0].targetPort == objectstorage_data["port"]
