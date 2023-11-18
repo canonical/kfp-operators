@@ -14,6 +14,7 @@ from kfp_globals import (
     KFP_CHARMS,
     KUBEFLOW_PROFILE_NAMESPACE,
     SAMPLE_PIPELINE,
+    SAMPLE_PIPELINE_NAME,
     SAMPLE_VIEWER,
 )
 
