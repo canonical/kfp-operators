@@ -86,9 +86,6 @@ class TestCharm:
         await ops_test.model.wait_for_idle(
             apps=["mysql-k8s"],
             status="active",
-            # mysql-k8s sometimes goes into error and then resolves itself.  Do not raise on error
-            # here so we don't flake the test when the situation will resolve itself.
-            raise_on_error=False,
             raise_on_blocked=True,
             timeout=90 * 30,
             idle_period=20,
