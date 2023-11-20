@@ -79,7 +79,7 @@ class TestCharm:
         # deploy mysql-k8s charm
         await ops_test.model.deploy(
             "mysql-k8s",
-            channel="8.0/edge",
+            channel="8.0/stable",
             config={"profile": "testing"},
             trust=True,
         )
