@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 def upload_and_clean_pipeline_v2(kfp_client: kfp.Client):
     """Upload an arbitrary v2 pipeline and remove after test case execution."""
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
-        uploadfile=SAMPLE_PIPELINE["v2"], name=SAMPLE_PIPELINE_NAME
+        uploadfile=SAMPLE_PIPELINE[KFP_SDK_VERSION], name=SAMPLE_PIPELINE_NAME
     )
     # The newer pipelines backend requires the deletion of the pipelines versions
     # before we can actually remove the pipeline. This variable extracts the pipeline
@@ -171,7 +171,7 @@ async def test_create_and_monitor_recurring_run(
     # This ScheduledWorkflow (Recurring Run) will run once every two seconds
     create_recurring_run_response = kfp_client.create_recurring_run(
         experiment_id=experiment_response.experiment_id,
-        job_name="recurring-job-1",
+        job_name=f"recurring-job-{KFP_SDK_VERSION}",
         pipeline_id=pipeline_response.pipeline_id,
         version_id=pipeline_version_id,
         enabled=True,

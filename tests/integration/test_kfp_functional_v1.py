@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 def upload_and_clean_pipeline_v1(kfp_client: kfp.Client):
     """Upload an arbitrary pipeline and remove after test case execution."""
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
-        uploadfile=SAMPLE_PIPELINE["v1"], name=SAMPLE_PIPELINE_NAME
+        uploadfile=SAMPLE_PIPELINE[KFP_SDK_VERSION], name=SAMPLE_PIPELINE_NAME
     )
     # The newer pipelines backend requires the deletion of the pipelines versions
     # before we can actually remove the pipeline. This variable extracts the pipeline
@@ -109,7 +109,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
         timeout=3600,
-        idle_period=120,
+        idle_period=30,
     )
 
 
@@ -177,7 +177,7 @@ async def test_create_and_monitor_recurring_run(
     # This ScheduledWorkflow (Recurring Run) will run once every two seconds
     create_recurring_run_response = kfp_client.create_recurring_run(
         experiment_id=experiment_response.id,
-        job_name="recurring-job-1",
+        job_name=f"recurring-job-{KFP_SDK_VERSION}",
         pipeline_id=pipeline_response.id,
         enabled=True,
         cron_expression="*/2 * * * * *",
