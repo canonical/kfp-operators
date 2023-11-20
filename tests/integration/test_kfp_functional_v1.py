@@ -39,6 +39,9 @@ def upload_and_clean_pipeline_v1(kfp_client: kfp.Client):
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
         uploadfile=SAMPLE_PIPELINE["v1"], name=SAMPLE_PIPELINE_NAME
     )
+    # The newer pipelines backend requires the deletion of the pipelines versions
+    # before we can actually remove the pipeline. This variable extracts the pipeline
+    # version id that can be used to remove it later in the test exectution.
     pipeline_version_id = (
         kfp_client.list_pipeline_versions(pipeline_upload_response.id).versions[0].id
     )
