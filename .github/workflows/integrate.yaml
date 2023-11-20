@@ -100,7 +100,10 @@ jobs:
           charmcraft-channel: latest/candidate
 
       - run: |
-          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration"
+          # Requires the model to be called kubeflow due to
+          # https://github.com/canonical/kfp-operators/issues/389
+          juju add-model kubeflow
+          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow"
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
