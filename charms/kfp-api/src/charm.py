@@ -157,7 +157,7 @@ class KfpApiOperator(CharmBase):
     def _context(self):
         """Return the context used for generating kubernetes resources."""
         interfaces = self._get_interfaces()
-        os = self._get_object_storage(interfaces)
+        object_storage = self._get_object_storage(interfaces)
 
         context = {
             "app_name": self._name,
@@ -166,8 +166,8 @@ class KfpApiOperator(CharmBase):
             "grpc_port": self._grcp_port,
             "http_port": self._http_port,
             # Must include .svc.cluster.local for DNS resolution
-            "minio_url": f"{os['service']}.{os['namespace']}.svc.cluster.local",
-            "minio_port": str(os["port"]),
+            "minio_url": f"{object_storage['service']}.{object_storage['namespace']}.svc.cluster.local",
+            "minio_port": str(object_storage["port"]),
         }
         return context
 
