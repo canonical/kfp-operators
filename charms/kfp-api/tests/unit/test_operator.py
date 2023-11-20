@@ -4,9 +4,9 @@
 from contextlib import nullcontext as does_not_raise
 from unittest.mock import MagicMock, patch
 
-from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
 import pytest
 import yaml
+from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from ops.testing import Harness
 

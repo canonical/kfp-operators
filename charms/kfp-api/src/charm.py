@@ -159,6 +159,8 @@ class KfpApiOperator(CharmBase):
         interfaces = self._get_interfaces()
         object_storage = self._get_object_storage(interfaces)
 
+        minio_url = f"{object_storage['service']}.{object_storage['namespace']}.svc.cluster.local"
+
         context = {
             "app_name": self._name,
             "namespace": self._namespace,
@@ -166,7 +168,7 @@ class KfpApiOperator(CharmBase):
             "grpc_port": self._grcp_port,
             "http_port": self._http_port,
             # Must include .svc.cluster.local for DNS resolution
-            "minio_url": f"{object_storage['service']}.{object_storage['namespace']}.svc.cluster.local",
+            "minio_url": minio_url,
             "minio_port": str(object_storage["port"]),
         }
         return context
@@ -294,7 +296,8 @@ class KfpApiOperator(CharmBase):
 
     def _check_model_name(self):
         if self.model.name != "kubeflow":
-            # Remove when this bug is resolved: https://github.com/canonical/kfp-operators/issues/389
+            # Remove when this bug is resolved:
+            # https://github.com/canonical/kfp-operators/issues/389
             raise ErrorWithStatus(
                 "kfp-api must be deployed to model named `kubeflow` due to"
                 " https://github.com/canonical/kfp-operators/issues/389",
