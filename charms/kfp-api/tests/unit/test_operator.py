@@ -22,7 +22,7 @@ def mocked_resource_handler(mocker):
     mocked_resource_handler_factory = mocker.patch("charm.KubernetesResourceHandler")
 
     def return_krh_with_mocked_lightkube(*args, **kwargs):
-        kwargs['lightkube_client'] = MagicMock()
+        kwargs["lightkube_client"] = MagicMock()
         return KubernetesResourceHandler(*args, **kwargs)
 
     mocked_resource_handler_factory.side_effect = return_krh_with_mocked_lightkube
@@ -703,9 +703,11 @@ class TestCharm:
 
         # Mock the KubernetesResourceHandler to always have a mocked Lightkube Client
         mocked_resource_handler_factory = mocker.patch("charm.KubernetesResourceHandler")
+
         def return_krh_with_mocked_lightkube(*args, **kwargs):
-            kwargs['lightkube_client'] = MagicMock()
+            kwargs["lightkube_client"] = MagicMock()
             return KubernetesResourceHandler(*args, **kwargs)
+
         mocked_resource_handler_factory.side_effect = return_krh_with_mocked_lightkube
 
         # Act
