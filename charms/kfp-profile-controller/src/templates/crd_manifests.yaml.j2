@@ -1,3 +1,6 @@
+# Source manifests/apps/pipeline/upstream/base/installs/multi-user/pipelines-profile-controller/composite-controller.yaml
+# Change resyncPeriodSeconds to 1 hour from insane 20 seconds
+# Only  sync namespaces with pipelines.kubeflow.org/enabled = "true"
 apiVersion: metacontroller.k8s.io/v1alpha1
 kind: DecoratorController
 metadata:
@@ -7,7 +10,7 @@ spec:
   - apiVersion: v1
     resource: secrets
     updateStrategy:
-      method: InPlace
+      method: OnDelete
   - apiVersion: v1
     resource: configmaps
     updateStrategy:
@@ -20,10 +23,16 @@ spec:
     resource: services
     updateStrategy:
       method: InPlace
-  - apiVersion: kubeflow.org/v1alpha1
-    resource: poddefaults
-    updateStrategy:
-      method: InPlace
+  # istio objects are intentionally omitted from Charmed Kubeflow.
+  # kfp-profile-controller currently does not use them, see in the sync.py.
+  # - apiVersion: networking.istio.io/v1alpha3
+  #   resource: destinationrules
+  #   updateStrategy:
+  #     method: InPlace
+  # - apiVersion: security.istio.io/v1beta1
+  #   resource: authorizationpolicies
+  #   updateStrategy:
+  #     method: InPlace
   hooks:
     sync:
       webhook:

@@ -24,7 +24,7 @@ applications:
     trust: true
   kfp-db:
     charm: mysql-k8s
-    channel: 8.0/edge
+    channel: 8.0/stable
     scale: 1
     options:
       profile: testing
@@ -46,34 +46,33 @@ applications:
 {%- if local_build == false %}
   kfp-api:
     charm: kfp-api
-    channel: 2.0/stable
+    channel: 2.0-alpha.7/stable
     scale: 1
     trust: true
   kfp-persistence:
     charm: kfp-persistence
-    channel: 2.0/stable
+    channel: 2.0-alpha.7/stable
     scale: 1
-    trust: true
+  kfp-profile-controller:
+    charm: kfp-profile-controller
+    channel: 2.0-alpha.7/stable
+    scale: 1
   kfp-schedwf:
     charm: kfp-schedwf
-    channel: 2.0/stable
+    channel: 2.0-alpha.7/stable
     scale: 1
-    trust: true
   kfp-ui:
     charm: kfp-ui
-    channel: 2.0/stable
+    channel: 2.0-alpha.7/stable
     scale: 1
-    trust: true
   kfp-viewer:
     charm: kfp-viewer
-    channel: 2.0/stable
+    channel: 2.0-alpha.7/stable
     scale: 1
-    trust: true
   kfp-viz:
     charm: kfp-viz
-    channel: 2.0/stable
+    channel: 2.0-alpha.7/stable
     scale: 1
-    trust: true
 {% else %}
   kfp-api:
     charm: {{ kfp_api }}
@@ -84,27 +83,26 @@ applications:
     charm: {{ kfp_persistence }}
     resources: {{ kfp_persistence_resources }}
     scale: 1
-    trust: true
+  kfp-profile-controller:
+    charm: {{ kfp_profile_controller }}
+    resources: {{ kfp_profile_controller_resources }}
+    scale: 1
   kfp-schedwf:
     charm: {{ kfp_schedwf }}
     resources: {{ kfp_schedwf_resources }}
     scale: 1
-    trust: true
   kfp-ui:
     charm: {{ kfp_ui }}
     resources: {{ kfp_ui_resources }}
     scale: 1
-    trust: true
   kfp-viewer:
     charm: {{ kfp_viewer }}
     resources: {{ kfp_viewer_resources }}
     scale: 1
-    trust: true
   kfp-viz:
     charm: {{ kfp_viz }}
     resources: {{ kfp_viz_resources }}
     scale: 1
-    trust: true
 {%- endif %}
 relations:
 - - kfp-api:kfp-api
@@ -121,6 +119,8 @@ relations:
   - kfp-ui:ingress
 - - kfp-api:kfp-api
   - kfp-ui:kfp-api
+- - kfp-profile-controller:object-storage
+  - minio:object-storage
 - - kfp-ui:object-storage
   - minio:object-storage
 - - argo-controller:object-storage

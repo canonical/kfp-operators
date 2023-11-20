@@ -1,4 +1,8 @@
 # Source: manifests/apps/pipeline/upstream/base/installs/multi-user/pipelines-profile-controller/sync.py
+# Note for Charmed Kubeflow developers: Because this file is a lightly modified version of an
+#   upstream file, we only make changes to it that are functionally required.  As much as possible,
+#   we keep the file comparable to upstream so it can easily be diffed.  In particular, keep the
+#   formatting as is even though it does not meet our own style configurations.
 # Copyright 2020-2021 The Kubeflow Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,10 +46,10 @@ def emit_settings_to_logs(settings):
 
 def get_settings_from_env(controller_port=None,
                           visualization_server_image=None, frontend_image=None,
-                          visualization_server_tag=None, frontend_tag=None,
-                          disable_istio_sidecar=None, minio_access_key=None, minio_secret_key=None,
+                          visualization_server_tag=None, frontend_tag=None, disable_istio_sidecar=None,
+                          minio_access_key=None, minio_secret_key=None, kfp_default_pipeline_root=None,
                           minio_host=None, minio_port=None, minio_namespace=None,
-                          kfp_default_pipeline_root=None, metadata_grpc_service_host=None,
+                          metadata_grpc_service_host=None,
                           metadata_grpc_service_port=None):
     """
     Returns a dict of settings from environment variables relevant to the controller
@@ -352,16 +356,24 @@ def server_factory(visualization_server_image,
                                         {'name': "MINIO_PORT", 'value': minio_port},
                                         {'name': "MINIO_HOST", 'value': minio_host},
                                         {'name': "MINIO_NAMESPACE", 'value': minio_namespace},
-                                        {'name': "MINIO_ACCESS_KEY", 'valueFrom':
-                                            {'secretKeyRef':
-                                                 {'key': "accesskey", 'name': 'mlpipeline-minio-artifact'}
-                                             }
-                                         },
-                                        {'name': "MINIO_SECRET_KEY", 'valueFrom':
-                                            {'secretKeyRef':
-                                                 {'key': "secretkey", 'name': 'mlpipeline-minio-artifact'}
-                                             }
-                                         },
+                                        {
+                                            "name": "MINIO_ACCESS_KEY",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "accesskey",
+                                                    "name": "mlpipeline-minio-artifact"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "MINIO_SECRET_KEY",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "secretkey",
+                                                    "name": "mlpipeline-minio-artifact"
+                                                }
+                                            }
+                                        }
                                     ],
                                     "resources": {
                                         "requests": {
@@ -452,6 +464,29 @@ def server_factory(visualization_server_image,
                             "app": "ml-pipeline-ui-artifact"
                         }
                     }
+                },
+                # This AuthorizationPolicy was added from https://github.com/canonical/kfp-operators/pull/356
+                # to fix https://github.com/canonical/notebook-operators/issues/311
+                # and https://github.com/canonical/kfp-operators/issues/355.
+                # Remove when istio sidecars are implemented.
+                {
+                    "apiVersion": "security.istio.io/v1beta1",
+                    "kind": "AuthorizationPolicy",
+                    "metadata": {"name": "ns-owner-access-istio-charmed", "namespace": namespace},
+                    "spec": {
+                        "rules": [
+                            {
+                                "when": [
+                                    {"key": "request.headers[kubeflow-userid]", "values": ["*"]}
+                                ]
+                            },
+                            {
+                                "to": [
+                                    {"operation": {"methods": ["GET"], "paths": ["*/api/kernels"]}}
+                                ]
+                            },
+                        ]
+                    },
                 },
             ]
             print('Received request:\n', json.dumps(parent, indent=2, sort_keys=True))

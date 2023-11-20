@@ -19,9 +19,8 @@ This directory has the following structure:
     │   ├── k8s_resources.py
     │   └── localize_bundle.py
     ├── kfp_globals.py
-    ├── pipelines
-    │   ├── sample_pipeline.yaml
-    │   └── sample_pipeline_execution_order.py
+    ├── pipelines/
+    │   └── ... # Sample pipelines
     ├── profile
     │   └── profile.yaml
     ├── test_kfp_functional.py

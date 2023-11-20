@@ -30,7 +30,7 @@ PROFILE_FILE = yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
 KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def forward_kfp_ui():
     """Port forward the kfp-ui service."""
     kfp_ui_process = subprocess.Popen(
@@ -46,7 +46,7 @@ def forward_kfp_ui():
     kfp_ui_process.terminate()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def apply_profile(lightkube_client):
     """Apply a Profile simulating a user."""
     # Create a Viewer namespaced resource
@@ -59,7 +59,7 @@ def apply_profile(lightkube_client):
 
     yield
 
-    # Remove namespace
+    # Remove profile
     read_yaml = Path(PROFILE_FILE_PATH).read_text()
     yaml_loaded = codecs.load_all_yaml(read_yaml)
     for obj in yaml_loaded:
@@ -73,7 +73,7 @@ def apply_profile(lightkube_client):
             raise api_error
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def kfp_client(apply_profile, forward_kfp_ui) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Instantiate the KFP Client
@@ -82,35 +82,11 @@ def kfp_client(apply_profile, forward_kfp_ui) -> kfp.Client:
     return client
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def lightkube_client() -> lightkube.Client:
     """Returns a lightkube Client that can talk to the K8s API."""
     client = lightkube.Client(field_manager="kfp-operators")
     return client
-
-
-@pytest.fixture(scope="function")
-def upload_and_clean_pipeline(kfp_client: kfp.Client):
-    """Upload an arbitrary pipeline and remove after test case execution."""
-    pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
-        uploadfile=SAMPLE_PIPELINE, name=SAMPLE_PIPELINE_NAME
-    )
-
-    yield pipeline_upload_response
-
-    kfp_client.delete_pipeline(pipeline_id=pipeline_upload_response.id)
-
-
-@pytest.fixture(scope="function")
-def create_and_clean_experiment(kfp_client: kfp.Client):
-    """Create an experiment and remove after test case execution."""
-    experiment_response = kfp_client.create_experiment(
-        name="test-experiment", namespace=KUBEFLOW_PROFILE_NAMESPACE
-    )
-
-    yield experiment_response
-
-    kfp_client.delete_experiment(experiment_id=experiment_response.id)
 
 
 def pytest_addoption(parser: Parser):

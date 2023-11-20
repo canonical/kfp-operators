@@ -14,6 +14,7 @@ jobs:
       matrix:
         charm:
           - kfp-api
+          - kfp-metadata-writer
           - kfp-persistence
           - kfp-profile-controller
           - kfp-schedwf
@@ -33,6 +34,7 @@ jobs:
       matrix:
         charm:
           - kfp-api
+          - kfp-metadata-writer
           - kfp-persistence
           - kfp-profile-controller
           - kfp-schedwf
@@ -52,6 +54,7 @@ jobs:
       matrix:
         charm:
           - kfp-api
+          - kfp-metadata-writer
           - kfp-persistence
           - kfp-profile-controller
           - kfp-schedwf
@@ -106,7 +109,11 @@ jobs:
   test-bundle:
     name: Test the bundle
     runs-on: ubuntu-20.04
-
+    strategy:
+      matrix:
+        sdk:
+          - v1
+          - v2
     steps:
       # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
       # Ideally we'd use self-hosted runners, but this effort is still not stable
@@ -142,7 +149,7 @@ jobs:
           # Run integration tests against the 1.7 generic install bundle definition
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
           # and https://github.com/canonical/charmcraft/issues/1138
-          sg snap_microk8s -c "tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.7_stable_install.yaml.j2 --destructive-mode"
+          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2 --destructive-mode"
 
       - name: Get all
         run: kubectl get all -A
