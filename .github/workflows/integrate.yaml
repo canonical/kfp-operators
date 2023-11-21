@@ -113,6 +113,7 @@ jobs:
     name: Test the bundle
     runs-on: ubuntu-20.04
     strategy:
+      fail-fast: false
       matrix:
         sdk:
           - v1
