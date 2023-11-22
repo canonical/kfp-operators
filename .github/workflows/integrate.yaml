@@ -99,7 +99,8 @@ jobs:
           juju-channel: 3.1/stable
           charmcraft-channel: latest/candidate
 
-      - run: |
+      - name: Integration tests
+        run: |
           # Requires the model to be called kubeflow due to
           # https://github.com/canonical/kfp-operators/issues/389
           juju add-model kubeflow
