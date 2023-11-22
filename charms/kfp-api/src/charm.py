@@ -11,8 +11,10 @@ import logging
 from pathlib import Path
 
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRuntimeError
-from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
-from charmed_kubeflow_chisme.lightkube.batch import delete_many
+from charmed_kubeflow_chisme.kubernetes import (
+    KubernetesResourceHandler,
+    create_charm_default_labels,
+)
 from charmed_kubeflow_chisme.pebble import update_layer
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
@@ -21,6 +23,8 @@ from jsonschema import ValidationError
 from lightkube import ApiError
 from lightkube.generic_resource import load_in_cluster_generic_resources
 from lightkube.models.core_v1 import ServicePort
+from lightkube.resources.core_v1 import Service, ServiceAccount
+from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from ops.charm import CharmBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, ModelError, WaitingStatus
@@ -143,6 +147,15 @@ class KfpApiOperator(CharmBase):
         )
 
     @property
+    def _charm_default_kubernetes_labels(self):
+        """Return default labels for Kubernetes resources."""
+        return create_charm_default_labels(
+            application_name=self.model.app.name,
+            model_name=self.model.name,
+            scope="all-resources",
+        )
+
+    @property
     def container(self):
         """Return container."""
         return self._container
@@ -156,6 +169,8 @@ class KfpApiOperator(CharmBase):
                 template_files=K8S_RESOURCE_FILES,
                 context=self._context,
                 logger=self.logger,
+                labels=self._charm_default_kubernetes_labels,
+                resource_types={Service, ServiceAccount, ClusterRole, ClusterRoleBinding},
             )
         load_in_cluster_generic_resources(self._k8s_resource_handler.lightkube_client)
         return self._k8s_resource_handler
@@ -554,14 +569,20 @@ class KfpApiOperator(CharmBase):
     def _on_remove(self, _):
         """Remove all resources."""
         self.unit.status = MaintenanceStatus("Removing K8S resources")
-        k8s_resources_manifests = self.k8s_resource_handler.render_manifests()
-        try:
-            delete_many(self.k8s_resource_handler.lightkube_client, k8s_resources_manifests)
-        except ApiError as error:
-            # do not log/report when resources were not found
-            if error.status.code != 404:
-                self.logger.error(f"Failed to delete K8S resources, with error: {error}")
-                raise error
+        # Define the KubernetesResourceHandler manually because the object storage conflict in
+        # `self._context` is not available anymore, and all we need is the labels/resource_types
+        # to delete the resources anyway
+        k8s_resource_handler = KubernetesResourceHandler(
+            field_manager=self._lightkube_field_manager,
+            template_files=[],
+            context={},
+            logger=self.logger,
+            labels=self._charm_default_kubernetes_labels,
+            resource_types={Service, ServiceAccount, ClusterRole, ClusterRoleBinding},
+        )
+        load_in_cluster_generic_resources(k8s_resource_handler.lightkube_client)
+        k8s_resource_handler.delete()
+
         self.unit.status = MaintenanceStatus("K8S resources removed")
 
     def _on_update_status(self, _):
