@@ -45,6 +45,7 @@ PROBE_PATH = "/apis/v1beta1/healthz"
 K8S_RESOURCE_FILES = [
     "src/templates/auth_manifests.yaml.j2",
     "src/templates/ml-pipeline-service.yaml.j2",
+    "src/templates/minio-service.yaml.j2",
 ]
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
@@ -77,14 +78,6 @@ class KfpApiOperator(CharmBase):
         self._database_name = "mlpipeline"
         self._container = self.unit.get_container(self._container_name)
 
-        # setup context to be used for updating K8S resources
-        self._context = {
-            "app_name": self._name,
-            "namespace": self._namespace,
-            "service": self._name,
-            "grpc_port": self._grcp_port,
-            "http_port": self._http_port,
-        }
         self._k8s_resource_handler = None
 
         grpc_port = ServicePort(int(self._grcp_port), name="grpc-port")
@@ -159,6 +152,26 @@ class KfpApiOperator(CharmBase):
     def container(self):
         """Return container."""
         return self._container
+
+    @property
+    def _context(self):
+        """Return the context used for generating kubernetes resources."""
+        interfaces = self._get_interfaces()
+        object_storage = self._get_object_storage(interfaces)
+
+        minio_url = f"{object_storage['service']}.{object_storage['namespace']}.svc.cluster.local"
+
+        context = {
+            "app_name": self._name,
+            "namespace": self._namespace,
+            "service": self._name,
+            "grpc_port": self._grcp_port,
+            "http_port": self._http_port,
+            # Must include .svc.cluster.local for DNS resolution
+            "minio_url": minio_url,
+            "minio_port": str(object_storage["port"]),
+        }
+        return context
 
     @property
     def k8s_resource_handler(self):
@@ -280,6 +293,16 @@ class KfpApiOperator(CharmBase):
         }
 
         return env_vars
+
+    def _check_model_name(self):
+        if self.model.name != "kubeflow":
+            # Remove when this bug is resolved:
+            # https://github.com/canonical/kfp-operators/issues/389
+            raise ErrorWithStatus(
+                "kfp-api must be deployed to model named `kubeflow` due to"
+                " https://github.com/canonical/kfp-operators/issues/389",
+                BlockedStatus,
+            )
 
     def _check_status(self):
         """Check status of workload and set status accordingly."""
@@ -556,10 +579,15 @@ class KfpApiOperator(CharmBase):
                 raise GenericCharmRuntimeError("K8S resources creation failed") from error
         self.model.unit.status = MaintenanceStatus("K8S resources created")
 
-    def _on_install(self, _):
+    def _on_install(self, event):
         """Installation only tasks."""
-        # deploy K8S resources to speed up deployment
-        self._apply_k8s_resources()
+        try:
+            # deploy K8S resources early to speed up deployment
+            self._apply_k8s_resources()
+        except ErrorWithStatus as err:
+            self.model.unit.status = err.status
+            self.logger.error(f"Failed to handle {event} with error: {err}")
+            return
 
     def _on_upgrade(self, _):
         """Perform upgrade steps."""
@@ -663,6 +691,7 @@ class KfpApiOperator(CharmBase):
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         # Set up all relations/fetch required data
         try:
+            self._check_model_name()
             self._check_leader()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             update_layer(self._container_name, self._container, self._kfp_api_layer, self.logger)

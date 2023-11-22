@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
+from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from ops.testing import Harness
 
@@ -16,18 +17,16 @@ KFP_API_CONTAINER_NAME = "apiserver"
 
 @pytest.fixture()
 def mocked_resource_handler(mocker):
-    """Yields a mocked resource handler."""
+    """Yields a mocked resource handler with a mocked Lightkube Client."""
     mocked_resource_handler = MagicMock()
     mocked_resource_handler_factory = mocker.patch("charm.KubernetesResourceHandler")
-    mocked_resource_handler_factory.return_value = mocked_resource_handler
+
+    def return_krh_with_mocked_lightkube(*args, **kwargs):
+        kwargs["lightkube_client"] = MagicMock()
+        return KubernetesResourceHandler(*args, **kwargs)
+
+    mocked_resource_handler_factory.side_effect = return_krh_with_mocked_lightkube
     yield mocked_resource_handler
-
-
-@pytest.fixture()
-def mocked_lightkube_client(mocker, mocked_resource_handler):
-    """Prevents lightkube clients from being created, returning a mock instead."""
-    mocked_resource_handler.lightkube_client = MagicMock()
-    yield mocked_resource_handler.lightkube_client
 
 
 @pytest.fixture()
@@ -45,6 +44,9 @@ def harness() -> Harness:
     # setup container networking simulation
     harness.set_can_connect(KFP_API_CONTAINER_NAME, True)
 
+    # Set required model name
+    harness.set_model_name("kubeflow")
+
     return harness
 
 
@@ -57,6 +59,15 @@ class TestCharm:
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
         assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    def test_check_model_name_failure(self, k8s_resource_handler: MagicMock, harness: Harness):
+        """Tests that the charm blocks if model name is not 'kubeflow'."""
+        harness.set_model_name("not-kubeflow")
+        harness.begin_with_initial_hooks()
+        assert isinstance(harness.charm.model.unit.status, BlockedStatus)
+        assert harness.charm.model.unit.status.message.startswith("kfp-api must be deployed to")
 
     @pytest.mark.parametrize(
         "relation_data,expected_returned_data,expected_raises,expected_status",
@@ -108,7 +119,6 @@ class TestCharm:
         expected_returned_data,
         expected_raises,
         expected_status,
-        mocked_lightkube_client,
         harness: Harness,
     ):
         harness.set_leader(True)
@@ -133,7 +143,7 @@ class TestCharm:
             harness.charm._get_db_data()
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_mysql_relation_too_many_relations(self, mocked_lightkube_client, harness: Harness):
+    def test_mysql_relation_too_many_relations(self, harness: Harness):
         harness.set_leader(True)
         harness.begin()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
@@ -151,7 +161,7 @@ class TestCharm:
         )
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_kfp_viz_relation_missing(self, mocked_lightkube_client, harness: Harness):
+    def test_kfp_viz_relation_missing(self, harness: Harness):
         harness.set_leader(True)
         harness.begin()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
@@ -310,8 +320,8 @@ class TestCharm:
         expected_returned_data,
         expected_raises,
         expected_status,
-        mocked_lightkube_client,
         harness: Harness,
+        mocked_resource_handler,
     ):
         harness.set_leader(True)
         harness.begin()
@@ -343,7 +353,7 @@ class TestCharm:
         """Test complete installation with all required relations and verify pebble layer."""
         harness.set_leader(True)
         kfpapi_relation_name = "kfp-api"
-        model_name = "test_model"
+        model_name = "kubeflow"
         service_port = "8888"
         harness.set_model_name(model_name)
         harness.update_config({"http-port": service_port})
@@ -477,7 +487,7 @@ class TestCharm:
         test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
 
         assert test_env == expected_env
-        assert "test_model" == test_env["POD_NAMESPACE"]
+        assert model_name == test_env["POD_NAMESPACE"]
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator._apply_k8s_resources")
@@ -513,7 +523,6 @@ class TestCharm:
     def test_relational_db_relation_no_data(
         self,
         mocked_resource_handler,
-        mocked_lightkube_client,
         mocked_kubernetes_service_patcher,
         harness: Harness,
     ):
@@ -536,7 +545,6 @@ class TestCharm:
     def test_relational_db_relation_missing_attributes(
         self,
         mocked_resource_handler,
-        mocked_lightkube_client,
         mocked_kubernetes_service_patcher,
         harness: Harness,
     ):
@@ -559,7 +567,6 @@ class TestCharm:
     def test_relational_db_relation_bad_data(
         self,
         mocked_resource_handler,
-        mocked_lightkube_client,
         mocked_kubernetes_service_patcher,
         harness: Harness,
     ):
@@ -582,7 +589,6 @@ class TestCharm:
     def test_relational_db_relation_with_data(
         self,
         mocked_resource_handler,
-        mocked_lightkube_client,
         mocked_kubernetes_service_patcher,
         harness: Harness,
     ):
@@ -615,11 +621,11 @@ class TestCharm:
     def test_relational_db_relation_broken(
         self,
         mocked_resource_handler,
-        mocked_lightkube_client,
         mocked_kubernetes_service_patcher,
         harness: Harness,
     ):
         """Test that a relation broken event is properly handled."""
+        # Arrange
         database = MagicMock()
         fetch_relation_data = MagicMock(side_effect=KeyError())
         database.fetch_relation_data = fetch_relation_data
@@ -631,7 +637,22 @@ class TestCharm:
         rel_id = harness.add_relation(rel_name, "relational-db-provider")
 
         harness.begin()
+
+        # Mock the object storage data access to keep it from blocking the charm
+        # Cannot mock by adding a relation to the harness because harness.model.get_relation is
+        # mocked above to be specific to the db relation.  This test's mocks could use a refactor.
+        objectstorage_data = {
+            "access-key": "access-key",
+            "namespace": "namespace",
+            "port": 1234,
+            "secret-key": "secret-key",
+            "secure": True,
+            "service": "service",
+        }
+        harness.charm._get_object_storage = MagicMock(return_value=objectstorage_data)
         harness.set_leader(True)
+
+        # Act and Assert
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
 
         assert harness.model.unit.status == WaitingStatus("Waiting for relational-db data")
@@ -647,3 +668,63 @@ class TestCharm:
 
         harness.charm.on.remove.emit()
         assert harness.model.unit.status == MaintenanceStatus("K8S resources removed")
+
+    def test_minio_service_rendered_as_expected(
+        self,
+        mocker,
+        mocked_kubernetes_service_patcher,
+        harness: Harness,
+    ):
+        # Arrange
+
+        # object storage relation
+        objectstorage_data = {
+            "access-key": "access-key",
+            "namespace": "namespace",
+            "port": 1234,
+            "secret-key": "secret-key",
+            "secure": True,
+            "service": "service",
+        }
+        objectstorage_data_dict = {
+            "_supported_versions": "- v1",
+            "data": yaml.dump(objectstorage_data),
+        }
+        objectstorage_rel_id = harness.add_relation("object-storage", "storage-provider")
+        harness.add_relation_unit(objectstorage_rel_id, "storage-provider/0")
+        harness.update_relation_data(
+            objectstorage_rel_id, "storage-provider", objectstorage_data_dict
+        )
+
+        harness.set_leader(True)
+        model_name = "kubeflow"
+        harness.set_model_name(model_name)
+        harness.begin()
+
+        # Mock the KubernetesResourceHandler to always have a mocked Lightkube Client
+        mocked_resource_handler_factory = mocker.patch("charm.KubernetesResourceHandler")
+
+        def return_krh_with_mocked_lightkube(*args, **kwargs):
+            kwargs["lightkube_client"] = MagicMock()
+            return KubernetesResourceHandler(*args, **kwargs)
+
+        mocked_resource_handler_factory.side_effect = return_krh_with_mocked_lightkube
+
+        # Act
+        krh = harness.charm.k8s_resource_handler
+        manifests = krh.render_manifests()
+
+        # Assert that manifests include a Service(name='minio-service'), and that it has the
+        # expected configuration data from object-storage
+        minio_service = next(
+            (m for m in manifests if m.kind == "Service" and m.metadata.name == "minio-service"),
+            None,
+        )
+        assert minio_service.metadata.namespace == harness.charm.model.name
+        assert (
+            minio_service.spec.externalName
+            == f"{objectstorage_data['service']}.{objectstorage_data['namespace']}"
+            f".svc.cluster.local"
+        )
+        assert len(minio_service.spec.ports) == 1
+        assert minio_service.spec.ports[0].targetPort == objectstorage_data["port"]

@@ -99,8 +99,12 @@ jobs:
           juju-channel: 3.1/stable
           charmcraft-channel: latest/candidate
 
-      - run: |
-          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration"
+      - name: Integration tests
+        run: |
+          # Requires the model to be called kubeflow due to
+          # https://github.com/canonical/kfp-operators/issues/389
+          juju add-model kubeflow
+          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow"
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
@@ -110,6 +114,7 @@ jobs:
     name: Test the bundle
     runs-on: ubuntu-20.04
     strategy:
+      fail-fast: false
       matrix:
         sdk:
           - v1
