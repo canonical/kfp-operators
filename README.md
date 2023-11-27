@@ -8,7 +8,7 @@
 [![Charmhub Viewer](https://charmhub.io/kfp-viewer/badge.svg)](https://charmhub.io/kfp-viewer)
 [![Charmhub Viz](https://charmhub.io/kfp-viz/badge.svg)](https://charmhub.io/kfp-viz)
 [![PR merge](https://github.com/canonical/kfp-operators/actions/workflows/on_push.yaml/badge.svg)](https://github.com/canonical/kfp-operators/actions/workflows/on_push.yaml)
-[![PR open](https://github.com/canonical/kfp-operators/actions/workflows/on_pull_request.yaml)](https://github.com/canonical/kfp-operators/actions/workflows/on_pull_request.yaml)
+[![PR open](https://github.com/canonical/kfp-operators/actions/workflows/on_pull_request.yaml/badge.svg)](https://github.com/canonical/kfp-operators/actions/workflows/on_pull_request.yaml)
 
 ### Overview
 This bundle encompasses the Kubernetes Python operators for Kubeflow Pipelines (see
