@@ -1,5 +1,6 @@
 # Source manifests/apps/pipeline/upstream/base/installs/multi-user/pipelines-profile-controller/composite-controller.yaml
 # Change resyncPeriodSeconds to 1 hour from insane 20 seconds
+# Change updateStrategy of secrets to InPlace to update on changing minio secret
 # Only  sync namespaces with pipelines.kubeflow.org/enabled = "true"
 apiVersion: metacontroller.k8s.io/v1alpha1
 kind: DecoratorController
@@ -10,7 +11,8 @@ spec:
   - apiVersion: v1
     resource: secrets
     updateStrategy:
-      method: OnDelete
+    # updateStrategy is set to InPlace, unlike OnDelete in upstream, to update on changing minio secret
+      method: InPlace
   - apiVersion: v1
     resource: configmaps
     updateStrategy:
