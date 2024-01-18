@@ -77,9 +77,11 @@ class TestCharm:
     async def test_relational_db_relation_with_mysql_relation(self, ops_test: OpsTest):
         """Test failure of addition of relational-db relation with mysql relation present."""
         # deploy mysql-k8s charm
+        # We should use `8.0/stable` once changes for 
+        # https://github.com/canonical/mysql-k8s-operator/issues/337 are published there.
         await ops_test.model.deploy(
             "mysql-k8s",
-            channel="8.0/stable",
+            channel="8.0/edge",
             config={"profile": "testing"},
             trust=True,
         )
