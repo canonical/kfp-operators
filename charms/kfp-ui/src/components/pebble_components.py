@@ -38,6 +38,8 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                         "override": "replace",
                         "summary": "entry point for ml-pipeline-ui",
                         # command should be updated each time we switch from upstream to ROCK image
+                        #  - upsstream: "command": "node dist/server.js ../client/ 3000"
+                        #  - rock: "command": "node /server/dist/server.js /client/ 3000"
                         "command": "node /server/dist/server.js /client/ 3000",  # Must be a string
                         "startup": "enabled",
                         # TODO: are these still the correct settings?
