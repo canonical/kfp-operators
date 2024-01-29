@@ -11,4 +11,4 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: gcr.io/ml-pipeline/scheduledworkflow:2.0.3
+    upstream-source: charmedkubeflow/scheduledworkflow:2.0.3-7d6d3e4
