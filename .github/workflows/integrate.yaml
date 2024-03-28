@@ -147,6 +147,10 @@ jobs:
           charmcraft-channel: latest/candidate
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
+      - uses: actions/checkout@v3
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
