@@ -10,12 +10,6 @@ on:
 jobs:
 
   tests:
-    name: Run Tests
+    name: Self-Hosted Runner
     uses: ./.github/workflows/integrate.yaml
-    secrets: inherit
-
-  # publish runs in parallel with tests, as we always publish in this situation
-  publish-charm:
-    name: Publish Charm
-    uses: ./.github/workflows/publish.yaml
     secrets: inherit
