@@ -8,136 +8,21 @@ on:
         required: true
 
 jobs:
-  lib-check:
-    name: Check libraries
-    strategy:
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-metadata-writer
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@main
-    secrets: inherit
-    with:
-        charm-path: ./charms/${{ matrix.charm }}
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-metadata-writer
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
+  self-hosted:
+    name: lightkube test
+    runs-on: [self-hosted, linux, X64, jammy, large]
     steps:
-      - uses: actions/checkout@v3
-      - run: python3 -m pip install tox
-      - run: tox -e ${{ matrix.charm }}-lint
-
-  unit:
-    name: Unit tests
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-metadata-writer
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    steps:
-      - uses: actions/checkout@v3
-      - run: python3 -m pip install tox
-      - run: tox -e ${{ matrix.charm }}-unit
-
-  integration:
-    name: Integration tests (microk8s)
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-api
-    steps:
-      # Ideally we'd use self-hosted runners, but this effort is still not stable
-      # This action will remove unused software (dotnet, haskell, android libs, codeql,
-      # and docker images) from the GH runner, which will liberate around 60 GB of storage
-      # distributed in 40GB for root and around 20 for a mnt point.
-      - name: Maximise GH runner space
-        uses: easimon/maximize-build-space@v7
-        with:
-          root-reserve-mb: 29696
-          remove-dotnet: 'true'
-          remove-haskell: 'true'
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-      - uses: actions/checkout@v3
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          channel: 1.25-strict/stable
-          juju-channel: 3.1/stable
-          charmcraft-channel: latest/candidate
-
-      - name: Integration tests
-        run: |
-          # Requires the model to be called kubeflow due to
-          # https://github.com/canonical/kfp-operators/issues/389
-          juju add-model kubeflow
-          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow"
-
-      - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
-        if: always()
-
-  test-bundle:
-    name: Test the bundle
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        sdk:
-          - v1
-          - v2
-    steps:
-      # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
-      # Ideally we'd use self-hosted runners, but this effort is still not stable
-      # This action will remove unused software (dotnet, haskell, android libs, codeql,
-      # and docker images) from the GH runner, which will liberate around 60 GB of storage
-      # distributed in 40GB for root and around 20 for a mnt point.
-      - name: Maximise GH runner space
-        uses: easimon/maximize-build-space@v7
-        with:
-          root-reserve-mb: 29696
-          remove-dotnet: 'true'
-          remove-haskell: 'true'
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-
       - name: Check out code
         uses: actions/checkout@v3
 
+      - name: Parse and enable DNS server
+        id: dns-name
+        run: |
+          dns_server=$(grep -oPm1 'Current DNS Server: \K[^\s]+' <<< "$(resolvectl status)")
+          echo "Using following DNS Server: $dns_server"
+
+          echo "MY_ADDONS=hostpath-storage ingress dns:$dns_server rbac registry metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'" >> $GITHUB_OUTPUT
+
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
@@ -145,25 +30,13 @@ jobs:
           channel: 1.25-strict/stable
           juju-channel: 3.1/stable
           charmcraft-channel: latest/candidate
-          microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
+          microk8s-addons: ${{ steps.dns-name.outputs.MY_ADDONS }}
 
-      - name: Run test
+      - name: Test lighkube access from host to microk8s
         run: |
-          # Requires the model to be called kubeflow due to kfp-viewer
-          juju add-model kubeflow
-          # Run integration tests against the 1.7 generic install bundle definition
-          # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
-          # and https://github.com/canonical/charmcraft/issues/1138
-          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2 --destructive-mode"
+          pip3 install -r self-hosted/requirements.txt
+          python3 self-hosted/lightkube-test.py
 
-      - name: Get all
-        run: kubectl get all -A
-        if: failure()
-
-      - name: Get juju status
-        run: juju status
-        if: failure()
-
-      - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
-        if: always()
+      - name: Test lighkube access from pod to microk8s
+        run: |
+          python3 self-hosted/lightkube-pod-test.py

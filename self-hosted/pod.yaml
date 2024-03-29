@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lightkube-pod
+  labels:
+    app: lightkube
+spec:
+  containers:
+  - name: lightkube-container
+    image: ubuntu:latest
+    command: ["/bin/bash", "-c"]
+    args:
+    - |
+      apt-get update && apt-get install -y python3-pip
+      pip3 install lightkube
+      python3 -c "
+      import lightkube
+      from lightkube.resources.core_v1 import Pod
+
+      client = lightkube.Client()
+      pod = client.get(Pod, name='lightkube-pod', namespace='default')
+      print(pod.metadata.name)
+      "
+  restartPolicy: Never
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-reader
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pod-reader-binding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+
