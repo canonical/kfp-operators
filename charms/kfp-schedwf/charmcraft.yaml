@@ -10,4 +10,4 @@ bases:
       channel: "22.04"
 parts:
   charm:
-    charm-python-packages: [setuptools, pip]  # Fixes install of some packages
+    charm-python-packages: [setuptools]  # Fixes install of some packages

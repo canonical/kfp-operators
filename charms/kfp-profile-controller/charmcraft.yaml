@@ -14,5 +14,5 @@ parts:
       - ./files/upstream/sync.py
     build-packages:
     - git  # To install packages directly from github.  Remove when not needed
-    charm-python-packages: [setuptools, pip]  # Fixes install of some packages
+    charm-python-packages: [setuptools]  # Fixes install of some packages
 

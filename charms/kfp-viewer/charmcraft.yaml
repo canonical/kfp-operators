@@ -11,4 +11,4 @@ bases:
 parts:
   charm:
     build-packages: [git] # Remove after we use package from github in requirements.in
-    charm-python-packages: [setuptools, pip]  # Fixes install of some packages
+    charm-python-packages: [setuptools]  # Fixes install of some packages
