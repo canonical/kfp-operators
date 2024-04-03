@@ -39,6 +39,10 @@ EXPECTED_ENVIRONMENT = {
     "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
     "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
     "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
+    "FRONTEND_IMAGE": 'gcr.io/ml-pipeline/frontend',
+    "FRONTEND_TAG": KFP_IMAGES_VERSION,
+    "VISUALIZATION_SERVER_IMAGE": 'gcr.io/ml-pipeline/visualization-server',
+    "VISUALIZATION_SERVER_TAG": KFP_IMAGES_VERSION
 }
 
 

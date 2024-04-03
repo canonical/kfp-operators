@@ -1,0 +1,4 @@
+{
+    "visualization_server": "gcr.io/ml-pipeline/visualization-server:2.0.3",
+    "frontend": "gcr.io/ml-pipeline/frontend:2.0.3"
+}

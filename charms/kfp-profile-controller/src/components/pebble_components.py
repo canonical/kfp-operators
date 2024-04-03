@@ -23,6 +23,10 @@ class KfpProfileControllerInputs:
     CONTROLLER_PORT: int
     METADATA_GRPC_SERVICE_HOST: str
     METADATA_GRPC_SERVICE_PORT: str
+    VISUALIZATION_SERVER_IMAGE: str
+    VISUALIZATION_SERVER_TAG: str
+    FRONTEND_IMAGE: str
+    FRONTEND_TAG: str
 
 
 class KfpProfileControllerPebbleService(PebbleServiceComponent):
@@ -61,6 +65,10 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                             "CONTROLLER_PORT": inputs.CONTROLLER_PORT,
                             "METADATA_GRPC_SERVICE_HOST": inputs.METADATA_GRPC_SERVICE_HOST,
                             "METADATA_GRPC_SERVICE_PORT": inputs.METADATA_GRPC_SERVICE_PORT,
+                            "VISUALIZATION_SERVER_IMAGE": inputs.VISUALIZATION_SERVER_IMAGE,
+                            "VISUALIZATION_SERVER_TAG": inputs.VISUALIZATION_SERVER_TAG,
+                            "FRONTEND_IMAGE": inputs.FRONTEND_IMAGE,
+                            "FRONTEND_TAG": inputs.FRONTEND_TAG,
                         },
                     }
                 }
