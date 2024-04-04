@@ -151,6 +151,7 @@ def validate_profile_resources(
     assert expected_label in namespace.metadata.labels
     assert expected_label_value == namespace.metadata.labels[expected_label]
 
+
 @retry(
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_delay(30),
@@ -221,6 +222,7 @@ async def test_minio_config_changed(ops_test: OpsTest):
     assert_minio_secret(minio_access_key, minio_secret_key, ops_test)
 
     assert ops_test.model.applications[APP_NAME].units[0].workload_status == "active"
+
 
 async def test_change_custom_images(ops_test: OpsTest):
     custom_images = {
