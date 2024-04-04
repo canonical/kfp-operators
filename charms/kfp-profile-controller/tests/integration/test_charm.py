@@ -1,6 +1,7 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import json
 import logging
 from base64 import b64decode
 from pathlib import Path
@@ -11,6 +12,7 @@ import yaml
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource
 from lightkube.resources.core_v1 import Namespace, Pod, Secret, ServiceAccount
+from lightkube.resources.apps_v1 import Deployment
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
 
@@ -21,6 +23,8 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 
 MINIO_APP_NAME = "minio"
 MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
+CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
+CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
 
 
 @pytest.mark.abort_on_fail
@@ -147,6 +151,30 @@ def validate_profile_resources(
     assert expected_label in namespace.metadata.labels
     assert expected_label_value == namespace.metadata.labels[expected_label]
 
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_delay(30),
+    reraise=True,
+)
+def validate_profile_deployments_with_custom_images(
+    lightkube_client: lightkube.Client,
+    profile_name: str,
+):
+    # Get deployments
+    pipeline_ui_deployment = lightkube_client.get(
+        Deployment, name="ml-pipeline-ui-artifact", namespace=profile_name
+    )
+    visualization_server_deployment = lightkube_client.get(
+        Deployment, name="ml-pipeline-visualizationserver", namespace=profile_name
+    )
+
+    # Assert images
+    assert pipeline_ui_deployment.spec.template.spec.containers[0].image == CUSTOM_FRONTEND_IMAGE
+    assert (
+        visualization_server_deployment.spec.template.spec.containers[0].image
+        == CUSTOM_VISUALISATION_IMAGE
+    )
+
 
 async def test_model_resources(ops_test: OpsTest):
     """Tests if the resources associated with secret's namespace were created.
@@ -193,3 +221,20 @@ async def test_minio_config_changed(ops_test: OpsTest):
     assert_minio_secret(minio_access_key, minio_secret_key, ops_test)
 
     assert ops_test.model.applications[APP_NAME].units[0].workload_status == "active"
+
+async def test_change_custom_images(ops_test: OpsTest):
+    custom_images = {
+        "visualization_server": CUSTOM_VISUALISATION_IMAGE,
+        "frontend": CUSTOM_FRONTEND_IMAGE,
+    }
+    await ops_test.model.applications[APP_NAME].set_config(
+        {"custom_images": json.dumps(custom_images)}
+    )
+
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME], status="active", raise_on_blocked=True, timeout=300
+    )
+
+
+async def test_new_images(lightkube_client: lightkube.Client, profile: str):
+    validate_profile_deployments_with_custom_images(lightkube_client, profile)
