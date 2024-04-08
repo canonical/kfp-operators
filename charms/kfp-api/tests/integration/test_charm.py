@@ -192,11 +192,25 @@ class TestCharm:
         )
 
         await ops_test.model.add_relation(APP_NAME, prometheus_scrape)
-        await ops_test.model.add_relation(
-            f"{prometheus}:grafana-dashboard", f"{grafana}:grafana-dashboard"
+        await ops_test.juju(
+            "deploy",
+            prometheus,
+            "--channel",
+            "latest/edge",
+            "--revision",
+            "137",
+            "--trust",
+            check=True,
         )
-        await ops_test.model.add_relation(
-            f"{APP_NAME}:grafana-dashboard", f"{grafana}:grafana-dashboard"
+        await ops_test.juju(
+            "deploy",
+            grafana,
+            "--channel",
+            "latest/edge",
+            "--revision",
+            "89",
+            "--trust",
+            check=True,
         )
         await ops_test.model.add_relation(
             f"{prometheus}:metrics-endpoint", f"{prometheus_scrape}:metrics-endpoint"
