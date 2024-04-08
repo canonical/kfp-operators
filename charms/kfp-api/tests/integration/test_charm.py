@@ -184,14 +184,6 @@ class TestCharm:
         prometheus_scrape = "prometheus-scrape-config-k8s"
         scrape_config = {"scrape_interval": "30s"}
 
-        # Deploy and relate prometheus
-        await ops_test.model.deploy(prometheus, channel="latest/stable", trust=True)
-        await ops_test.model.deploy(grafana, channel="latest/stable", trust=True)
-        await ops_test.model.deploy(
-            prometheus_scrape, channel="latest/stable", config=scrape_config, trust=True
-        )
-
-        await ops_test.model.add_relation(APP_NAME, prometheus_scrape)
         await ops_test.juju(
             "deploy",
             prometheus,
@@ -211,6 +203,17 @@ class TestCharm:
             "89",
             "--trust",
             check=True,
+        )
+        await ops_test.model.deploy(
+            prometheus_scrape, channel="latest/stable", config=scrape_config, trust=True
+        )
+
+        await ops_test.model.add_relation(APP_NAME, prometheus_scrape)
+        await ops_test.model.add_relation(
+            f"{prometheus}:grafana-dashboard", f"{grafana}:grafana-dashboard"
+        )
+        await ops_test.model.add_relation(
+            f"{APP_NAME}:grafana-dashboard", f"{grafana}:grafana-dashboard"
         )
         await ops_test.model.add_relation(
             f"{prometheus}:metrics-endpoint", f"{prometheus_scrape}:metrics-endpoint"
