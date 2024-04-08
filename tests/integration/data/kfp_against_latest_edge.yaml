@@ -6,7 +6,7 @@ applications:
     trust: true
   istio-ingressgateway:
     _github_repo_name: istio-operators
-    channel: 1.16/stable
+    channel: latest/edge
     charm: istio-gateway
     options:
       kind: ingress
@@ -14,14 +14,14 @@ applications:
     trust: true
   istio-pilot:
     _github_repo_name: istio-operators
-    channel: 1.16/stable
+    channel: latest/edge
     charm: istio-pilot
     options:
       default-gateway: kubeflow-gateway
     scale: 1
     trust: true
   kfp-api:
-    channel: 2.0-alpha.7/stable
+    channel: latest/edge
     charm: ch:kfp-api
     scale: 1
     trust: true
@@ -32,48 +32,48 @@ applications:
     options:
       database: mlpipeline
   kfp-persistence:
-    channel: 2.0-alpha.7/stable
+    channel: latest/edge
     charm: ch:kfp-persistence
     scale: 1
   kfp-profile-controller:
-    channel: 2.0-alpha.7/stable
+    channel: latest/edge
     charm: ch:kfp-profile-controller
     scale: 1
   kfp-schedwf:
-    channel: 2.0-alpha.7/stable
+    channel: latest/edge
     charm: ch:kfp-schedwf
     scale: 1
   kfp-ui:
-    channel: 2.0-alpha.7/stable
+    channel: latest/edge
     charm: ch:kfp-ui
     scale: 1
   kfp-viewer:
-    channel: 2.0-alpha.7/stable
+    channel: latest/edge
     charm: ch:kfp-viewer
     scale: 1
   kfp-viz:
-    channel: 2.0-alpha.7/stable
+    channel: latest/edge
     charm: ch:kfp-viz
     scale: 1
   kubeflow-dashboard:
     _github_repo_name: kubeflow-dashboard-operator
-    channel: 1.7/stable
+    channel: latest/edge
     charm: kubeflow-dashboard
     scale: 1
     trust: true
   kubeflow-profiles:
     _github_repo_name: kubeflow-profiles-operator
-    channel: 1.7/stable
+    channel: latest/edge
     charm: kubeflow-profiles
     scale: 1
     trust: true
   metacontroller-operator:
-    channel: 2.0/stable
+    channel: latest/edge
     charm: ch:metacontroller-operator
     scale: 1
     trust: true
   minio:
-    channel: ckf-1.7/stable
+    channel: latest/edge
     charm: ch:minio
     scale: 1
 bundle: kubernetes
