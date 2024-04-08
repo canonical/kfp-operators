@@ -31,13 +31,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
     image_path = METADATA["resources"]["oci-image"]["upstream-source"]
     resources = {"oci-image": image_path}
 
-    # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
-    await ops_test.model.deploy(entity_url="admission-webhook", channel="1.7/stable", trust=True)
-    # TODO: The webhook charm must be active before the metacontroller is deployed, due to the bug
-    # described here: https://github.com/canonical/metacontroller-operator/issues/86
-    # Drop this wait_for_idle once the above issue is closed
-    await ops_test.model.wait_for_idle(apps=["admission-webhook"], status="active")
-    
     await ops_test.model.deploy(
         entity_url=built_charm_path,
         application_name=APP_NAME,
@@ -54,7 +47,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     # Deploy charms responsible for CRDs creation
     await ops_test.model.deploy(
         entity_url="kubeflow-profiles",
-        channel="2.0-alpha.7/stable",
+        channel="1.7/stable",
         trust=True,
     )
     await ops_test.model.deploy(
