@@ -120,6 +120,12 @@ jobs:
 #          - v1
           - v2
     steps:
+      - name: Print free space
+        run: |
+          echo "free"
+          sudo df -h
+
+
       # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
       # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,
@@ -135,6 +141,11 @@ jobs:
           remove-codeql: 'true'
           remove-docker-images: 'true'
 
+      - name: Print free space x2
+        run: |
+          echo "free"
+          sudo df -h
+
       - name: Check out code
         uses: actions/checkout@v3
 
@@ -147,6 +158,13 @@ jobs:
           charmcraft-channel: latest/candidate
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
+      - name: Print disk usage and free
+        run: |
+          echo "free"
+          sudo df -h
+          echo "used"
+          sudo du -hsxP /* 2>/dev/null | sort -rh 
+
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
@@ -156,8 +174,22 @@ jobs:
 #          # and https://github.com/canonical/charmcraft/issues/1138
 #          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2 --destructive-mode"
 
+      - name: Print disk usage and free again
+        run: |
+          echo "free"
+          sudo df -h
+          echo "used"
+          sudo du -hsxP /* 2>/dev/null | sort -rh 
+
       - uses: mxschmitt/action-tmate@v3
         timeout-minutes: 120
+
+      - name: Print disk usage and free again x3
+        run: |
+          echo "free"
+          sudo df -h
+          echo "used"
+          sudo du -hsxP /* 2>/dev/null | sort -rh 
 
       - name: Get all
         run: kubectl get all -A
