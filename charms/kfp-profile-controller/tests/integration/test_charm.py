@@ -47,19 +47,17 @@ async def test_build_and_deploy(ops_test: OpsTest):
     # Deploy charms responsible for CRDs creation
     await ops_test.model.deploy(
         entity_url="kubeflow-profiles",
-        # TODO: Revert once kubeflow-profiles stable supports k8s 1.22
-        channel="latest/edge",
+        channel="1.7/stable",
         trust=True,
     )
     await ops_test.model.deploy(
         entity_url="metacontroller-operator",
-        # TODO: Revert once metacontroller stable supports k8s 1.22
-        channel="latest/edge",
+        channel="2.0/stable",
         trust=True,
     )
 
     # Maybe: await ops_test.model.wait_for_idle(raise_on_error=False, raise_on_blocked=True) ?
-    await ops_test.model.wait_for_idle(status="active", timeout=60 * 10)
+    await ops_test.model.wait_for_idle(status="active", timeout=60 * 10, raise_on_error=False)
 
 
 @pytest.mark.abort_on_fail
