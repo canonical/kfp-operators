@@ -132,7 +132,7 @@ jobs:
       # and docker images) from the GH runner, which will liberate around 60 GB of storage
       # distributed in 40GB for root and around 20 for a mnt point.
       - name: Maximise GH runner space
-        uses: easimon/maximize-build-space@v7
+        uses: easimon/maximize-build-space@v10
         with:
           root-reserve-mb: 29696
           remove-dotnet: 'true'
