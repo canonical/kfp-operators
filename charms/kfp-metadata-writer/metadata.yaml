@@ -13,21 +13,7 @@ resources:
   oci-image:
     type: oci-image
     description: OCI image for KFP Metadata Writer
-    upstream-source: gcr.io/ml-pipeline/metadata-writer:2.0.3
+    upstream-source: charmedkubeflow/metadata-writer:2.0.3-286d4a8
 requires:
   grpc:
-    interface: grpc
-    schema:
-      v1:
-        provides:
-          type: object
-          properties:
-            service:
-              type: string
-            port:
-              type: string
-          required:
-          - service
-          - port
-    versions: [v1]
-    __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/grpc.yaml
+    interface: k8s-service

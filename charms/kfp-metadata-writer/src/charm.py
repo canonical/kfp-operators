@@ -13,19 +13,18 @@ import lightkube
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
-from charmed_kubeflow_chisme.components.serialised_data_interface_components import (
-    SdiRelationDataReceiverComponent,
-)
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from lightkube.resources.core_v1 import ServiceAccount
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from ops.charm import CharmBase
 from ops.main import main
 
+from components.k8s_service_info_requirer_component import K8sServiceInfoRequirerComponent
 from components.pebble_component import KfpMetadataWriterInputs, KfpMetadataWriterPebbleService
 
 logger = logging.getLogger(__name__)
 
+GRPC_RELATION_NAME = "grpc"
 K8S_RESOURCE_FILES = ["src/templates/auth_manifests.yaml.j2"]
 
 
@@ -46,8 +45,9 @@ class KfpMetadataWriter(CharmBase):
         )
 
         self.grpc_relation = self.charm_reconciler.add(
-            component=SdiRelationDataReceiverComponent(
-                charm=self, name="relation:grpc", relation_name="grpc"
+            component=K8sServiceInfoRequirerComponent(
+                charm=self,
+                relation_name=GRPC_RELATION_NAME,
             ),
             depends_on=[self.leadership_gate],
         )
@@ -75,12 +75,8 @@ class KfpMetadataWriter(CharmBase):
                 service_name="kfp-metadata-writer",
                 namespace_to_watch="",
                 inputs_getter=lambda: KfpMetadataWriterInputs(
-                    METADATA_GRPC_SERVICE_SERVICE_HOST=self.grpc_relation.component.get_data()[
-                        "service"
-                    ],
-                    METADATA_GRPC_SERVICE_SERVICE_PORT=self.grpc_relation.component.get_data()[
-                        "port"
-                    ],
+                    METADATA_GRPC_SERVICE_SERVICE_HOST=self.grpc_relation.component.get_service_info().name,  # noqa
+                    METADATA_GRPC_SERVICE_SERVICE_PORT=self.grpc_relation.component.get_service_info().port,  # noqa
                 ),
             ),
             depends_on=[self.kubernetes_resources, self.grpc_relation],

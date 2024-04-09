@@ -79,24 +79,20 @@ jobs:
     steps:
       # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,
-      # and docker images) from the GH runner, which will liberate around 60 GB of storage
-      # distributed in 40GB for root and around 20 for a mnt point.
+      # and docker images) from the GH runner.
+      # This leaves ~45GB free as of 2024-04-10, but this amount has varied as GH changed their
+      # runners
       - name: Maximise GH runner space
-        uses: easimon/maximize-build-space@v7
-        with:
-          root-reserve-mb: 29696
-          remove-dotnet: 'true'
-          remove-haskell: 'true'
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+        uses: jlumbroso/free-disk-space@v1.3.1
+
       - uses: actions/checkout@v3
+
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
           channel: 1.25-strict/stable
-          juju-channel: 3.1/stable
+          juju-channel: 3.5/stable
           charmcraft-channel: latest/candidate
 
       - name: Integration tests
@@ -123,17 +119,11 @@ jobs:
       # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
       # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,
-      # and docker images) from the GH runner, which will liberate around 60 GB of storage
-      # distributed in 40GB for root and around 20 for a mnt point.
+      # and docker images) from the GH runner.
+      # This leaves ~45GB free as of 2024-04-10, but this amount has varied as GH changed their
+      # runners
       - name: Maximise GH runner space
-        uses: easimon/maximize-build-space@v7
-        with:
-          root-reserve-mb: 29696
-          remove-dotnet: 'true'
-          remove-haskell: 'true'
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+        uses: jlumbroso/free-disk-space@v1.3.1
 
       - name: Check out code
         uses: actions/checkout@v3
@@ -143,7 +133,7 @@ jobs:
         with:
           provider: microk8s
           channel: 1.25-strict/stable
-          juju-channel: 3.1/stable
+          juju-channel: 3.5/stable
           charmcraft-channel: latest/candidate
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
@@ -151,10 +141,7 @@ jobs:
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          # Run integration tests against the 1.7 generic install bundle definition
-          # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
-          # and https://github.com/canonical/charmcraft/issues/1138
-          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2 --destructive-mode"
+          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2"
 
       - name: Get all
         run: kubectl get all -A

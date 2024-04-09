@@ -1,42 +1,42 @@
 bundle: kubernetes
 name: kubeflow-pipelines
 applications:
-  argo-controller:         { charm: ch:argo-controller, channel: latest/edge, scale: 1, trust: true }
-  metacontroller-operator: { charm: ch:metacontroller-operator, channel: latest/edge, scale: 1, trust: true }
-  minio:                   { charm: ch:minio, channel: latest/edge,       scale: 1 }
+  argo-controller:         { charm: ch:argo-controller, channel: 3.3.10/stable, scale: 1, trust: true }
+  metacontroller-operator: { charm: ch:metacontroller-operator, channel: 3.0/stable, scale: 1, trust: true }
+  minio:                   { charm: ch:minio, channel: ckf-1.8/stable,       scale: 1 }
   # We should use `8.0/stable` once changes for https://github.com/canonical/mysql-k8s-operator/issues/337 are published there.
-  kfp-db:                  { charm: ch:mysql-k8s, channel: 8.0/edge, scale: 1, constraints: mem=2G, trust: true }
-  mlmd:                    { charm: ch:mlmd, channel: latest/edge, scale: 1, trust: true}
-  envoy:                   { charm: ch:envoy, channel: latest/edge, scale: 1 }
-  kubeflow-profiles:       { charm: ch:kubeflow-profiles, channel: latest/edge, scale: 1, trust: true }
+  kfp-db:                  { charm: ch:mysql-k8s, channel: 8.0/stable, scale: 1, constraints: mem=2G, trust: true }
+  mlmd:                    { charm: ch:mlmd, channel: 1.14/stable, scale: 1 }
+  envoy:                   { charm: ch:envoy, channel: 2.0/stable, scale: 1 }
+  kubeflow-profiles:       { charm: ch:kubeflow-profiles, channel: 1.8/stable, scale: 1, trust: true }
   istio-ingressgateway:
     charm: istio-gateway
-    channel: latest/edge
+    channel: 1.17/stable
     scale: 1
     options:
       kind: ingress
     trust: true
   istio-pilot:
     charm: istio-pilot
-    channel: latest/edge
+    channel: 1.17/stable
     scale: 1
     options:
       default-gateway: kubeflow-gateway
     trust: true
   kubeflow-roles:
     charm: kubeflow-roles
-    channel: latest/edge
+    channel: 1.8/stable
     scale: 1
     trust: true
 {%- if local_build == false %}
-  kfp-api:                 { charm: ch:kfp-api, channel: latest/edge, scale: 1, trust: true}
-  kfp-metadata-writer:     { charm: ch:kfp-metadata-writer, channel: latest/edge, scale: 1, trust: true}
-  kfp-persistence:         { charm: ch:kfp-persistence, channel: latest/edge, scale: 1, trust: true }
-  kfp-profile-controller:  { charm: ch:kfp-profile-controller, channel: latest/edge, scale: 1, trust: true }
-  kfp-schedwf:             { charm: ch:kfp-schedwf, channel: latest/edge, scale: 1, trust: true}
-  kfp-ui:                  { charm: ch:kfp-ui, channel: latest/edge, trust: true,            scale: 1 }
-  kfp-viewer:              { charm: ch:kfp-viewer, channel: latest/edge, trust: true         scale: 1 }
-  kfp-viz:                 { charm: ch:kfp-viz, channel: latest/edge, trust: true         scale: 1 }
+  kfp-api:                 { charm: ch:kfp-api, channel: 2.0/stable, scale: 1, trust: true}
+  kfp-metadata-writer:     { charm: ch:kfp-metadata-writer, channel: 2.0/stable, scale: 1, trust: true}
+  kfp-persistence:         { charm: ch:kfp-persistence, channel: 2.0/stable, scale: 1, trust: true }
+  kfp-profile-controller:  { charm: ch:kfp-profile-controller, channel: 2.0/stable, scale: 1, trust: true }
+  kfp-schedwf:             { charm: ch:kfp-schedwf, channel: 2.0/stable, scale: 1, trust: true}
+  kfp-ui:                  { charm: ch:kfp-ui, channel: 2.0/stable, trust: true,            scale: 1 }
+  kfp-viewer:              { charm: ch:kfp-viewer, channel: 2.0/stable, trust: true,         scale: 1 }
+  kfp-viz:                 { charm: ch:kfp-viz, channel: 2.0/stable, trust: true,         scale: 1 }
 {%- else %}
   kfp-api:
     charm: {{ kfp_api }}
