@@ -11,8 +11,8 @@ import pytest
 import yaml
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource
-from lightkube.resources.core_v1 import Namespace, Pod, Secret, ServiceAccount
 from lightkube.resources.apps_v1 import Deployment
+from lightkube.resources.core_v1 import Namespace, Pod, Secret, ServiceAccount
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
 
@@ -35,6 +35,13 @@ async def test_build_and_deploy(ops_test: OpsTest):
     image_path = METADATA["resources"]["oci-image"]["upstream-source"]
     resources = {"oci-image": image_path}
 
+    # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
+    await ops_test.model.deploy(entity_url="admission-webhook", channel="1.7/stable", trust=True)
+    # TODO: The webhook charm must be active before the metacontroller is deployed, due to the bug
+    # described here: https://github.com/canonical/metacontroller-operator/issues/86
+    # Drop this wait_for_idle once the above issue is closed
+    await ops_test.model.wait_for_idle(apps=["admission-webhook"], status="active")
+
     await ops_test.model.deploy(
         entity_url=built_charm_path,
         application_name=APP_NAME,
@@ -42,7 +49,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     # Deploy required relations
-    await ops_test.model.deploy(entity_url=MINIO_APP_NAME, config=MINIO_CONFIG)
+    await ops_test.model.deploy(
+        entity_url=MINIO_APP_NAME, channel="ckf-1.7/stable", config=MINIO_CONFIG
+    )
     await ops_test.model.add_relation(
         f"{APP_NAME}:object-storage",
         f"{MINIO_APP_NAME}:object-storage",
@@ -51,11 +60,13 @@ async def test_build_and_deploy(ops_test: OpsTest):
     # Deploy charms responsible for CRDs creation
     await ops_test.model.deploy(
         entity_url="kubeflow-profiles",
+        # TODO: Revert once kubeflow-profiles stable supports k8s 1.22
         channel="1.7/stable",
         trust=True,
     )
     await ops_test.model.deploy(
         entity_url="metacontroller-operator",
+        # TODO: Revert once metacontroller stable supports k8s 1.22
         channel="2.0/stable",
         trust=True,
     )
