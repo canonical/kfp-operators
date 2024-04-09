@@ -80,7 +80,7 @@ jobs:
       - name: Maximise GH runner space
         uses: easimon/maximize-build-space@v7
         with:
-          root-reserve-mb: 40960
+          root-reserve-mb: 29696
           remove-dotnet: 'true'
           remove-haskell: 'true'
           remove-android: 'true'
@@ -92,7 +92,7 @@ jobs:
         with:
           provider: microk8s
           channel: 1.24/stable
-          juju-channel: 2.9/stable
+          juju-channel: 2.9/candidate  # https://github.com/canonical/kfp-operators/issues/418#issuecomment-2041954304
           charmcraft-channel: latest/candidate
 
       - run: |
@@ -115,7 +115,7 @@ jobs:
       - name: Maximise GH runner space
         uses: easimon/maximize-build-space@v7
         with:
-          root-reserve-mb: 40960
+          root-reserve-mb: 29696
           remove-dotnet: 'true'
           remove-haskell: 'true'
           remove-android: 'true'

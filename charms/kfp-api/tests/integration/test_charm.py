@@ -184,9 +184,26 @@ class TestCharm:
         prometheus_scrape = "prometheus-scrape-config-k8s"
         scrape_config = {"scrape_interval": "30s"}
 
-        # Deploy and relate prometheus
-        await ops_test.model.deploy(prometheus, channel="latest/stable", trust=True)
-        await ops_test.model.deploy(grafana, channel="latest/stable", trust=True)
+        await ops_test.juju(
+            "deploy",
+            prometheus,
+            "--channel",
+            "latest/edge",
+            "--revision",
+            "137",
+            "--trust",
+            check=True,
+        )
+        await ops_test.juju(
+            "deploy",
+            grafana,
+            "--channel",
+            "latest/edge",
+            "--revision",
+            "89",
+            "--trust",
+            check=True,
+        )
         await ops_test.model.deploy(
             prometheus_scrape, channel="latest/stable", config=scrape_config, trust=True
         )
