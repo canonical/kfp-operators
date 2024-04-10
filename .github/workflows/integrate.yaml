@@ -146,10 +146,6 @@ jobs:
           # and https://github.com/canonical/charmcraft/issues/1138
           sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2 --destructive-mode"
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: failure()
-
       - name: Get all
         run: kubectl get all -A
         if: failure()
