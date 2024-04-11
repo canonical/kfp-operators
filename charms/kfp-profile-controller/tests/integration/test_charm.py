@@ -249,7 +249,7 @@ async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
         lightkube_client.get(resource, name=name, namespace=profile)
 
 
-async def test_change_custom_images(ops_test: OpsTest):
+async def test_change_custom_images(ops_test: OpsTest, profile: str):
     """Tests if the unit goes to active state after changing config with custom images."""
     custom_images = {
         "visualization_server": CUSTOM_VISUALISATION_IMAGE,
@@ -263,9 +263,6 @@ async def test_change_custom_images(ops_test: OpsTest):
         apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
     )
 
-
-async def test_new_images(lightkube_client: lightkube.Client, profile: str):
-    """Tests if the newly created profile has correct images"""
     validate_profile_deployments_with_custom_images(
         lightkube_client, profile, CUSTOM_FRONTEND_IMAGE, CUSTOM_VISUALISATION_IMAGE
     )
