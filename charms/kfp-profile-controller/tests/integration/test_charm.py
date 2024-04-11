@@ -174,7 +174,10 @@ def validate_profile_resources(
 def validate_profile_deployments_with_custom_images(
     lightkube_client: lightkube.Client,
     profile_name: str,
+    frontend_image: str,
+    visualisation_image: str,
 ):
+    """Tests if profile's deployment have correct images"""
     # Get deployments
     pipeline_ui_deployment = lightkube_client.get(
         Deployment, name="ml-pipeline-ui-artifact", namespace=profile_name
@@ -184,10 +187,10 @@ def validate_profile_deployments_with_custom_images(
     )
 
     # Assert images
-    assert pipeline_ui_deployment.spec.template.spec.containers[0].image == CUSTOM_FRONTEND_IMAGE
+    assert pipeline_ui_deployment.spec.template.spec.containers[0].image == frontend_image
     assert (
         visualization_server_deployment.spec.template.spec.containers[0].image
-        == CUSTOM_VISUALISATION_IMAGE
+        == visualisation_image
     )
 
 
@@ -247,6 +250,7 @@ async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
 
 
 async def test_change_custom_images(ops_test: OpsTest):
+    """Tests if the unit goes to active state after changing config with custom images."""
     custom_images = {
         "visualization_server": CUSTOM_VISUALISATION_IMAGE,
         "frontend": CUSTOM_FRONTEND_IMAGE,
@@ -261,4 +265,7 @@ async def test_change_custom_images(ops_test: OpsTest):
 
 
 async def test_new_images(lightkube_client: lightkube.Client, profile: str):
-    validate_profile_deployments_with_custom_images(lightkube_client, profile)
+    """Tests if the newly created profile has correct images"""
+    validate_profile_deployments_with_custom_images(
+        lightkube_client, profile, CUSTOM_FRONTEND_IMAGE, CUSTOM_VISUALISATION_IMAGE
+    )
