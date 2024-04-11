@@ -237,7 +237,7 @@ async def test_minio_config_changed(ops_test: OpsTest):
 
 
 async def test_change_custom_images(ops_test: OpsTest, profile: str):
-    """Tests if the unit goes to active state after changing config with custom images."""
+    """Tests that updating images deployed to user Namespaces works as expected."""
     custom_images = {
         "visualization_server": CUSTOM_VISUALISATION_IMAGE,
         "frontend": CUSTOM_FRONTEND_IMAGE,
