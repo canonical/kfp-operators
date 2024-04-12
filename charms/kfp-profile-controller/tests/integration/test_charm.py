@@ -236,7 +236,7 @@ async def test_minio_config_changed(ops_test: OpsTest):
     assert ops_test.model.applications[APP_NAME].units[0].workload_status == "active"
 
 
-async def test_change_custom_images(ops_test: OpsTest, profile: str):
+async def test_change_custom_images(ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str):
     """Tests that updating images deployed to user Namespaces works as expected."""
     custom_images = {
         "visualization_server": CUSTOM_VISUALISATION_IMAGE,
