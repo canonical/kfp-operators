@@ -11,8 +11,10 @@ import json
 import logging
 from base64 import b64encode
 from pathlib import Path
+from typing import Dict
 
 import lightkube
+import yaml
 from charmed_kubeflow_chisme.components import (
     ContainerFileTemplate,
     SdiRelationDataReceiverComponent,
@@ -33,6 +35,10 @@ from components.pebble_components import (
     KfpProfileControllerPebbleService,
 )
 
+DEFAULT_IMAGES_FILE = "src/default-custom-images.json"
+with open(DEFAULT_IMAGES_FILE, "r") as json_file:
+    DEFAULT_IMAGES = json.load(json_file)
+
 logger = logging.getLogger(__name__)
 
 DecoratorController = create_global_resource(
@@ -45,7 +51,7 @@ K8S_RESOURCE_FILES = [
     "src/templates/secrets.yaml.j2",
 ]
 KFP_DEFAULT_PIPELINE_ROOT = ""
-KFP_IMAGES_VERSION = "2.0.3"
+KFP_IMAGES_VERSION = "2.0.3"  # Remember to change this version also in default-custom-images.json
 # This service name must be the Service from the mlmd-operator
 # FIXME: leaving it hardcoded now, but we should share this
 # host and port through relation data
@@ -56,6 +62,35 @@ SYNC_CODE_FILE = Path("files/upstream/sync.py")
 SYNC_CODE_DESTINATION_PATH = "/hooks/sync.py"
 
 
+def parse_images_config(config: str) -> Dict:
+    """
+    Parse a YAML config-defined images list.
+
+    This function takes a YAML-formatted string 'config' containing a list of images
+    and returns a dictionary representing the images.
+
+    Args:
+        config (str): YAML-formatted string representing a list of images.
+
+    Returns:
+        Dict: A list of images.
+    """
+    error_message = (
+        f"Cannot parse a config-defined images list from config '{config}' - this"
+        "config input will be ignored."
+    )
+    if not config:
+        return []
+    try:
+        images = yaml.safe_load(config)
+    except yaml.YAMLError as err:
+        logger.warning(
+            f"{error_message}  Got error: {err}, while parsing the custom_image config."
+        )
+        raise err
+    return images
+
+
 class KfpProfileControllerOperator(CharmBase):
     """Charm for the Kubeflow Pipelines Profile controller.
 
@@ -64,6 +99,10 @@ class KfpProfileControllerOperator(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
+        self.images = self.get_images(
+            DEFAULT_IMAGES,
+            parse_images_config(self.model.config["custom_images"]),
+        )
 
         # expose controller's port
         http_port = ServicePort(CONTROLLER_PORT, name="http")
@@ -156,6 +195,10 @@ class KfpProfileControllerOperator(CharmBase):
                     CONTROLLER_PORT=CONTROLLER_PORT,
                     METADATA_GRPC_SERVICE_HOST=METADATA_GRPC_SERVICE_HOST,
                     METADATA_GRPC_SERVICE_PORT=METADATA_GRPC_SERVICE_PORT,
+                    VISUALIZATION_SERVER_IMAGE=self.images["visualization_server__image"],
+                    VISUALIZATION_SERVER_TAG=self.images["visualization_server__version"],
+                    FRONTEND_IMAGE=self.images["frontend__image"],
+                    FRONTEND_TAG=self.images["frontend__version"],
                 ),
             ),
             depends_on=[
@@ -166,6 +209,45 @@ class KfpProfileControllerOperator(CharmBase):
         )
 
         self.charm_reconciler.install_default_event_handlers()
+
+    def get_images(
+        self, default_images: Dict[str, str], custom_images: Dict[str, str]
+    ) -> Dict[str, str]:
+        """
+        Combine default images with custom images.
+
+        This function takes two dictionaries, 'default_images' and 'custom_images',
+        representing the default set of images and the custom set of images respectively.
+        It combines the custom images into the default image list, overriding any matching
+        image names from the default list with the custom ones.
+
+        Args:
+            default_images (Dict[str, str]): A dictionary containing the default image names
+                as keys and their corresponding default image URIs as values.
+            custom_images (Dict[str, str]): A dictionary containing the custom image names
+                as keys and their corresponding custom image URIs as values.
+
+        Returns:
+            Dict[str, str]: A dictionary representing the combined images, where image names
+            from the custom_images override any matching image names from the default_images.
+        """
+        images = default_images
+        for image_name, custom_image in custom_images.items():
+            if custom_image:
+                if image_name in images:
+                    images[image_name] = custom_image
+                else:
+                    self.log.warning(f"image_name {image_name} not in image list, ignoring.")
+
+        # This are special cases comfigmap where they need to be split into image and version
+        for image_name in [
+            "visualization_server",
+            "frontend",
+        ]:
+            images[f"{image_name}__image"], images[f"{image_name}__version"] = images[
+                image_name
+            ].rsplit(":", 1)
+        return images
 
 
 if __name__ == "__main__":
