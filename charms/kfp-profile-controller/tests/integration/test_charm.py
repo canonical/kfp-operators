@@ -249,7 +249,9 @@ async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
         lightkube_client.get(resource, name=name, namespace=profile)
 
 
-async def test_change_custom_images(ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str):
+async def test_change_custom_images(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
     """Tests that updating images deployed to user Namespaces works as expected."""
     custom_images = {
         "visualization_server": CUSTOM_VISUALISATION_IMAGE,
