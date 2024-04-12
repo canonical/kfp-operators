@@ -1,0 +1,12 @@
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+options:
+  custom_images:
+    type: string
+    default: | 
+      visualization_server : ''
+      frontend_image : ''
+    description: >
+      YAML or JSON formatted input defining images to use in Katib
+      For usage details, see https://github.com/canonical/kfp-operators.
