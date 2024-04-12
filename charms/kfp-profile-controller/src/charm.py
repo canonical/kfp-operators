@@ -7,10 +7,13 @@
 https://github.com/canonical/kfp-operators/
 """
 
+import json
 import logging
 from base64 import b64encode
 from pathlib import Path
+from typing import Dict
 
+import yaml
 from jsonschema import ValidationError
 from oci_image import OCIImageResource, OCIImageResourceError
 from ops.charm import CharmBase
@@ -23,6 +26,10 @@ from serialized_data_interface.errors import (
 )
 from serialized_data_interface.sdi import SerializedDataInterface, get_interfaces
 
+DEFAULT_IMAGES_FILE = "src/default-custom-images.json"
+with open(DEFAULT_IMAGES_FILE, "r") as json_file:
+    DEFAULT_IMAGES = json.load(json_file)
+
 # This must be hard-coded to port 80 because the metacontroller webhook that talks to this port
 # only communicates over port 80.  Upstream uses the service to map 80->8080 but we cannot via
 # podspec.
@@ -31,7 +38,9 @@ CONTROLLER_PORT = 80
 # TODO: This sets the version of the images deployed to each namespace (value comes from the
 #  upstream configMap pipeline-install-config's appVersion entry).  Normal pattern would
 #  set this in metadata but this is different here.  Should this be exposed differently?
-KFP_IMAGES_VERSION = "2.0.0-alpha.7"
+KFP_IMAGES_VERSION = (
+    "2.0.0-alpha.7"  # Remember to change this version also in default-custom-images.json
+)
 
 # Note: Istio destinationrule/auth have been manually disabled in sync.py.  Need a better
 # solution for this in future
@@ -51,6 +60,7 @@ class KfpProfileControllerOperator(CharmBase):
         self.log = logging.getLogger()
 
         self.image = OCIImageResource(self, "oci-image")
+        self.images = {}
 
         self.framework.observe(self.on.install, self._set_pod_spec)
         self.framework.observe(self.on.upgrade_charm, self._set_pod_spec)
@@ -61,6 +71,10 @@ class KfpProfileControllerOperator(CharmBase):
     def _set_pod_spec(self, event):
         try:
             self._check_leader()
+            self.images = self.get_images(
+                DEFAULT_IMAGES,
+                self.parse_images_config(self.model.config["custom_images"]),
+            )
             interfaces = self._get_interfaces()
             os = self._get_object_storage(interfaces)
             image_details = self.image.fetch()
@@ -83,6 +97,10 @@ class KfpProfileControllerOperator(CharmBase):
             "CONTROLLER_PORT": CONTROLLER_PORT,
             "METADATA_GRPC_SERVICE_HOST": "mlmd.kubeflow",  # TODO: Set using relation
             "METADATA_GRPC_SERVICE_PORT": "8080",  # TODO: Set using relation to kfp-api or mlmd
+            "VISUALIZATION_SERVER_IMAGE": self.images["visualization_server__image"],
+            "VISUALIZATION_SERVER_TAG": self.images["visualization_server__version"],
+            "FRONTEND_IMAGE": self.images["frontend__image"],
+            "FRONTEND_TAG": self.images["frontend__version"],
         }
 
         self.model.pod.set_spec(
@@ -306,6 +324,73 @@ class KfpProfileControllerOperator(CharmBase):
         if not self.unit.is_leader():
             # We can't do anything useful when not the leader, so do nothing.
             raise CheckFailedError("Waiting for leadership", WaitingStatus)
+
+    def parse_images_config(self, config: str) -> Dict:
+        """
+        Parse a YAML config-defined images list.
+
+        This function takes a YAML-formatted string 'config' containing a list of images
+        and returns a dictionary representing the images.
+
+        Args:
+            config (str): YAML-formatted string representing a list of images.
+
+        Returns:
+            Dict: A list of images.
+        """
+        error_message = (
+            f"Cannot parse a config-defined images list from config '{config}' - this"
+            "config input will be ignored."
+        )
+        if not config:
+            return []
+        try:
+            images = yaml.safe_load(config)
+        except yaml.YAMLError as err:
+            self.log.warning(
+                f"{error_message}  Got error: {err}, while parsing the custom_image config."
+            )
+            raise err
+        return images
+
+    def get_images(
+        self, default_images: Dict[str, str], custom_images: Dict[str, str]
+    ) -> Dict[str, str]:
+        """
+        Combine default images with custom images.
+
+        This function takes two dictionaries, 'default_images' and 'custom_images',
+        representing the default set of images and the custom set of images respectively.
+        It combines the custom images into the default image list, overriding any matching
+        image names from the default list with the custom ones.
+
+        Args:
+            default_images (Dict[str, str]): A dictionary containing the default image names
+                as keys and their corresponding default image URIs as values.
+            custom_images (Dict[str, str]): A dictionary containing the custom image names
+                as keys and their corresponding custom image URIs as values.
+
+        Returns:
+            Dict[str, str]: A dictionary representing the combined images, where image names
+            from the custom_images override any matching image names from the default_images.
+        """
+        images = default_images
+        for image_name, custom_image in custom_images.items():
+            if custom_image:
+                if image_name in images:
+                    images[image_name] = custom_image
+                else:
+                    self.log.warning(f"image_name {image_name} not in image list, ignoring.")
+
+        # This are special cases comfigmap where they need to be split into image and version
+        for image_name in [
+            "visualization_server",
+            "frontend",
+        ]:
+            images[f"{image_name}__image"], images[f"{image_name}__version"] = images[
+                image_name
+            ].rsplit(":", 1)
+        return images
 
 
 class CheckFailedError(Exception):
