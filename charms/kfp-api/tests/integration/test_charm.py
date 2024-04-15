@@ -16,8 +16,32 @@ logger = logging.getLogger(__name__)
 APP_NAME = "kfp-api"
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 
-MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
+KFP_DB = "kfp-db"
+KFP_DB_CHANNEL = "latest/edge"
 KFP_DB_CONFIG = {"database": "mlpipeline"}
+KFP_DB_ENTITY = "charmed-osm-mariadb-k8s"
+KFP_DB_TRUST = True
+KFP_VIZ = "kfp-viz"
+KFP_VIZ_CHANNEL = "latest/edge"
+KFP_VIZ_TRUST = True
+MINIO_CHANNEL = "latest/edge"
+MINIO = "minio"
+MINIO_TRUST = True
+MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
+MYSQL = "mysql-k8s"
+MYSQL_CHANNEL = "8.0/stable"
+MYSQL_CONFIG = {"profile": "testing"}
+MYSQL_TRUST = True
+PROMETHEUS_K8S = "prometheus-k8s"
+PROMETHEUS_K8S_CHANNEL = "latest/stable"
+PROMETHEUS_K8S_TRUST = True
+GRAFANA_K8S = "grafana-k8s"
+GRAFANA_K8S_CHANNEL = "latest/stable"
+GRAFANA_K8S_TRUST = True
+PROMETHEUS_SCRAPE_K8S = "prometheus-scrape-config-k8s"
+PROMETHEUS_SCRAPE_K8S_CHANNEL = "latest/stable"
+PROMETHEUS_SCRAPE_CONFIG = {"scrape_interval": "30s"}
+PROMETHEUS_SCRAPE_TRUST = True
 
 
 class TestCharm:
@@ -43,27 +67,29 @@ class TestCharm:
         # 1) The team has acceped and started using mysql-k8s more extensively
         # 2) The repository level integration tests use mysql-k8s only
         await ops_test.model.deploy(
-            entity_url="charmed-osm-mariadb-k8s",
-            application_name="kfp-db",
+            entity_url=KFP_DB_ENTITY,
+            application_name=KFP_DB,
             config=KFP_DB_CONFIG,
-            channel="latest/stable",
-            trust=True,
+            channel=KFP_DB_CHANNEL,
+            trust=KFP_DB_TRUST,
         )
         await ops_test.model.deploy(
-            entity_url="minio", config=MINIO_CONFIG, channel="ckf-1.7/stable", trust=True
+            entity_url=MINIO, config=MINIO_CONFIG, channel=MINIO_CHANNEL, trust=MINIO_TRUST
         )
-        await ops_test.model.deploy(entity_url="kfp-viz", channel="2.0/stable", trust=True)
+        await ops_test.model.deploy(
+            entity_url=KFP_VIZ, channel=KFP_VIZ_CHANNEL, trust=KFP_VIZ_TRUST
+        )
 
         # FIXME: This assertion belongs to unit tests
         # test no database relation, charm should be in blocked state
         # assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
 
-        await ops_test.model.add_relation(f"{APP_NAME}:mysql", "kfp-db:mysql")
-        await ops_test.model.add_relation(f"{APP_NAME}:object-storage", "minio:object-storage")
-        await ops_test.model.add_relation(f"{APP_NAME}:kfp-viz", "kfp-viz:kfp-viz")
+        await ops_test.model.add_relation(f"{APP_NAME}:mysql", f"{KFP_DB}:mysql")
+        await ops_test.model.add_relation(f"{APP_NAME}:object-storage", f"{MINIO}:object-storage")
+        await ops_test.model.add_relation(f"{APP_NAME}:kfp-viz", f"{KFP_VIZ}:kfp-viz")
 
         await ops_test.model.wait_for_idle(
-            apps=[APP_NAME, "kfp-viz", "kfp-db", "minio"],
+            apps=[APP_NAME, KFP_VIZ, KFP_DB, MINIO],
             status="active",
             raise_on_blocked=False,
             raise_on_error=False,
@@ -77,16 +103,14 @@ class TestCharm:
     async def test_relational_db_relation_with_mysql_relation(self, ops_test: OpsTest):
         """Test failure of addition of relational-db relation with mysql relation present."""
         # deploy mysql-k8s charm
-        # We should use `8.0/stable` once changes for
-        # https://github.com/canonical/mysql-k8s-operator/issues/337 are published there.
         await ops_test.model.deploy(
-            "mysql-k8s",
-            channel="8.0/edge",
-            config={"profile": "testing"},
-            trust=True,
+            MYSQL,
+            channel=MYSQL_CHANNEL,
+            config=MYSQL_CONFIG,
+            trust=MYSQL_TRUST,
         )
         await ops_test.model.wait_for_idle(
-            apps=["mysql-k8s"],
+            apps=[MYSQL],
             status="active",
             raise_on_blocked=True,
             timeout=90 * 30,
@@ -95,7 +119,7 @@ class TestCharm:
 
         # add relational-db relation which should put charm into blocked state,
         # because at this point mysql relation is already established
-        await ops_test.model.relate(f"{APP_NAME}:relational-db", "mysql-k8s:database")
+        await ops_test.model.relate(f"{APP_NAME}:relational-db", f"{MYSQL}:database")
 
         # verify that charm goes into blocked state
         await ops_test.model.wait_for_idle(
@@ -109,7 +133,7 @@ class TestCharm:
         assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
 
         # remove just added relational-db relation
-        await ops_test.juju("remove-relation", f"{APP_NAME}:relational-db", "mysql-k8s:database")
+        await ops_test.juju("remove-relation", f"{APP_NAME}:relational-db", f"{MYSQL}:database")
 
     # FIXME: this test case belongs in unit tests as it is asserting the status of the
     # unit under a certain condition, we don't actually need the presence of any deployed
@@ -130,7 +154,7 @@ class TestCharm:
 
         # remove existing mysql relation which should put charm into blocked state,
         # because there will be no database relations
-        await ops_test.juju("remove-relation", f"{APP_NAME}:mysql", "kfp-db:mysql")
+        await ops_test.juju("remove-relation", f"{APP_NAME}:mysql", f"{KFP_DB}:mysql")
 
         # verify that charm goes into blocked state
         await ops_test.model.wait_for_idle(
@@ -143,7 +167,7 @@ class TestCharm:
         assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
 
         # add relational-db relation which should put charm into active state
-        await ops_test.model.relate(f"{APP_NAME}:relational-db", "mysql-k8s:database")
+        await ops_test.model.relate(f"{APP_NAME}:relational-db", f"{MYSQL}:database")
 
         # verify that charm goes into active state
         await ops_test.model.wait_for_idle(
@@ -164,7 +188,7 @@ class TestCharm:
 
         # add mysql relation which should put charm into blocked state,
         # because at this point relational-db relation is already established
-        await ops_test.model.relate(f"{APP_NAME}:mysql", "kfp-db:mysql")
+        await ops_test.model.relate(f"{APP_NAME}:mysql", f"{KFP_DB}:mysql")
 
         # verify that charm goes into blocked state
         await ops_test.model.wait_for_idle(
@@ -177,31 +201,33 @@ class TestCharm:
         assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
 
         # remove redundant relation
-        await ops_test.juju("remove-relation", f"{APP_NAME}:mysql", "kfp-db:mysql")
+        await ops_test.juju("remove-relation", f"{APP_NAME}:mysql", f"{KFP_DB}:mysql")
 
     async def test_prometheus_grafana_integration(self, ops_test: OpsTest):
         """Deploy prometheus, grafana and required relations, then test the metrics."""
-        prometheus = "prometheus-k8s"
-        grafana = "grafana-k8s"
-        prometheus_scrape = "prometheus-scrape-config-k8s"
-        scrape_config = {"scrape_interval": "30s"}
-
         # Deploy and relate prometheus
-        await ops_test.model.deploy(prometheus, channel="latest/stable", trust=True)
-        await ops_test.model.deploy(grafana, channel="latest/stable", trust=True)
         await ops_test.model.deploy(
-            prometheus_scrape, channel="latest/stable", config=scrape_config, trust=True
+            PROMETHEUS_K8S, channel=PROMETHEUS_K8S_CHANNEL, trust=PROMETHEUS_K8S_TRUST
+        )
+        await ops_test.model.deploy(
+            GRAFANA_K8S, channel=GRAFANA_K8S_CHANNEL, trust=GRAFANA_K8S_TRUST
+        )
+        await ops_test.model.deploy(
+            PROMETHEUS_SCRAPE_K8S,
+            channel=PROMETHEUS_SCRAPE_K8S_CHANNEL,
+            config=PROMETHEUS_SCRAPE_CONFIG,
+            trust=PROMETHEUS_SCRAPE_TRUST,
         )
 
-        await ops_test.model.add_relation(APP_NAME, prometheus_scrape)
+        await ops_test.model.add_relation(APP_NAME, PROMETHEUS_SCRAPE_K8S)
         await ops_test.model.add_relation(
-            f"{prometheus}:grafana-dashboard", f"{grafana}:grafana-dashboard"
+            f"{PROMETHEUS_K8S}:grafana-dashboard", f"{GRAFANA_K8S}:grafana-dashboard"
         )
         await ops_test.model.add_relation(
-            f"{APP_NAME}:grafana-dashboard", f"{grafana}:grafana-dashboard"
+            f"{APP_NAME}:grafana-dashboard", f"{GRAFANA_K8S}:grafana-dashboard"
         )
         await ops_test.model.add_relation(
-            f"{prometheus}:metrics-endpoint", f"{prometheus_scrape}:metrics-endpoint"
+            f"{PROMETHEUS_K8S}:metrics-endpoint", f"{PROMETHEUS_SCRAPE_K8S}:metrics-endpoint"
         )
 
         # prometheus-k8s needs a significant amount of time to deploy in GH runners,
@@ -216,9 +242,9 @@ class TestCharm:
         )
 
         status = await ops_test.model.get_status()
-        prometheus_unit_ip = status["applications"][prometheus]["units"][f"{prometheus}/0"][
-            "address"
-        ]
+        prometheus_unit_ip = status["applications"][PROMETHEUS_K8S]["units"][
+            f"{PROMETHEUS_K8S}/0"
+        ]["address"]
         logger.info(f"Prometheus available at http://{prometheus_unit_ip}:9090")
 
         for attempt in self.retry_for_5_attempts:
