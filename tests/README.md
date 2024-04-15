@@ -11,6 +11,7 @@ This directory has the following structure:
 ├── README.md
 └── integration
     ├── bundles
+    |   ├── kfp_1.8_stable_install.yaml.j2
     │   ├── kfp_1.7_stable_install.yaml.j2
     │   └── kfp_latest_edge.yaml.j2
     ├── conftest.py
