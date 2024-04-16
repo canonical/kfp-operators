@@ -19,7 +19,7 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 KFP_DB = "kfp-db"
 KFP_DB_CHANNEL = "latest/edge"
 KFP_DB_CONFIG = {"database": "mlpipeline"}
-KFP_DB_ENTITY = "charmed-osm-mariadb-k8s"
+MARIADB_CHARM = "charmed-osm-mariadb-k8s"
 KFP_DB_TRUST = True
 KFP_VIZ = "kfp-viz"
 KFP_VIZ_CHANNEL = "latest/edge"
@@ -67,7 +67,7 @@ class TestCharm:
         # 1) The team has acceped and started using mysql-k8s more extensively
         # 2) The repository level integration tests use mysql-k8s only
         await ops_test.model.deploy(
-            entity_url=KFP_DB_ENTITY,
+            entity_url=MARIADB_CHARM,
             application_name=KFP_DB,
             config=KFP_DB_CONFIG,
             channel=KFP_DB_CHANNEL,
