@@ -128,12 +128,12 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
     harness.begin()
     harness.set_can_connect("kfp-metadata-writer", True)
 
+    harness.charm.on.install.emit()
+
     harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
     harness.add_relation(
         relation_name=GRPC_RELATION_NAME, remote_app="other-app", app_data=MOCK_GRPC_DATA
     )
-
-    harness.charm.on.install.emit()
 
     assert isinstance(harness.charm.unit.status, ActiveStatus)
 

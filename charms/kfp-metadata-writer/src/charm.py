@@ -48,7 +48,6 @@ class KfpMetadataWriter(CharmBase):
             component=K8sServiceInfoComponent(
                 charm=self,
                 relation_name=GRPC_RELATION_NAME,
-                refresh_event=self.on[GRPC_RELATION_NAME].relation_changed,
             ),
             depends_on=[self.leadership_gate],
         )

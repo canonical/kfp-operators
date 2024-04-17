@@ -2,7 +2,7 @@
 # Copyright 2024 Ubuntu
 # See LICENSE file for licensing details.
 
-from typing import List, Optional, Union
+from typing import Optional
 
 from charmed_kubeflow_chisme.components.component import Component
 from charms.mlops_libs.v0.k8s_service_info import (
@@ -12,7 +12,6 @@ from charms.mlops_libs.v0.k8s_service_info import (
     KubernetesServiceInfoRequirer,
 )
 from ops import ActiveStatus, BlockedStatus, CharmBase, StatusBase
-from ops.framework import BoundEvent
 
 
 class K8sServiceInfoComponent(Component):
@@ -27,16 +26,16 @@ class K8sServiceInfoComponent(Component):
         self,
         charm: CharmBase,
         relation_name: Optional[str] = "k8s-service-info",
-        refresh_event: Optional[Union[BoundEvent, List[BoundEvent]]] = None,
     ):
         super().__init__(charm, relation_name)
         self.relation_name = relation_name
         self.charm = charm
-        self.refresh_event = refresh_event
 
         self._k8s_service_info_requirer = KubernetesServiceInfoRequirer(
-            charm=self.charm, relation_name=self.relation_name, refresh_event=self.refresh_event
+            charm=self.charm, relation_name=self.relation_name
         )
+
+        self._events_to_observe = [self._k8s_service_info_requirer.on.updated]
 
     def get_service_info(self) -> KubernetesServiceInfoObject:
         """Wrap the get_data method and return a KubernetesServiceInfoObject."""
