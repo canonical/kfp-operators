@@ -4,4 +4,7 @@
 charmed-kubeflow-chisme >= 0.2.0
 lightkube
 ops
+# pydantic greater or equal to 2.7 yields issues with the
+# rustc version available for this ubuntu version
+pydantic==2.6.4
 serialized-data-interface

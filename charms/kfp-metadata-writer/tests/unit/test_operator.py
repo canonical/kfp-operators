@@ -4,13 +4,13 @@
 from unittest.mock import MagicMock
 
 import pytest
-from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
+from charms.mlops_libs.v0.k8s_service_info import KubernetesServiceInfoRelationDataMissingError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import KfpMetadataWriter
+from charm import GRPC_RELATION_NAME, KfpMetadataWriter
 
-MOCK_GRPC_DATA = {"service": "service-name", "port": "1234"}
+MOCK_GRPC_DATA = {"name": "service-name", "port": "1234"}
 
 
 def test_not_leader(
@@ -54,14 +54,22 @@ def test_grpc_relation_with_data(harness, mocked_lightkube_client):
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
 
     # Add relation with data.  This should trigger a charm reconciliation due to relation-changed.
-    add_sdi_relation_to_harness(harness, "grpc", data=MOCK_GRPC_DATA)
+    rel_id = harness.add_relation(
+        relation_name=GRPC_RELATION_NAME, remote_app="other-app", app_data=MOCK_GRPC_DATA
+    )
 
     # Assert
-    assert isinstance(harness.charm.grpc_relation.status, ActiveStatus)
+    assert harness.charm.grpc_relation.component.get_service_info().name == MOCK_GRPC_DATA["name"]
+    assert harness.charm.grpc_relation.component.get_service_info().port == MOCK_GRPC_DATA["port"]
+
+    # Duplicity to check the same data in the relation is in the grpc_relation component
+    rel_data = harness.get_relation_data(relation_id=rel_id, app_or_unit="other-app")
+    assert harness.charm.grpc_relation.component.get_service_info().name == rel_data["name"]
+    assert harness.charm.grpc_relation.component.get_service_info().port == rel_data["port"]
 
 
-def test_grpc_relation_without_data(harness, mocked_lightkube_client):
-    """Test that the grpc relation goes Blocked if no data is available."""
+def test_grpc_relation_with_no_data(harness, mocked_lightkube_client):
+    """Test the grpc relation raises when data is missing."""
     # Arrange
     harness.begin()
 
@@ -69,11 +77,29 @@ def test_grpc_relation_without_data(harness, mocked_lightkube_client):
     # * leadership_gate to be active and executed
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
 
-    # Add relation with data.  This should trigger a charm reconciliation due to relation-changed.
-    add_sdi_relation_to_harness(harness, "grpc", data={})
+    # Add relation without data.
+    harness.add_relation(relation_name=GRPC_RELATION_NAME, remote_app="other-app", app_data={})
 
-    # Assert
-    assert isinstance(harness.charm.grpc_relation.status, BlockedStatus)
+    with pytest.raises(KubernetesServiceInfoRelationDataMissingError):
+        harness.charm.grpc_relation.component.get_service_info()
+
+
+def test_grpc_relation_with_missing_data(harness, mocked_lightkube_client):
+    """Test the grpc relation raises when data is missing an attribute."""
+    # Arrange
+    harness.begin()
+
+    # Mock:
+    # * leadership_gate to be active and executed
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Add relation without data.
+    harness.add_relation(
+        relation_name=GRPC_RELATION_NAME, remote_app="other-app", app_data={"name": "some-name"}
+    )
+
+    with pytest.raises(KubernetesServiceInfoRelationDataMissingError):
+        harness.charm.grpc_relation.component.get_service_info()
 
 
 def test_grpc_relation_without_relation(harness, mocked_lightkube_client):
@@ -90,6 +116,10 @@ def test_grpc_relation_without_relation(harness, mocked_lightkube_client):
 
     # Assert
     assert isinstance(harness.charm.grpc_relation.status, BlockedStatus)
+    assert (
+        harness.charm.grpc_relation.status.message
+        == "Missing relation with a k8s service info provider. Please add the missing relation."
+    )
 
 
 def test_pebble_service_container_running(harness, mocked_lightkube_client):
@@ -99,7 +129,9 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
     harness.set_can_connect("kfp-metadata-writer", True)
 
     harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
-    add_sdi_relation_to_harness(harness, "grpc", data=MOCK_GRPC_DATA)
+    harness.add_relation(
+        relation_name=GRPC_RELATION_NAME, remote_app="other-app", app_data=MOCK_GRPC_DATA
+    )
 
     harness.charm.on.install.emit()
 
@@ -114,11 +146,11 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
     assert environment["NAMESPACE_TO_WATCH"] == ""
     assert (
         environment["METADATA_GRPC_SERVICE_SERVICE_HOST"]
-        == harness.charm.grpc_relation.component.get_data()["service"]
+        == harness.charm.grpc_relation.component.get_service_info().name
     )
     assert (
         environment["METADATA_GRPC_SERVICE_SERVICE_PORT"]
-        == harness.charm.grpc_relation.component.get_data()["port"]
+        == harness.charm.grpc_relation.component.get_service_info().port
     )
 
 
@@ -128,7 +160,9 @@ def test_install_before_pebble_service_container(harness, mocked_lightkube_clien
     harness.begin()
 
     harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
-    add_sdi_relation_to_harness(harness, "grpc", data=MOCK_GRPC_DATA)
+    harness.add_relation(
+        relation_name=GRPC_RELATION_NAME, remote_app="other-app", app_data=MOCK_GRPC_DATA
+    )
 
     harness.charm.on.install.emit()
 

@@ -1,6 +1,7 @@
-# Learn more about charmcraft.yaml configuration at:
-# https://juju.is/docs/sdk/charmcraft-config
-type: "charm"
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+type: charm
 bases:
   - build-on:
     - name: "ubuntu"
@@ -10,4 +11,5 @@ bases:
       channel: "20.04"
 parts:
   charm:
-    charm-python-packages: [setuptools, pip]  # Fixes install of some packages
+    charm-python-packages: [setuptools, pip]
+    build-packages: [cargo, rustc, pkg-config, libffi-dev, libssl-dev]
