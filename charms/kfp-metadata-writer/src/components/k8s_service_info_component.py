@@ -38,6 +38,8 @@ class K8sServiceInfoComponent(Component):
             charm=self.charm, relation_name=self.relation_name, refresh_event=self.refresh_event
         )
 
+        self._events_to_observe = [self._k8s_service_info_requirer.on.updated]
+
     def get_service_info(self) -> KubernetesServiceInfoObject:
         """Wrap the get_data method and return a KubernetesServiceInfoObject."""
         return self._k8s_service_info_requirer.get_data()

@@ -54,7 +54,7 @@ def test_grpc_relation_with_data(harness, mocked_lightkube_client):
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
 
     # Add relation with data.  This should trigger a charm reconciliation due to relation-changed.
-    rel_id = harness.add_relation(
+    harness.add_relation(
         relation_name=GRPC_RELATION_NAME, remote_app="other-app", app_data=MOCK_GRPC_DATA
     )
 
@@ -62,13 +62,8 @@ def test_grpc_relation_with_data(harness, mocked_lightkube_client):
     assert harness.charm.grpc_relation.component.get_service_info().name == MOCK_GRPC_DATA["name"]
     assert harness.charm.grpc_relation.component.get_service_info().port == MOCK_GRPC_DATA["port"]
 
-    # Duplicity to check the same data in the relation is in the grpc_relation component
-    rel_data = harness.get_relation_data(relation_id=rel_id, app_or_unit="other-app")
-    assert harness.charm.grpc_relation.component.get_service_info().name == rel_data["name"]
-    assert harness.charm.grpc_relation.component.get_service_info().port == rel_data["port"]
 
-
-def test_grpc_relation_with_no_data(harness, mocked_lightkube_client):
+def test_grpc_relation_with_empty_data(harness, mocked_lightkube_client):
     """Test the grpc relation raises when data is missing."""
     # Arrange
     harness.begin()
@@ -85,7 +80,7 @@ def test_grpc_relation_with_no_data(harness, mocked_lightkube_client):
 
 
 def test_grpc_relation_with_missing_data(harness, mocked_lightkube_client):
-    """Test the grpc relation raises when data is missing an attribute."""
+    """Test the grpc relation raises when data is incomplete."""
     # Arrange
     harness.begin()
 
@@ -128,12 +123,12 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
     harness.begin()
     harness.set_can_connect("kfp-metadata-writer", True)
 
+    harness.charm.on.install.emit()
+
     harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
     harness.add_relation(
         relation_name=GRPC_RELATION_NAME, remote_app="other-app", app_data=MOCK_GRPC_DATA
     )
-
-    harness.charm.on.install.emit()
 
     assert isinstance(harness.charm.unit.status, ActiveStatus)
 

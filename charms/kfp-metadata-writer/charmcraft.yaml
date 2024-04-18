@@ -12,4 +12,7 @@ bases:
 parts:
   charm:
     charm-python-packages: [setuptools, pip]
+    # These build-packages are defined here because pydantic needs them
+    # at build time. As long as pydantic is listed in requirements.in, this
+    # list cannot be removed/changed.
     build-packages: [cargo, rustc, pkg-config, libffi-dev, libssl-dev]

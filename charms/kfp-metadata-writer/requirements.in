@@ -4,7 +4,10 @@
 charmed-kubeflow-chisme >= 0.2.0
 lightkube
 ops
-# pydantic greater or equal to 2.7 yields issues with the
-# rustc version available for this ubuntu version
-pydantic==2.6.4
+# pydantic>=2.7 requires rustc v1.76 or newer,
+# which is not available in the base OS this charm has at the moment (Ubuntu 20.04).
+# To avoid build-time errors, pydantic has to be pinned to a version that can be built
+# with the rustc version that the OS can provide.
+# Remove this pin when the base OS can install rustc v1.76 or newer.
+pydantic>=2.6,<2.7
 serialized-data-interface
