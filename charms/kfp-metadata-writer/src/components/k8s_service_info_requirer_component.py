@@ -52,7 +52,6 @@ class K8sServiceInfoRequirerComponent(Component):
         except KubernetesServiceInfoRelationMissingError as rel_error:
             return BlockedStatus(f"{rel_error.message} Please add the missing relation.")
         except KubernetesServiceInfoRelationDataMissingError as data_error:
-            # Nothing can be done, just re-raise
             logger.error(f"Empty or missing data. Got: {data_error.message}")
             return WaitingStatus(
                 f"Empty or missing data in {self.relation_name} relation."
