@@ -12,11 +12,11 @@ KFP_CHARMS = [
     "kfp-api",
     "kfp-persistence",
     "kfp-profile-controller",
+    "kfp-metadata-writer",
     "kfp-schedwf",
     "kfp-ui",
     "kfp-viewer",
     "kfp-viz",
-    "kfp-metadata-writer",
 ]
 
 # Variables for uploading/creating pipelines/experiments/runs
