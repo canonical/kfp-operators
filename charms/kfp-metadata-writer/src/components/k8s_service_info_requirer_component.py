@@ -2,7 +2,8 @@
 # Copyright 2024 Ubuntu
 # See LICENSE file for licensing details.
 
-from typing import List, Optional, Union
+import logging
+from typing import Optional
 
 from charmed_kubeflow_chisme.components.component import Component
 from charms.mlops_libs.v0.k8s_service_info import (
@@ -11,11 +12,12 @@ from charms.mlops_libs.v0.k8s_service_info import (
     KubernetesServiceInfoRelationMissingError,
     KubernetesServiceInfoRequirer,
 )
-from ops import ActiveStatus, BlockedStatus, CharmBase, StatusBase
-from ops.framework import BoundEvent
+from ops import ActiveStatus, BlockedStatus, CharmBase, StatusBase, WaitingStatus
+
+logger = logging.getLogger(__name__)
 
 
-class K8sServiceInfoComponent(Component):
+class K8sServiceInfoRequirerComponent(Component):
     """A Component that wraps the requirer side of the k8s_service_info charm library.
 
     Args:
@@ -27,15 +29,14 @@ class K8sServiceInfoComponent(Component):
         self,
         charm: CharmBase,
         relation_name: Optional[str] = "k8s-service-info",
-        refresh_event: Optional[Union[BoundEvent, List[BoundEvent]]] = None,
     ):
         super().__init__(charm, relation_name)
         self.relation_name = relation_name
         self.charm = charm
-        self.refresh_event = refresh_event
 
         self._k8s_service_info_requirer = KubernetesServiceInfoRequirer(
-            charm=self.charm, relation_name=self.relation_name, refresh_event=self.refresh_event
+            charm=self.charm,
+            relation_name=self.relation_name,
         )
 
         self._events_to_observe = [self._k8s_service_info_requirer.on.updated]
@@ -52,5 +53,9 @@ class K8sServiceInfoComponent(Component):
             return BlockedStatus(f"{rel_error.message} Please add the missing relation.")
         except KubernetesServiceInfoRelationDataMissingError as data_error:
             # Nothing can be done, just re-raise
-            raise data_error
+            logger.error(f"Empty or missing data. Got: {data_error.message}")
+            return WaitingStatus(
+                f"Empty or missing data in {self.relation_name} relation."
+                " This may be transient, but if it persists it is likely an error."
+            )
         return ActiveStatus()

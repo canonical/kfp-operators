@@ -19,7 +19,7 @@ from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBi
 from ops.charm import CharmBase
 from ops.main import main
 
-from components.k8s_service_info_component import K8sServiceInfoComponent
+from components.k8s_service_info_requirer_component import K8sServiceInfoRequirerComponent
 from components.pebble_component import KfpMetadataWriterInputs, KfpMetadataWriterPebbleService
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class KfpMetadataWriter(CharmBase):
         )
 
         self.grpc_relation = self.charm_reconciler.add(
-            component=K8sServiceInfoComponent(
+            component=K8sServiceInfoRequirerComponent(
                 charm=self,
                 relation_name=GRPC_RELATION_NAME,
             ),

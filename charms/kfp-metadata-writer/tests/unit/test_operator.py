@@ -4,7 +4,6 @@
 from unittest.mock import MagicMock
 
 import pytest
-from charms.mlops_libs.v0.k8s_service_info import KubernetesServiceInfoRelationDataMissingError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
@@ -64,37 +63,39 @@ def test_grpc_relation_with_data(harness, mocked_lightkube_client):
 
 
 def test_grpc_relation_with_empty_data(harness, mocked_lightkube_client):
-    """Test the grpc relation raises when data is missing."""
+    """Test the grpc relation component returns WaitingStatus when data is missing."""
     # Arrange
     harness.begin()
 
     # Mock:
     # * leadership_gate to be active and executed
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+
+    harness.charm.on.install.emit()
 
     # Add relation without data.
     harness.add_relation(relation_name=GRPC_RELATION_NAME, remote_app="other-app", app_data={})
 
-    with pytest.raises(KubernetesServiceInfoRelationDataMissingError):
-        harness.charm.grpc_relation.component.get_service_info()
+    assert isinstance(harness.charm.grpc_relation.get_status(), WaitingStatus)
 
 
 def test_grpc_relation_with_missing_data(harness, mocked_lightkube_client):
-    """Test the grpc relation raises when data is incomplete."""
+    """Test the grpc relation component returns WaitingStatus when data is incomplete."""
     # Arrange
     harness.begin()
 
     # Mock:
     # * leadership_gate to be active and executed
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+
+    harness.charm.on.install.emit()
 
     # Add relation without data.
     harness.add_relation(
         relation_name=GRPC_RELATION_NAME, remote_app="other-app", app_data={"name": "some-name"}
     )
 
-    with pytest.raises(KubernetesServiceInfoRelationDataMissingError):
-        harness.charm.grpc_relation.component.get_service_info()
+    assert isinstance(harness.charm.grpc_relation.component.get_status(), WaitingStatus)
 
 
 def test_grpc_relation_without_relation(harness, mocked_lightkube_client):
