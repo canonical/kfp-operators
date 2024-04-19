@@ -80,6 +80,12 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # Build the charms we need to build only if --no-build is not set
     context = {}
     if not no_build:
+        # FIXME: remove after https://github.com/canonical/charmcraft/issues/1659 is fixed
+        # Build the kfp-metadata-writer first so the base LXC container gets
+        # created before running simoultaneous builds
+        # This will prevent processes like apt from getting locked by one build
+        # See https://github.com/canonical/charmcraft/issues/1138#issuecomment-1623979748
+        await ops_test.build_charm(KFP_CHARMS["kfp-metadata-writer"])
         charms_to_build = {
             charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
             for charm in KFP_CHARMS
