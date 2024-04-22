@@ -1,6 +1,7 @@
-# Learn more about charmcraft.yaml configuration at:
-# https://juju.is/docs/sdk/charmcraft-config
-type: "charm"
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+type: charm
 bases:
   - build-on:
     - name: "ubuntu"
@@ -10,7 +11,7 @@ bases:
       channel: "20.04"
 parts:
   charm:
-    charm-python-packages: [setuptools, pip]  # Fixes install of some packages
+    charm-python-packages: [setuptools, pip]
     # These build-packages are defined here because pydantic needs them
     # at build time. As long as pydantic is listed in requirements.in, this
     # list cannot be removed/changed.
