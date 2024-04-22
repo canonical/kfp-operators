@@ -227,9 +227,9 @@ urllib3==1.26.16
     #   requests
 wcwidth==0.2.6
     # via prompt-toolkit
-websocket-client==1.6.2
+websocket-client
     # via kubernetes
-websockets==8.1
+websockets
     # via juju
 yarl==1.9.2
     # via aiohttp
