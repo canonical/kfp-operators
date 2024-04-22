@@ -10,10 +10,10 @@ CHARM_PATH_TEMPLATE = "{basedir}/charms/{charm}/"
 # All charms in the kfp-operators repository, except kfp-profile-controller
 KFP_CHARMS = [
     "kfp-api",
+    "kfp-metadata-writer",
     "kfp-persistence",
     "kfp-profile-controller",
     "kfp-schedwf",
-    "kfp-metadata-writer",
     "kfp-ui",
     "kfp-viewer",
     "kfp-viz",
