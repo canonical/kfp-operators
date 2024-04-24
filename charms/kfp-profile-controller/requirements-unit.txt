@@ -4,10 +4,10 @@
 #
 #    pip-compile requirements-unit.in
 #
-anyio==4.3.0
+anyio==3.7.1
     # via
     #   -r requirements.txt
-    #   httpx
+    #   httpcore
 attrs==23.1.0
     # via
     #   -r requirements.txt
@@ -18,7 +18,7 @@ certifi==2023.7.22
     #   httpcore
     #   httpx
     #   requests
-charmed-kubeflow-chisme==0.3.0
+charmed-kubeflow-chisme==0.2.0
     # via -r requirements.txt
 charset-normalizer==3.2.0
     # via
@@ -30,7 +30,7 @@ deepdiff==6.2.1
     # via
     #   -r requirements.txt
     #   charmed-kubeflow-chisme
-exceptiongroup==1.2.1
+exceptiongroup==1.1.2
     # via
     #   -r requirements.txt
     #   anyio
@@ -39,11 +39,11 @@ h11==0.14.0
     # via
     #   -r requirements.txt
     #   httpcore
-httpcore==1.0.5
+httpcore==0.17.3
     # via
     #   -r requirements.txt
     #   httpx
-httpx==0.27.0
+httpx==0.24.1
     # via
     #   -r requirements.txt
     #   lightkube
@@ -59,7 +59,7 @@ importlib-resources==6.0.1
     #   jsonschema
 iniconfig==2.0.0
     # via pytest
-jinja2==3.1.3
+jinja2==3.1.2
     # via
     #   -r requirements.txt
     #   charmed-kubeflow-chisme
@@ -67,15 +67,15 @@ jsonschema==4.17.3
     # via
     #   -r requirements.txt
     #   serialized-data-interface
-lightkube==0.15.2
+lightkube==0.14.0
     # via
     #   -r requirements.txt
     #   charmed-kubeflow-chisme
-lightkube-models==1.30.0.7
+lightkube-models==1.27.1.4
     # via
     #   -r requirements.txt
     #   lightkube
-markupsafe==2.1.5
+markupsafe==2.1.3
     # via
     #   -r requirements.txt
     #   jinja2
@@ -121,11 +121,11 @@ requests==2.31.0
     # via
     #   -r requirements.txt
     #   serialized-data-interface
-ruamel-yaml==0.18.6
+ruamel-yaml==0.17.32
     # via
     #   -r requirements.txt
     #   charmed-kubeflow-chisme
-ruamel-yaml-clib==0.2.8
+ruamel-yaml-clib==0.2.7
     # via
     #   -r requirements.txt
     #   ruamel-yaml
@@ -133,21 +133,18 @@ serialized-data-interface==0.7.0
     # via
     #   -r requirements.txt
     #   charmed-kubeflow-chisme
-sniffio==1.3.1
+sniffio==1.3.0
     # via
     #   -r requirements.txt
     #   anyio
+    #   httpcore
     #   httpx
-tenacity==8.2.3
+tenacity==8.2.2
     # via
     #   -r requirements.txt
     #   charmed-kubeflow-chisme
 tomli==2.0.1
     # via pytest
-typing-extensions==4.11.0
-    # via
-    #   -r requirements.txt
-    #   anyio
 urllib3==2.0.4
     # via
     #   -r requirements.txt
