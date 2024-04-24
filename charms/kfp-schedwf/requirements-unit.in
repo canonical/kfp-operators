@@ -1,7 +1,5 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
-# Pinning to this version as it contains the base charm
-charmed-kubeflow-chisme >= 0.2.0
 coverage
 ops
 pytest
