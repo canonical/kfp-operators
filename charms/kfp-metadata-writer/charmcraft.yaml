@@ -1,6 +1,7 @@
-# Learn more about charmcraft.yaml configuration at:
-# https://juju.is/docs/sdk/charmcraft-config
-type: "charm"
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+type: charm
 bases:
   - build-on:
     - name: "ubuntu"
@@ -10,4 +11,12 @@ bases:
       channel: "20.04"
 parts:
   charm:
+    # These build-packages are defined here because pydantic needs them
+    # at build time. As long as pydantic is listed in requirements.in, this
+    # list cannot be removed/changed.
+    build-packages: [cargo, rustc, pkg-config, libffi-dev, libssl-dev]
     charm-python-packages: [setuptools, pip]  # Fixes install of some packages
+    # Install jinja2 (a dependency of charmed-kubeflow-chisme) from binary to avoid build-time issues
+    # See https://github.com/canonical/bundle-kubeflow/issues/883
+    # Remove when https://github.com/canonical/charmcraft/issues/1664 is fixed
+    charm-binary-python-packages: [jinja2]

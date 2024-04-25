@@ -6,7 +6,7 @@ applications:
   minio:                   { charm: ch:minio, channel: latest/edge,       scale: 1 }
   # We should use `8.0/stable` once changes for https://github.com/canonical/mysql-k8s-operator/issues/337 are published there.
   kfp-db:                  { charm: ch:mysql-k8s, channel: 8.0/edge, scale: 1, constraints: mem=2G, trust: true }
-  mlmd:                    { charm: ch:mlmd, channel: latest/edge, scale: 1 }
+  mlmd:                    { charm: ch:mlmd, channel: latest/edge, scale: 1, trust: true}
   envoy:                   { charm: ch:envoy, channel: latest/edge, scale: 1 }
   kubeflow-profiles:       { charm: ch:kubeflow-profiles, channel: latest/edge, scale: 1, trust: true }
   istio-ingressgateway:

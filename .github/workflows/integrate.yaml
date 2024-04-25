@@ -141,10 +141,7 @@ jobs:
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          # Run integration tests against the 1.7 generic install bundle definition
-          # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
-          # and https://github.com/canonical/charmcraft/issues/1138
-          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2 --destructive-mode"
+          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2"
 
       - name: Get all
         run: kubectl get all -A
