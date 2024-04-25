@@ -17,10 +17,10 @@ APP_NAME = "kfp-api"
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 
 KFP_DB = "kfp-db"
-KFP_DB_CHANNEL = "latest/edge"
-KFP_DB_CONFIG = {"database": "mlpipeline"}
+MARIADB_CHANNEL = "latest/edge"
+MARIADB_CONFIG = {"database": "mlpipeline"}
 MARIADB_CHARM = "charmed-osm-mariadb-k8s"
-KFP_DB_TRUST = True
+MARIADB_TRUST = True
 KFP_VIZ = "kfp-viz"
 KFP_VIZ_CHANNEL = "latest/edge"
 KFP_VIZ_TRUST = True
@@ -69,9 +69,9 @@ class TestCharm:
         await ops_test.model.deploy(
             entity_url=MARIADB_CHARM,
             application_name=KFP_DB,
-            config=KFP_DB_CONFIG,
-            channel=KFP_DB_CHANNEL,
-            trust=KFP_DB_TRUST,
+            config=MARIADB_CONFIG,
+            channel=MARIADB_CHANNEL,
+            trust=MARIADB_TRUST,
         )
         await ops_test.model.deploy(
             entity_url=MINIO, config=MINIO_CONFIG, channel=MINIO_CHANNEL, trust=MINIO_TRUST
