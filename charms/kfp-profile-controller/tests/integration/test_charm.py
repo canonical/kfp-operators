@@ -21,14 +21,25 @@ logger = logging.getLogger(__name__)
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_NAME = METADATA["name"]
 
-MINIO_APP_NAME = "minio"
-MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
 CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
 CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
 
 PodDefault = create_namespaced_resource(
     group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
 )
+
+ADMISSION_WEBHOOK_CHANNEL = "latest/edge"
+ADMISSION_WEBHOOK = "admission-webhook"
+ADMISSION_WEBHOOK_TRUST = True
+METACONTROLLER_CHANNEL = "latest/edge"
+METACONTROLLER = "metacontroller-operator"
+METACONTROLLER_TRUST = True
+MINIO_CHANNEL = "latest/edge"
+MINIO = "minio"
+MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
+KUBEFLOW_PROFILES_CHANNEL = "latest/edge"
+KUBEFLOW_PROFILES = "kubeflow-profiles"
+KUBEFLOW_PROFILES_TRUST = True
 
 
 @pytest.mark.abort_on_fail
@@ -40,19 +51,20 @@ async def test_build_and_deploy(ops_test: OpsTest):
     resources = {"oci-image": image_path}
 
     # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
-    await ops_test.model.deploy(entity_url="admission-webhook", channel="latest/edge", trust=True)
+    await ops_test.model.deploy(
+        entity_url=ADMISSION_WEBHOOK,
+        channel=ADMISSION_WEBHOOK_CHANNEL,
+        trust=ADMISSION_WEBHOOK_TRUST,
+    )
     # TODO: The webhook charm must be active before the metacontroller is deployed, due to the bug
     # described here: https://github.com/canonical/metacontroller-operator/issues/86
     # Drop this wait_for_idle once the above issue is closed
-    await ops_test.model.wait_for_idle(apps=["admission-webhook"], status="active")
+    await ops_test.model.wait_for_idle(apps=[ADMISSION_WEBHOOK], status="active")
 
     await ops_test.model.deploy(
-        entity_url="metacontroller-operator",
-        # TODO: Revert once metacontroller stable supports k8s 1.22
-        channel="latest/edge",
-        # Remove this config option after the metacontroller-operator is updated to v3
-        config={"metacontroller-image": "docker.io/metacontrollerio/metacontroller:v3.0.0"},
-        trust=True,
+        entity_url=METACONTROLLER,
+        channel=METACONTROLLER_CHANNEL,
+        trust=METACONTROLLER_TRUST,
     )
 
     await ops_test.model.deploy(
@@ -60,18 +72,17 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     # Deploy required relations
-    await ops_test.model.deploy(entity_url=MINIO_APP_NAME, config=MINIO_CONFIG)
+    await ops_test.model.deploy(entity_url=MINIO, config=MINIO_CONFIG)
     await ops_test.model.add_relation(
         f"{CHARM_NAME}:object-storage",
-        f"{MINIO_APP_NAME}:object-storage",
+        f"{MINIO}:object-storage",
     )
 
     # Deploy charms responsible for CRDs creation
     await ops_test.model.deploy(
-        entity_url="kubeflow-profiles",
-        # TODO: Revert once kubeflow-profiles stable supports k8s 1.22
-        channel="latest/edge",
-        trust=True,
+        entity_url=KUBEFLOW_PROFILES,
+        channel=KUBEFLOW_PROFILES_CHANNEL,
+        trust=KUBEFLOW_PROFILES_TRUST,
     )
 
     # Wait for everything to deploy
@@ -200,7 +211,7 @@ async def test_model_resources(ops_test: OpsTest):
     Verifies that the secret was created, decoded secret-key matches the minio config value,
     and that the pods are running.
     """
-    minio_config = await ops_test.model.applications[MINIO_APP_NAME].get_config()
+    minio_config = await ops_test.model.applications[MINIO].get_config()
 
     await assert_minio_secret(
         access_key=minio_config["access-key"]["value"],
