@@ -17,6 +17,8 @@ charmed-kubeflow-chisme==0.2.0
     # via -r requirements.in
 charset-normalizer==3.2.0
     # via requests
+cosl==0.0.11
+    # via -r requirements.in
 coverage==7.3.0
     # via -r requirements-unit.in
 deepdiff==6.2.1
@@ -59,6 +61,7 @@ ops==2.5.0
     #   -r requirements-unit.in
     #   -r requirements.in
     #   charmed-kubeflow-chisme
+    #   cosl
     #   serialized-data-interface
 ordered-set==4.1.0
     # via deepdiff
@@ -82,6 +85,7 @@ pytest-mock==3.11.1
 pyyaml==6.0.1
     # via
     #   -r requirements-unit.in
+    #   cosl
     #   lightkube
     #   ops
     #   serialized-data-interface
@@ -106,6 +110,8 @@ tenacity==8.2.2
     #   charmed-kubeflow-chisme
 tomli==2.0.1
     # via pytest
+typing-extensions==4.11.0
+    # via cosl
 urllib3==2.0.4
     # via requests
 websocket-client==1.6.1
