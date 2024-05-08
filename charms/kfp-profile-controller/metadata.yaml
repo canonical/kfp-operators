@@ -11,7 +11,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image for kfp-profile-controller
-    upstream-source: python:3.7
+    upstream-source: python:3.11.9-alpine
   # NOTE: If bumping KFP version, see also KFP_IMAGES_VERSION in charm.py.  That variable must also be updated
 requires:
   object-storage:
