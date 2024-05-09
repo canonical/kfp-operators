@@ -352,14 +352,18 @@ class TestCharm:
     ):
         """Test complete installation with all required relations and verify pebble layer."""
         harness.set_leader(True)
-        kfpapi_relation_name = "kfp-api"
         model_name = "kubeflow"
         service_port = "8888"
         harness.set_model_name(model_name)
         harness.update_config({"http-port": service_port})
 
         # Set up required relations
-        mysql_data, objectstorage_data, kfp_viz_data, kfpapi_rel_id = self.setup_required_relations(harness)
+        (
+            mysql_data,
+            objectstorage_data,
+            kfp_viz_data,
+            kfpapi_rel_id,
+        ) = self.setup_required_relations(harness)
 
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
@@ -715,7 +719,6 @@ class TestCharm:
         assert len(minio_service.spec.ports) == 1
         assert minio_service.spec.ports[0].targetPort == objectstorage_data["port"]
 
-        
     def setup_required_relations(self, harness: Harness):
         kfpapi_relation_name = "kfp-api"
 
