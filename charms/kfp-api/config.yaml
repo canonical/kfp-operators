@@ -49,3 +49,11 @@ options:
     type: string
     default: "mlpipeline"
     description: Default name of object storage bucket.
+  launcher-image:
+    type: string
+    default: ""
+    description: Launcher image used during a pipeline's steps.
+  driver-image:
+    type: string
+    default: ""
+    description: Driver image used during a pipeline's steps.
