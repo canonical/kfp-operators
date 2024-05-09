@@ -11,7 +11,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: charmedkubeflow/persistenceagent:2.0.3-a3714a9
+    upstream-source: charmedkubeflow/persistenceagent:2.0.5-8feef4e
 requires:
   kfp-api:
     interface: k8s-service

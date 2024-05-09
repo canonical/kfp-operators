@@ -13,7 +13,7 @@ resources:
   oci-image:
     type: oci-image
     description: OCI image for KFP Metadata Writer
-    upstream-source: charmedkubeflow/metadata-writer:2.0.3-286d4a8
+    upstream-source: charmedkubeflow/metadata-writer:2.0.5-95d0c17
 requires:
   grpc:
     interface: grpc
