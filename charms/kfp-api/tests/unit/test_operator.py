@@ -359,54 +359,7 @@ class TestCharm:
         harness.update_config({"http-port": service_port})
 
         # Set up required relations
-
-        # mysql relation
-        mysql_data = {
-            "database": "database",
-            "host": "host",
-            "root_password": "root_password",
-            "port": "port",
-        }
-        mysql_rel_id = harness.add_relation("mysql", "mysql-provider")
-        harness.add_relation_unit(mysql_rel_id, "mysql-provider/0")
-        harness.update_relation_data(mysql_rel_id, "mysql-provider/0", mysql_data)
-
-        # object storage relation
-        objectstorage_data = {
-            "access-key": "access-key",
-            "namespace": "namespace",
-            "port": 1234,
-            "secret-key": "secret-key",
-            "secure": True,
-            "service": "service",
-        }
-        objectstorage_data_dict = {
-            "_supported_versions": "- v1",
-            "data": yaml.dump(objectstorage_data),
-        }
-        objectstorage_rel_id = harness.add_relation("object-storage", "storage-provider")
-        harness.add_relation_unit(objectstorage_rel_id, "storage-provider/0")
-        harness.update_relation_data(
-            objectstorage_rel_id, "storage-provider", objectstorage_data_dict
-        )
-
-        # kfp-viz relation
-        kfp_viz_data = {
-            "service-name": "viz-service",
-            "service-port": "1234",
-        }
-        kfp_viz_data_dict = {"_supported_versions": "- v1", "data": yaml.dump(kfp_viz_data)}
-        kfp_viz_id = harness.add_relation("kfp-viz", "kfp-viz")
-        harness.add_relation_unit(kfp_viz_id, "kfp-viz/0")
-        harness.update_relation_data(kfp_viz_id, "kfp-viz", kfp_viz_data_dict)
-
-        # example kfp-api provider relation
-        kfpapi_data = {
-            "_supported_versions": "- v1",
-        }
-        kfpapi_rel_id = harness.add_relation(kfpapi_relation_name, "kfp-api-subscriber")
-        harness.add_relation_unit(kfpapi_rel_id, "kfp-api-subscriber/0")
-        harness.update_relation_data(kfpapi_rel_id, "kfp-api-subscriber", kfpapi_data)
+        mysql_data, objectstorage_data, kfp_viz_data, kfpapi_rel_id = self.setup_required_relations(harness)
 
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
@@ -483,10 +436,43 @@ class TestCharm:
             ),
             "OBJECTSTORECONFIG_PORT": str(objectstorage_data["port"]),
             "OBJECTSTORECONFIG_REGION": "",
+            "V2_LAUNCHER_IMAGE": "",
+            "V2_DRIVER_IMAGE": "",
         }
         test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
 
         assert test_env == expected_env
+        assert model_name == test_env["POD_NAMESPACE"]
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    def test_launcher_driver_images_config(
+        self,
+        k8s_resource_handler: MagicMock,
+        harness: Harness,
+    ):
+        """Test complete installation with all required relations and verify pebble layer."""
+        harness.set_leader(True)
+        model_name = "kubeflow"
+        service_port = "8888"
+        harness.set_model_name(model_name)
+        harness.update_config({"http-port": service_port})
+        harness.update_config({"launcher-image": "fake-launcher-image"})
+        harness.update_config({"driver-image": "fake-driver-image"})
+
+        # Set up required relations
+        self.setup_required_relations(harness)
+
+        harness.begin_with_initial_hooks()
+        harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
+
+        # test Pebble
+        pebble_plan = harness.get_container_pebble_plan(KFP_API_CONTAINER_NAME)
+        pebble_plan_info = pebble_plan.to_dict()
+        test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
+
+        assert test_env["V2_LAUNCHER_IMAGE"] == "fake-launcher-image"
+        assert test_env["V2_DRIVER_IMAGE"] == "fake-driver-image"
         assert model_name == test_env["POD_NAMESPACE"]
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
@@ -728,3 +714,57 @@ class TestCharm:
         )
         assert len(minio_service.spec.ports) == 1
         assert minio_service.spec.ports[0].targetPort == objectstorage_data["port"]
+
+        
+    def setup_required_relations(self, harness: Harness):
+        kfpapi_relation_name = "kfp-api"
+
+        # mysql relation
+        mysql_data = {
+            "database": "database",
+            "host": "host",
+            "root_password": "root_password",
+            "port": "port",
+        }
+        mysql_rel_id = harness.add_relation("mysql", "mysql-provider")
+        harness.add_relation_unit(mysql_rel_id, "mysql-provider/0")
+        harness.update_relation_data(mysql_rel_id, "mysql-provider/0", mysql_data)
+
+        # object storage relation
+        objectstorage_data = {
+            "access-key": "access-key",
+            "namespace": "namespace",
+            "port": 1234,
+            "secret-key": "secret-key",
+            "secure": True,
+            "service": "service",
+        }
+        objectstorage_data_dict = {
+            "_supported_versions": "- v1",
+            "data": yaml.dump(objectstorage_data),
+        }
+        objectstorage_rel_id = harness.add_relation("object-storage", "storage-provider")
+        harness.add_relation_unit(objectstorage_rel_id, "storage-provider/0")
+        harness.update_relation_data(
+            objectstorage_rel_id, "storage-provider", objectstorage_data_dict
+        )
+
+        # kfp-viz relation
+        kfp_viz_data = {
+            "service-name": "viz-service",
+            "service-port": "1234",
+        }
+        kfp_viz_data_dict = {"_supported_versions": "- v1", "data": yaml.dump(kfp_viz_data)}
+        kfp_viz_id = harness.add_relation("kfp-viz", "kfp-viz")
+        harness.add_relation_unit(kfp_viz_id, "kfp-viz/0")
+        harness.update_relation_data(kfp_viz_id, "kfp-viz", kfp_viz_data_dict)
+
+        # example kfp-api provider relation
+        kfpapi_data = {
+            "_supported_versions": "- v1",
+        }
+        kfpapi_rel_id = harness.add_relation(kfpapi_relation_name, "kfp-api-subscriber")
+        harness.add_relation_unit(kfpapi_rel_id, "kfp-api-subscriber/0")
+        harness.update_relation_data(kfpapi_rel_id, "kfp-api-subscriber", kfpapi_data)
+
+        return mysql_data, objectstorage_data, kfp_viz_data, kfpapi_rel_id
