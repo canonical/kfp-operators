@@ -51,9 +51,11 @@ options:
     description: Default name of object storage bucket.
   launcher-image:
     type: string
-    default: ""
+    # Source: https://github.com/kubeflow/pipelines/blob/2.0.5/backend/src/v2/compiler/argocompiler/container.go#L27
+    default: "gcr.io/ml-pipeline/kfp-launcher@sha256:80cf120abd125db84fa547640fd6386c4b2a26936e0c2b04a7d3634991a850a4"
     description: Launcher image used during a pipeline's steps.
   driver-image:
     type: string
-    default: ""
+    # Source: https://github.com/kubeflow/pipelines/blob/2.0.5/backend/src/v2/compiler/argocompiler/container.go#L29
+    default: "gcr.io/ml-pipeline/kfp-driver@sha256:8e60086b04d92b657898a310ca9757631d58547e76bbbb8bfc376d654bef1707"
     description: Driver image used during a pipeline's steps.
