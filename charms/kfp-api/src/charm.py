@@ -290,6 +290,8 @@ class KfpApiOperator(CharmBase):
             "OBJECTSTORECONFIG_HOST": f"{object_storage['service']}.{object_storage['namespace']}",
             "OBJECTSTORECONFIG_PORT": str(object_storage["port"]),
             "OBJECTSTORECONFIG_REGION": "",
+            "V2_LAUNCHER_IMAGE": self.model.config["launcher-image"],
+            "V2_DRIVER_IMAGE": self.model.config["driver-image"],
         }
 
         return env_vars
