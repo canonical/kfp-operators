@@ -52,6 +52,35 @@ rules:
   - tokenreviews
   verbs:
   - create
+- apiGroups:
+  - tekton.dev
+  resources:
+  - pipelineruns
+  - taskruns
+  - conditions
+  - runs
+  - tasks
+  - customruns
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - custom.tekton.dev
+  resources:
+  - pipelineloops
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -247,6 +276,8 @@ rules:
   - clusterworkflowtemplates/finalizers
   - workflowtasksets
   - workflowtasksets/finalizers
+  - workflowtaskresults
+  - workflowtaskresults/finalizers
   verbs:
   - create
   - delete
