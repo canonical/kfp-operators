@@ -440,8 +440,8 @@ class TestCharm:
             ),
             "OBJECTSTORECONFIG_PORT": str(objectstorage_data["port"]),
             "OBJECTSTORECONFIG_REGION": "",
-            "V2_LAUNCHER_IMAGE": "gcr.io/ml-pipeline/kfp-launcher@sha256:80cf120abd125db84fa547640fd6386c4b2a26936e0c2b04a7d3634991a850a4",  # noqa: E501
-            "V2_DRIVER_IMAGE": "gcr.io/ml-pipeline/kfp-driver@sha256:8e60086b04d92b657898a310ca9757631d58547e76bbbb8bfc376d654bef1707",  # noqa: E501
+            "V2_LAUNCHER_IMAGE": "gcr.io/ml-pipeline/kfp-launcher@sha256:8fe5e6e4718f20b021736022ad3741ddf2abd82aa58c86ae13e89736fdc3f08f",  # noqa: E501
+            "V2_DRIVER_IMAGE": "gcr.io/ml-pipeline/kfp-driver@sha256:3c0665cd36aa87e4359a4c8b6271dcba5bdd817815cd0496ed12eb5dde5fd2ec",  # noqa: E501
         }
         test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
 
