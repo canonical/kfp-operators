@@ -426,6 +426,7 @@ class TestCharm:
             "MULTIUSER": "true",
             "VISUALIZATIONSERVICE_NAME": kfp_viz_data["service-name"],
             "VISUALIZATIONSERVICE_PORT": kfp_viz_data["service-port"],
+            'LOG_LEVEL': 'info',
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": kfp_viz_data["service-name"],
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": kfp_viz_data["service-port"],
             "CACHE_IMAGE": harness.charm.config["cache-image"],
