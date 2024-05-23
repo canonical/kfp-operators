@@ -1,1 +1,5 @@
-options: {}
+options:
+  log-level:
+    type: string
+    default: "info"
+    description: Log level of persistence agent
