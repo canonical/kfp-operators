@@ -51,7 +51,9 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                     self.service_name: {
                         "override": "replace",
                         "summary": "entry point for kfp-profile-controller",
-                        "command": "python /hooks/sync.py",  # Must be a string
+                        # Upstream uses `python` instead of python3. We modified it in order
+                        # to be able to use ubuntu/python3.8 image.
+                        "command": "python3 /hooks/sync.py",  # Must be a string
                         "startup": "enabled",
                         "environment": {
                             "MINIO_HOST": inputs.MINIO_HOST,
