@@ -154,5 +154,6 @@ def test_pebble_services_running(harness, mocked_lightkube_client):
     assert environment["MULTIUSER"] == "true"
     assert environment["KUBEFLOW_USERID_HEADER"] == "kubeflow-userid"
     assert environment["KUBEFLOW_USERID_PREFIX"] == ""
+    assert environment["LOG_LEVEL"] == harness.charm.config["log-level"]
     assert environment["TTL_SECONDS_AFTER_WORKFLOW_FINISH"] == "86400"
     assert environment["NUM_WORKERS"] == "2"
