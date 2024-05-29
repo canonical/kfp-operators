@@ -81,6 +81,7 @@ def test_pebble_service_is_replanned_on_config_changed(harness, mocked_lightkube
     # Assert the environment variables that are set from defaults
     environment = container.get_plan().services["controller"].environment
     assert environment["CRON_SCHEDULE_TIMEZONE"] == harness.charm.config.get("timezone")
+    assert environment["LOG_LEVEL"] == harness.charm.config.get("log-level")
 
 
 def test_install_before_pebble_service_container(harness, mocked_lightkube_client):

@@ -3,3 +3,7 @@ options:
     type: string
     default: 'UTC'
     description: Cron schedule timezone
+  log-level:
+    type: string
+    default: "info"
+    description: Log level of scheduled workflow controller

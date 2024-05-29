@@ -13,12 +13,16 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         self,
         *args,
         timezone: str,
+        log_level: str,
         namespace: str,
         **kwargs,
     ):
         """Pebble service container component in order to configure Pebble layer"""
         super().__init__(*args, **kwargs)
-        self.environment = {"CRON_SCHEDULE_TIMEZONE": timezone}
+        self.environment = {
+            "CRON_SCHEDULE_TIMEZONE": timezone,
+            "LOG_LEVEL": log_level,
+        }
         self.namespace = namespace
 
     def get_layer(self) -> Layer:

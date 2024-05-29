@@ -108,6 +108,7 @@ class KfpPersistenceOperator(CharmBase):
                 environment={
                     "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
                     "KUBEFLOW_USERID_PREFIX": "",
+                    "LOG_LEVEL": self.model.config["log-level"],
                     # Upstream defines this in the configmap persistenceagent-config-*
                     "MULTIUSER": "true",
                     "NAMESPACE": "",

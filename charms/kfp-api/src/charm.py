@@ -273,6 +273,7 @@ class KfpApiOperator(CharmBase):
             "MULTIUSER": "true",
             "VISUALIZATIONSERVICE_NAME": viz_data["service-name"],
             "VISUALIZATIONSERVICE_PORT": viz_data["service-port"],
+            "LOG_LEVEL": self.model.config["log-level"],
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": viz_data["service-name"],
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": viz_data["service-port"],
             "CACHE_IMAGE": self.model.config["cache-image"],
