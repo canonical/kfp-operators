@@ -4,9 +4,10 @@
 options:
   custom_images:
     type: string
+    # defaults should match src/defaults-custom-images.json
     default: | 
       visualization_server : ''
-      frontend_image : ''
+      frontend : ''
     description: >
       YAML or JSON formatted input defining images to use in Katib
       For usage details, see https://github.com/canonical/kfp-operators.
