@@ -22,6 +22,7 @@ from charmed_kubeflow_chisme.components import (
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
+from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from lightkube.generic_resource import create_global_resource
@@ -29,6 +30,7 @@ from lightkube.models.core_v1 import ServicePort
 from lightkube.resources.core_v1 import Secret
 from ops.charm import CharmBase
 from ops.main import main
+from ops.model import BlockedStatus
 
 from components.pebble_components import (
     KfpProfileControllerInputs,
@@ -75,19 +77,20 @@ def parse_images_config(config: str) -> Dict:
     Returns:
         Dict: A list of images.
     """
-    error_message = (
-        f"Cannot parse a config-defined images list from config '{config}' - this"
-        "config input will be ignored."
-    )
     if not config:
         return []
     try:
         images = yaml.safe_load(config)
     except yaml.YAMLError as err:
-        logger.warning(
-            f"{error_message}  Got error: {err}, while parsing the custom_image config."
+        logger.error(
+            f"Charm Blocked due to error parsing the `custom_images` config.  "
+            f"Caught error: {str(err)}"
         )
-        raise err
+        raise ErrorWithStatus(
+            "Error parsing the `custom_images` config - fix `custom_images` to unblock.  "
+            "See logs for more details",
+            BlockedStatus,
+        )
     return images
 
 
@@ -99,10 +102,14 @@ class KfpProfileControllerOperator(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.images = self.get_images(
-            DEFAULT_IMAGES,
-            parse_images_config(self.model.config["custom_images"]),
-        )
+        try:
+            self.images = self.get_images(
+                DEFAULT_IMAGES,
+                parse_images_config(self.model.config["custom_images"]),
+            )
+        except ErrorWithStatus as e:
+            self.unit.status = e.status
+            return
 
         # expose controller's port
         http_port = ServicePort(CONTROLLER_PORT, name="http")
@@ -237,7 +244,14 @@ class KfpProfileControllerOperator(CharmBase):
                 if image_name in images:
                     images[image_name] = custom_image
                 else:
-                    self.log.warning(f"image_name {image_name} not in image list, ignoring.")
+                    logger.error(
+                        f"Image name `{image_name}` set in `custom_images` config not found in images list: {', '.join(images.keys())}."  # noqa E501
+                    )
+                    raise ErrorWithStatus(
+                        "Incorrect image name in `custom_images` config - fix `custom_images` to unblock.  "  # noqa E501
+                        "See logs for more details",
+                        BlockedStatus,
+                    )
 
         # This are special cases comfigmap where they need to be split into image and version
         for image_name in [
