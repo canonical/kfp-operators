@@ -4,6 +4,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+import yaml
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
@@ -192,3 +193,25 @@ def test_pebble_services_running(
     # Assert the environment variables that are set from inputs are correctly applied
     environment = container.get_plan().services["kfp-profile-controller"].environment
     assert environment == EXPECTED_ENVIRONMENT
+
+
+def test_custom_images_config_with_incorrect_config(
+    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
+    """Asserts that the unit goes to blocked on corrupted config input."""
+    harness.update_config({"custom_images": "{"})
+    harness.begin()
+
+    assert isinstance(harness.model.unit.status, BlockedStatus)
+    assert harness.charm.model.unit.status.message.startswith("Error parsing")
+
+
+def test_custom_images_config_with_incorrect_images_names(
+    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
+    """Asserts that the unit goes to blocked on incorrect images names in the config input."""
+    harness.update_config({"custom_images": yaml.dump({"name1": "image1", "name2": "image2"})})
+    harness.begin()
+
+    assert isinstance(harness.model.unit.status, BlockedStatus)
+    assert harness.charm.model.unit.status.message.startswith("Incorrect image name")
