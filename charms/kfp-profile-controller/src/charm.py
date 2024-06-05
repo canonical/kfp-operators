@@ -245,11 +245,12 @@ class KfpProfileControllerOperator(CharmBase):
                     images[image_name] = custom_image
                 else:
                     logger.error(
-                        f"Image name `{image_name}` set in `custom_images` config not found in images list: {', '.join(images.keys())}."  # noqa E501
+                        f"Image name `{image_name}` set in `custom_images` config not found in "
+                        f"images list: {', '.join(images.keys())}."
                     )
                     raise ErrorWithStatus(
-                        "Incorrect image name in `custom_images` config - fix `custom_images` to unblock.  "  # noqa E501
-                        "See logs for more details",
+                        "Incorrect image name in `custom_images` config - fix `custom_images` to "
+                        "unblock.  See logs for more details",
                         BlockedStatus,
                     )
 
