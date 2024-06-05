@@ -9,5 +9,5 @@ ops
 # To avoid build-time errors, pydantic has to be pinned to a version that can be built
 # with the rustc version that the OS can provide.
 # Remove this pin when the base OS can install rustc v1.76 or newer.
-pydantic>=2.6,<2.7
+pydantic>=2.7,<2.8
 serialized-data-interface
