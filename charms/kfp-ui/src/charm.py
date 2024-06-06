@@ -72,13 +72,13 @@ DASHBOARD_LINKS = [
         location="menu",
     ),
     DashboardLink(
-        text="Upload a pipeline",
-        desc="Pipelines",
-        link="/pipeline/",
+        text="Upload a Pipeline",
+        desc="Kubeflow Pipelines",
+        link="/pipeline/#/pipelines",
         location="quick",
     ),
     DashboardLink(
-        text="View all pipeline runs",
+        text="View Pipeline Runs",
         desc="Pipelines",
         link="/pipeline/#/runs",
         location="quick",
