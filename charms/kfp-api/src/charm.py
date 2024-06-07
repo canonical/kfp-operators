@@ -17,6 +17,7 @@ from charmed_kubeflow_chisme.kubernetes import (
 )
 from charmed_kubeflow_chisme.pebble import update_layer
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
+from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from jsonschema import ValidationError
@@ -40,6 +41,7 @@ from serialized_data_interface.errors import RelationDataError
 CONFIG_DIR = Path("/config")
 SAMPLE_CONFIG = CONFIG_DIR / "sample_config.json"
 METRICS_PATH = "/metrics"
+LOGGING_RELATION_NAME = "logging"
 PROBE_PATH = "/apis/v1beta1/healthz"
 
 K8S_RESOURCE_FILES = [
@@ -138,6 +140,7 @@ class KfpApiOperator(CharmBase):
                 }
             ],
         )
+        self._logging = LogForwarder(charm=self, relation_name=LOGGING_RELATION_NAME)
 
     @property
     def _charm_default_kubernetes_labels(self):
