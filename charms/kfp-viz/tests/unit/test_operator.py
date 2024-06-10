@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -12,6 +12,12 @@ from ops.testing import Harness
 from charm import KfpVizOperator
 
 # TODO: Tests missing for dropped/reloaded relations
+
+
+def test_log_forwarding(harness: Harness, mocked_kubernetes_service_patch):
+    with patch("charm.LogForwarder") as mock_logging:
+        harness.begin()
+        mock_logging.assert_called_once_with(charm=harness.charm)
 
 
 def test_not_leader(harness, mocked_kubernetes_service_patch):
