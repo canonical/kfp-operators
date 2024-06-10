@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import ops
 import pytest
@@ -11,6 +11,12 @@ from ops.testing import Harness
 from charm import KfpViewer
 
 ops.testing.SIMULATE_CAN_CONNECT = True
+
+
+def test_log_forwarding(harness: Harness, mocked_lightkube_client):
+    with patch("charm.LogForwarder") as mock_logging:
+        harness.begin()
+        mock_logging.assert_called_once_with(charm=harness.charm)
 
 
 def test_not_leader(
