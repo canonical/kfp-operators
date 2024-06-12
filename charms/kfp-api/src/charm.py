@@ -41,7 +41,6 @@ from serialized_data_interface.errors import RelationDataError
 CONFIG_DIR = Path("/config")
 SAMPLE_CONFIG = CONFIG_DIR / "sample_config.json"
 METRICS_PATH = "/metrics"
-LOGGING_RELATION_NAME = "logging"
 PROBE_PATH = "/apis/v1beta1/healthz"
 
 K8S_RESOURCE_FILES = [
@@ -140,7 +139,7 @@ class KfpApiOperator(CharmBase):
                 }
             ],
         )
-        self._logging = LogForwarder(charm=self, relation_name=LOGGING_RELATION_NAME)
+        self._logging = LogForwarder(charm=self)
 
     @property
     def _charm_default_kubernetes_labels(self):
