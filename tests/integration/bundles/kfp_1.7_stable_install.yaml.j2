@@ -23,8 +23,8 @@ applications:
       default-gateway: kubeflow-gateway
     trust: true
   kfp-db:
-    charm: mysql-k8s # We should use `8.0/stable` once changes for https://github.com/canonical/mysql-k8s-operator/issues/337 are published there.
-    channel: 8.0/edge
+    charm: mysql-k8s
+    channel: 8.0/stable
     scale: 1
     options:
       profile: testing
