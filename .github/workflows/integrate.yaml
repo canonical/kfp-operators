@@ -28,7 +28,7 @@ jobs:
 
   lint:
     name: Lint
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -48,7 +48,7 @@ jobs:
 
   unit:
     name: Unit tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -110,7 +110,7 @@ jobs:
 
   test-bundle:
     name: Test the bundle
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, linux, X64, jammy, large]
     strategy:
       fail-fast: false
       matrix:
@@ -121,14 +121,17 @@ jobs:
       # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
       # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,
-      # and docker images) from the GH runner.
-      # This leaves ~45GB free as of 2024-04-10, but this amount has varied as GH changed their
-      # runners
-      - name: Maximise GH runner space
-        uses: jlumbroso/free-disk-space@v1.3.1
 
       - name: Check out code
         uses: actions/checkout@v3
+
+      - name: Parse and enable DNS server
+        id: dns-name
+        run: |
+          dns_server=$(grep -oPm1 'Current DNS Server: \K[^\s]+' <<< "$(resolvectl status)")
+          echo "Using following DNS Server: $dns_server"
+
+          echo "MY_ADDONS=hostpath-storage ingress dns:$dns_server rbac registry metallb:'10.64.140.43-10.64.140.49,192.168.0.105-192.168.0.111'" >> $GITHUB_OUTPUT
 
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
@@ -139,7 +142,13 @@ jobs:
           bootstrap-options: "--agent-version=3.5.0"
           juju-channel: 3.5/stable
           charmcraft-channel: latest/candidate
-          microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
+          microk8s-addons: ${{ steps.dns-name.outputs.MY_ADDONS }}
+
+      # - runs-on: ubuntu-latest
+      #   steps:
+      #   - uses: actions/checkout@v3
+      #   - name: Setup tmate session
+      #     uses: mxschmitt/action-tmate@v3
 
       - name: Run test
         run: |
@@ -148,7 +157,7 @@ jobs:
           # Run integration tests against the 1.7 generic install bundle definition
           # Using destructive mode because of https://github.com/canonical/charmcraft/issues/1132
           # and https://github.com/canonical/charmcraft/issues/1138
-          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_1.8_stable_install.yaml.j2 --destructive-mode"
+          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2"
 
       - name: Get all
         run: kubectl get all -A
