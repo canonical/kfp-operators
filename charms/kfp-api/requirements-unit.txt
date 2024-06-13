@@ -93,7 +93,7 @@ requests==2.31.0
     # via serialized-data-interface
 ruamel-yaml==0.17.32
     # via charmed-kubeflow-chisme
-ruamel-yaml-clib==0.2.7
+ruamel-yaml-clib==0.2.8
     # via ruamel-yaml
 serialized-data-interface==0.7.0
     # via

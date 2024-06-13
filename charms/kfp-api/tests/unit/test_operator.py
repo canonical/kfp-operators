@@ -55,6 +55,13 @@ class TestCharm:
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
+    def test_log_forwarding(self, k8s_resource_handler: MagicMock, harness: Harness):
+        with patch("charm.LogForwarder") as mock_logging:
+            harness.begin()
+            mock_logging.assert_called_once_with(charm=harness.charm)
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_not_leader(self, k8s_resource_handler: MagicMock, harness: Harness):
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)

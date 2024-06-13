@@ -68,6 +68,9 @@ requires:
           - service-port
     versions: [v1]
     __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
+  logging:
+    interface: loki_push_api
+    optional: true
 provides:
   kfp-api:
     interface: k8s-service
