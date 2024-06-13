@@ -11,3 +11,5 @@ ops
 # Remove this pin when the base OS can install rustc v1.76 or newer.
 pydantic>=2.6,<2.7
 serialized-data-interface
+# from loki_k8s.v1.loki_push_api.py
+cosl

@@ -19,6 +19,7 @@ from charmed_kubeflow_chisme.components.serialised_data_interface_components imp
     SdiRelationDataReceiverComponent,
 )
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
+from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from lightkube.resources.core_v1 import ServiceAccount
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from ops import CharmBase, main
@@ -132,6 +133,7 @@ class KfpPersistenceOperator(CharmBase):
         )
 
         self.charm_reconciler.install_default_event_handlers()
+        self._logging = LogForwarder(charm=self)
 
 
 class CheckFailedError(Exception):
