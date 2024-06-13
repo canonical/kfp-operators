@@ -9,6 +9,11 @@ from pathlib import Path
 import lightkube
 import pytest
 import yaml
+from charmed_kubeflow_chisme.testing import (
+    GRAFANA_AGENT_APP,
+    assert_logging,
+    deploy_and_assert_grafana_agent,
+)
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource, create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
@@ -72,7 +77,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     # Deploy required relations
-    await ops_test.model.deploy(entity_url=MINIO, config=MINIO_CONFIG)
+    await ops_test.model.deploy(entity_url=MINIO, config=MINIO_CONFIG, trust=True)
     await ops_test.model.add_relation(
         f"{CHARM_NAME}:object-storage",
         f"{MINIO}:object-storage",
@@ -87,6 +92,11 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
     # Wait for everything to deploy
     await ops_test.model.wait_for_idle(status="active", raise_on_blocked=False, timeout=60 * 10)
+
+    # Deploying grafana-agent-k8s and add all relations
+    await deploy_and_assert_grafana_agent(
+        ops_test.model, CHARM_NAME, metrics=False, dashboard=False, logging=True
+    )
 
 
 @pytest.mark.abort_on_fail
@@ -237,7 +247,7 @@ async def test_minio_config_changed(ops_test: OpsTest):
     await ops_test.model.applications["minio"].set_config(
         {"access-key": minio_access_key, "secret-key": minio_secret_key}
     )
-    await ops_test.model.wait_for_idle(status="active", timeout=600)
+    await ops_test.model.wait_for_idle(apps=[MINIO, CHARM_NAME], status="active", timeout=600)
 
     await assert_minio_secret(minio_access_key, minio_secret_key, ops_test)
 
@@ -279,3 +289,9 @@ async def test_change_custom_images(
     validate_profile_deployments_with_custom_images(
         lightkube_client, profile, CUSTOM_FRONTEND_IMAGE, CUSTOM_VISUALISATION_IMAGE
     )
+
+
+async def test_logging(ops_test):
+    """Test logging is defined in relation data bag."""
+    app = ops_test.model.applications[GRAFANA_AGENT_APP]
+    await assert_logging(app)
