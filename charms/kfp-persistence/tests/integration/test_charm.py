@@ -6,6 +6,11 @@ from pathlib import Path
 
 import pytest
 import yaml
+from charmed_kubeflow_chisme.testing import (
+    GRAFANA_AGENT_APP,
+    assert_logging,
+    deploy_and_assert_grafana_agent,
+)
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
@@ -69,9 +74,9 @@ class TestCharm:
             entity_url=KFP_API, channel=KFP_API_CHANNEL, trust=KFP_API_TRUST
         )
 
-        await ops_test.model.add_relation(f"{KFP_API}:relational-db", f"{KFP_DB}:database")
-        await ops_test.model.add_relation(f"{KFP_API}:object-storage", f"{MINIO}:object-storage")
-        await ops_test.model.add_relation(f"{KFP_API}:kfp-viz", f"{KFP_VIZ}:kfp-viz")
+        await ops_test.model.integrate(f"{KFP_API}:relational-db", f"{KFP_DB}:database")
+        await ops_test.model.integrate(f"{KFP_API}:object-storage", f"{MINIO}:object-storage")
+        await ops_test.model.integrate(f"{KFP_API}:kfp-viz", f"{KFP_VIZ}:kfp-viz")
 
         await ops_test.model.wait_for_idle(
             apps=[KFP_API, KFP_DB],
@@ -82,7 +87,7 @@ class TestCharm:
             idle_period=30,
         )
 
-        await ops_test.model.add_relation(f"{APP_NAME}:kfp-api", f"{KFP_API}:kfp-api")
+        await ops_test.model.integrate(f"{APP_NAME}:kfp-api", f"{KFP_API}:kfp-api")
 
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME],
@@ -92,3 +97,13 @@ class TestCharm:
             timeout=60 * 10,
             idle_period=30,
         )
+        # Deploying grafana-agent-k8s and add all relations
+        await deploy_and_assert_grafana_agent(
+            ops_test.model, APP_NAME, metrics=False, dashboard=False, logging=True
+        )
+
+
+async def test_logging(ops_test):
+    """Test logging is defined in relation data bag."""
+    app = ops_test.model.applications[GRAFANA_AGENT_APP]
+    await assert_logging(app)
