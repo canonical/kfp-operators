@@ -1,6 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -19,6 +19,14 @@ MOCK_OBJECT_STORAGE_DATA = {
     "secure": True,
 }
 MOCK_KFP_API_DATA = {"service-name": "service-name", "service-port": "1234"}
+
+
+def test_log_forwarding(
+    harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
+    with patch("charm.LogForwarder") as mock_logging:
+        harness.begin()
+        mock_logging.assert_called_once_with(charm=harness.charm)
 
 
 def test_not_leader(harness, mocked_lightkube_client, mocked_kubernetes_service_patch):
