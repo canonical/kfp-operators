@@ -43,3 +43,6 @@ requires:
           - service
     versions: [v1]
     __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/object-storage.yaml
+  logging:
+    interface: loki_push_api
+    optional: true

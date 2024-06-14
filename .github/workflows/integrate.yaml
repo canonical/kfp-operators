@@ -77,6 +77,9 @@ jobs:
           - kfp-profile-controller
           - kfp-api
           - kfp-viewer
+          - kfp-ui
+          - kfp-metadata-writer
+          - kfp-viz
     steps:
       # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,
