@@ -77,7 +77,7 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
 
     # Assert the environment variables that are set from inputs are correctly applied
     environment = container.get_plan().services["controller"].environment
-    assert environment["MAX_NUM_VIEWERS"] == harness.charm.config.get("max-num-viewers")
+    assert environment["MAX_NUM_VIEWERS"] == str(harness.charm.config.get("max-num-viewers"))
     assert environment["NAMESPACE"] == ""
 
 
