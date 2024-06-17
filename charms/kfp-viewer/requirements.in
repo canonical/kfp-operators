@@ -1,3 +1,5 @@
 ops
 lightkube
 charmed-kubeflow-chisme >= 0.2.0
+# from loki_k8s.v1.loki_push_api.py
+cosl
