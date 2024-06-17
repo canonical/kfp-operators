@@ -76,6 +76,7 @@ jobs:
           - kfp-persistence
           - kfp-profile-controller
           - kfp-api
+          - kfp-schedwf
           - kfp-viewer
           - kfp-ui
           - kfp-metadata-writer

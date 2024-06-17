@@ -14,6 +14,7 @@ from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
+from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from lightkube.resources.core_v1 import ServiceAccount
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
@@ -80,6 +81,7 @@ class KfpSchedwf(CharmBase):
         )
 
         self.charm_reconciler.install_default_event_handlers()
+        self._logging = LogForwarder(charm=self)
 
 
 if __name__ == "__main__":
