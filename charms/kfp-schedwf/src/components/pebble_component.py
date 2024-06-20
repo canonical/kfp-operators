@@ -48,7 +48,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
                         "startup": "enabled",
                         "command": f"/bin/controller --logtostderr=true"
                         f" --namespace={self.namespace}"
-                        f" --loglever={self.log_level}",
+                        f" --logLevel={self.log_level}",
                         "environment": self.environment,
                     }
                 },
