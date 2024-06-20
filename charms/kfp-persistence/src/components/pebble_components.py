@@ -49,13 +49,13 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
         # setup command with parameters provided in configuration
         command = (
             "persistence_agent",
-            "--logtostderr=true",
-            "--namespace=",
-            f"--ttlSecondsAfterWorkflowFinish={self._environment["TTL_SECONDS_AFTER_WORKFLOW_FINISH"]}",
-            f"--numWorker={self._environment["NUM_WORKERS"]}",
-            f"--mlPipelineAPIServerName={service_config.KFP_API_SERVICE_NAME}",
-            f"--executionType {self._environment["EXECUTIONTYPE"]}",
-            f"--logLevel={self._environment["LOG_LEVEL"]}"
+            " --logtostderr=true",
+            " --namespace=",
+            f" --ttlSecondsAfterWorkflowFinish={self._environment['TTL_SECONDS_AFTER_WORKFLOW_FINISH']}",  # noqa: 501
+            f" --numWorker={self._environment['NUM_WORKERS']}",
+            f" --mlPipelineAPIServerName={service_config.KFP_API_SERVICE_NAME}",
+            f" --executionType {self._environment['EXECUTIONTYPE']}",
+            f" --logLevel={self._environment['LOG_LEVEL']}",
         )
 
         # generate and return layer
