@@ -76,6 +76,11 @@ jobs:
           - kfp-persistence
           - kfp-profile-controller
           - kfp-api
+          - kfp-schedwf
+          - kfp-viewer
+          - kfp-ui
+          - kfp-metadata-writer
+          - kfp-viz
     steps:
       # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,
@@ -91,7 +96,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.25-strict/stable
+          channel: 1.29-strict/stable
           juju-channel: 3.5/stable
           # Remove when https://github.com/canonical/bundle-kubeflow/issues/921 is fixed
           bootstrap-options: "--agent-version=3.5.0"
@@ -134,7 +139,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.25-strict/stable
+          channel: 1.29-strict/stable
           # Remove when https://github.com/canonical/bundle-kubeflow/issues/921 is fixed
           bootstrap-options: "--agent-version=3.5.0"
           juju-channel: 3.5/stable

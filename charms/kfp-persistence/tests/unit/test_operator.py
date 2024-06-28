@@ -38,6 +38,12 @@ def mocked_kubernetes_client(mocker):
     yield mocked_kubernetes_client
 
 
+def test_log_forwarding(harness: Harness, mocked_lightkube_client):
+    with patch("charm.LogForwarder") as mock_logging:
+        harness.begin()
+        mock_logging.assert_called_once_with(charm=harness.charm)
+
+
 def test_not_leader(harness, mocked_lightkube_client):
     """Test not a leader scenario."""
     harness.begin_with_initial_hooks()
