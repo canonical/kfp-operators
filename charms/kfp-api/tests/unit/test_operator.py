@@ -407,6 +407,7 @@ class TestCharm:
             "--config=/config "
             "--sampleconfig=/config/sample_config.json "
             "-logtostderr=true "
+            f"--logLevel={harness.charm.config['log-level']}"
         )
         assert pebble_exec_command == f"bash -c '{exec_command}'"
 

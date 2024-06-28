@@ -12,7 +12,7 @@ resources:
   kfp-viewer-image:
     type: oci-image
     description: OCI image for KFP Viewer
-    upstream-source: gcr.io/ml-pipeline/viewer-crd-controller:2.2.0
+    upstream-source: charmedkubeflow/viewer-crd-controller:2.2.0-aaa1d41
 requires:
   logging:
     interface: loki_push_api

@@ -74,6 +74,7 @@ class KfpApiOperator(CharmBase):
             f"--config={CONFIG_DIR} "
             f"--sampleconfig={SAMPLE_CONFIG} "
             "-logtostderr=true "
+            f"--logLevel={self.model.config['log-level']}"
         )
         self._container_name = "apiserver"
         self._database_name = "mlpipeline"
