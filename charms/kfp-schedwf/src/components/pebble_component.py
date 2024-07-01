@@ -22,6 +22,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         self.environment = {
             "CRON_SCHEDULE_TIMEZONE": timezone,
             "LOG_LEVEL": log_level,
+            "NAMESPACE": ""
         }
         self.namespace = namespace
 
@@ -46,7 +47,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
                         "summary": "scheduled workflow controller service",
                         "startup": "enabled",
                         "command": "/bin/controller --logtostderr=true"
-                        " --namespace={self.namespace}",
+                        ' --namespace=""',
                         "environment": self.environment,
                     }
                 },
