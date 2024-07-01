@@ -22,7 +22,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         self.environment = {
             "CRON_SCHEDULE_TIMEZONE": timezone,
             "LOG_LEVEL": log_level,
-            "NAMESPACE": ""
+            "NAMESPACE": "",
         }
         self.namespace = namespace
 
