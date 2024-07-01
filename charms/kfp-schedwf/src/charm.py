@@ -75,7 +75,6 @@ class KfpSchedwf(CharmBase):
                 service_name="controller",
                 timezone=self.model.config["timezone"],
                 log_level=self.model.config["log-level"],
-                namespace=self.model.name,
             ),
             depends_on=[self.kubernetes_resources],
         )
