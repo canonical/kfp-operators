@@ -13,7 +13,11 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         self,
         *args,
         timezone: str,
+<<<<<<< HEAD
         namespace: str,
+=======
+        log_level: str,
+>>>>>>> 915111a (Remove the namespace field in the pebble class)
         **kwargs,
     ):
         """Pebble service container component in order to configure Pebble layer"""
@@ -26,8 +30,11 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
             "LOG_LEVEL": log_level,
             "NAMESPACE": "",
         }
+<<<<<<< HEAD
 >>>>>>> b94f628 (Change namespace in kfp-schedwf)
         self.namespace = namespace
+=======
+>>>>>>> 915111a (Remove the namespace field in the pebble class)
 
     def get_layer(self) -> Layer:
         """Defines and returns Pebble layer configuration
