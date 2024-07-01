@@ -24,7 +24,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         self.environment = {
             "CRON_SCHEDULE_TIMEZONE": timezone,
             "LOG_LEVEL": log_level,
-            "NAMESPACE": ""
+            "NAMESPACE": "",
         }
 >>>>>>> b94f628 (Change namespace in kfp-schedwf)
         self.namespace = namespace
