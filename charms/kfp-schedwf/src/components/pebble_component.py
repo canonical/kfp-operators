@@ -13,13 +13,14 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         self,
         *args,
         timezone: str,
-        namespace: str,
         **kwargs,
     ):
         """Pebble service container component in order to configure Pebble layer"""
         super().__init__(*args, **kwargs)
-        self.environment = {"CRON_SCHEDULE_TIMEZONE": timezone}
-        self.namespace = namespace
+        self.environment = {
+            "CRON_SCHEDULE_TIMEZONE": timezone,
+            "NAMESPACE": "",
+        }
 
     def get_layer(self) -> Layer:
         """Defines and returns Pebble layer configuration
@@ -41,8 +42,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
                         "override": "replace",
                         "summary": "scheduled workflow controller service",
                         "startup": "enabled",
-                        "command": "/bin/controller --logtostderr=true"
-                        " --namespace={self.namespace}",
+                        "command": "/bin/controller --logtostderr=true" ' --namespace=""',
                         "environment": self.environment,
                     }
                 },
