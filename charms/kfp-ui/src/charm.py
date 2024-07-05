@@ -73,16 +73,36 @@ DASHBOARD_LINKS = [
         location="menu",
     ),
     DashboardLink(
-        text="Upload a pipeline",
-        desc="Pipelines",
-        link="/pipeline/",
+        text="Artifacts",
+        link="/pipeline/#/artifacts",
+        type="item",
+        icon="editor:bubble-chart",
+        location="menu",
+    ),
+    DashboardLink(
+        text="Executions",
+        link="/pipeline/#/executions",
+        type="item",
+        icon="av:play-arrow",
+        location="menu",
+    ),
+    DashboardLink(
+        text="Upload a Pipeline",
+        desc="Kubeflow Pipelines",
+        link="/pipeline/#/pipelines",
         location="quick",
     ),
     DashboardLink(
-        text="View all pipeline runs",
+        text="View Pipeline Runs",
         desc="Pipelines",
         link="/pipeline/#/runs",
         location="quick",
+    ),
+    DashboardLink(
+        text="Kubeflow Pipelines Documentation",
+        link="https://www.kubeflow.org/docs/components/pipelines/",
+        desc="Documentation for Kubeflow Pipelines",
+        location="documentation",
     ),
 ]
 
