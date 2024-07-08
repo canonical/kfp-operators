@@ -18,7 +18,7 @@ certifi==2023.7.22
     #   httpcore
     #   httpx
     #   requests
-charmed-kubeflow-chisme==0.2.0
+charmed-kubeflow-chisme @ git+https://github.com/canonical/charmed-kubeflow-chisme.git@KF-5915-add-crds-gatecomponent
     # via -r requirements.txt
 charset-normalizer==3.2.0
     # via

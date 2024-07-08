@@ -37,7 +37,7 @@ cffi==1.16.0
     # via
     #   cryptography
     #   pynacl
-charmed-kubeflow-chisme==0.4.1
+charmed-kubeflow-chisme @ git+https://github.com/canonical/charmed-kubeflow-chisme.git@KF-5915-add-crds-gatecomponent
     # via -r requirements-integration.in
 charset-normalizer==3.3.2
     # via requests

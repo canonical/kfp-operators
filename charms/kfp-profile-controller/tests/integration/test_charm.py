@@ -49,11 +49,52 @@ KUBEFLOW_PROFILES_TRUST = True
 
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest):
+    # Build the charm and log the built path
     built_charm_path = await ops_test.build_charm("./")
     logger.info(f"Built charm {built_charm_path}")
 
     image_path = METADATA["resources"]["oci-image"]["upstream-source"]
     resources = {"oci-image": image_path}
+
+    # Deploy Metacontroller
+    await ops_test.model.deploy(
+        entity_url=METACONTROLLER,
+        channel=METACONTROLLER_CHANNEL,
+        trust=METACONTROLLER_TRUST,
+    )
+
+    # Deploy the built charm
+    await ops_test.model.deploy(
+        built_charm_path, application_name=CHARM_NAME, resources=resources, trust=True
+    )
+
+    # Deploy Minio and add relation to the charm
+    await ops_test.model.deploy(entity_url=MINIO, config=MINIO_CONFIG, trust=True)
+    await ops_test.model.add_relation(
+        f"{CHARM_NAME}:object-storage",
+        f"{MINIO}:object-storage",
+    )
+
+    # Deploy Kubeflow Profiles controller
+    await ops_test.model.deploy(
+        entity_url=KUBEFLOW_PROFILES,
+        channel=KUBEFLOW_PROFILES_CHANNEL,
+        trust=KUBEFLOW_PROFILES_TRUST,
+    )
+
+    # Wait for Minio, Metacontroller, and Kubeflow Profiles controller to be active
+    await ops_test.model.wait_for_idle(
+        apps=[MINIO, METACONTROLLER, KUBEFLOW_PROFILES],
+        status="active",
+        timeout=60 * 10,
+    )
+
+    # Wait and expect the charm to be in a blocked state due to missing PodDefault CRD
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME],
+        status="blocked",
+        timeout=60 * 10,
+    )
 
     # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
     await ops_test.model.deploy(
@@ -61,42 +102,20 @@ async def test_build_and_deploy(ops_test: OpsTest):
         channel=ADMISSION_WEBHOOK_CHANNEL,
         trust=ADMISSION_WEBHOOK_TRUST,
     )
-    # TODO: The webhook charm must be active before the metacontroller is deployed, due to the bug
-    # described here: https://github.com/canonical/metacontroller-operator/issues/86
-    # Drop this wait_for_idle once the above issue is closed
+
+    # Wait for the admission webhook to become active
     await ops_test.model.wait_for_idle(apps=[ADMISSION_WEBHOOK], status="active")
 
-    await ops_test.model.deploy(
-        entity_url=METACONTROLLER,
-        channel=METACONTROLLER_CHANNEL,
-        trust=METACONTROLLER_TRUST,
-    )
-
-    await ops_test.model.deploy(
-        built_charm_path, application_name=CHARM_NAME, resources=resources, trust=True
-    )
-
-    # Deploy required relations
-    await ops_test.model.deploy(entity_url=MINIO, config=MINIO_CONFIG, trust=True)
-    await ops_test.model.add_relation(
-        f"{CHARM_NAME}:object-storage",
-        f"{MINIO}:object-storage",
-    )
-
-    # Deploy charms responsible for CRDs creation
-    await ops_test.model.deploy(
-        entity_url=KUBEFLOW_PROFILES,
-        channel=KUBEFLOW_PROFILES_CHANNEL,
-        trust=KUBEFLOW_PROFILES_TRUST,
-    )
-
-    # Wait for everything to deploy
-    await ops_test.model.wait_for_idle(status="active", raise_on_blocked=False, timeout=60 * 10)
-
-    # Deploying grafana-agent-k8s and add all relations
+    # Deploy Grafana agent and add all relations
     await deploy_and_assert_grafana_agent(
         ops_test.model, CHARM_NAME, metrics=False, dashboard=False, logging=True
     )
+
+    # Trigger an artificial config event to avoid waiting for the update_status event
+    await ops_test.model.applications[CHARM_NAME].set_config({"custom_images": "{}"})
+
+    # Wait for everything to be deployed and active
+    await ops_test.model.wait_for_idle(status="active", raise_on_blocked=False, timeout=60 * 10)
 
 
 @pytest.mark.abort_on_fail

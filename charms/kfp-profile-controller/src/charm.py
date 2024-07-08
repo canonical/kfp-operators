@@ -20,6 +20,7 @@ from charmed_kubeflow_chisme.components import (
     SdiRelationDataReceiverComponent,
 )
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
+from charmed_kubeflow_chisme.components.crd_gate_component import CRDsGateComponent
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
@@ -47,6 +48,7 @@ logger = logging.getLogger(__name__)
 DecoratorController = create_global_resource(
     "metacontroller.k8s.io", "v1alpha1", "DecoratorController", "decoratorcontrollers"
 )
+EXPECTED_CRDS = ["poddefaults.kubeflow.org"]
 CONTROLLER_PORT = 80
 DISABLE_ISTIO_SIDECAR = "false"
 K8S_RESOURCE_FILES = [
@@ -137,6 +139,15 @@ class KfpProfileControllerOperator(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
+        self.crds_gate = self.charm_reconciler.add(
+            component=CRDsGateComponent(
+                charm=self,
+                name="crds-gate",
+                crds=EXPECTED_CRDS,
+                lightkube_client=lightkube.Client(),
+            )
+        )
+
         self.kubernetes_resources = self.charm_reconciler.add(
             component=KubernetesComponent(
                 charm=self,
@@ -167,6 +178,7 @@ class KfpProfileControllerOperator(CharmBase):
                 lightkube_client=lightkube.Client(),
             ),
             depends_on=[
+                self.crds_gate,
                 self.leadership_gate,
                 self.object_storage_relation,
             ],
