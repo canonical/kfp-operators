@@ -106,16 +106,16 @@ async def test_build_and_deploy(ops_test: OpsTest):
     # Wait for the admission webhook to become active
     await ops_test.model.wait_for_idle(apps=[ADMISSION_WEBHOOK], status="active")
 
-    # Deploy Grafana agent and add all relations
-    await deploy_and_assert_grafana_agent(
-        ops_test.model, CHARM_NAME, metrics=False, dashboard=False, logging=True
-    )
-
     # Trigger an artificial config event to avoid waiting for the update_status event
     await ops_test.model.applications[CHARM_NAME].set_config({"custom_images": "{}"})
 
     # Wait for everything to be deployed and active
     await ops_test.model.wait_for_idle(status="active", raise_on_blocked=False, timeout=60 * 10)
+
+    # Deploy Grafana agent and add all relations
+    await deploy_and_assert_grafana_agent(
+        ops_test.model, CHARM_NAME, metrics=False, dashboard=False, logging=True
+    )
 
 
 @pytest.mark.abort_on_fail
