@@ -188,7 +188,7 @@ async def test_create_and_monitor_recurring_run(
     assert recurring_job.trigger.cron_schedule.cron == "*/2 * * * * *"
 
     # Wait for the recurring job to schedule some runs
-    time.sleep(30)
+    time.sleep(20)
 
     first_run = kfp_client.list_runs(experiment_id=experiment_response.experiment_id,
                                           namespace=KUBEFLOW_PROFILE_NAMESPACE).runs[0]
