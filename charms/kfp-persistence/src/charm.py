@@ -115,6 +115,7 @@ class KfpPersistenceOperator(CharmBase):
                     "NAMESPACE": "",
                     "TTL_SECONDS_AFTER_WORKFLOW_FINISH": "86400",
                     "NUM_WORKERS": "2",
+                    "EXECUTIONTYPE": "Workflow",
                 },
                 # provide function to pebble with which it can get service configuration from
                 # relation
