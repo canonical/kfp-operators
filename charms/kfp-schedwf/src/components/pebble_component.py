@@ -23,6 +23,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
             "LOG_LEVEL": log_level,
             "NAMESPACE": "",
         }
+        self.log_level = log_level
 
     def get_layer(self) -> Layer:
         """Defines and returns Pebble layer configuration
@@ -44,7 +45,9 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
                         "override": "replace",
                         "summary": "scheduled workflow controller service",
                         "startup": "enabled",
-                        "command": "/bin/controller --logtostderr=true" ' --namespace=""',
+                        "command": f"/bin/controller --logtostderr=true"
+                        ' --namespace=""'
+                        f" --logLevel={self.log_level}",
                         "environment": self.environment,
                     }
                 },
