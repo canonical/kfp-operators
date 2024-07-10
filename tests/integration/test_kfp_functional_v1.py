@@ -192,7 +192,18 @@ async def test_create_and_monitor_recurring_run(
     assert recurring_job.trigger.cron_schedule.cron == "*/2 * * * * *"
 
     # Wait for the recurring job to schedule some runs
-    time.sleep(6)
+    time.sleep(20)
+
+    first_run = kfp_client.list_runs(experiment_id=experiment_response.id,
+                                          namespace=KUBEFLOW_PROFILE_NAMESPACE).runs[0]
+
+    # Assert that a run has been created from the recurring job
+    assert "recurring-job" in first_run.name
+
+    # Monitor the run to completion, the pipeline should not be executed in
+    # more than 300 seconds as it is a very simple operation
+    monitor_response = kfp_client.wait_for_run_completion(first_run.id, timeout=300).run
+    assert monitor_response.status == "Succeeded"
 
     # FIXME: disabling the job does not work at the moment, it seems like
     # the status of the recurring run is never updated and is causing the
