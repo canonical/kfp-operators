@@ -7,6 +7,7 @@
 [![Charmhub SchedWork](https://charmhub.io/kfp-schedwf/badge.svg)](https://charmhub.io/kfp-schedwf)
 [![Charmhub Viewer](https://charmhub.io/kfp-viewer/badge.svg)](https://charmhub.io/kfp-viewer)
 [![Charmhub Viz](https://charmhub.io/kfp-viz/badge.svg)](https://charmhub.io/kfp-viz)
+[![Charmhub Metadata Writer](https://charmhub.io/kfp-metadata-writer/badge.svg)](https://charmhub.io/kfp-metadata-writer)
 [![PR merge](https://github.com/canonical/kfp-operators/actions/workflows/on_push.yaml/badge.svg)](https://github.com/canonical/kfp-operators/actions/workflows/on_push.yaml)
 [![PR open](https://github.com/canonical/kfp-operators/actions/workflows/on_pull_request.yaml/badge.svg)](https://github.com/canonical/kfp-operators/actions/workflows/on_pull_request.yaml)
 
