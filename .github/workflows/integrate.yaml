@@ -98,7 +98,7 @@ jobs:
           provider: microk8s
           channel: 1.29-strict/stable
           juju-channel: 3.4/stable
-          charmcraft-channel: latest/candidate
+          charmcraft-channel: latest/edge
 
       - name: Integration tests
         run: |
@@ -139,7 +139,7 @@ jobs:
           provider: microk8s
           channel: 1.29-strict/stable
           juju-channel: 3.4/stable
-          charmcraft-channel: latest/candidate
+          charmcraft-channel: latest/edge
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
       - name: Run test
