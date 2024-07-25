@@ -84,7 +84,7 @@ jinja2==3.1.2
     # via pytest-operator
 jsonschema==4.17.3
     # via -r requirements-integration.in
-juju==3.2.2
+juju==3.5.2.0
     # via
     #   -r requirements-integration.in
     #   pytest-operator
@@ -109,7 +109,9 @@ mypy-extensions==1.0.0
 oauthlib==3.2.2
     # via requests-oauthlib
 packaging==23.1
-    # via pytest
+    # via
+    #   juju
+    #   pytest
 paramiko==2.12.0
     # via juju
 parso==0.8.3
