@@ -9,7 +9,10 @@ bases:
     - name: "ubuntu"
       channel: "20.04"
 parts:
-  charm:
+  scripts:
+    plugin: dump
+    source: "."
     prime:
-      - ./files/upstream/sync.py
+      - files/upstream/sync.py
+  charm:
     charm-python-packages: [setuptools, pip]  # Fixes install of some packages
