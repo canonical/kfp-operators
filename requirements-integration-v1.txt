@@ -134,7 +134,7 @@ jsonschema==4.17.3
     # via
     #   -r requirements-integration-v1.in
     #   kfp
-juju==3.4.0.0
+juju==3.5.2.0
     # via
     #   -r requirements-integration-v1.in
     #   pytest-operator
