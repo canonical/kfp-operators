@@ -18,9 +18,11 @@ from kfp_globals import (
     SAMPLE_VIEWER,
 )
 
+import json
 import kfp
 import lightkube
 import pytest
+import sh
 import tenacity
 from lightkube import codecs
 from lightkube.generic_resource import create_namespaced_resource
@@ -234,9 +236,13 @@ async def test_apply_sample_viewer(lightkube_client):
 
 async def test_viz_server_healthcheck(ops_test: OpsTest):
     """Run a healthcheck on the server endpoint."""
-    status = await ops_test.model.get_status()
-    units = status["applications"]["kfp-viz"]["units"]
-    url = units["kfp-viz/0"]["address"]
+    # This is a workaround for canonical/kfp-operators#549
+    # Leave model=kubeflow as this test case
+    # should always be executed on that model
+    juju_status = sh.juju.status(format="json", no_color=True, model="kubeflow")
+    kfp_viz_unit = json.loads(juju_status)["applications"]["kfp-viz"]["units"]["kfp-viz/0"]
+    url = kfp_viz_unit["address"]
+
     headers = {"kubeflow-userid": "user"}
     result_status, result_text = await fetch_response(url=f"http://{url}:8888", headers=headers)
 

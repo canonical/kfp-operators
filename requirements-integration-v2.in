@@ -10,4 +10,5 @@ lightkube
 pytest
 pytest-operator
 pyyaml
+sh
 tenacity
