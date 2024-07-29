@@ -4,11 +4,11 @@ type: "charm"
 bases:
   - build-on:
     - name: "ubuntu"
-      channel: "20.04"
+      channel: "22.04"
     run-on:
     - name: "ubuntu"
-      channel: "20.04"
+      channel: "22.04"
 parts:
   charm:
     build-packages: [git] # Remove after we use package from github in requirements.in
-    charm-python-packages: [setuptools, pip]  # Fixes install of some packages
+    charm-python-packages: [setuptools]  # Fixes install of some packages
