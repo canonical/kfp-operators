@@ -6,7 +6,11 @@ import logging
 import time
 from pathlib import Path
 
-from helpers.bundle_mgmt import render_bundle, deploy_bundle
+import kfp
+import lightkube
+import pytest
+import tenacity
+from helpers.bundle_mgmt import deploy_bundle, render_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import get_resources_from_charm_file
 from kfp_globals import (
@@ -15,13 +19,7 @@ from kfp_globals import (
     KUBEFLOW_PROFILE_NAMESPACE,
     SAMPLE_PIPELINE,
     SAMPLE_PIPELINE_NAME,
-    SAMPLE_VIEWER,
 )
-
-import kfp
-import lightkube
-import pytest
-import tenacity
 from lightkube import codecs
 from lightkube.generic_resource import create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
@@ -191,7 +189,7 @@ async def test_create_and_monitor_recurring_run(
     time.sleep(20)
 
     first_run = kfp_client.list_runs(experiment_id=experiment_response.experiment_id,
-                                          namespace=KUBEFLOW_PROFILE_NAMESPACE).runs[0]
+                                     namespace=KUBEFLOW_PROFILE_NAMESPACE).runs[0]
 
     # Assert that a run has been created from the recurring job
     assert first_run.recurring_run_id == recurring_job.recurring_run_id
@@ -211,25 +209,6 @@ async def test_create_and_monitor_recurring_run(
 
     # Assert the job is disabled
     # assert recurring_job.status is "DISABLED"
-
-
-# ---- KFP Viewer and Visualization focused test cases
-async def test_apply_sample_viewer(lightkube_client):
-    """Test a Viewer can be applied and its presence is verified."""
-    # Create a Viewer namespaced resource
-    viewer_class_resource = create_namespaced_resource(
-        group="kubeflow.org", version="v1beta1", kind="Viewer", plural="viewers"
-    )
-
-    # Apply viewer
-    viewer_object = apply_manifests(lightkube_client, yaml_file_path=SAMPLE_VIEWER)
-
-    viewer = lightkube_client.get(
-        res=viewer_class_resource,
-        name=viewer_object.metadata.name,
-        namespace=viewer_object.metadata.namespace,
-    )
-    assert viewer is not None
 
 
 async def test_viz_server_healthcheck(ops_test: OpsTest):

@@ -6,7 +6,11 @@ import logging
 import time
 from pathlib import Path
 
-from helpers.bundle_mgmt import render_bundle, deploy_bundle
+import kfp
+import lightkube
+import pytest
+import tenacity
+from helpers.bundle_mgmt import deploy_bundle, render_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import get_resources_from_charm_file
 from kfp_globals import (
@@ -15,18 +19,11 @@ from kfp_globals import (
     KUBEFLOW_PROFILE_NAMESPACE,
     SAMPLE_PIPELINE,
     SAMPLE_PIPELINE_NAME,
-    SAMPLE_VIEWER,
 )
-
-import kfp
-import lightkube
-import pytest
-import tenacity
 from lightkube import codecs
 from lightkube.generic_resource import create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
 from pytest_operator.plugin import OpsTest
-
 
 KFP_SDK_VERSION = "v1"
 log = logging.getLogger(__name__)
@@ -195,7 +192,7 @@ async def test_create_and_monitor_recurring_run(
     time.sleep(20)
 
     first_run = kfp_client.list_runs(experiment_id=experiment_response.id,
-                                          namespace=KUBEFLOW_PROFILE_NAMESPACE).runs[0]
+                                     namespace=KUBEFLOW_PROFILE_NAMESPACE).runs[0]
 
     # Assert that a run has been created from the recurring job
     assert "recurring-job" in first_run.name

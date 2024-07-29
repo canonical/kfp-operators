@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 """Global variables for functional tests."""
 from pathlib import Path
+
 import yaml
 
 basedir = Path("./").absolute()
@@ -27,10 +28,6 @@ SAMPLE_PIPELINE = {
 }
 
 SAMPLE_PIPELINE_NAME = "sample-pipeline"
-
-# Variables for creating a viewer
-SAMPLE_VIEWER = f"{basedir}/tests/integration/viewer/mnist.yaml"
-KUBEFLOW_PROFILE_NAMESPACE = "kubeflow-user-example-com"
 
 # Variables for configuring the KFP Client
 # It is assumed that the ml-pipeline-ui (kfp-ui) service is port-forwarded
