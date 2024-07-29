@@ -234,9 +234,8 @@ async def test_apply_sample_viewer(lightkube_client):
 
 async def test_viz_server_healthcheck(ops_test: OpsTest):
     """Run a healthcheck on the server endpoint."""
-    status = await ops_test.model.get_status()
-    units = status["applications"]["kfp-viz"]["units"]
-    url = units["kfp-viz/0"]["address"]
+    unit = ops_test.model.units.get("kfp-viz/0")
+    url = unit.data["public-address"
     headers = {"kubeflow-userid": "user"}
     result_status, result_text = await fetch_response(url=f"http://{url}:8888", headers=headers)
 
