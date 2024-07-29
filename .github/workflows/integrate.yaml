@@ -28,10 +28,7 @@ jobs:
       - name: Maximise GH runner space
         uses: jlumbroso/free-disk-space@v1.3.1
 
-      - uses: actions/checkout@v4
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-  
+ 
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
@@ -41,6 +38,10 @@ jobs:
           charmcraft-channel: latest/candidate
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
+      - uses: actions/checkout@v4
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+ 
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
