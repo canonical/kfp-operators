@@ -1,4 +1,6 @@
 aiohttp
+# Install kfp SDK v1
+kfp>=1.8,<2.0
 # Workaround for https://github.com/python-jsonschema/jsonschema/issues/1117
 # and https://github.com/python-jsonschema/jsonschema/issues/1114
 jsonschema<4.18
