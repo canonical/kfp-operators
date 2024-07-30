@@ -16,7 +16,3 @@ parts:
       - files/upstream/sync.py
   charm:
     charm-python-packages: [setuptools, pip]  # Fixes install of some packages
-    # Install jinja2 (a dependency of charmed-kubeflow-chisme) from binary to avoid build-time issues
-    # See https://github.com/canonical/bundle-kubeflow/issues/883
-    # Remove when https://github.com/canonical/charmcraft/issues/1664 is fixed
-    charm-binary-python-packages: [jinja2]
