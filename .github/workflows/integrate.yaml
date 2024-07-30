@@ -133,6 +133,19 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
+    - name: Setup Charmcraft's pip cache
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: /home/runner/snap/charmcraft/common/cache/charmcraft/
+        # Cache keys must be unique - there is no overwrite mechanic.  Add IDs to avoid this (is there a better set of IDs?)
+        # partial ref: https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
+        # To match the most recent previous cache, use restore-keys with the craft-shared-cache prefix.  This will hit the
+        # "first" match, which will be from the most recent run.  
+        # ref: https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
+        key: craft-shared-cache-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ strategy.job-index }}
+        restore-keys: craft-shared-cache
+
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
