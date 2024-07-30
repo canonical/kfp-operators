@@ -18,6 +18,7 @@ from kfp_globals import (
     SAMPLE_VIEWER,
 )
 
+import juju
 import json
 import kfp
 import lightkube
@@ -29,7 +30,9 @@ from lightkube.generic_resource import create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
 from pytest_operator.plugin import OpsTest
 
+juju.client.connection.Connection.MAX_FRAME_SIZE = 2**32
 KFP_SDK_VERSION = "v2"
+
 log = logging.getLogger(__name__)
 
 

@@ -29,7 +29,6 @@ PROFILE_FILE_PATH = f"{basedir}/tests/integration/profile/profile.yaml"
 PROFILE_FILE = yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
 KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 
-
 @pytest.fixture(scope="session")
 def forward_kfp_ui():
     """Port forward the kfp-ui service."""
