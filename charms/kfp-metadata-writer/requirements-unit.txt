@@ -40,8 +40,10 @@ importlib-resources==6.1.0
     # via jsonschema
 iniconfig==2.0.0
     # via pytest
-jinja2==3.1.2
-    # via charmed-kubeflow-chisme
+jinja2==3.1.4
+    # via
+    #   -r requirements.txt
+    #   charmed-kubeflow-chisme
 jsonschema==4.17.3
     # via serialized-data-interface
 lightkube==0.14.0
