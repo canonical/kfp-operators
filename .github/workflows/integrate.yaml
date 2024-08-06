@@ -42,7 +42,7 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-lint
 
@@ -62,7 +62,7 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
@@ -90,7 +90,7 @@ jobs:
       - name: Maximise GH runner space
         uses: jlumbroso/free-disk-space@v1.3.1
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
@@ -131,7 +131,7 @@ jobs:
         uses: jlumbroso/free-disk-space@v1.3.1
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
