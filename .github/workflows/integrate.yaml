@@ -98,8 +98,8 @@ jobs:
           provider: microk8s
           channel: 1.29-strict/stable
           juju-channel: 3.4/stable
-          # Pinned to 3.1/stable due to https://github.com/canonical/charmcraft/issues/1845
-          charmcraft-channel: 3.1/stable
+          # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
+          charmcraft-channel: 3.x/stable
 
       - name: Integration tests
         run: |
@@ -140,8 +140,8 @@ jobs:
           provider: microk8s
           channel: 1.29-strict/stable
           juju-channel: 3.4/stable
-          # Pinned to 3.1/stable due to https://github.com/canonical/charmcraft/issues/1845
-          charmcraft-channel: 3.1/stable
+          # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
+          charmcraft-channel: 3.x/stable
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
       - name: Run test
