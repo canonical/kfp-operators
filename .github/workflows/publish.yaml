@@ -91,4 +91,5 @@ jobs:
           charm-path: ${{ matrix.charm-path }}
           channel: ${{ steps.parse-inputs.outputs.destination_channel }}
           tag-prefix: ${{ steps.parse-inputs.outputs.tag_prefix }}
+          # Pinned to 3.1/stable due to https://github.com/canonical/charmcraft/issues/1845
           charmcraft-channel: 3.1/stable
