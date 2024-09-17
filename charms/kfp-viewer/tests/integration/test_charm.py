@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 import logging
+import os
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ from charmed_kubeflow_chisme.testing import (
     deploy_and_assert_grafana_agent,
 )
 from pytest_operator.plugin import OpsTest
+from utils import get_packed_charms
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_ROOT = "."
@@ -20,10 +22,20 @@ APP_NAME = "kfp-viewer"
 log = logging.getLogger(__name__)
 
 
+@pytest.fixture
+def use_packed_charms() -> str:
+    """Return environment variable `USE_PACKED_CHARMS`. If it's not found, return `false`."""
+    return os.environ.get("USE_PACKED_CHARMS", "false").replace('"', "")
+
+
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy_with_relations(ops_test: OpsTest):
-    built_charm_path = await ops_test.build_charm(CHARM_ROOT)
-    log.info(f"Built charm {built_charm_path}")
+async def test_build_and_deploy_with_relations(ops_test: OpsTest, use_packed_charms):
+    charm_path = "."
+    if use_packed_charms.lower() == "true":
+        built_charm_path = await get_packed_charms(charm_path)
+    else:
+        built_charm_path = await ops_test.build_charm(charm_path)
+        log.info(f"Built charm {built_charm_path}")
 
     image_path = METADATA["resources"]["kfp-viewer-image"]["upstream-source"]
     resources = {"kfp-viewer-image": image_path}

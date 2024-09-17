@@ -3,6 +3,7 @@
 
 import json
 import logging
+import os
 from base64 import b64decode
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from lightkube.resources.apps_v1 import Deployment
 from lightkube.resources.core_v1 import ConfigMap, Namespace, Secret, Service, ServiceAccount
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_delay, wait_exponential
+from utils import get_packed_charms
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +49,20 @@ KUBEFLOW_PROFILES = "kubeflow-profiles"
 KUBEFLOW_PROFILES_TRUST = True
 
 
+@pytest.fixture
+def use_packed_charms() -> str:
+    """Return environment variable `USE_PACKED_CHARMS`. If it's not found, return `false`."""
+    return os.environ.get("USE_PACKED_CHARMS", "false").replace('"', "")
+
+
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest):
-    built_charm_path = await ops_test.build_charm("./")
-    logger.info(f"Built charm {built_charm_path}")
+async def test_build_and_deploy(ops_test: OpsTest, use_packed_charms):
+    charm_path = "."
+    if use_packed_charms.lower() == "true":
+        built_charm_path = await get_packed_charms(charm_path)
+    else:
+        built_charm_path = await ops_test.build_charm(charm_path)
+        logger.info(f"Built charm {built_charm_path}")
 
     image_path = METADATA["resources"]["oci-image"]["upstream-source"]
     resources = {"oci-image": image_path}

@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 import logging
+import os
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,7 @@ from charmed_kubeflow_chisme.testing import (
     get_alert_rules,
 )
 from pytest_operator.plugin import OpsTest
+from utils import get_packed_charms
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +44,20 @@ MYSQL_TRUST = True
 class TestCharm:
     """Integration test charm"""
 
+    @pytest.fixture
+    def use_packed_charms() -> str:
+        """Return environment variable `USE_PACKED_CHARMS`. If it's not found, return `false`."""
+        return os.environ.get("USE_PACKED_CHARMS", "false").replace('"', "")
+
     @pytest.mark.abort_on_fail
-    async def test_build_and_deploy(self, ops_test: OpsTest):
+    async def test_build_and_deploy(self, ops_test: OpsTest, use_packed_charms):
         """Deploy kfp-api with required charms and relations."""
-        built_charm_path = await ops_test.build_charm("./")
-        logger.info(f"Built charm {built_charm_path}")
+        charm_path = "."
+        if use_packed_charms.lower() == "true":
+            built_charm_path = await get_packed_charms(charm_path)
+        else:
+            built_charm_path = await ops_test.build_charm(charm_path)
+            logger.info(f"Built charm {built_charm_path}")
 
         image_path = METADATA["resources"]["oci-image"]["upstream-source"]
         resources = {"oci-image": image_path}
