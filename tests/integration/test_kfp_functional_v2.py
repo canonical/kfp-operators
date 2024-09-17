@@ -5,10 +5,12 @@
 import logging
 import time
 from pathlib import Path
+import os
 
 from helpers.bundle_mgmt import render_bundle, deploy_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import get_resources_from_charm_file
+from helpers.utils import get_packed_charms
 from kfp_globals import (
     CHARM_PATH_TEMPLATE,
     KFP_CHARMS,
@@ -66,11 +68,18 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
 
     kfp_client.delete_experiment(experiment_id=experiment_response.experiment_id)
 
+@pytest.fixture
+def use_packed_charms() -> str:
+    """Return environment variable `USE_PACKED_CHARMS`. If it's not found, return `false`."""
+    return os.environ.get("USE_PACKED_CHARMS", "false").replace('"', "")
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
+async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client, use_packed_charms):
     """Build and deploy kfp-operators charms."""
     no_build = request.config.getoption("no_build")
+
+    if (no_build == True and use_packed_charms == "true"):
+        raise("Only one of `no_build` and `use_packed_charms` can be true")
 
     # Immediately raise an error if the model name is not kubeflow
     if ops_test.model_name != "kubeflow":
@@ -87,14 +96,23 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
             charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
             for charm in KFP_CHARMS
         }
-        log.info(f"Building charms for: {charms_to_build}")
-        built_charms = await ops_test.build_charms(*charms_to_build.values())
-        log.info(f"Built charms: {built_charms}")
 
-        for charm, charm_file in built_charms.items():
-            charm_resources = get_resources_from_charm_file(charm_file)
-            context.update([(f"{charm.replace('-', '_')}_resources", charm_resources)])
-            context.update([(f"{charm.replace('-', '_')}", charm_file)])
+        if not use_packed_charms:
+            log.info(f"Building charms for: {charms_to_build}")
+            print(charms_to_build)
+            built_charms = await ops_test.build_charms(*charms_to_build.values())
+            log.info(f"Built charms: {built_charms}")
+
+            for charm, charm_file in built_charms.items():
+                charm_resources = get_resources_from_charm_file(charm_file)
+                context.update([(f"{charm.replace('-', '_')}_resources", charm_resources)])
+                context.update([(f"{charm.replace('-', '_')}", charm_file)])
+        else:
+            for charm, charm_path in charms_to_build.items():
+                charm_file = await get_packed_charms(charm_path)
+                charm_resources = get_resources_from_charm_file(charm_file)
+                context.update([(f"{charm.replace('-', '_')}_resources", charm_resources)])
+                context.update([(f"{charm.replace('-', '_')}", charm_file)])
 
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(
