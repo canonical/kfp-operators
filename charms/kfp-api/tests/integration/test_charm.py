@@ -41,13 +41,14 @@ MYSQL_CONFIG = {"profile": "testing"}
 MYSQL_TRUST = True
 
 
+@pytest.fixture
+def use_packed_charms() -> str:
+    """Return environment variable `USE_PACKED_CHARMS`. If it's not found, return `false`."""
+    return os.environ.get("USE_PACKED_CHARMS", "false").replace('"', "")
+
+
 class TestCharm:
     """Integration test charm"""
-
-    @pytest.fixture
-    def use_packed_charms() -> str:
-        """Return environment variable `USE_PACKED_CHARMS`. If it's not found, return `false`."""
-        return os.environ.get("USE_PACKED_CHARMS", "false").replace('"', "")
 
     @pytest.mark.abort_on_fail
     async def test_build_and_deploy(self, ops_test: OpsTest, use_packed_charms):
