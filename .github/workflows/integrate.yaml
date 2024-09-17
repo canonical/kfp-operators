@@ -123,6 +123,11 @@ jobs:
           # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
           charmcraft-channel: 3.x/stable
 
+      - name: echo things
+        run: |
+          echo $GITHUB_WORKSPACE
+          echo ${{ needs.build.outputs.artifact-prefix }}
+
       - name: Download packed charm(s)
         id: download-charms
         timeout-minutes: 5
@@ -130,6 +135,8 @@ jobs:
         with:
           pattern: packed-charm-cache-true-./charms/${{ matrix.charm }}-*
           merge-multiple: true
+          path: ./charms/${{ matrix.charm }}
+
 
       - name: Integration tests
         run: |
