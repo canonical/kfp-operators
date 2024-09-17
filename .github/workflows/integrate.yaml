@@ -135,7 +135,7 @@ jobs:
         with:
           pattern: packed-charm-cache-true-.-charms-${{ matrix.charm }}-*
           merge-multiple: true
-          # path: ./charms/${{ matrix.charm }}
+          path: ./charms/${{ matrix.charm }}
 
 
       - name: Integration tests
