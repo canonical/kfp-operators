@@ -133,9 +133,9 @@ jobs:
         timeout-minutes: 5
         uses: actions/download-artifact@v4
         with:
-          pattern: packed-charm-cache-true-./charms/${{ matrix.charm }}-*
+          pattern: packed-charm-cache-true-.-charms-${{ matrix.charm }}-*
           merge-multiple: true
-          path: ./charms/${{ matrix.charm }}
+          # path: ./charms/${{ matrix.charm }}
 
 
       - name: Integration tests
