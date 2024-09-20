@@ -41,14 +41,12 @@ jobs:
         run: bash .github/workflows/get-charm-paths.sh
 
 
-  publish-charm:
-    name: Publish Charm
+  define-channel:
+    name: Define destination channel
     runs-on: ubuntu-20.04
     needs: get-charm-paths
-    strategy:
-      fail-fast: false
-      matrix:
-        charm-path: ${{ fromJson(needs.get-charm-paths.outputs.charm_paths_list) }}
+    outputs:
+      destination-channel: ${{ steps.parse-inputs.outputs.destination_channel }}
 
     steps:
       - name: Checkout
@@ -72,17 +70,6 @@ jobs:
           echo "setting output of destination_channel=$destination_channel"
           echo "::set-output name=destination_channel::$destination_channel"
 
-          # tag_prefix
-          # if charm_path = ./ --> tag_prefix = '' (null)
-          # if charm_path != ./some-charm (eg: a charm in a ./charms dir) --> tag_prefix = 'some-charm'
-          if [ ${{ matrix.charm-path }} == './' ]; then
-            tag_prefix=''
-          else
-            tag_prefix=$(basename ${{ matrix.charm-path }} )
-          fi
-          echo "setting output of tag_prefix=$tag_prefix"
-          echo "::set-output name=tag_prefix::$tag_prefix"
-
       - name: Upload charm to charmhub
         uses: canonical/charming-actions/upload-charm@2.6.2
         with:
@@ -92,4 +79,21 @@ jobs:
           channel: ${{ steps.parse-inputs.outputs.destination_channel }}
           tag-prefix: ${{ steps.parse-inputs.outputs.tag_prefix }}
           # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
-          charmcraft-channel: 3.x/stable
+          charmcraft-channel: 3.x/stableZ
+
+  release:
+    name: Release charm
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v21.0.0
+    needs: [define-channel, get-charm-paths]
+    strategy:
+      fail-fast: false
+      matrix:
+        charm-path: ${{ fromJson(needs.get-charm-paths.outputs.charm_paths_list) }}
+    with:
+      channel: ${{ needs.define-channel.outputs.destination-channel }}
+      artifact-prefix: packed-charm-cache-true-.-charms-${{ matrix.charm-path }}
+      create-github-release: ${{ github.event_name == 'push' }}
+    secrets:
+      charmhub-token: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
+    permissions:
+      contents: write  # Needed to create GitHub release

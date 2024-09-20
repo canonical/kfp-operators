@@ -83,7 +83,7 @@ jobs:
           - kfp-viz
     with:
       cache: ${{ github.event_name == 'pull_request' }}
-      charmcraft-snap-channel: 2.x/edge
+      charmcraft-snap-channel: 3.x/edge
       path-to-charm-directory: ./charms/${{ matrix.charm }}
 
 
