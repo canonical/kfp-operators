@@ -18,5 +18,4 @@ jobs:
   publish-charm:
     name: Publish Charm
     uses: ./.github/workflows/publish.yaml
-    needs: tests
     secrets: inherit
