@@ -66,6 +66,18 @@ jobs:
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
+  terraform-checks:
+    name: Terraform
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
+    strategy:
+      fail-fast: false
+      matrix:
+        charm: [operator, serving, eventing]
+    with:
+      charm-path: ./charms/knative-${{ matrix.charm }}
+      model: kubeflow
+      channel: latest/edge
+        
   integration:
     name: Integration tests (microk8s)
     runs-on: ubuntu-20.04
