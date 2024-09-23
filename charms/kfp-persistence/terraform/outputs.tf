@@ -1,5 +1,5 @@
 output "app_name" {
-  value = juju_application.kfp_api.name
+  value = juju_application.kfp_persistence.name
 }
 
 output "provides" {
