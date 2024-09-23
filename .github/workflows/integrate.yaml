@@ -70,11 +70,18 @@ jobs:
     name: Terraform
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
     strategy:
-      fail-fast: false
       matrix:
-        charm: [operator, serving, eventing]
+        charm:
+          - kfp-api
+          - kfp-metadata-writer
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
     with:
-      charm-path: ./charms/knative-${{ matrix.charm }}
+      charm-path: ./charms/${{ matrix.charm }}
       model: kubeflow
       channel: latest/edge
         
