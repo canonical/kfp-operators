@@ -83,7 +83,6 @@ jobs:
     with:
       charm-path: ./charms/${{ matrix.charm }}
       model: kubeflow
-      channel: latest/edge
         
   integration:
     name: Integration tests (microk8s)
