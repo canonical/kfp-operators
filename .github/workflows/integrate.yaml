@@ -82,6 +82,9 @@ jobs:
           - kfp-viz
     with:
       charm-path: ./charms/${{ matrix.charm }}
+      # The namespace is hardcoded in the upstream project
+      # So the model's name must be kubeflow
+      # See: https://github.com/kubeflow/kubeflow/issues/6136
       model: kubeflow
         
   integration:
