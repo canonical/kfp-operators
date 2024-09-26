@@ -66,6 +66,27 @@ jobs:
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
+  terraform-checks:
+    name: Terraform
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
+    strategy:
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-metadata-writer
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
+    with:
+      charm-path: ./charms/${{ matrix.charm }}
+      # The namespace is hardcoded in the upstream project
+      # So the model's name must be kubeflow
+      # See: https://github.com/kubeflow/kubeflow/issues/6136
+      model: kubeflow
+        
   integration:
     name: Integration tests (microk8s)
     runs-on: ubuntu-20.04
