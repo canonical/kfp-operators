@@ -77,7 +77,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     # Deploy required relations
-    await ops_test.model.deploy(entity_url=MINIO, config=MINIO_CONFIG, trust=True)
+    await ops_test.model.deploy(
+        entity_url=MINIO, config=MINIO_CONFIG, trust=True, channel=MINIO_CHANNEL
+    )
     await ops_test.model.add_relation(
         f"{CHARM_NAME}:object-storage",
         f"{MINIO}:object-storage",
