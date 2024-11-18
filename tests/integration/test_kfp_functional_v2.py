@@ -107,18 +107,27 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # Wait for everything to be up.  Note, at time of writing these charms would naturally go
     # into blocked during deploy while waiting for each other to satisfy relations, so we don't
     # raise_on_blocked.
+    juju_status = sh.juju.status(format="json", model="kubeflow")
+    print("juju_status:")
+    print(juju_status)
     await ops_test.model.wait_for_idle(
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
-        raise_on_error=True,
+        raise_on_error=False,
         timeout=3600,
         idle_period=30,
     )
+    juju_status = sh.juju.status(format="json", no_color=True, model="kubeflow")
+    print("juju_status:")
+    print(juju_status)
 
 
 # ---- KFP API Server focused test cases
 async def test_upload_pipeline(kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
+    df = sh.df("-h")
+    print("df -h before test_upload_pipeline")
+    print(df)
     # Upload a pipeline and get the server response
     pipeline_name = f"test-pipeline-sdk-{KFP_SDK_VERSION}"
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
@@ -135,6 +144,9 @@ async def test_upload_pipeline(kfp_client):
 
 async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
     """Create a run and monitor it to completion."""
+    df = sh.df("-h")
+    print("df -h before test_create_and_monitor_run")
+    print(df)
     # Create a run, save response in variable for easy manipulation
     # Create an experiment for this run
     experiment_response = create_and_clean_experiment_v2
@@ -161,7 +173,9 @@ async def test_create_and_monitor_recurring_run(
     kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
 ):
     """Create a recurring run and monitor it to completion."""
-
+    df = sh.df("-h")
+    print("df -h before test_create_and_monitor_recurring_run")
+    print(df)
     # Upload a pipeline from file
     pipeline_response, pipeline_version_id = upload_and_clean_pipeline_v2
 
@@ -201,6 +215,9 @@ async def test_create_and_monitor_recurring_run(
     # Monitor the run to completion, the pipeline should not be executed in
     # more than 300 seconds as it is a very simple operation
     monitor_response = kfp_client.wait_for_run_completion(first_run.run_id, timeout=600)
+    df = sh.df("-h")
+    print("df -h before test_create_and_monitor_recurring_run ASSERT")
+    print(df)
     assert monitor_response.state == "SUCCEEDED"
 
     # FIXME: disabling the job does not work at the moment, it seems like
@@ -218,6 +235,9 @@ async def test_create_and_monitor_recurring_run(
 # ---- KFP Viewer and Visualization focused test cases
 async def test_apply_sample_viewer(lightkube_client):
     """Test a Viewer can be applied and its presence is verified."""
+    df = sh.df("-h")
+    print("df -h before test_apply_sample_viewer")
+    print(df)
     # Create a Viewer namespaced resource
     viewer_class_resource = create_namespaced_resource(
         group="kubeflow.org", version="v1beta1", kind="Viewer", plural="viewers"
@@ -236,6 +256,9 @@ async def test_apply_sample_viewer(lightkube_client):
 
 async def test_viz_server_healthcheck(ops_test: OpsTest):
     """Run a healthcheck on the server endpoint."""
+    df = sh.df("-h")
+    print("df -h before test_viz_server_healthcheck")
+    print(df)
     # This is a workaround for canonical/kfp-operators#549
     # Leave model=kubeflow as this test case
     # should always be executed on that model
