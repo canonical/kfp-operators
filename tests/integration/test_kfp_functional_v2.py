@@ -108,8 +108,14 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # into blocked during deploy while waiting for each other to satisfy relations, so we don't
     # raise_on_blocked.
     juju_status = sh.juju.status(format="json", model="kubeflow")
-    print("juju_status:")
+    print("###########################")
+    print("sh.juju.status:")
     print(juju_status)
+    status = await ops_test.model.get_status()
+    print("###########################")
+    print("ops_test.model.get_status()")
+    print(status)
+
     await ops_test.model.wait_for_idle(
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
