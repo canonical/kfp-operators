@@ -28,6 +28,7 @@ from lightkube import codecs
 from lightkube.generic_resource import create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
 from pytest_operator.plugin import OpsTest
+import jq
 
 KFP_SDK_VERSION = "v2"
 log = logging.getLogger(__name__)
@@ -107,19 +108,10 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # Wait for everything to be up.  Note, at time of writing these charms would naturally go
     # into blocked during deploy while waiting for each other to satisfy relations, so we don't
     # raise_on_blocked.
-    juju_status = sh.juju.status(format="json", model="kubeflow")
-    print("###########################")
-    print("sh.juju.status:")
-    print(juju_status)
-    status = await ops_test.model.get_status()
-    print("###########################")
-    print("ops_test.model.get_status()")
-    print(status)
-
     await ops_test.model.wait_for_idle(
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
-        raise_on_error=False,
+        raise_on_error=True,
         timeout=3600,
         idle_period=30,
     )
@@ -131,6 +123,14 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     print("###########################")
     print("ops_test.model.get_status()")
     print(status)
+
+    # Delete lxc instances once deployment is succesful
+    # Based on https://discourse.charmhub.io/t/how-to-quickly-clean-unused-lxd-instances-from-charmcraft-pack/15975
+    lxc_instances = sh.lxc.list(project="charmcraft", format="json")
+    lxc_instances_charmcraft = jq.compile('.[] | select(.name | startswith("charmcraft-")) | .name').input_text(lxc_instances).all()
+    for instance in lxc_instances_charmcraft:
+        print(f"Deleting {instance}")
+        sh.lxc.delete(instance, project="charmcraft")
 
 
 # ---- KFP API Server focused test cases
