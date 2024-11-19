@@ -124,8 +124,13 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         idle_period=30,
     )
     juju_status = sh.juju.status(format="json", no_color=True, model="kubeflow")
+    print("###########################")
     print("juju_status:")
     print(juju_status)
+    status = await ops_test.model.get_status()
+    print("###########################")
+    print("ops_test.model.get_status()")
+    print(status)
 
 
 # ---- KFP API Server focused test cases
