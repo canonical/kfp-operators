@@ -7,6 +7,14 @@ options:
     type: boolean
     default: true
     description: Allow custom visualizations
+  argo-archive-logs:
+    type: boolean
+    default: true
+    description: Enable Argo log archive
+  disable-gke-metadata:
+    type: boolean
+    default: true
+    description: Disable GKE metadata endpoint
   hide-sidenav:
     type: boolean
     default: true

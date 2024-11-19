@@ -12,6 +12,8 @@ class MlPipelineUiInputs:
     """Defines the required inputs for MlPipelineUiPebbleService."""
 
     ALLOW_CUSTOM_VISUALIZATIONS: bool
+    ARGO_ARCHIVE_LOGS: bool
+    DISABLE_GKE_METADATA: bool
     HIDE_SIDENAV: bool
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
@@ -49,7 +51,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             ).lower(),
                             "ARGO_ARCHIVE_ARTIFACTORY": "minio",
                             "ARGO_ARCHIVE_BUCKETNAME": "mlpipeline",
-                            "ARGO_ARCHIVE_LOGS": "false",
+                            "ARGO_ARCHIVE_LOGS": inputs.ARGO_ARCHIVE_LOGS,
                             "ARGO_ARCHIVE_PREFIX": "logs",
                             # TODO: This should come from relation to kfp-profile-controller.
                             #  It is the name/port of the user-specific artifact accessor
@@ -58,7 +60,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             "ARTIFACTS_SERVICE_PROXY_ENABLED": "true",
                             "AWS_ACCESS_KEY_ID": "",
                             "AWS_SECRET_ACCESS_KEY": "",
-                            "DISABLE_GKE_METADATA": "false",
+                            "DISABLE_GKE_METADATA": inputs.DISABLE_GKE_METADATA,
                             "ENABLE_AUTHZ": "true",
                             "DEPLOYMENT": "KUBEFLOW",
                             "HIDE_SIDENAV": str(inputs.HIDE_SIDENAV).lower(),

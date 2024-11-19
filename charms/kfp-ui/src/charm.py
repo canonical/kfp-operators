@@ -219,6 +219,8 @@ class KfpUiOperator(CharmBase):
                 ],
                 inputs_getter=lambda: MlPipelineUiInputs(
                     ALLOW_CUSTOM_VISUALIZATIONS=self.model.config["allow-custom-visualizations"],
+                    ARGO_ARCHIVE_LOGS=self.model.config["argo-archive-logs"],
+                    DISABLE_GKE_METADATA=self.model.config["disable-gke-metadata"],
                     HIDE_SIDENAV=self.model.config["hide-sidenav"],
                     MINIO_ACCESS_KEY=self.object_storage_relation.component.get_data()[
                         "access-key"
