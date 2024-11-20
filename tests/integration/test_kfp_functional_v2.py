@@ -10,6 +10,7 @@ from helpers.bundle_mgmt import render_bundle, deploy_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import get_resources_from_charm_file
 from helpers.charmcraft import charmcraft_clean
+from helpers.lxc import clean_charmcraft_lxc_instances
 from kfp_globals import (
     CHARM_PATH_TEMPLATE,
     KFP_CHARMS,
@@ -99,7 +100,8 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
             context.update([(f"{charm.replace('-', '_')}", charm_file)])
 
         if charmcraft_clean_flag == True:
-            charmcraft_clean(charms_to_build)
+            # charmcraft_clean(charms_to_build)
+            clean_charmcraft_lxc_instances()
 
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(
