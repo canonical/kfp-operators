@@ -11,3 +11,5 @@ pytest
 pytest-operator
 pyyaml
 tenacity
+sh
+jq

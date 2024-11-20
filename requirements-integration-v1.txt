@@ -130,6 +130,8 @@ jedi==0.19.1
     # via ipython
 jinja2==3.1.4
     # via pytest-operator
+jq==1.8.0
+    # via -r requirements-integration-v1.in
 jsonschema==4.17.3
     # via
     #   -r requirements-integration-v1.in
@@ -272,6 +274,8 @@ rich==13.7.1
     # via typer
 rsa==4.9
     # via google-auth
+sh==2.1.0
+    # via -r requirements-integration-v1.in
 shellingham==1.5.4
     # via typer
 six==1.16.0

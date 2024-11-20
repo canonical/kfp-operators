@@ -19,6 +19,7 @@ from kfp_globals import (
     SAMPLE_VIEWER,
 )
 
+import sh
 import jq
 import kfp
 import lightkube
