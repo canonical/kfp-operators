@@ -19,6 +19,7 @@ This directory has the following structure:
     │   ├── bundle_mgmt.py
     │   ├── k8s_resources.py
     │   └── localize_bundle.py
+    │   └── lxc.py
     ├── kfp_globals.py
     ├── pipelines/
     │   └── ... # Sample pipelines
@@ -57,10 +58,12 @@ Communication with the KFP API happens using the KFP Python SDK. A `kfp.client` 
 2. Run integration tests against the preferred bundle definition in `integration/bundles`
 
 ```
-tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> <--no-build>
+tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> <--no-build> <--clean-lxc-instances>
 ```
 
 Where,
 * `--model` tells the testing framework which model to deploy charms to
 * `--bundle` is the path to a bundle template that's going to be used during the test execution
 * `--no-build` tells the test suite whether to build charms and run tests against them, or use charms in Charmhub
+* `--no-build` tells the test suite whether to build charms and run tests against them, or use charms in Charmhub
+* `--clean-lxc-instances` tells the test suite whether to delete lxc instances after building and deploying the charms. If `--no-build` is passed, then this has no effect.

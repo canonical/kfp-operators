@@ -109,6 +109,8 @@ jedi==0.19.1
     # via ipython
 jinja2==3.1.4
     # via pytest-operator
+jq==1.8.0
+    # via -r requirements-integration-v2.in
 jsonschema==4.17.3
     # via -r requirements-integration-v2.in
 juju==3.5.2.0
