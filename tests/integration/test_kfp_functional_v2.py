@@ -120,7 +120,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     print("juju_status:")
     print(juju_status)
     status = await ops_test.model.get_status()
-    print("###########################")
+    print("############################")
     print("ops_test.model.get_status()")
     print(status)
 
