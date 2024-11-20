@@ -140,7 +140,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
             "metacontroller-operator",
             "minio",
             "mlmd"
-        ]
+        ],
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
