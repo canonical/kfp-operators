@@ -105,12 +105,36 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # into blocked during deploy while waiting for each other to satisfy relations, so we don't
     # raise_on_blocked.
     await ops_test.model.wait_for_idle(
+        apps=[
+            "argo-controller",
+            "envoy",
+            "istio-ingressgateway",
+            "istio-pilot",
+            "kfp-api",
+            "kfp-db",
+            "kfp-metadata-writer",
+            "kfp-persistence",
+            "kfp-profile-controller",
+            "kfp-schedwf",
+            "kfp-ui",
+            "kfp-viewer",
+            "kfp-viz",
+            "kubeflow-profiles",
+            "kubeflow-roles",
+            "metacontroller-operator",
+            "minio",
+            "mlmd"
+        ],
         status="active",
         raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
         raise_on_error=True,
         timeout=3600,
         idle_period=30,
     )
+    juju_status = sh.juju.status(format="json", no_color=True, model="kubeflow")
+    print("###########################")
+    print("juju_status afet wait_for_idle explicit applications passed:")
+    print(juju_status)
 
 
 # ---- KFP API Server focused test cases
