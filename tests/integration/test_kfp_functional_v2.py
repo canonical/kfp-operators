@@ -104,17 +104,10 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # Deploy the kfp-operators bundle from the rendered bundle file
     await deploy_bundle(ops_test, bundle_path=rendered_bundle, trust=True)
 
-    # Wait for everything to be up.  Note, at time of writing these charms would naturally go
-    # into blocked during deploy while waiting for each other to satisfy relations, so we don't
-    # raise_on_blocked.
-    await ops_test.model.wait_for_idle(
-        status="active",
-        raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
-        raise_on_error=True,
-        timeout=3600,
-        idle_period=30,
-    )
-
+    # Use `juju wait-for` instead of `wait_for_idle()`
+    # due to https://github.com/canonical/kfp-operators/issues/601
+    log.info("Waiting on model applications to be active")
+    sh.juju("wait-for","model","kubeflow", query="forEach(applications, app => app.status == 'active')", timeout="30m")
 
 # ---- KFP API Server focused test cases
 async def test_upload_pipeline(kfp_client):
