@@ -101,6 +101,10 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # Deploy the kfp-operators bundle from the rendered bundle file
     await deploy_bundle(ops_test, bundle_path=rendered_bundle, trust=True)
 
+    # Add due to https://github.com/canonical/kfp-operators/issues/601
+    log.info("Connecting to model Kubeflow")
+    await ops_test.track_model("kubeflow", model_name="kubeflow", use_existing=True)
+    log.info("Waiting for model to be active")
     # Wait for everything to be up.  Note, at time of writing these charms would naturally go
     # into blocked during deploy while waiting for each other to satisfy relations, so we don't
     # raise_on_blocked.
