@@ -18,6 +18,7 @@ from kfp_globals import (
     SAMPLE_VIEWER,
 )
 
+import sh
 import kfp
 import lightkube
 import pytest
