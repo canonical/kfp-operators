@@ -104,6 +104,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
 
     # Use `juju wait-for` instead of `wait_for_idle()`
     # due to https://github.com/canonical/kfp-operators/issues/601
+    # and https://github.com/juju/python-libjuju/issues/1204
     log.info("Waiting on model applications to be active")
     sh.juju("wait-for","model","kubeflow", query="forEach(applications, app => app.status == 'active')", timeout="30m")
 
