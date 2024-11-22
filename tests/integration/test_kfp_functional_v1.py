@@ -9,6 +9,7 @@ from pathlib import Path
 from helpers.bundle_mgmt import render_bundle, deploy_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import get_resources_from_charm_file
+from helpers.charmcraft import charmcraft_clean
 from kfp_globals import (
     CHARM_PATH_TEMPLATE,
     KFP_CHARMS,
@@ -18,6 +19,7 @@ from kfp_globals import (
     SAMPLE_VIEWER,
 )
 
+import sh
 import kfp
 import lightkube
 import pytest
@@ -68,6 +70,7 @@ def create_and_clean_experiment_v1(kfp_client: kfp.Client):
 async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     """Build and deploy kfp-operators charms."""
     no_build = request.config.getoption("no_build")
+    charmcraft_clean_flag = True if request.config.getoption("--charmcraft-clean") else False
 
     # Immediately raise an error if the model name is not kubeflow
     if ops_test.model_name != "kubeflow":
@@ -92,6 +95,9 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
             charm_resources = get_resources_from_charm_file(charm_file)
             context.update([(f"{charm.replace('-', '_')}_resources", charm_resources)])
             context.update([(f"{charm.replace('-', '_')}", charm_file)])
+
+        if charmcraft_clean_flag == True:
+            charmcraft_clean(charms_to_build)
 
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(
