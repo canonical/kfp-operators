@@ -105,3 +105,9 @@ def pytest_addoption(parser: Parser):
         "to render the bundle definition template."
         "If set to False, the integration tests will be run against charms in Charmhub.",
     )
+    parser.addoption(
+        "--charmcraft-clean",
+        action="store_true",
+        help="Whether to run charmcraft clean and delete lxc instances created by charmcraft."
+        "It defaults to False."
+    )

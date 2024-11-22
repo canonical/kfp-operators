@@ -11,7 +11,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: charmedkubeflow/scheduledworkflow:2.2.0-517f00c
+    upstream-source: gcr.io/ml-pipeline/scheduledworkflow:2.3.0
 requires:
   logging:
     interface: loki_push_api
