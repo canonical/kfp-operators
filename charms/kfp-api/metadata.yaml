@@ -15,7 +15,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: charmedkubeflow/api-server:2.2.0-4d2f32c
+    upstream-source: charmedkubeflow/api-server:2.3.0-5e9542c
 requires:
   mysql:
     interface: mysql
