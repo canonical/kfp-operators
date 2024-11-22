@@ -12,6 +12,10 @@ KFP charms use Jinja2 templates in order to store manifests that are applied dur
 6. Build the manifest with `kustomize` (see step 4) and save the file
 7. Compare both files to spot the differences (e.g. using diff `diff kfp-manifests-vX.yaml kfp-manifests-vY.yaml > kfp-vX-vY.diff`)
 
+### Spot the updated images used by kfp-api
+
+Kfp-api uses also two images `launcher` and `driver` apart from its workload container one. Those are updated on every release but this change is not visible when comparing manifests. In order to update those, grab their sources from the corresponding comments in the [config.yaml](./charms/kfp-api/config.yaml) file and switch to the target version of that file. Then, use the new images to update the config options' default value. 
+
 ### Introduce changes
 
 Once the comparison is done, add any changes to the relevant aggregated ClusterRoles to the
