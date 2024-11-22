@@ -51,13 +51,13 @@ options:
     description: Default name of object storage bucket.
   launcher-image:
     type: string
-    # Source: https://github.com/kubeflow/pipelines/blob/2.2.0/backend/src/v2/compiler/argocompiler/container.go#L30
-    default: "gcr.io/ml-pipeline/kfp-launcher@sha256:8fe5e6e4718f20b021736022ad3741ddf2abd82aa58c86ae13e89736fdc3f08f"
+    # Source: https://github.com/kubeflow/pipelines/blob/2.3.0/backend/src/v2/compiler/argocompiler/container.go#L33
+    default: "gcr.io/ml-pipeline/kfp-launcher@sha256:bef55a344574a25c557256d7c66cb19edacfd2008d694e5b6bb5b612d59feae0"
     description: Launcher image used during a pipeline's steps.
   driver-image:
     type: string
-    # Source: https://github.com/kubeflow/pipelines/blob/2.2.0/backend/src/v2/compiler/argocompiler/container.go#L32
-    default: "gcr.io/ml-pipeline/kfp-driver@sha256:3c0665cd36aa87e4359a4c8b6271dcba5bdd817815cd0496ed12eb5dde5fd2ec"
+    # Source: https://github.com/kubeflow/pipelines/blob/2.3.0/backend/src/v2/compiler/argocompiler/container.go#L35
+    default: "gcr.io/ml-pipeline/kfp-driver@sha256:dc8b56a2eb071f30409828a8884d621092e68385af11a6c06aa9e9fbcfbb19de"
     description: Driver image used during a pipeline's steps.
   log-level:
     type: string

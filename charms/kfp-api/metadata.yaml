@@ -15,7 +15,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: charmedkubeflow/api-server:2.2.0-4d2f32c
+    upstream-source: gcr.io/ml-pipeline/api-server:2.3.0
 requires:
   mysql:
     interface: mysql

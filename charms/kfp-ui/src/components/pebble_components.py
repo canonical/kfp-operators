@@ -12,6 +12,7 @@ class MlPipelineUiInputs:
     """Defines the required inputs for MlPipelineUiPebbleService."""
 
     ALLOW_CUSTOM_VISUALIZATIONS: bool
+    FRONTEND_SERVER_NAMESPACE: str
     HIDE_SIDENAV: bool
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
@@ -61,6 +62,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             "DISABLE_GKE_METADATA": "false",
                             "ENABLE_AUTHZ": "true",
                             "DEPLOYMENT": "KUBEFLOW",
+                            "FRONTEND_SERVER_NAMESPACE": inputs.FRONTEND_SERVER_NAMESPACE,
                             "HIDE_SIDENAV": str(inputs.HIDE_SIDENAV).lower(),
                             "HTTP_AUTHORIZATION_DEFAULT_VALUE": "",
                             "HTTP_AUTHORIZATION_KEY": "",
