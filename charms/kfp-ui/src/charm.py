@@ -219,6 +219,7 @@ class KfpUiOperator(CharmBase):
                 ],
                 inputs_getter=lambda: MlPipelineUiInputs(
                     ALLOW_CUSTOM_VISUALIZATIONS=self.model.config["allow-custom-visualizations"],
+                    FRONTEND_SERVER_NAMESPACE=self.model.name,
                     HIDE_SIDENAV=self.model.config["hide-sidenav"],
                     MINIO_ACCESS_KEY=self.object_storage_relation.component.get_data()[
                         "access-key"
