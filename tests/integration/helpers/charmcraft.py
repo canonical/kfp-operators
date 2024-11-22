@@ -1,10 +1,23 @@
+import logging
+from os import chdir
+from pathlib import Path
+from typing import Dict
+
+from kfp_globals import basedir
+
 import sh
 
-def charmcraft_clean(charms_paths: list[str]) -> None:
+log = logging.getLogger(__name__)
+
+
+def charmcraft_clean(charms_paths: Dict[str, Path]) -> None:
     """
     Run `charmcraft clean` for passed paths to charms.
     """
-    for charm_path in charms_paths:
-        sh.cd(charm_path)
+    pwd = sh.pwd()
+    for charm,charm_path in charms_paths.items():
+        log.info(f"Charmcraft clean {charm}")
+        chdir(charm_path)
         sh.charmcraft.clean()
-        sh.cd("-")
+    # Return to original directory so it doesn't affect tests execution
+    chdir(pwd)

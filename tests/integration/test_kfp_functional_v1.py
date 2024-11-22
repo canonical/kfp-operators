@@ -9,7 +9,7 @@ from pathlib import Path
 from helpers.bundle_mgmt import render_bundle, deploy_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import get_resources_from_charm_file
-from tests.integration.helpers.charmcraft import charmcraft_clean
+from helpers.charmcraft import charmcraft_clean
 from kfp_globals import (
     CHARM_PATH_TEMPLATE,
     KFP_CHARMS,

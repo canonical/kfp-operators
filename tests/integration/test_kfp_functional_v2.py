@@ -9,7 +9,7 @@ from pathlib import Path
 from helpers.bundle_mgmt import render_bundle, deploy_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import get_resources_from_charm_file
-from tests.integration.helpers.charmcraft import charmcraft_clean
+from helpers.charmcraft import charmcraft_clean
 from kfp_globals import (
     CHARM_PATH_TEMPLATE,
     KFP_CHARMS,
@@ -83,14 +83,14 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     basedir = Path("./").absolute()
 
     # Build the charms we need to build only if --no-build is not set
-    context = {}
+    # context = {}
     if not no_build:
         charms_to_build = {
             charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
             for charm in KFP_CHARMS
         }
         log.info(f"Building charms for: {charms_to_build}")
-        built_charms = await ops_test.build_charms(*charms_to_build.values())
+        # built_charms = await ops_test.build_charms(*charms_to_build.values())
         log.info(f"Built charms: {built_charms}")
 
         for charm, charm_file in built_charms.items():
