@@ -83,14 +83,14 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     basedir = Path("./").absolute()
 
     # Build the charms we need to build only if --no-build is not set
-    # context = {}
+    context = {}
     if not no_build:
         charms_to_build = {
             charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
             for charm in KFP_CHARMS
         }
         log.info(f"Building charms for: {charms_to_build}")
-        # built_charms = await ops_test.build_charms(*charms_to_build.values())
+        built_charms = await ops_test.build_charms(*charms_to_build.values())
         log.info(f"Built charms: {built_charms}")
 
         for charm, charm_file in built_charms.items():

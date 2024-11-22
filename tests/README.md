@@ -65,5 +65,4 @@ Where,
 * `--model` tells the testing framework which model to deploy charms to
 * `--bundle` is the path to a bundle template that's going to be used during the test execution
 * `--no-build` tells the test suite whether to build charms and run tests against them, or use charms in Charmhub
-* `--no-build` tells the test suite whether to build charms and run tests against them, or use charms in Charmhub
 * `--charmcraft-clean` tells the test suite whether to run `charmcraft clean` and delete the lxc instances after building the charms. If `--no-build` is passed, this has no effect.
