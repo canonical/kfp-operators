@@ -54,6 +54,10 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             "ARGO_ARCHIVE_BUCKETNAME": "mlpipeline",
                             "ARGO_ARCHIVE_LOGS": inputs.ARGO_ARCHIVE_LOGS,
                             "ARGO_ARCHIVE_PREFIX": "logs",
+                            # Must have the same value as the `keyFormat` specified in the
+                            # `argo-workflow-controller-configmap` ConfigMap owned by
+                            # the `argo-controller` charm.
+                            "ARGO_KEYFORMAT": "artifacts/{{workflow.name}}/{{workflow.creationTimestamp.Y}}/{{workflow.creationTimestamp.m}}/{{workflow.creationTimestamp.d}}/{{pod.name}}",  # noqa E501
                             # TODO: This should come from relation to kfp-profile-controller.
                             #  It is the name/port of the user-specific artifact accessor
                             "ARTIFACTS_SERVICE_PROXY_NAME": "ml-pipeline-ui-artifact",
