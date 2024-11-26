@@ -113,7 +113,7 @@ class KfpPersistenceOperator(CharmBase):
                     # Upstream defines this in the configmap persistenceagent-config-*
                     "MULTIUSER": "true",
                     "NAMESPACE": "",
-                    "TTL_SECONDS_AFTER_WORKFLOW_FINISH": "86400",
+                    "TTL_SECONDS_AFTER_WORKFLOW_FINISH": "120",
                     "NUM_WORKERS": "2",
                     "EXECUTIONTYPE": "Workflow",
                 },
