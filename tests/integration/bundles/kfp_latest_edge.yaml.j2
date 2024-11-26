@@ -4,7 +4,6 @@ applications:
   argo-controller:         { charm: ch:argo-controller, channel: latest/edge, scale: 1, trust: true }
   metacontroller-operator: { charm: ch:metacontroller-operator, channel: latest/edge, scale: 1, trust: true }
   minio:                   { charm: ch:minio, channel: latest/edge,       scale: 1 }
-  kfp-db:                  { charm: ch:mysql-k8s, channel: 8.0/stable, scale: 1, constraints: mem=2G, trust: true }
   mlmd:                    { charm: ch:mlmd, channel: latest/edge, scale: 1, trust: true}
   envoy:                   { charm: ch:envoy, channel: latest/edge, scale: 1 }
   kubeflow-profiles:       { charm: ch:kubeflow-profiles, channel: latest/edge, scale: 1, trust: true }
@@ -21,6 +20,13 @@ applications:
     scale: 1
     options:
       default-gateway: kubeflow-gateway
+    trust: true
+  kfp-db:
+    charm: mysql-k8s
+    channel: 8.0/stable
+    scale: 1
+    options:
+      profile: testing
     trust: true
   kubeflow-roles:
     charm: kubeflow-roles
