@@ -220,6 +220,7 @@ class KfpUiOperator(CharmBase):
                 inputs_getter=lambda: MlPipelineUiInputs(
                     ALLOW_CUSTOM_VISUALIZATIONS=self.model.config["allow-custom-visualizations"],
                     ARGO_ARCHIVE_LOGS=self.model.config["argo-archive-logs"],
+                    ARGO_KEY_FORMAT=self.model.config["argo-key-format"],
                     DISABLE_GKE_METADATA=self.model.config["disable-gke-metadata"],
                     FRONTEND_SERVER_NAMESPACE=self.model.name,
                     HIDE_SIDENAV=self.model.config["hide-sidenav"],
