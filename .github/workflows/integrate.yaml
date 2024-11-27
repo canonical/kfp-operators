@@ -171,6 +171,10 @@ jobs:
           juju add-model kubeflow
           sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2" --charmcraft-clean
 
+      - name: Display df
+        run: df -h
+        if: always()
+
       - name: Get all
         run: kubectl get all -A
         if: failure()
