@@ -11,11 +11,6 @@ options:
     type: boolean
     default: true
     description: Enable Argo log archive
-  argo-key-format:
-    type: string
-    # Must have the same value as the default of `keyformat` config in `argo-controller` charm.
-    default: "artifacts/{{workflow.name}}/{{workflow.creationTimestamp.Y}}/{{workflow.creationTimestamp.m}}/{{workflow.creationTimestamp.d}}/{{pod.name}}"
-    description: The keyFormat for pod logs artifacts stored
   disable-gke-metadata:
     type: boolean
     default: true
