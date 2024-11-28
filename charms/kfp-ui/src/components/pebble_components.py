@@ -53,7 +53,6 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             "ARGO_ARCHIVE_ARTIFACTORY": "minio",
                             "ARGO_ARCHIVE_BUCKETNAME": "mlpipeline",
                             "ARGO_ARCHIVE_LOGS": inputs.ARGO_ARCHIVE_LOGS,
-                            "ARGO_ARCHIVE_PREFIX": "logs",
                             # Must have the same value as the `keyFormat` specified in the
                             # `argo-workflow-controller-configmap` ConfigMap owned by
                             # the `argo-controller` charm.
