@@ -12,6 +12,8 @@ class MlPipelineUiInputs:
     """Defines the required inputs for MlPipelineUiPebbleService."""
 
     ALLOW_CUSTOM_VISUALIZATIONS: bool
+    ARGO_ARCHIVE_LOGS: bool
+    DISABLE_GKE_METADATA: bool
     FRONTEND_SERVER_NAMESPACE: str
     HIDE_SIDENAV: bool
     MINIO_ACCESS_KEY: str
@@ -50,8 +52,17 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             ).lower(),
                             "ARGO_ARCHIVE_ARTIFACTORY": "minio",
                             "ARGO_ARCHIVE_BUCKETNAME": "mlpipeline",
-                            "ARGO_ARCHIVE_LOGS": "false",
-                            "ARGO_ARCHIVE_PREFIX": "logs",
+                            "ARGO_ARCHIVE_LOGS": inputs.ARGO_ARCHIVE_LOGS,
+                            # Must have the same value as the `keyFormat` specified in the
+                            # `argo-workflow-controller-configmap` ConfigMap owned by
+                            # the `argo-controller` charm.
+                            "ARGO_KEYFORMAT": (
+                                "artifacts/{{workflow.name}}/"
+                                "{{workflow.creationTimestamp.Y}}/"
+                                "{{workflow.creationTimestamp.m}}/"
+                                "{{workflow.creationTimestamp.d}}/"
+                                "{{pod.name}}"
+                            ),
                             # TODO: This should come from relation to kfp-profile-controller.
                             #  It is the name/port of the user-specific artifact accessor
                             "ARTIFACTS_SERVICE_PROXY_NAME": "ml-pipeline-ui-artifact",
@@ -59,7 +70,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             "ARTIFACTS_SERVICE_PROXY_ENABLED": "true",
                             "AWS_ACCESS_KEY_ID": "",
                             "AWS_SECRET_ACCESS_KEY": "",
-                            "DISABLE_GKE_METADATA": "false",
+                            "DISABLE_GKE_METADATA": inputs.DISABLE_GKE_METADATA,
                             "ENABLE_AUTHZ": "true",
                             "DEPLOYMENT": "KUBEFLOW",
                             "FRONTEND_SERVER_NAMESPACE": inputs.FRONTEND_SERVER_NAMESPACE,
