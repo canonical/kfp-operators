@@ -11,3 +11,9 @@ bases:
 parts:
   charm:
     charm-python-packages: [setuptools, pip]  # Fixes install of some packages
+    # Following lines are needed due to https://github.com/canonical/charmcraft/issues/1722
+    build-snaps: [rustup]
+    build-packages: [pkg-config, libffi-dev, libssl-dev]
+    override-build: |
+      rustup default stable
+      craftctl default
