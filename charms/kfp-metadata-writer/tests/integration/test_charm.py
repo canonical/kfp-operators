@@ -34,7 +34,7 @@ async def test_build_and_deploy_with_relations(ops_test: OpsTest):
         entity_url="/tmp/charms/kfp-metadata-writer/kfp-metadata-writer_ubuntu-20.04-amd64.charm",
         application_name=APP_NAME,
         resources=resources,
-        trust=True
+        trust=True,
     )
     await ops_test.model.deploy(entity_url=MLMD, channel=MLMD_CHANNEL, trust=True)
     await ops_test.model.integrate(f"{MLMD}:grpc", f"{APP_NAME}:grpc")

@@ -109,5 +109,5 @@ def pytest_addoption(parser: Parser):
         "--charmcraft-clean",
         action="store_true",
         help="Whether to run charmcraft clean and delete lxc instances created by charmcraft."
-        "It defaults to False."
+        "It defaults to False.",
     )

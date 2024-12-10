@@ -26,7 +26,10 @@ async def test_build_and_deploy_with_relations(ops_test: OpsTest):
     resources = {"kfp-viewer-image": image_path}
 
     await ops_test.model.deploy(
-        entity_url="/tmp/charms/kfp-viewer/kfp-viewer_ubuntu-20.04-amd64.charm", application_name=APP_NAME, resources=resources, trust=True
+        entity_url="/tmp/charms/kfp-viewer/kfp-viewer_ubuntu-20.04-amd64.charm",
+        application_name=APP_NAME,
+        resources=resources,
+        trust=True,
     )
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME],

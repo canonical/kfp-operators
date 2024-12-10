@@ -70,10 +70,10 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
     await ops_test.model.deploy(
-          entity_url="/tmp/charms/kfp-profile-controller/kfp-profile-controller_ubuntu-20.04-amd64.charm",
-          application_name=CHARM_NAME,
-          resources=resources,
-          trust=True
+        entity_url="/tmp/charms/kfp-profile-controller/kfp-profile-controller_ubuntu-20.04-amd64.charm",
+        application_name=CHARM_NAME,
+        resources=resources,
+        trust=True,
     )
 
     # Deploy required relations

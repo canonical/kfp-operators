@@ -65,7 +65,6 @@ class TestCharm:
         await ops_test.model.add_relation(f"{APP_NAME}:object-storage", f"{MINIO}:object-storage")
         await ops_test.model.add_relation(f"{APP_NAME}:kfp-viz", f"{KFP_VIZ}:kfp-viz")
 
-
         await ops_test.model.deploy(
             MYSQL,
             channel=MYSQL_CHANNEL,

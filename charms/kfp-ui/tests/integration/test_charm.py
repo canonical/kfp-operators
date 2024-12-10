@@ -27,7 +27,10 @@ async def test_build_and_deploy_with_relations(ops_test: OpsTest):
     resources = {"ml-pipeline-ui": image_path}
 
     await ops_test.model.deploy(
-        entity_url="/tmp/charms/kfp-ui/kfp-ui_ubuntu-20.04-amd64.charm", application_name=APP_NAME, resources=resources, trust=True
+        entity_url="/tmp/charms/kfp-ui/kfp-ui_ubuntu-20.04-amd64.charm",
+        application_name=APP_NAME,
+        resources=resources,
+        trust=True,
     )
     await ops_test.model.deploy(BUNDLE, trust=True)
     await ops_test.model.integrate(f"{APP_NAME}:kfp-api", "kfp-api:kfp-api")
