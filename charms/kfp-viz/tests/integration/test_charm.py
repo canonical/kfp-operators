@@ -22,14 +22,11 @@ log = logging.getLogger(__name__)
 
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy_with_relations(ops_test: OpsTest):
-    built_charm_path = await ops_test.build_charm(CHARM_ROOT)
-    log.info(f"Built charm {built_charm_path}")
-
     image_path = METADATA["resources"]["oci-image"]["upstream-source"]
     resources = {"oci-image": image_path}
 
     await ops_test.model.deploy(
-        entity_url=built_charm_path, application_name=APP_NAME, resources=resources, trust=True
+        entity_url="/tmp/charms/kfp-viz/kfp-viz_ubuntu-20.04-amd64.charm", application_name=APP_NAME, resources=resources, trust=True
     )
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME],

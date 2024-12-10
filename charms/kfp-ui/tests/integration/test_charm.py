@@ -23,14 +23,11 @@ log = logging.getLogger(__name__)
 
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy_with_relations(ops_test: OpsTest):
-    built_charm_path = await ops_test.build_charm(CHARM_ROOT)
-    log.info(f"Built charm {built_charm_path}")
-
     image_path = METADATA["resources"]["ml-pipeline-ui"]["upstream-source"]
     resources = {"ml-pipeline-ui": image_path}
 
     await ops_test.model.deploy(
-        entity_url=built_charm_path, application_name=APP_NAME, resources=resources, trust=True
+        entity_url="/tmp/charms/kfp-ui/kfp-ui_ubuntu-20.04-amd64.charm", application_name=APP_NAME, resources=resources, trust=True
     )
     await ops_test.model.deploy(BUNDLE, trust=True)
     await ops_test.model.integrate(f"{APP_NAME}:kfp-api", "kfp-api:kfp-api")

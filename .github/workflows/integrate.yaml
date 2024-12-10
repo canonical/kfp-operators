@@ -131,13 +131,6 @@ jobs:
           merge-multiple: true
           path: /tmp/
 
-      - name: Debug path
-        run: |
-          ls -lh /tmp/
-          echo "---------------"
-          ls -lh
-          echo "---------------"
-          ls -lh /tmp/packed-charm-cache-true-.-charms-kfp-api-base-0/charms/kfp-api/
       - name: Integration tests
         run: |
           # Requires the model to be called kubeflow due to
