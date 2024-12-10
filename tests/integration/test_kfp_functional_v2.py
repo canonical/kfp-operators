@@ -72,7 +72,6 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
 async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     """Build and deploy kfp-operators charms."""
     no_build = request.config.getoption("no_build")
-    charmcraft_clean_flag = True if request.config.getoption("--charmcraft-clean") else False
 
     # Immediately raise an error if the model name is not kubeflow
     if ops_test.model_name != "kubeflow":
@@ -80,27 +79,17 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
 
     # Get/load template bundle from command line args
     bundlefile_path = Path(request.config.getoption("bundle"))
-    basedir = Path("./").absolute()
 
-    # Build the charms we need to build only if --no-build is not set
-    context = {}
-    if not no_build:
-        charms_to_build = {
-            charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
-            for charm in KFP_CHARMS
-        }
-        log.info(f"Building charms for: {charms_to_build}")
-        built_charms = await ops_test.build_charms(*charms_to_build.values())
-        log.info(f"Built charms: {built_charms}")
-
-        for charm, charm_file in built_charms.items():
-            charm_resources = get_resources_from_charm_file(charm_file)
-            context.update([(f"{charm.replace('-', '_')}_resources", charm_resources)])
-            context.update([(f"{charm.replace('-', '_')}", charm_file)])
-
-        if charmcraft_clean_flag == True:
-            charmcraft_clean(charms_to_build)
-
+    context = {
+        "kfp_api": "/tmp/charms/kfp-api/kfp-api_ubuntu-20.04-amd64.charm",
+        "kfp_metadata_writer": "/tmp/charms/kfp-metadata-writer/kfp-metadata-writer_ubuntu-20.04-amd64.charm",
+        "kfp_persistence": "/tmp/charms/kfp-persistence/kfp-persistence_ubuntu-20.04-amd64.charm",
+        "kfp_profile_controller": "/tmp/charms/kfp-profile-controller/kfp-profile-controller_ubuntu-20.04-amd64.charm",
+        "kfp_schedwf": "/tmp/charms/kfp-schedwf/kfp-schedwf_ubuntu-20.04-amd64.charm",
+        "kfp_ui": "/tmp/charms/kfp-ui/kfp-ui_ubuntu-20.04-amd64.charm",
+        "kfp_viewer": "/tmp/charms/kfp-viewer/kfp-viewer_ubuntu-20.04-amd64.charm",
+        "kfp_viz": "/tmp/charms/kfp-viz/kfp-viz_ubuntu-20.04-amd64.charm",
+    }
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(
         ops_test, bundle_path=bundlefile_path, context=context, no_build=no_build
@@ -113,7 +102,14 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # due to https://github.com/canonical/kfp-operators/issues/601
     # and https://github.com/juju/python-libjuju/issues/1204
     log.info("Waiting on model applications to be active")
-    sh.juju("wait-for","model","kubeflow", query="forEach(applications, app => app.status == 'active')", timeout="30m")
+    sh.juju(
+        "wait-for",
+        "model",
+        "kubeflow",
+        query="forEach(applications, app => app.status == 'active')",
+        timeout="30m",
+    )
+
 
 # ---- KFP API Server focused test cases
 async def test_upload_pipeline(kfp_client):
@@ -191,8 +187,9 @@ async def test_create_and_monitor_recurring_run(
     # Wait for the recurring job to schedule some runs
     time.sleep(20)
 
-    first_run = kfp_client.list_runs(experiment_id=experiment_response.experiment_id,
-                                          namespace=KUBEFLOW_PROFILE_NAMESPACE).runs[0]
+    first_run = kfp_client.list_runs(
+        experiment_id=experiment_response.experiment_id, namespace=KUBEFLOW_PROFILE_NAMESPACE
+    ).runs[0]
 
     # Assert that a run has been created from the recurring job
     assert first_run.recurring_run_id == recurring_job.recurring_run_id
