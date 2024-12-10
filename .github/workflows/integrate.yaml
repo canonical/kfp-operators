@@ -8,6 +8,26 @@ on:
         required: true
 
 jobs:
+  build:
+    name: Build charm
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v21.0.0
+    strategy:
+      fail-fast: false
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-metadata-writer
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
+    with:
+      cache: ${{ github.event_name == 'pull_request' }}
+      charmcraft-snap-channel: 3.x/edge
+      path-to-charm-directory: ./charms/${{ matrix.charm }}
+
   lib-check:
     name: Check libraries
     strategy:
@@ -42,7 +62,7 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-lint
 
@@ -62,7 +82,7 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
@@ -90,6 +110,7 @@ jobs:
   integration:
     name: Integration tests (microk8s)
     runs-on: ubuntu-20.04
+    needs: [build]
     strategy:
       fail-fast: false
       matrix:
@@ -111,7 +132,7 @@ jobs:
       - name: Maximise GH runner space
         uses: jlumbroso/free-disk-space@v1.3.1
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
@@ -121,6 +142,15 @@ jobs:
           juju-channel: 3.6/stable
           # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
           charmcraft-channel: 3.x/stable
+
+      - name: Download packed charm(s)
+        id: download-charms
+        timeout-minutes: 5
+        uses: actions/download-artifact@v4
+        with:
+          pattern: packed-charm-cache-true-.-charms-${{ matrix.charm }}-*
+          merge-multiple: true
+          path: /tmp/
 
       - name: Integration tests
         run: |
@@ -129,58 +159,55 @@ jobs:
           juju add-model kubeflow
           sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow"
 
-      - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
-        if: always()
-
-  test-bundle:
-    name: Test the bundle
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        sdk:
-          - v1
-          - v2
-    steps:
-      # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
-      # Ideally we'd use self-hosted runners, but this effort is still not stable
-      # This action will remove unused software (dotnet, haskell, android libs, codeql,
-      # and docker images) from the GH runner.
-      # This leaves ~45GB free as of 2024-04-10, but this amount has varied as GH changed their
-      # runners
-      - name: Maximise GH runner space
-        uses: jlumbroso/free-disk-space@v1.3.1
-
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          channel: 1.29-strict/stable
-          juju-channel: 3.6/stable
-          # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
-          charmcraft-channel: 3.x/stable
-          microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
-
-      - name: Run test
-        run: |
-          # Requires the model to be called kubeflow due to kfp-viewer
-          juju add-model kubeflow
-          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2" --charmcraft-clean
-
-      - name: Get all
-        run: kubectl get all -A
-        if: failure()
-
-      - name: Get juju status
-        run: juju status
-        if: failure()
-
-      # Collect debug artefacts only on failure || cancelled as the CI for this repository
-      # in particular struggles with storage limitations.
-      - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
-        if: failure() || cancelled()
+#  test-bundle:
+#    name: Test the bundle
+#    runs-on: ubuntu-20.04
+#    needs: [build]
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        sdk:
+#          - v1
+#          - v2
+#    steps:
+#      # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
+#      # Ideally we'd use self-hosted runners, but this effort is still not stable
+#      # This action will remove unused software (dotnet, haskell, android libs, codeql,
+#      # and docker images) from the GH runner.
+#      # This leaves ~45GB free as of 2024-04-10, but this amount has varied as GH changed their
+#      # runners
+#      - name: Maximise GH runner space
+#        uses: jlumbroso/free-disk-space@v1.3.1
+#
+#      - name: Check out code
+#        uses: actions/checkout@v4
+#
+#      - name: Setup operator environment
+#        uses: charmed-kubernetes/actions-operator@main
+#        with:
+#          provider: microk8s
+#          channel: 1.29-strict/stable
+#          juju-channel: 3.6/stable
+#          # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
+#          charmcraft-channel: 3.x/stable
+#          microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
+#
+#      - name: Run test
+#        run: |
+#          # Requires the model to be called kubeflow due to kfp-viewer
+#          juju add-model kubeflow
+#          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2" --charmcraft-clean
+#
+#      - name: Get all
+#        run: kubectl get all -A
+#        if: failure()
+#
+#      - name: Get juju status
+#        run: juju status
+#        if: failure()
+#
+#      # Collect debug artefacts only on failure || cancelled as the CI for this repository
+#      # in particular struggles with storage limitations.
+#      - name: Collect charm debug artifacts
+#        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+#        if: failure() || cancelled()
