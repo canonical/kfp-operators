@@ -179,6 +179,13 @@ jobs:
           merge-multiple: true
           path: /tmp/
 
+      - name: Debug
+        run: |
+          ls -lh .
+          echo "------------"
+          ls -lh /tmp/charms/
+          echo "------------"
+          ls -lh /tmp
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
