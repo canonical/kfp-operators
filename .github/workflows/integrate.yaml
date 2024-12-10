@@ -131,6 +131,11 @@ jobs:
           merge-multiple: true
           path: /tmp/
 
+      - name: Debug path
+        run: |
+          ls -lh /tmp/
+          echo "---------------"
+          ls -lh
       - name: Integration tests
         run: |
           # Requires the model to be called kubeflow due to
