@@ -183,9 +183,9 @@ jobs:
         run: |
           ls -lh .
           echo "------------"
-          ls -lh /tmp
+          ls -lh /tmp/charms
           echo "------------"
-          ls -lh /tmp/charms/kfp-api/
+          for d in $(ls -lh /tmp/charms/); do ls -lh $d; done
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
