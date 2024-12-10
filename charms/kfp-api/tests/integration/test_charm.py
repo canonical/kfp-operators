@@ -49,7 +49,7 @@ class TestCharm:
         resources = {"oci-image": image_path}
 
         await ops_test.model.deploy(
-            entity_url="/tmp/packed-charm-cache-true-.-charms-kfp-api-base-0/charms/kfp-api/kfp-api_ubuntu-20.04-amd64.charm",
+            entity_url="/tmp/charms/kfp-api/kfp-api_ubuntu-20.04-amd64.charm",
             application_name=APP_NAME,
             resources=resources,
             trust=True,
