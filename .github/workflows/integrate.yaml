@@ -183,14 +183,14 @@ jobs:
         run: |
           ls -lh .
           echo "------------"
-          ls -lh /tmp/charms/
-          echo "------------"
           ls -lh /tmp
+          echo "------------"
+          ls -lh /tmp/charms/
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2" --charmcraft-clean
+          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2"
 
       - name: Get all
         run: kubectl get all -A
