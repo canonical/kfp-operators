@@ -31,7 +31,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         This method is required for subclassing PebbleServiceContainer
         """
         logger.info("PebbleServiceComponent.get_layer executing")
-        # NOTE: to check exactly how we are supposed to re-use rocks' predefined
+        # NOTE: to check exactly how we are supposed to reuse rocks' predefined
         # pebble services, this could work, but I have to check if there are no
         # other edge cases were the layer is defined somewhere else and it is
         # merged wrongly.
