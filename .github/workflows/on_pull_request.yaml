@@ -10,4 +10,4 @@ on:
 jobs:
   on_pull_request:
     name: Build, test, publish
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/pull-request-template.yaml@main
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
