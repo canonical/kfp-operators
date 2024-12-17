@@ -42,7 +42,7 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-lint
 
@@ -62,7 +62,7 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
@@ -111,7 +111,7 @@ jobs:
       - name: Maximise GH runner space
         uses: jlumbroso/free-disk-space@v1.3.1
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
@@ -122,16 +122,21 @@ jobs:
           # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
           charmcraft-channel: 3.x/stable
 
+      - name: Download packed charm(s)
+        id: download-charms
+        timeout-minutes: 5
+        uses: actions/download-artifact@v4
+        with:
+          pattern: packed-charm-cache-true-.-charms-${{ matrix.charm }}-*
+          merge-multiple: true
+          path: /tmp/
+
       - name: Integration tests
         run: |
           # Requires the model to be called kubeflow due to
           # https://github.com/canonical/kfp-operators/issues/389
           juju add-model kubeflow
           sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow"
-
-      - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
-        if: always()
 
   test-bundle:
     name: Test the bundle
@@ -153,7 +158,7 @@ jobs:
         uses: jlumbroso/free-disk-space@v1.3.1
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
@@ -165,11 +170,27 @@ jobs:
           charmcraft-channel: 3.x/stable
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
+      - name: Download packed charm(s)
+        id: download-charms
+        timeout-minutes: 5
+        uses: actions/download-artifact@v4
+        with:
+          pattern: packed-charm-cache-true-.-charms-*
+          merge-multiple: true
+          path: /tmp/
+
+      - name: Debug
+        run: |
+          ls -lh .
+          echo "------------"
+          ls -lh /tmp/charms
+          echo "------------"
+          for d in ls -lh /tmp/charms/; do ls -lh $d; done
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2" --charmcraft-clean
+          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2"
 
       - name: Get all
         run: kubectl get all -A
