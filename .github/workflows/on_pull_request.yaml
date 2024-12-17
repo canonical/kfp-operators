@@ -3,19 +3,24 @@ name: On Pull Request
 # On pull_request, we:
 # * always publish to charmhub at latest/edge/branchname
 # * always run tests
-
+# * always run builds with cache
 on:
   pull_request:
 
 jobs:
+  get-paths-and-build:
+    name: Get charm paths and build with cache
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get_charms_build_with_cache.yaml@KF-6690-build-with-cache
 
   tests:
     name: Run Tests
+    needs: [get-paths-and-build]
     uses: ./.github/workflows/integrate.yaml
     secrets: inherit
 
   # publish runs in parallel with tests, as we always publish in this situation
   publish-charm:
     name: Publish Charm
+    needs: [get-paths-and-build]
     uses: ./.github/workflows/publish.yaml
     secrets: inherit
