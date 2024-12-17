@@ -8,36 +8,6 @@ on:
   pull_request:
 
 jobs:
-
-  build:
-    name: Build charms
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v21.0.0
-    strategy:
-      fail-fast: false
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-metadata-writer
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    with:
-      cache: ${{ github.event_name == 'pull_request' }}
-      charmcraft-snap-channel: 3.x/edge
-      path-to-charm-directory: ./charms/${{ matrix.charm }}
-
-  tests:
-    name: Run Tests
-    needs: [build]
-    uses: ./.github/workflows/integrate.yaml
-    secrets: inherit
-
-  # publish runs in parallel with tests, as we always publish in this situation
-  publish-charm:
-    name: Publish Charm
-    needs: [build]
-    uses: ./.github/workflows/publish.yaml
-    secrets: inherit
+  on_pull_request:
+    name: Build, test, publish
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/pull_request.yaml@KF-6690-build-with-cache
