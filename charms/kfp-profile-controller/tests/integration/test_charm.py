@@ -48,19 +48,14 @@ KUBEFLOW_PROFILES_TRUST = True
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest):
-    built_charm_path = await ops_test.build_charm("./")
-    logger.info(f"Built charm {built_charm_path}")
-
-    image_path = METADATA["resources"]["oci-image"]["upstream-source"]
-    resources = {"oci-image": image_path}
-
+async def test_build_and_deploy(ops_test: OpsTest, request):
     # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
     await ops_test.model.deploy(
         entity_url=ADMISSION_WEBHOOK,
         channel=ADMISSION_WEBHOOK_CHANNEL,
         trust=ADMISSION_WEBHOOK_TRUST,
     )
+
     # TODO: The webhook charm must be active before the metacontroller is deployed, due to the bug
     # described here: https://github.com/canonical/metacontroller-operator/issues/86
     # Drop this wait_for_idle once the above issue is closed
@@ -72,8 +67,21 @@ async def test_build_and_deploy(ops_test: OpsTest):
         trust=METACONTROLLER_TRUST,
     )
 
+    # Deploy the charm under test
+    image_path = METADATA["resources"]["oci-image"]["upstream-source"]
+    resources = {"oci-image": image_path}
+    # Keep the option to run the integration tests locally
+    # by building the charm and then deploying
+    entity_url = (
+        await ops_test.build_charm("./")
+        if not (entity_url := request.config.getoption("--charm-path"))
+        else entity_url
+    )
+
     await ops_test.model.deploy(
-        built_charm_path, application_name=CHARM_NAME, resources=resources, trust=True
+        entity_url=entity_url,
+        resources=resources,
+        trust=True,
     )
 
     # Deploy required relations
