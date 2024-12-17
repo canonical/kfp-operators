@@ -3,7 +3,7 @@ name: On Pull Request
 # On pull_request, we:
 # * always publish to charmhub at latest/edge/branchname
 # * always run tests
-
+# * always run builds with cache
 on:
   pull_request:
 
