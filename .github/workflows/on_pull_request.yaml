@@ -8,6 +8,19 @@ on:
   pull_request:
 
 jobs:
-  on_pull_request:
-    name: Build, test, publish
+  get-paths-and-build:
+    name: Get charm paths and build with cache
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/pull_request.yaml@KF-6690-build-with-cache
+
+  tests:
+    name: Run Tests
+    needs: [get-paths-and-build]
+    uses: ./.github/workflows/integrate.yaml
+    secrets: inherit
+
+  # publish runs in parallel with tests, as we always publish in this situation
+  publish-charm:
+    name: Publish Charm
+    needs: [get-paths-and-build]
+    uses: ./.github/workflows/publish.yaml
+    secrets: inherit
