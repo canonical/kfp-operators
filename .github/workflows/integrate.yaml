@@ -122,12 +122,24 @@ jobs:
           # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
           charmcraft-channel: 3.x/stable
 
+      - name: Download packed charm(s)
+        id: download-charms
+        timeout-minutes: 5
+        uses: actions/download-artifact@v4
+        with:
+          pattern: packed-charm-cache-true-.-charms-${{ matrix.charm }}-*
+          merge-multiple: true
+
       - name: Integration tests
+        if: steps.download-charms.outcome == 'success'
         run: |
           # Requires the model to be called kubeflow due to
           # https://github.com/canonical/kfp-operators/issues/389
           juju add-model kubeflow
-          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow"
+          # Pass the path where the charm artefact is downloaded to the tox command
+          # FIXME: Right now the complete path is half hardcoded to <charm name>_ubuntu-20.04-amd64.charm
+          # We need to find a better way to dynamically get this value
+          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu-20.04-amd64.charm"
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
