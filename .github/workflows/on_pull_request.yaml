@@ -10,4 +10,4 @@ on:
 jobs:
   on_pull_request:
     name: Build, test, publish
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/pull_request.yaml@KF-6690-build-with-cache
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/pull-request-template.yaml@main
