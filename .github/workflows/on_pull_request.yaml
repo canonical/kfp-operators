@@ -10,7 +10,7 @@ on:
 jobs:
   get-paths-and-build:
     name: Get charm paths and build with cache
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get_charms_build_with_cache.yaml@KF-6690-build-with-cache
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get_charms_build_with_cache.yaml@main
 
   tests:
     name: Run Tests
