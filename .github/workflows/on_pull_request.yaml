@@ -10,8 +10,7 @@ on:
 jobs:
   get-paths-and-build:
     name: Get charm paths and build with cache
-    # Change KF-67140-update-build-charms-version -> main after canonical/charmed-kubeflow-workflows/pull/90 is merged
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get_charms_build_with_cache.yaml@KF-67140-update-build-charms-version
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get_charms_build_with_cache.yaml@main
 
   tests:
     name: Run Tests
