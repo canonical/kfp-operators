@@ -131,7 +131,6 @@ jobs:
           merge-multiple: true
 
       - name: Integration tests
-        if: steps.download-charms.outcome == 'success'
         run: |
           # Requires the model to be called kubeflow due to
           # https://github.com/canonical/kfp-operators/issues/389

@@ -56,7 +56,6 @@ class SomeCharm(CharmBase):
     # ...
 ```
 """
-
 import os
 from dataclasses import dataclass, asdict
 import json
@@ -79,7 +78,7 @@ LIBAPI = 0
 LIBPATCH = 3
 
 
-DASHBOARD_LINK_LOCATIONS = ["menu", "external", "quick", "documentation"]
+DASHBOARD_LINK_LOCATIONS = ['menu', 'external', 'quick', 'documentation']
 DASHBOARD_LINKS_FIELD = "dashboard_links"
 
 
@@ -110,9 +109,7 @@ class DashboardLink:
     def __post_init__(self):
         """Validate that location is one of the accepted values."""
         if self.location not in DASHBOARD_LINK_LOCATIONS:
-            raise ValueError(
-                f"location must be one of {DASHBOARD_LINK_LOCATIONS} - got '{self.location}'."
-            )
+            raise ValueError(f"location must be one of {DASHBOARD_LINK_LOCATIONS} - got '{self.location}'.")
 
 
 class KubeflowDashboardLinksUpdatedEvent(RelationEvent):
