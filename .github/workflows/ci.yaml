@@ -1,19 +1,25 @@
-# reusable workflow triggered by other actions
-name: CI
+name: Tests
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 on:
+  pull_request:
+  schedule:
+    - cron: '0 8 * * TUE'
+  # Triggered on push by .github/workflows/release.yaml
   workflow_call:
-    secrets:
-      CHARMCRAFT_CREDENTIALS:
-        required: true
-    inputs:
+    outputs:
       artifact-prefix:
-        description: |
-          Prefix for charm package GitHub artifact(s)
-
-          Use canonical/data-platform-workflows build_charm.yaml to build the charm(s)
-        required: true
-        type: string
+        description: build_charm.yaml `artifact-prefix` output
+        value: ${{ jobs.build.outputs.artifact-prefix }}
+      charm-paths:
+        description: paths for all charms in this repo
+        value: ${{ jobs.get-charm-paths-channel.outputs.charm-paths }}
+      channel:
+        description: Charmhub channel the charms are released to
+        value: ${{ jobs.get-charm-paths-channel.outputs.charm-channel }}
 
 jobs:
   lib-check:
@@ -29,7 +35,7 @@ jobs:
           - kfp-ui
           - kfp-viewer
           - kfp-viz
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@kf-6725-use-charmcraft-3.x-edge-check-libs
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@main
     secrets: inherit
     with:
         charm-path: ./charms/${{ matrix.charm }}
@@ -94,9 +100,58 @@ jobs:
       # So the model's name must be kubeflow
       # See: https://github.com/kubeflow/kubeflow/issues/6136
       model: kubeflow
-        
+
+  get-charm-paths-channel:
+    name: Get charm paths and charmhub channel
+    runs-on: ubuntu-latest
+    outputs:
+      charm-paths: ${{ steps.get-charm-paths.outputs.charm-paths }}
+      charm-channel: ${{ steps.select-channel.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get paths for all charms in this repo
+        id: get-charm-paths
+        uses: canonical/kubeflow-ci/actions/get-charm-paths@main
+      - name: Select charmhub channel
+        uses: canonical/charming-actions/channel@2.6.2
+        id: select-channel
+
+  build:
+    strategy:
+      matrix:
+        charm: ${{ fromJSON(needs.get-charm-paths-channel.outputs.charm-paths) }}
+    name: Build charm | ${{ matrix.charm }}
+    needs:
+      - get-charm-paths-channel
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v29.0.0
+    with:
+      charmcraft-snap-channel: latest/candidate  # TODO: remove after charmcraft 3.3 stable release
+      path-to-charm-directory: ${{ matrix.charm }}
+
+  release:
+    strategy:
+      matrix:
+        charm: ${{ fromJSON(needs.get-charm-paths-channel.outputs.charm-paths) }}
+    name: Release charm to Charmhub branch | ${{ matrix.charm }}
+    if: ${{ github.event_name == 'pull_request' }}
+    needs:
+      - build
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v29.0.0
+    with:
+      charmcraft-snap-channel: latest/candidate  # TODO: remove after charmcraft 3.3 stable release
+      channel: ${{ needs.get-charm-paths-channel.outputs.charm-channel }}
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
+      path-to-charm-directory: ${{ matrix.charm }}
+      create-git-tags: false
+    secrets:
+      charmhub-token: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
+
   integration:
     name: Integration tests (microk8s)
+    needs:
+      - build
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -134,7 +189,7 @@ jobs:
         timeout-minutes: 5
         uses: actions/download-artifact@v4
         with:
-          pattern: ${{ inputs.artifact-prefix }}-*
+          pattern: ${{ needs.build.outputs.artifact-prefix }}-*
           merge-multiple: true
 
       - name: Integration tests
@@ -143,7 +198,7 @@ jobs:
           # https://github.com/canonical/kfp-operators/issues/389
           juju add-model kubeflow
           # Pass the path where the charm artefact is downloaded to the tox command
-          # FIXME: Right now the complete path is half hardcoded to <charm name>_ubuntu-20.04-amd64.charm
+          # FIXME: Right now the complete path is half hardcoded to <charm name>_ubuntu@20.04-amd64.charm
           # We need to find a better way to dynamically get this value
           sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@20.04-amd64.charm"
 
