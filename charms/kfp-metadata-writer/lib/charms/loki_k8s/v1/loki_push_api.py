@@ -16,20 +16,24 @@ The provider side of the relation represents the server side, to which logs are 
 send log to Loki by implementing the consumer side of the `loki_push_api` relation interface.
 For instance, a Promtail or Grafana agent charm which needs to send logs to Loki.
 
-- `LogProxyConsumer`: This object can be used by any Charmed Operator which needs to
-send telemetry, such as logs, to Loki through a Log Proxy by implementing the consumer side of the
-`loki_push_api` relation interface.
+- `LogProxyConsumer`: DEPRECATED.
+This object can be used by any Charmed Operator which needs to send telemetry, such as logs, to
+Loki through a Log Proxy by implementing the consumer side of the `loki_push_api` relation
+interface.
+In order to be able to control the labels on the logs pushed this object adds a Pebble layer
+that runs Promtail in the workload container, injecting Juju topology labels into the
+logs on the fly.
+This object is deprecated. Consider migrating to LogForwarder with the release of Juju 3.6 LTS.
 
 - `LogForwarder`: This object can be used by any Charmed Operator which needs to send the workload
 standard output (stdout) through Pebble's log forwarding mechanism, to Loki endpoints through the
 `loki_push_api` relation interface.
+In order to be able to control the labels on the logs pushed this object updates the pebble layer's
+"log-targets" section with Juju topology.
 
 Filtering logs in Loki is largely performed on the basis of labels. In the Juju ecosystem, Juju
 topology labels are used to uniquely identify the workload which generates telemetry like logs.
 
-In order to be able to control the labels on the logs pushed this object adds a Pebble layer
-that runs Promtail in the workload container, injecting Juju topology labels into the
-logs on the fly.
 
 ## LokiPushApiProvider Library Usage
 
@@ -42,13 +46,14 @@ and three optional arguments.
 - `charm`: A reference to the parent (Loki) charm.
 
 - `relation_name`: The name of the relation that the charm uses to interact
-  with its clients, which implement `LokiPushApiConsumer` or `LogProxyConsumer`.
+  with its clients, which implement `LokiPushApiConsumer` `LogForwarder`, or `LogProxyConsumer`
+  (note that LogProxyConsumer is deprecated).
 
   If provided, this relation name must match a provided relation in metadata.yaml with the
   `loki_push_api` interface.
 
-  The default relation name is "logging" for `LokiPushApiConsumer` and "log-proxy" for
-  `LogProxyConsumer`.
+  The default relation name is "logging" for `LokiPushApiConsumer` and `LogForwarder`, and
+  "log-proxy" for `LogProxyConsumer` (note that LogProxyConsumer is deprecated).
 
   For example, a provider's `metadata.yaml` file may look as follows:
 
@@ -222,6 +227,9 @@ labels in charm code. See :func:`LogProxyConsumer._scrape_configs` for an exampl
 to do this with promtail.
 
 ## LogProxyConsumer Library Usage
+
+> Note: This object is deprecated. Consider migrating to LogForwarder with the release of Juju 3.6
+> LTS.
 
 Let's say that we have a workload charm that produces logs, and we need to send those logs to a
 workload implementing the `loki_push_api` interface, such as `Loki` or `Grafana Agent`.
@@ -472,6 +480,25 @@ Loki Push API and alert rules.
 
 Units of consumer charm send their alert rules over app relation data using the `alert_rules`
 key.
+
+## Charm logging
+The `charms.loki_k8s.v0.charm_logging` library can be used in conjunction with this one to configure python's
+logging module to forward all logs to Loki via the loki-push-api interface.
+
+```python
+from lib.charms.loki_k8s.v0.charm_logging import log_charm
+from lib.charms.loki_k8s.v1.loki_push_api import charm_logging_config, LokiPushApiConsumer
+
+@log_charm(logging_endpoint="my_endpoints", server_cert="cert_path")
+class MyCharm(...):
+    _cert_path = "/path/to/cert/on/charm/container.crt"
+    def __init__(self, ...):
+        self.logging = LokiPushApiConsumer(...)
+        self.my_endpoints, self.cert_path = charm_logging_config(
+            self.logging, self._cert_path)
+```
+
+Do this, and all charm logs will be forwarded to Loki as soon as a relation is formed.
 """
 
 import json
@@ -519,7 +546,7 @@ LIBAPI = 1
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 10
+LIBPATCH = 13
 
 PYDEPS = ["cosl"]
 
@@ -569,7 +596,11 @@ HTTP_LISTEN_PORT_START = 9080  # even start port
 GRPC_LISTEN_PORT_START = 9095  # odd start port
 
 
-class RelationNotFoundError(ValueError):
+class LokiPushApiError(Exception):
+    """Base class for errors raised by this module."""
+
+
+class RelationNotFoundError(LokiPushApiError):
     """Raised if there is no relation with the given name."""
 
     def __init__(self, relation_name: str):
@@ -579,7 +610,7 @@ class RelationNotFoundError(ValueError):
         super().__init__(self.message)
 
 
-class RelationInterfaceMismatchError(Exception):
+class RelationInterfaceMismatchError(LokiPushApiError):
     """Raised if the relation with the given name has a different interface."""
 
     def __init__(
@@ -599,7 +630,7 @@ class RelationInterfaceMismatchError(Exception):
         super().__init__(self.message)
 
 
-class RelationRoleMismatchError(Exception):
+class RelationRoleMismatchError(LokiPushApiError):
     """Raised if the relation with the given name has a different direction."""
 
     def __init__(
@@ -1593,7 +1624,8 @@ class LokiPushApiConsumer(ConsumerBase):
         the Loki API endpoint to push logs. It is intended for workloads that can speak
         loki_push_api (https://grafana.com/docs/loki/latest/api/#push-log-entries-to-loki), such
         as grafana-agent.
-        (If you only need to forward a few workload log files, then use LogProxyConsumer.)
+        (If you need to forward workload stdout logs, then use LogForwarder; if you need to forward
+        log files, then use LogProxyConsumer.)
 
         `LokiPushApiConsumer` can be instantiated as follows:
 
@@ -1767,6 +1799,9 @@ class LogProxyEvents(ObjectEvents):
 
 class LogProxyConsumer(ConsumerBase):
     """LogProxyConsumer class.
+
+    > Note: This object is deprecated. Consider migrating to LogForwarder with the release of Juju
+    > 3.6 LTS.
 
     The `LogProxyConsumer` object provides a method for attaching `promtail` to
     a workload in order to generate structured logging data from applications
@@ -2543,14 +2578,18 @@ class LogForwarder(ConsumerBase):
 
         self._update_endpoints(event.workload, loki_endpoints)
 
-    def _update_logging(self, _):
+    def _update_logging(self, event: RelationEvent):
         """Update the log forwarding to match the active Loki endpoints."""
         if not (loki_endpoints := self._retrieve_endpoints_from_relation()):
             logger.warning("No Loki endpoints available")
             return
 
         for container in self._charm.unit.containers.values():
-            self._update_endpoints(container, loki_endpoints)
+            if container.can_connect():
+                self._update_endpoints(container, loki_endpoints)
+            # else: `_update_endpoints` will be called on pebble-ready anyway.
+
+        self._handle_alert_rules(event.relation)
 
     def _retrieve_endpoints_from_relation(self) -> dict:
         loki_endpoints = {}
@@ -2736,3 +2775,49 @@ class CosTool:
         result = subprocess.run(cmd, check=True, stdout=subprocess.PIPE)
         output = result.stdout.decode("utf-8").strip()
         return output
+
+
+def charm_logging_config(
+    endpoint_requirer: LokiPushApiConsumer, cert_path: Optional[Union[Path, str]]
+) -> Tuple[Optional[List[str]], Optional[str]]:
+    """Utility function to determine the charm_logging config you will likely want.
+
+    If no endpoint is provided:
+     disable charm logging.
+    If https endpoint is provided but cert_path is not found on disk:
+     disable charm logging.
+    If https endpoint is provided and cert_path is None:
+     ERROR
+    Else:
+     proceed with charm logging (with or without tls, as appropriate)
+
+    Args:
+        endpoint_requirer: an instance of LokiPushApiConsumer.
+        cert_path: a path where a cert is stored.
+
+    Returns:
+        A tuple with (optionally) the values of the endpoints and the certificate path.
+
+    Raises:
+         LokiPushApiError: if some endpoint are http and others https.
+    """
+    endpoints = [ep["url"] for ep in endpoint_requirer.loki_endpoints]
+    if not endpoints:
+        return None, None
+
+    https = tuple(endpoint.startswith("https://") for endpoint in endpoints)
+
+    if all(https):  # all endpoints are https
+        if cert_path is None:
+            raise LokiPushApiError("Cannot send logs to https endpoints without a certificate.")
+        if not Path(cert_path).exists():
+            # if endpoints is https BUT we don't have a server_cert yet:
+            # disable charm logging until we do to prevent tls errors
+            return None, None
+        return endpoints, str(cert_path)
+
+    if all(not x for x in https):  # all endpoints are http
+        return endpoints, None
+
+    # if there's a disagreement, that's very weird:
+    raise LokiPushApiError("Some endpoints are http, some others are https. That's not good.")
