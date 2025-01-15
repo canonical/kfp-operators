@@ -68,7 +68,7 @@ jobs:
 
   terraform-checks:
     name: Terraform
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@kf-6665-fix-tf-wf
     strategy:
       matrix:
         charm:
