@@ -23,7 +23,6 @@ jobs:
 
   build:
     name: Build charms
-    needs: [get-charm-paths]
     uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v24.0.5
     needs: get-charm-paths
     strategy:
@@ -37,13 +36,13 @@ jobs:
 
   tests:
     name: Run Tests
-    needs: [build]
+    needs: build
     uses: ./.github/workflows/integrate.yaml
     secrets: inherit
 
   # publish runs in parallel with tests, as we always publish in this situation
   publish-charm:
     name: Publish Charm
-    needs: [build]
+    needs: build
     uses: ./.github/workflows/publish.yaml
     secrets: inherit
