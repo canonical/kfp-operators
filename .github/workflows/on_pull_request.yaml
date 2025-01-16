@@ -8,9 +8,31 @@ on:
   pull_request:
 
 jobs:
-  get-paths-and-build:
-    name: Get charm paths and build with cache
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get_charms_build_with_cache.yaml@main
+  get-charm-paths:
+    name: Generate the Charm Matrix content
+    runs-on: ubuntu-latest
+    outputs:
+      charm_paths: ${{ steps.get-charm-paths.outputs.charm-paths }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get paths for all charms in this repo
+        id: get-charm-paths
+        uses: canonical/kubeflow-ci/actions/get-charm-paths@main
+
+  build:
+    name: Build charms
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v24.0.5
+    needs: get-charm-paths
+    strategy:
+      fail-fast: false
+      matrix:
+        charm: ${{ fromJson(needs.get-charm-paths.outputs.charm_paths) }}
+    with:
+      cache: true 
+      charmcraft-snap-channel: 3.x/stable
+      path-to-charm-directory: ./${{ matrix.charm }}
 
   tests:
     name: Run Tests
