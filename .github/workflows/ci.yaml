@@ -17,7 +17,7 @@ on:
       charm-paths:
         value: ${{ jobs.get-charm-paths.outputs.charm-paths }}
       channel:
-        value ${{ jobs.get-charm-paths.outputs.channel }}
+        value: ${{ jobs.get-charm-paths.outputs.channel }}
 
 jobs:
   lib-check:
