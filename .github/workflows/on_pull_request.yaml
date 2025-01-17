@@ -23,16 +23,15 @@ jobs:
 
   build:
     name: Build charms
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v24.0.5
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v29.0.1
     needs: get-charm-paths
     strategy:
-      fail-fast: false
       matrix:
         charm: ${{ fromJson(needs.get-charm-paths.outputs.charm_paths) }}
     with:
-      cache: true 
-      charmcraft-snap-channel: 3.x/stable
-      path-to-charm-directory: ./${{ matrix.charm }}
+      # Update to 3.x/stable once the latest/candidate is released to that track
+      charmcraft-snap-channel: latest/candidate
+      path-to-charm-directory: ${{ matrix.charm }}
 
   tests:
     name: Run Tests
