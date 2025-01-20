@@ -134,7 +134,7 @@ jobs:
         timeout-minutes: 5
         uses: actions/download-artifact@v4
         with:
-          pattern: ${{ inputs.artifact-prefix }}-${{ matrix.charm }}-*
+          pattern: ${{ inputs.artifact-prefix }}-*
           merge-multiple: true
 
       - name: Integration tests
@@ -145,7 +145,7 @@ jobs:
           # Pass the path where the charm artefact is downloaded to the tox command
           # FIXME: Right now the complete path is half hardcoded to <charm name>_ubuntu-20.04-amd64.charm
           # We need to find a better way to dynamically get this value
-          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu-20.04-amd64.charm"
+          sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@20.04-amd64.charm"
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
