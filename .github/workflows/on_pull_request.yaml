@@ -38,6 +38,8 @@ jobs:
     needs: build
     uses: ./.github/workflows/integrate.yaml
     secrets: inherit
+    with:
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
 
   # publish runs in parallel with tests, as we always publish in this situation
   publish-charm:

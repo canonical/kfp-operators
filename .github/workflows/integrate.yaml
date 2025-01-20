@@ -6,6 +6,14 @@ on:
     secrets:
       CHARMCRAFT_CREDENTIALS:
         required: true
+    inputs:
+      artifact-prefix:
+        description: |
+          Prefix for charm package GitHub artifact(s)
+
+          Use canonical/data-platform-workflows build_charm.yaml to build the charm(s)
+        required: true
+        type: string
 
 jobs:
   lib-check:
@@ -126,7 +134,7 @@ jobs:
         timeout-minutes: 5
         uses: actions/download-artifact@v4
         with:
-          pattern: packed-charm-cache-true-.-charms-${{ matrix.charm }}-*
+          pattern: ${{ inputs.artifact-prefix }}-${{ matrix.charm }}-*
           merge-multiple: true
 
       - name: Integration tests
