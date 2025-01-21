@@ -12,7 +12,7 @@ jobs:
     name: Generate the Charm Matrix content
     runs-on: ubuntu-latest
     outputs:
-      charm_paths: ${{ steps.get-charm-paths.outputs.charm-paths }}
+      charm-paths: ${{ steps.get-charm-paths.outputs.charm-paths }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,15 +22,14 @@ jobs:
         uses: canonical/kubeflow-ci/actions/get-charm-paths@main
 
   build:
-    name: Build charm | ${{ matrix.charm }}
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v29.0.1
-    needs: get-charm-paths
     strategy:
       matrix:
-        charm: ${{ fromJSON(needs.get-charm-paths.outputs.charm_paths) }}
+        charm: ${{ fromJSON(needs.get-charm-paths.outputs.charm-paths) }}
+    name: Build charm | ${{ matrix.charm }}
+    needs:
+      - get-charm-paths
     with:
-      # Update to 3.x/stable once the latest/candidate is released to that track
-      charmcraft-snap-channel: latest/candidate
+      charmcraft-snap-channel: latest/candidate  # TODO: remove after charmcraft 3.3 stable release
       path-to-charm-directory: ${{ matrix.charm }}
 
   tests:
