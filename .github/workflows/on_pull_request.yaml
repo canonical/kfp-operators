@@ -28,6 +28,7 @@ jobs:
     name: Build charm | ${{ matrix.charm }}
     needs:
       - get-charm-paths
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v29.0.0
     with:
       charmcraft-snap-channel: latest/candidate  # TODO: remove after charmcraft 3.3 stable release
       path-to-charm-directory: ${{ matrix.charm }}
