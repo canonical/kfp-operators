@@ -48,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        charm-path: ${{ fromJson(needs.get-charm-paths.outputs.charm_paths_list) }}
+        charm-path: ${{ fromJSON(needs.get-charm-paths.outputs.charm_paths_list) }}
 
     steps:
       - name: Checkout

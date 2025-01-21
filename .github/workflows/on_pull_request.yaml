@@ -22,12 +22,12 @@ jobs:
         uses: canonical/kubeflow-ci/actions/get-charm-paths@main
 
   build:
-    name: Build charms
+    name: Build charm | ${{ matrix.charm }}
     uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v29.0.1
     needs: get-charm-paths
     strategy:
       matrix:
-        charm: ${{ fromJson(needs.get-charm-paths.outputs.charm_paths) }}
+        charm: ${{ fromJSON(needs.get-charm-paths.outputs.charm_paths) }}
     with:
       # Update to 3.x/stable once the latest/candidate is released to that track
       charmcraft-snap-channel: latest/candidate
