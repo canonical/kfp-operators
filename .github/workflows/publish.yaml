@@ -83,6 +83,12 @@ jobs:
           echo "setting output of tag_prefix=$tag_prefix"
           echo "::set-output name=tag_prefix::$tag_prefix"
 
+      # Required to charmcraft pack in non-destructive mode
+      - name: Setup lxd
+        uses: canonical/setup-lxd@v0.1.2
+        with:
+          channel: latest/stable
+
       - name: Upload charm to charmhub
         uses: canonical/charming-actions/upload-charm@2.6.2
         with:
