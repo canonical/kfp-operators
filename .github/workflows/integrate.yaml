@@ -130,7 +130,7 @@ jobs:
           sg snap_microk8s -c "tox -e ${{ matrix.charm }}-integration -- --model kubeflow"
 
       - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@kf-6783-fix-dump-charm-action
         if: always()
 
   test-bundle:
@@ -182,5 +182,5 @@ jobs:
       # Collect debug artefacts only on failure || cancelled as the CI for this repository
       # in particular struggles with storage limitations.
       - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@kf-6783-fix-dump-charm-action
         if: failure() || cancelled()
