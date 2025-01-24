@@ -44,5 +44,5 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@orfeas-k-test
         if: always()
