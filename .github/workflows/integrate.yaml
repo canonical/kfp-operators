@@ -24,4 +24,25 @@ jobs:
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@orfeas-k-test
         if: always()
-  
+
+  integration:
+    name: Integration tests (microk8s)
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        charm:
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-api
+          - kfp-schedwf
+          - kfp-viewer
+          - kfp-ui
+          - kfp-metadata-writer
+          - kfp-viz
+    steps:    
+      - uses: actions/checkout@v3
+
+      - name: Collect charm debug artifacts
+        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+        if: always()
