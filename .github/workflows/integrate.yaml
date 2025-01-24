@@ -20,26 +20,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-      - name: Echo
-        run: |
-          echo ${{github.job.run_id}}
-          echo github.job.run-name
-          echo ${{github.job.run-name}}
-          echo github.run-name
-          echo ${{github.run-name}}
-          echo github.action
-          echo ${{github.action}}
-          echo github.job
-          echo ${{github.job}}
-          echo github.run_number
-          echo ${{github.run_number}}
-          echo github.run_id
-          echo ${{github.run_id}}
-          echo github.job.run_id
-          echo ${{github.job.run_id}}
-          echo github.workflow
-          echo ${{github.workflow}}
-          echo "DONE"
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@orfeas-k-test
