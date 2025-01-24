@@ -40,6 +40,8 @@ jobs:
           echo ${{github.job.run_id}}
           echo github.workflow
           echo ${{github.workflow}}
+          echo github.job.container_id
+          echo ${{github.job.container_id}}
           echo "DONE"
 
       - name: Collect charm debug artifacts
