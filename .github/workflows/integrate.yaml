@@ -40,7 +40,7 @@ jobs:
           echo ${{github.job.run_id}}
           echo github.workflow
           echo ${{github.workflow}}
-          echo "DON"
+          echo "DONE"
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@orfeas-k-test
