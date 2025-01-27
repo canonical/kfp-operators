@@ -131,6 +131,8 @@ jobs:
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@kf-6783-fix-dump-charm-action
+        with:
+          artifact-prefix: ${{ matrix.charm }}
         if: always()
 
   test-bundle:
@@ -183,4 +185,6 @@ jobs:
       # in particular struggles with storage limitations.
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@kf-6783-fix-dump-charm-action
+        with:
+          artifact-prefix: ${{ matrix.sdk }}
         if: failure() || cancelled()
