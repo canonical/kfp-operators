@@ -208,6 +208,7 @@ jobs:
 
   test-bundle:
     name: Test the bundle
+    needs: build
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
