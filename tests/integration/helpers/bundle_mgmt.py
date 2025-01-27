@@ -23,7 +23,7 @@ def render_bundle(ops_test: OpsTest, bundle_path: Path, context: dict, no_build:
     """
     if no_build:
         context.update([("local_build", False)])
-    context.update(["cached_build", cached_build])
+    context.update([("cached_build", cached_build)])
     # Render the bundle and get its path
     # The pytest-operator will save it in `self.tmp_path / "bundles"`
     logger.debug(f"Rendering the bundle in {bundle_path} with context {context}")
