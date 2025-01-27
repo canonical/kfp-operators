@@ -10,7 +10,7 @@ from pytest_operator.plugin import OpsTest
 logger = logging.getLogger(__name__)
 
 
-def render_bundle(ops_test: OpsTest, bundle_path: Path, context: dict, no_build: bool) -> Path:
+def render_bundle(ops_test: OpsTest, bundle_path: Path, context: dict, no_build: bool, cached_build: bool) -> Path:
     """Render a templated bundle and return its file path.
 
     Args:
@@ -18,9 +18,12 @@ def render_bundle(ops_test: OpsTest, bundle_path: Path, context: dict, no_build:
         context (dict): Context mapping to render the bundle file.
         local_build (bool): Selector for rendering the bundle with locally built
             charms context (charm file path and resources).
+        cached_build (bool): Selector for rendering the bundle with cache built
+            charms context.
     """
     if no_build:
         context.update([("local_build", False)])
+    context.update(["cached_build", cached_build])
     # Render the bundle and get its path
     # The pytest-operator will save it in `self.tmp_path / "bundles"`
     logger.debug(f"Rendering the bundle in {bundle_path} with context {context}")
