@@ -46,3 +46,5 @@ jobs:
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@orfeas-k-test
         if: always()
+        with:
+          artifact-prefix: "${{ matrix.charm }}"
