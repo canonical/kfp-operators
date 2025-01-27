@@ -238,6 +238,14 @@ jobs:
           charmcraft-channel: latest/candidate # TODO: remove after charmcraft 3.3 stable release
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
+      - name: Download packed charm(s)
+        id: download-charms
+        timeout-minutes: 5
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ needs.build.outputs.artifact-prefix }}-*
+          merge-multiple: true
+
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
