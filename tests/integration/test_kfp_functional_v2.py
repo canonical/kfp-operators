@@ -8,7 +8,7 @@ from pathlib import Path
 
 from helpers.bundle_mgmt import render_bundle, deploy_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
-from helpers.localize_bundle import get_resources_from_charm_file
+from helpers.localize_bundle import update_charm_context
 from helpers.charmcraft import charmcraft_clean
 from kfp_globals import (
     CHARM_PATH_TEMPLATE,
@@ -86,10 +86,10 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # Find charms in the expected path if `--charms-path` is passed
     if charms_path := request.config.getoption("--charms-path"):
         for charm in KFP_CHARMS:
+            # NOTE: The full path for the charm is hardcoded here. It relies on the downloaded
+            # artifacts having the format below and existing in the exact path under `charms_path`.
             cached_charm = f"{charms_path}/{charm}/{charm}_ubuntu@20.04-amd64.charm"
-            charm_resources = get_resources_from_charm_file(cached_charm)
-            context.update([(f"{charm.replace('-', '_')}_resources", charm_resources)])
-            context.update([(f"{charm.replace('-', '_')}", cached_charm)])
+            update_charm_context(context, charm, cached_charm)
     # Otherwise build the charms with ops_test
     else:
         charms_to_build = {
@@ -102,9 +102,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         for charm_name, charm_path in charms_to_build.items():
             log.info(f" Building charm {charm_name}")
             built_charm = await ops_test.build_charm(charm_path)
-            charm_resources = get_resources_from_charm_file(built_charm)
-            context.update([(f"{charm_name.replace('-', '_')}_resources", charm_resources)])
-            context.update([(f"{charm_name.replace('-', '_')}", built_charm)])
+            update_charm_context(context, charm_name, built_charm)
 
         if charmcraft_clean_flag == True:
             charmcraft_clean(charms_to_build)
