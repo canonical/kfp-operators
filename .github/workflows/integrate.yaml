@@ -117,7 +117,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.29-strict/stable
+          channel: 1.31-strict/stable
           juju-channel: 3.6/stable
           # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
           charmcraft-channel: 3.x/stable
@@ -161,7 +161,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.29-strict/stable
+          channel: 1.31-strict/stable
           juju-channel: 3.6/stable
           # Pinned to 3.x/stable due to https://github.com/canonical/charmcraft/issues/1845
           charmcraft-channel: 3.x/stable
