@@ -43,7 +43,8 @@ This directory has the following structure:
 * Microk8s addons: metallb, hostpath-storage, dns
 > NOTE: Metallb is enabled with an arbitrary IP range 10.64.140.43-10.64.140.49
 * juju
-* charmcraft (only for testing with locally built charms)
+* charmcraft (only for testing the charms locally using option A)
+* charmcraftcache (only for testing the charms locally using option B)
 * tox
 * lxd (only for testing with locally built and if `destructive-mode` is not enabled)
 
@@ -57,11 +58,30 @@ Communication with the KFP API happens using the KFP Python SDK. A `kfp.client` 
 1. Create a `kubeflow` model with `juju add-model kubeflow`
 2. Run integration tests against the preferred bundle definition in `integration/bundles`
 
-```
-tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> --charms-path <built_charms_path> <--charmcraft-clean>
-```
+    Option A - Build charms with charmcraft
+
+    * Install charmcraft
+    * Run the tests with the command:
+    ```
+    tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> <--charmcraft-clean>
+    ```
+    This builds the charms sequentially with `charmcraft` through `ops_test.build_charm`, then deploys them.
+
+    Option B - Build charms with ccc
+    * Install [charmcraftcache](https://github.com/canonical/charmcraftcache?tab=readme-ov-file#installation)
+    * Go into each charm directory and pack the charm with `ccc`. For example:
+    ```
+    cd charms/kfp-api
+    ccc pack
+    ```
+    * Run the tests with the command:
+    ```
+    tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> --charms-path /charms/
+    ```
+    This immediately deploys the charms packed with `ccc` before running the tests.
 
 Where,
 * `--model` tells the testing framework which model to deploy charms to
 * `--bundle` is the path to a bundle template that's going to be used during the test execution
+* `--charms-path` is the path to the built charms when using option B
 * `--charmcraft-clean` tells the test suite whether to run `charmcraft clean` and delete the lxc instances after building the charms. If `--charms-path` is passed, this has no effect.
