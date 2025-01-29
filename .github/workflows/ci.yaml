@@ -137,6 +137,7 @@ jobs:
     name: Release charm to Charmhub branch | ${{ matrix.charm }}
     if: ${{ github.event_name == 'pull_request' }}
     needs:
+      - get-charm-paths-channel
       - build
     uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v29.0.0
     with:
@@ -204,10 +205,13 @@ jobs:
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+        with:
+          artifact-prefix: ${{ matrix.charm }}
         if: always()
 
   test-bundle:
     name: Test the bundle
+    needs: build
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -237,11 +241,19 @@ jobs:
           charmcraft-channel: latest/candidate # TODO: remove after charmcraft 3.3 stable release
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
+      - name: Download packed charm(s)
+        id: download-charms
+        timeout-minutes: 5
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ needs.build.outputs.artifact-prefix }}-*
+          merge-multiple: true
+
       - name: Run test
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2" --charmcraft-clean
+          sg snap_microk8s -c "tox -e bundle-integration-${{ matrix.sdk }} -- --model kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=./tests/integration/bundles/kfp_latest_edge.yaml.j2"
 
       - name: Get all
         run: kubectl get all -A
@@ -255,4 +267,6 @@ jobs:
       # in particular struggles with storage limitations.
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+        with:
+          artifact-prefix: ${{ matrix.sdk }}
         if: failure() || cancelled()
