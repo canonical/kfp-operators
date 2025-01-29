@@ -127,7 +127,6 @@ jobs:
       - get-charm-paths-channel
     uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v29.0.0
     with:
-      charmcraft-snap-channel: latest/candidate  # TODO: remove after charmcraft 3.3 stable release
       path-to-charm-directory: ${{ matrix.charm }}
 
   release:
@@ -141,7 +140,6 @@ jobs:
       - build
     uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v29.0.0
     with:
-      charmcraft-snap-channel: latest/candidate  # TODO: remove after charmcraft 3.3 stable release
       channel: ${{ needs.get-charm-paths-channel.outputs.charm-channel }}
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
       path-to-charm-directory: ${{ matrix.charm }}
@@ -183,7 +181,6 @@ jobs:
           provider: microk8s
           channel: 1.29-strict/stable
           juju-channel: 3.6/stable
-          charmcraft-channel: latest/candidate # TODO: remove after charmcraft 3.3 stable release
 
       - name: Download packed charm(s)
         id: download-charms
@@ -238,7 +235,6 @@ jobs:
           provider: microk8s
           channel: 1.29-strict/stable
           juju-channel: 3.6/stable
-          charmcraft-channel: latest/candidate # TODO: remove after charmcraft 3.3 stable release
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
       - name: Download packed charm(s)
