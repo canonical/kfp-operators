@@ -137,6 +137,7 @@ jobs:
     name: Release charm to Charmhub branch | ${{ matrix.charm }}
     if: ${{ github.event_name == 'pull_request' }}
     needs:
+      - get-charm-paths-channel
       - build
     uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v29.0.0
     with:
