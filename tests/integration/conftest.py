@@ -111,3 +111,7 @@ def pytest_addoption(parser: Parser):
         help="Whether to run charmcraft clean and delete lxc instances created by charmcraft."
         "It defaults to False."
     )
+    parser.addoption(
+        "--charms-path",
+        help="Path to directory where charm files are stored.",
+    )

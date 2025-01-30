@@ -43,37 +43,6 @@ applications:
     channel: 1.7/stable
     scale: 1
     trust: true
-{%- if local_build == false %}
-  kfp-api:
-    charm: kfp-api
-    channel: 2.0-alpha.7/stable
-    scale: 1
-    trust: true
-  kfp-persistence:
-    charm: kfp-persistence
-    channel: 2.0-alpha.7/stable
-    scale: 1
-  kfp-profile-controller:
-    charm: kfp-profile-controller
-    channel: 2.0-alpha.7/stable
-    scale: 1
-  kfp-schedwf:
-    charm: kfp-schedwf
-    channel: 2.0-alpha.7/stable
-    scale: 1
-  kfp-ui:
-    charm: kfp-ui
-    channel: 2.0-alpha.7/stable
-    scale: 1
-  kfp-viewer:
-    charm: kfp-viewer
-    channel: 2.0-alpha.7/stable
-    scale: 1
-  kfp-viz:
-    charm: kfp-viz
-    channel: 2.0-alpha.7/stable
-    scale: 1
-{% else %}
   kfp-api:
     charm: {{ kfp_api }}
     resources: {{ kfp_api_resources }}
@@ -103,7 +72,6 @@ applications:
     charm: {{ kfp_viz }}
     resources: {{ kfp_viz_resources }}
     scale: 1
-{%- endif %}
 relations:
 - - kfp-api:kfp-api
   - kfp-persistence:kfp-api
