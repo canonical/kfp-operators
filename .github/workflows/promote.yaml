@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Release charm to channel
         # TODO: use canonical/charming-actions/promote-charm?
-        uses: canonical/charming-actions/release-charm@2.6.2
+        uses: canonical/charming-actions/release-charm@2.7.0
         with:
           credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
