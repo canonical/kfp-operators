@@ -64,7 +64,7 @@ class TestCharm:
         )
 
         # FIXME: we should probably stop deploying mariadb as:
-        # 1) The team has acceped and started using mysql-k8s more extensively
+        # 1) The team has accepted and started using mysql-k8s more extensively
         # 2) The repository level integration tests use mysql-k8s only
         await ops_test.model.deploy(
             entity_url=MARIADB_CHARM,

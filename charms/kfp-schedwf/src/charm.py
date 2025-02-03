@@ -65,7 +65,7 @@ class KfpSchedwf(CharmBase):
         )
 
         # The service_name should be consistent with the rock predefined
-        # service name to be able to re-use it, do not change it unless
+        # service name to be able to reuse it, do not change it unless
         # it changes in the corresponding Rockcraft project.
         self.pebble_service_container = self.charm_reconciler.add(
             component=KfpSchedwfPebbleService(
