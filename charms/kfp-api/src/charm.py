@@ -215,7 +215,7 @@ class KfpApiOperator(CharmBase):
                     "command": f"bash -c '{self._exec_command}'",
                     "startup": "enabled",
                     "environment": self.service_environment,
-                    "user": "_daemon_", # Upstream runs containers as non-root
+                    "user": "daemon", # Upstream runs containers as non-root
                     "on-check-failure": {"kfp-api-up": "restart"},
                 }
             },

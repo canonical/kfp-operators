@@ -49,7 +49,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
                         ' --namespace=""'
                         f" --logLevel={self.log_level}",
                         "environment": self.environment,
-                        "user": "_daemon_", # Upstream runs containers as non-root
+                        "user": "daemon", # Upstream runs containers as non-root
                     }
                 },
             }
