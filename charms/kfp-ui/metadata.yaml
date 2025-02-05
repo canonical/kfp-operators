@@ -11,7 +11,7 @@ resources:
   ml-pipeline-ui:
     type: oci-image
     description: OCI image for ml-pipeline-ui
-    upstream-source: charmedkubeflow/frontend:2.3.0-111c139
+    upstream-source: ghcr.io/kubeflow/kfp-frontend:2.4.0
 requires:
   object-storage:
     interface: object-storage
