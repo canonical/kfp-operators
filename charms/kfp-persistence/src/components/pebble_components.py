@@ -68,7 +68,7 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
                         "command": " ".join(command),
                         "startup": "enabled",
                         "environment": self._environment,
-                        "user": "daemon", # Upstream runs containers as non-root
+                        "user": "daemon",  # Upstream container runs as non-root
                     }
                 },
                 "checks": {
