@@ -46,6 +46,7 @@ class KfpViewerPebbleService(PebbleServiceComponent):
                         ),
                         "startup": "enabled",
                         "environment": self.environment,
+                        "user": "_daemon_",
                     }
                 },
             }

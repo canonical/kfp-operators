@@ -49,6 +49,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
                         ' --namespace=""'
                         f" --logLevel={self.log_level}",
                         "environment": self.environment,
+                        "user": "_daemon_",
                     }
                 },
             }

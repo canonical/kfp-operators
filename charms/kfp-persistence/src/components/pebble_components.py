@@ -68,6 +68,7 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
                         "command": " ".join(command),
                         "startup": "enabled",
                         "environment": self._environment,
+                        "user": "_daemon_",
                     }
                 },
                 "checks": {

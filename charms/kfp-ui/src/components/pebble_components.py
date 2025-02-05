@@ -98,6 +98,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             ),
                             "VIEWER_TENSORBOARD_TF_IMAGE_NAME": "tensorflow/tensorflow",
                         },
+                        "user": "_daemon_",
                     }
                 },
                 # TODO: Checks

@@ -20,6 +20,7 @@ class KfpVizPebbleService(PebbleServiceComponent):
                         "summary": "entry point for ml-pipeline-visualizationserver",
                         "command": "python3 server.py",  # Must be a string
                         "startup": "enabled",
+                        "user": "_daemon_",
                         "on-check-failure": {"kfp-viz-up": "restart"},
                     }
                 },

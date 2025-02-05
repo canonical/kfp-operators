@@ -62,6 +62,7 @@ class KfpMetadataWriterPebbleService(PebbleServiceComponent):
                         "command": "python3 -u /kfp/metadata_writer/metadata_writer.py",
                         "startup": "enabled",
                         "environment": environment,
+                        "user": "_daemon_",
                     }
                 },
             }
