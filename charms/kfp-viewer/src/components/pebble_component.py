@@ -46,7 +46,7 @@ class KfpViewerPebbleService(PebbleServiceComponent):
                         ),
                         "startup": "enabled",
                         "environment": self.environment,
-                        "user": "_daemon_",
+                        "user": "_daemon_", # Upstream runs containers as non-root
                     }
                 },
             }

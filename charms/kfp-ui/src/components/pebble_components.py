@@ -98,7 +98,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                             ),
                             "VIEWER_TENSORBOARD_TF_IMAGE_NAME": "tensorflow/tensorflow",
                         },
-                        "user": "_daemon_",
+                        "user": "_daemon_", # Upstream runs containers as non-root
                     }
                 },
                 # TODO: Checks
