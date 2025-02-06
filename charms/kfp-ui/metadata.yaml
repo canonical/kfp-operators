@@ -120,3 +120,4 @@ provides:
           - service-port
     versions: [v1]
     __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
+charm-user: non-root

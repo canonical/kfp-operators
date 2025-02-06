@@ -32,3 +32,4 @@ requires:
   logging:
     interface: loki_push_api
     optional: true
+charm-user: non-root

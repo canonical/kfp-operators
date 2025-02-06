@@ -62,7 +62,7 @@ class KfpMetadataWriterPebbleService(PebbleServiceComponent):
                         "command": "python3 -u /kfp/metadata_writer/metadata_writer.py",
                         "startup": "enabled",
                         "environment": environment,
-                        "user": "daemon",  # Upstream container runs as non-root
+                        # "user": "daemon",  # Upstream container runs as non-root
                     }
                 },
             }
