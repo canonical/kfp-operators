@@ -52,12 +52,12 @@ options:
   launcher-image:
     type: string
     # Source: https://github.com/kubeflow/pipelines/blob/2.3.0/backend/src/v2/compiler/argocompiler/container.go#L33
-    default: "gcr.io/ml-pipeline/kfp-launcher@sha256:bef55a344574a25c557256d7c66cb19edacfd2008d694e5b6bb5b612d59feae0"
+    default: "misohu/kfp-launcher:2.2.0"
     description: Launcher image used during a pipeline's steps.
   driver-image:
     type: string
     # Source: https://github.com/kubeflow/pipelines/blob/2.3.0/backend/src/v2/compiler/argocompiler/container.go#L35
-    default: "gcr.io/ml-pipeline/kfp-driver@sha256:dc8b56a2eb071f30409828a8884d621092e68385af11a6c06aa9e9fbcfbb19de"
+    default: "misohu/kfp-driver:2.2.0"
     description: Driver image used during a pipeline's steps.
   log-level:
     type: string
