@@ -11,7 +11,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: charmedkubeflow/scheduledworkflow:2.3.0-74164db
+    upstream-source: ghcr.io/kubeflow/kfp-scheduled-workflow-controller:2.4.0
 requires:
   logging:
     interface: loki_push_api
