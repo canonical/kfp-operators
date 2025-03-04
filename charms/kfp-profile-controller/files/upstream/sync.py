@@ -191,7 +191,7 @@ def server_factory(visualization_server_image,
                     "True" or "False"
             }
 
-            # Generate the desired child object(s).
+            # Generate the desired attachment object(s).
             desired_resources += [
                 {
                     "apiVersion": "v1",

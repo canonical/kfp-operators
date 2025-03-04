@@ -1,4 +1,4 @@
 {
-    "visualization_server": "gcr.io/ml-pipeline/visualization-server:2.0.3",
-    "frontend": "gcr.io/ml-pipeline/frontend:2.0.3"
+    "visualization_server": "ghcr.io/kubeflow/kfp-visualization-server:2.4.1",
+    "frontend": "ghcr.io/kubeflow/kfp-frontend:2.4.1"
 }
