@@ -15,7 +15,8 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: ghcr.io/kubeflow/kfp-api-server:2.4.1
+    # The container's `user` needs to be updated when switching from upstream image to rock
+    upstream-source: docker.io/charmedkubeflow/api-server:2.4.1-7e49e8b
 requires:
   mysql:
     interface: mysql

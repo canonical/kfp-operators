@@ -4,7 +4,7 @@
 options:
   custom_images:
     type: string
-    # defaults should match src/defaults-custom-images.json
+    # default keys should match src/defaults-custom-images.json
     default: | 
       visualization_server : ''
       frontend : ''
