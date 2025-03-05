@@ -61,6 +61,7 @@ class KfpMetadataWriterPebbleService(PebbleServiceComponent):
                         "summary": "Entry point for kfp-metadata-writer oci-image",
                         "command": "python3 -u /kfp/metadata_writer/metadata_writer.py",
                         "startup": "enabled",
+                        "user": "_daemon_",  # This is needed only for rocks
                         "environment": environment,
                     }
                 },

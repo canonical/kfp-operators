@@ -67,6 +67,7 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
                         "summary": "persistenceagent service",
                         "command": " ".join(command),
                         "startup": "enabled",
+                        "user": "_daemon_",  # This is needed only for rocks
                         "environment": self._environment,
                     }
                 },

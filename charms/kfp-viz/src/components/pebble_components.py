@@ -21,6 +21,7 @@ class KfpVizPebbleService(PebbleServiceComponent):
                         "command": "python3 server.py",  # Must be a string
                         "startup": "enabled",
                         "on-check-failure": {"kfp-viz-up": "restart"},
+                        "user": "_daemon_",  # This is needed only for rocks
                     }
                 },
                 "checks": {

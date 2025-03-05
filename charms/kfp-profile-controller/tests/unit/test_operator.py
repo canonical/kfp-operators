@@ -40,10 +40,10 @@ EXPECTED_ENVIRONMENT = {
     "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
     "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
     "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
-    "FRONTEND_IMAGE": "ghcr.io/kubeflow/kfp-frontend",
-    "FRONTEND_TAG": KFP_IMAGES_VERSION,
-    "VISUALIZATION_SERVER_IMAGE": "ghcr.io/kubeflow/kfp-visualization-server",
-    "VISUALIZATION_SERVER_TAG": KFP_IMAGES_VERSION,
+    "FRONTEND_IMAGE": "docker.io/charmedkubeflow/frontend",
+    "FRONTEND_TAG": "2.4.1-5984eac",
+    "VISUALIZATION_SERVER_IMAGE": "docker.io/charmedkubeflow/visualization-server",
+    "VISUALIZATION_SERVER_TAG": "2.4.1-f7dc003",
 }
 
 

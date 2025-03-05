@@ -215,6 +215,7 @@ class KfpApiOperator(CharmBase):
                     "command": f"bash -c '{self._exec_command}'",
                     "startup": "enabled",
                     "environment": self.service_environment,
+                    "user": "_daemon_",  # This is needed only for rocks
                     "on-check-failure": {"kfp-api-up": "restart"},
                 }
             },
