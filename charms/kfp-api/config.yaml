@@ -27,7 +27,7 @@ options:
       when uploading a new version of a pipeline
   cache-image:
     type: string
-    default: "gcr.io/google-containers/busybox"
+    default: "registry.k8s.io/busybox"
     description: Which image to list as the backing image for a pipeline run step pulled from cache
   cache-enabled:
     type: boolean
@@ -51,13 +51,13 @@ options:
     description: Default name of object storage bucket.
   launcher-image:
     type: string
-    # Source: https://github.com/kubeflow/pipelines/blob/2.3.0/backend/src/v2/compiler/argocompiler/container.go#L33
-    default: "gcr.io/ml-pipeline/kfp-launcher@sha256:bef55a344574a25c557256d7c66cb19edacfd2008d694e5b6bb5b612d59feae0"
+    # Source: https://github.com/kubeflow/pipelines/blob/2.4.0/backend/src/v2/compiler/argocompiler/container.go#L33
+    default: "ghcr.io/kubeflow/kfp-launcher:2.4.1"
     description: Launcher image used during a pipeline's steps.
   driver-image:
     type: string
-    # Source: https://github.com/kubeflow/pipelines/blob/2.3.0/backend/src/v2/compiler/argocompiler/container.go#L35
-    default: "gcr.io/ml-pipeline/kfp-driver@sha256:dc8b56a2eb071f30409828a8884d621092e68385af11a6c06aa9e9fbcfbb19de"
+    # Source: https://github.com/kubeflow/pipelines/blob/2.4.0/backend/src/v2/compiler/argocompiler/container.go#L35
+    default: "ghcr.io/kubeflow/kfp-driver:2.4.1"
     description: Driver image used during a pipeline's steps.
   log-level:
     type: string

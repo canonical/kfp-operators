@@ -59,9 +59,9 @@ def get_settings_from_env(controller_port=None,
     Settings are pulled from the all-caps version of the setting name.  The
     following defaults are used if those environment variables are not set
     to enable backwards compatibility with previous versions of this script:
-        visualization_server_image: gcr.io/ml-pipeline/visualization-server
+        visualization_server_image: ghcr.io/kubeflow/kfp-visualization-server
         visualization_server_tag: value of KFP_VERSION environment variable
-        frontend_image: gcr.io/ml-pipeline/frontend
+        frontend_image: ghcr.io/kubeflow/kfp-frontend
         frontend_tag: value of KFP_VERSION environment variable
         disable_istio_sidecar: Required (no default)
         minio_access_key: Required (no default)
@@ -79,11 +79,11 @@ def get_settings_from_env(controller_port=None,
 
     settings["visualization_server_image"] = \
         visualization_server_image or \
-        os.environ.get("VISUALIZATION_SERVER_IMAGE", "gcr.io/ml-pipeline/visualization-server")
+        os.environ.get("VISUALIZATION_SERVER_IMAGE", "ghcr.io/kubeflow/kfp-visualization-server")
 
     settings["frontend_image"] = \
         frontend_image or \
-        os.environ.get("FRONTEND_IMAGE", "gcr.io/ml-pipeline/frontend")
+        os.environ.get("FRONTEND_IMAGE", "ghcr.io/kubeflow/kfp-frontend")
 
     # Look for specific tags for each image first, falling back to
     # previously used KFP_VERSION environment variable for backwards
@@ -191,7 +191,7 @@ def server_factory(visualization_server_image,
                     "True" or "False"
             }
 
-            # Generate the desired child object(s).
+            # Generate the desired attachment object(s).
             desired_resources += [
                 {
                     "apiVersion": "v1",

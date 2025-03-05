@@ -43,7 +43,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                         # command should be updated each time we switch from upstream image to rock
                         #  - upsstream: "command": "node dist/server.js ../client/ 3000"
                         #  - rock: "command": "node /server/dist/server.js /client/ 3000"
-                        "command": "node /server/dist/server.js /client/ 3000",  # Must be a string
+                        "command": "node dist/server.js ../client/ 3000",
                         "startup": "enabled",
                         # TODO: are these still the correct settings?
                         "environment": {
