@@ -247,7 +247,6 @@ jobs:
         with:
           python-version: 3.8
 
-
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
