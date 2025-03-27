@@ -192,7 +192,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.31-strict/stable
+          channel: 1.32-strict/stable
           juju-channel: 3.6/stable
 
       - name: Download packed charm(s)
@@ -251,7 +251,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.31-strict/stable
+          channel: 1.32-strict/stable
           juju-channel: 3.6/stable
           microk8s-addons: "dns hostpath-storage rbac metallb:10.64.140.43-10.64.140.49"
 
