@@ -133,7 +133,7 @@ jobs:
     name: Build charm | ${{ matrix.charm }}
     needs:
       - get-charm-paths-channel
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v29.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v31.1.1
     with:
       path-to-charm-directory: ${{ matrix.charm }}
 
@@ -146,7 +146,7 @@ jobs:
     needs:
       - get-charm-paths-channel
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v29.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/release_charm.yaml@v31.1.1
     with:
       channel: ${{ needs.get-charm-paths-channel.outputs.charm-channel }}
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
