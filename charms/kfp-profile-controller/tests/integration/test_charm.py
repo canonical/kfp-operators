@@ -25,6 +25,9 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_NAME = METADATA["name"]
+ISTIO_PILOT = "istio-pilot"
+ISTIO_PILOT_CHANNEL = "latest/edge"
+ISTIO_PILOT_TRUST = True
 
 CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
 CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
@@ -100,6 +103,13 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
         trust=KUBEFLOW_PROFILES_TRUST,
     )
 
+    # The profile controller needs AuthorizationPolicies to create Profiles
+    # Deploy istio-pilot to provide the k8s cluster with this CRD
+    await ops_test.model.deploy(
+        entity_url=ISTIO_PILOT,
+        channel=ISTIO_PILOT_CHANNEL,
+        trust=ISTIO_PILOT_TRUST,
+    )
     # Wait for everything to deploy
     await ops_test.model.wait_for_idle(status="active", raise_on_blocked=False, timeout=60 * 10)
 
