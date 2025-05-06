@@ -1,0 +1,252 @@
+# HELP experiment_server_archive_requests The total number of ArchiveExperiment requests
+# TYPE experiment_server_archive_requests counter
+experiment_server_archive_requests 0
+# HELP experiment_server_create_requests The total number of CreateExperiment requests
+# TYPE experiment_server_create_requests counter
+experiment_server_create_requests 0
+# HELP experiment_server_delete_requests The total number of DeleteExperiment requests
+# TYPE experiment_server_delete_requests counter
+experiment_server_delete_requests 0
+# HELP experiment_server_get_requests The total number of GetExperiment requests
+# TYPE experiment_server_get_requests counter
+experiment_server_get_requests 68
+# HELP experiment_server_list_requests The total number of ListExperimentsV1 requests
+# TYPE experiment_server_list_requests counter
+experiment_server_list_requests 61
+# HELP experiment_server_run_count The current number of experiments in Kubeflow Pipelines instance
+# TYPE experiment_server_run_count gauge
+experiment_server_run_count 0
+# HELP experiment_server_unarchive_requests The total number of UnarchiveExperiment requests
+# TYPE experiment_server_unarchive_requests counter
+experiment_server_unarchive_requests 0
+# HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 2.9896e-05
+go_gc_duration_seconds{quantile="0.25"} 4.0096e-05
+go_gc_duration_seconds{quantile="0.5"} 5.3672e-05
+go_gc_duration_seconds{quantile="0.75"} 0.000104688
+go_gc_duration_seconds{quantile="1"} 0.005286742
+go_gc_duration_seconds_sum 0.011178565
+go_gc_duration_seconds_count 68
+# HELP go_goroutines Number of goroutines that currently exist.
+# TYPE go_goroutines gauge
+go_goroutines 109
+# HELP go_info Information about the Go environment.
+# TYPE go_info gauge
+go_info{version="go1.22.12"} 1
+# HELP go_memstats_alloc_bytes Number of bytes allocated and still in use.
+# TYPE go_memstats_alloc_bytes gauge
+go_memstats_alloc_bytes 1.8584072e+07
+# HELP go_memstats_alloc_bytes_total Total number of bytes allocated, even if freed.
+# TYPE go_memstats_alloc_bytes_total counter
+go_memstats_alloc_bytes_total 3.96043128e+08
+# HELP go_memstats_buck_hash_sys_bytes Number of bytes used by the profiling bucket hash table.
+# TYPE go_memstats_buck_hash_sys_bytes gauge
+go_memstats_buck_hash_sys_bytes 1.625433e+06
+# HELP go_memstats_frees_total Total number of frees.
+# TYPE go_memstats_frees_total counter
+go_memstats_frees_total 3.354016e+06
+# HELP go_memstats_gc_sys_bytes Number of bytes used for garbage collection system metadata.
+# TYPE go_memstats_gc_sys_bytes gauge
+go_memstats_gc_sys_bytes 4.194288e+06
+# HELP go_memstats_heap_alloc_bytes Number of heap bytes allocated and still in use.
+# TYPE go_memstats_heap_alloc_bytes gauge
+go_memstats_heap_alloc_bytes 1.8584072e+07
+# HELP go_memstats_heap_idle_bytes Number of heap bytes waiting to be used.
+# TYPE go_memstats_heap_idle_bytes gauge
+go_memstats_heap_idle_bytes 6.2169088e+07
+# HELP go_memstats_heap_inuse_bytes Number of heap bytes that are in use.
+# TYPE go_memstats_heap_inuse_bytes gauge
+go_memstats_heap_inuse_bytes 2.3748608e+07
+# HELP go_memstats_heap_objects Number of allocated objects.
+# TYPE go_memstats_heap_objects gauge
+go_memstats_heap_objects 154321
+# HELP go_memstats_heap_released_bytes Number of heap bytes released to OS.
+# TYPE go_memstats_heap_released_bytes gauge
+go_memstats_heap_released_bytes 5.644288e+07
+# HELP go_memstats_heap_sys_bytes Number of heap bytes obtained from system.
+# TYPE go_memstats_heap_sys_bytes gauge
+go_memstats_heap_sys_bytes 8.5917696e+07
+# HELP go_memstats_last_gc_time_seconds Number of seconds since 1970 of last garbage collection.
+# TYPE go_memstats_last_gc_time_seconds gauge
+go_memstats_last_gc_time_seconds 1.7460140833583992e+09
+# HELP go_memstats_lookups_total Total number of pointer lookups.
+# TYPE go_memstats_lookups_total counter
+go_memstats_lookups_total 0
+# HELP go_memstats_mallocs_total Total number of mallocs.
+# TYPE go_memstats_mallocs_total counter
+go_memstats_mallocs_total 3.508337e+06
+# HELP go_memstats_mcache_inuse_bytes Number of bytes in use by mcache structures.
+# TYPE go_memstats_mcache_inuse_bytes gauge
+go_memstats_mcache_inuse_bytes 7200
+# HELP go_memstats_mcache_sys_bytes Number of bytes used for mcache structures obtained from system.
+# TYPE go_memstats_mcache_sys_bytes gauge
+go_memstats_mcache_sys_bytes 15600
+# HELP go_memstats_mspan_inuse_bytes Number of bytes in use by mspan structures.
+# TYPE go_memstats_mspan_inuse_bytes gauge
+go_memstats_mspan_inuse_bytes 388160
+# HELP go_memstats_mspan_sys_bytes Number of bytes used for mspan structures obtained from system.
+# TYPE go_memstats_mspan_sys_bytes gauge
+go_memstats_mspan_sys_bytes 456960
+# HELP go_memstats_next_gc_bytes Number of heap bytes when next garbage collection will take place.
+# TYPE go_memstats_next_gc_bytes gauge
+go_memstats_next_gc_bytes 2.7324784e+07
+# HELP go_memstats_other_sys_bytes Number of bytes used for other system allocations.
+# TYPE go_memstats_other_sys_bytes gauge
+go_memstats_other_sys_bytes 941535
+# HELP go_memstats_stack_inuse_bytes Number of bytes in use by the stack allocator.
+# TYPE go_memstats_stack_inuse_bytes gauge
+go_memstats_stack_inuse_bytes 2.162688e+06
+# HELP go_memstats_stack_sys_bytes Number of bytes obtained from system for stack allocator.
+# TYPE go_memstats_stack_sys_bytes gauge
+go_memstats_stack_sys_bytes 2.162688e+06
+# HELP go_memstats_sys_bytes Number of bytes obtained from system.
+# TYPE go_memstats_sys_bytes gauge
+go_memstats_sys_bytes 9.53142e+07
+# HELP go_threads Number of OS threads created.
+# TYPE go_threads gauge
+go_threads 11
+# HELP job_server_create_requests The total number of CreateJob requests
+# TYPE job_server_create_requests counter
+job_server_create_requests 1
+# HELP job_server_delete_requests The total number of DeleteJob requests
+# TYPE job_server_delete_requests counter
+job_server_delete_requests 0
+# HELP job_server_disable_requests The total number of DisableJob requests
+# TYPE job_server_disable_requests counter
+job_server_disable_requests 1
+# HELP job_server_enable_requests The total number of EnableJob requests
+# TYPE job_server_enable_requests counter
+job_server_enable_requests 0
+# HELP job_server_get_requests The total number of GetJob requests
+# TYPE job_server_get_requests counter
+job_server_get_requests 8
+# HELP job_server_job_count The current number of jobs in Kubeflow Pipelines instance
+# TYPE job_server_job_count gauge
+job_server_job_count 1
+# HELP job_server_list_requests The total number of ListJobs requests
+# TYPE job_server_list_requests counter
+job_server_list_requests 10
+# HELP pipeline_server_create_requests The total number of CreatePipeline requests
+# TYPE pipeline_server_create_requests counter
+pipeline_server_create_requests 0
+# HELP pipeline_server_create_version_requests The total number of CreatePipelineVersion requests
+# TYPE pipeline_server_create_version_requests counter
+pipeline_server_create_version_requests 0
+# HELP pipeline_server_delete_requests The total number of DeletePipeline requests
+# TYPE pipeline_server_delete_requests counter
+pipeline_server_delete_requests 0
+# HELP pipeline_server_delete_version_requests The total number of DeletePipelineVersion requests
+# TYPE pipeline_server_delete_version_requests counter
+pipeline_server_delete_version_requests 0
+# HELP pipeline_server_get_requests The total number of GetPipeline requests
+# TYPE pipeline_server_get_requests counter
+pipeline_server_get_requests 14
+# HELP pipeline_server_get_version_requests The total number of GetPipelineVersion requests
+# TYPE pipeline_server_get_version_requests counter
+pipeline_server_get_version_requests 293
+# HELP pipeline_server_list_requests The total number of ListPipelines requests
+# TYPE pipeline_server_list_requests counter
+pipeline_server_list_requests 23
+# HELP pipeline_server_list_version_requests The total number of ListPipelineVersions requests
+# TYPE pipeline_server_list_version_requests counter
+pipeline_server_list_version_requests 12
+# HELP pipeline_server_pipeline_count The current number of pipelines in Kubeflow Pipelines instance
+# TYPE pipeline_server_pipeline_count gauge
+pipeline_server_pipeline_count 0
+# HELP pipeline_server_pipeline_version_count The current number of pipeline versions in Kubeflow Pipelines instance
+# TYPE pipeline_server_pipeline_version_count gauge
+pipeline_server_pipeline_version_count 2
+# HELP pipeline_server_update_default_version_requests The total number of UpdatePipelineDefaultVersion requests
+# TYPE pipeline_server_update_default_version_requests counter
+pipeline_server_update_default_version_requests 0
+# HELP pipeline_upload_requests The number of pipeline upload requests
+# TYPE pipeline_upload_requests counter
+pipeline_upload_requests 2
+# HELP pipeline_version_upload_requests The number of pipeline version upload requests
+# TYPE pipeline_version_upload_requests counter
+pipeline_version_upload_requests 2
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 4.27
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 65536
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 29
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 6.73792e+07
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1.74600774997e+09
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 2.09086464e+09
+# HELP process_virtual_memory_max_bytes Maximum amount of virtual memory available in bytes.
+# TYPE process_virtual_memory_max_bytes gauge
+process_virtual_memory_max_bytes 1.8446744073709552e+19
+# HELP promhttp_metric_handler_requests_in_flight Current number of scrapes being served.
+# TYPE promhttp_metric_handler_requests_in_flight gauge
+promhttp_metric_handler_requests_in_flight 1
+# HELP promhttp_metric_handler_requests_total Total number of scrapes by HTTP status code.
+# TYPE promhttp_metric_handler_requests_total counter
+promhttp_metric_handler_requests_total{code="200"} 17
+promhttp_metric_handler_requests_total{code="500"} 0
+promhttp_metric_handler_requests_total{code="503"} 0
+# HELP resource_manager_workflow_gc The number of gabarage-collected workflows
+# TYPE resource_manager_workflow_gc counter
+resource_manager_workflow_gc 0
+# HELP resource_manager_workflow_runs_failed The current number of failed workflows runs
+# TYPE resource_manager_workflow_runs_failed gauge
+resource_manager_workflow_runs_failed{profile="admin",workflow="runofrec820514d7gf-1-2342404449"} 1
+resource_manager_workflow_runs_failed{profile="admin",workflow="runofrec820514d7gf-10-455135875"} 1
+resource_manager_workflow_runs_failed{profile="admin",workflow="runofrec820514d7gf-2-2292071592"} 1
+resource_manager_workflow_runs_failed{profile="admin",workflow="runofrec820514d7gf-3-2308849211"} 1
+resource_manager_workflow_runs_failed{profile="admin",workflow="runofrec820514d7gf-4-2392737306"} 1
+resource_manager_workflow_runs_failed{profile="admin",workflow="runofrec820514d7gf-5-2409514925"} 2
+resource_manager_workflow_runs_failed{profile="admin",workflow="runofrec820514d7gf-6-2359182068"} 1
+resource_manager_workflow_runs_failed{profile="admin",workflow="runofrec820514d7gf-7-2375959687"} 1
+resource_manager_workflow_runs_failed{profile="admin",workflow="runofrec820514d7gf-8-2191405878"} 1
+resource_manager_workflow_runs_failed{profile="admin",workflow="runofrec820514d7gf-9-2208183497"} 1
+# HELP resource_manager_workflow_runs_success The current number of successfully workflows runs
+# TYPE resource_manager_workflow_runs_success gauge
+resource_manager_workflow_runs_success{profile="admin",workflow="Clone of Clone of Run of pipl (b0665)"} -1
+resource_manager_workflow_runs_success{profile="admin",workflow="hello-pipeline-9zmzs"} 1
+resource_manager_workflow_runs_success{profile="admin",workflow="hello-pipeline-mt42m"} 1
+resource_manager_workflow_runs_success{profile="admin",workflow="hello-pipeline-tmtw2"} 1
+resource_manager_workflow_runs_success{profile="admin",workflow="hello-pipeline-v4bf2"} 1
+# HELP run_server_archive_requests The total number of ArchiveRun requests
+# TYPE run_server_archive_requests counter
+run_server_archive_requests 1
+# HELP run_server_create_requests The total number of CreateRun requests
+# TYPE run_server_create_requests counter
+run_server_create_requests 5
+# HELP run_server_delete_requests The total number of DeleteRun requests
+# TYPE run_server_delete_requests counter
+run_server_delete_requests 1
+# HELP run_server_get_requests The total number of GetRun requests
+# TYPE run_server_get_requests counter
+run_server_get_requests 57
+# HELP run_server_list_requests The total number of ListRuns requests
+# TYPE run_server_list_requests counter
+run_server_list_requests 64
+# HELP run_server_read_artifact_requests The total number of ReadArtifact requests
+# TYPE run_server_read_artifact_requests counter
+run_server_read_artifact_requests 0
+# HELP run_server_report_metrics_requests The total number of ReportRunMetrics requests
+# TYPE run_server_report_metrics_requests counter
+run_server_report_metrics_requests 0
+# HELP run_server_retry_requests The total number of RetryRun requests
+# TYPE run_server_retry_requests counter
+run_server_retry_requests 1
+# HELP run_server_run_count The current number of runs in Kubeflow Pipelines instance
+# TYPE run_server_run_count gauge
+run_server_run_count 3
+# HELP run_server_terminate_requests The total number of TerminateRun requests
+# TYPE run_server_terminate_requests counter
+run_server_terminate_requests 1
+# HELP run_server_unarchive_requests The total number of UnarchiveRun requests
+# TYPE run_server_unarchive_requests counter
+run_server_unarchive_requests 0
