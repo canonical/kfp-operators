@@ -36,6 +36,8 @@ parts:
     after:
       - python-deps
     python-requirements: [requirements.txt]
+    build-environment:
+      - PIP_CONSTRAINT: constraints.txt
     build-packages:
       - libffi-dev  # Needed to build Python dependencies with Rust from source
       - libssl-dev  # Needed to build Python dependencies with Rust from source

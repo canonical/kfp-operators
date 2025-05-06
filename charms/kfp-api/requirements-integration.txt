@@ -37,7 +37,7 @@ cffi==1.17.1
     # via
     #   cryptography
     #   pynacl
-charmed-kubeflow-chisme==0.4.3
+charmed-kubeflow-chisme==0.4.6
     # via -r requirements-integration.in
 charset-normalizer==3.4.0
     # via requests
@@ -72,7 +72,9 @@ hpack==4.0.0
 httpcore==1.0.7
     # via httpx
 httpx==0.27.2
-    # via lightkube
+    # via
+    #   charmed-kubeflow-chisme
+    #   lightkube
 hvac==2.3.0
     # via juju
 hyperframe==6.0.1
