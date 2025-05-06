@@ -36,16 +36,16 @@ PodDefault = create_namespaced_resource(
     group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
 )
 
-ADMISSION_WEBHOOK_CHANNEL = "latest/edge"
+ADMISSION_WEBHOOK_CHANNEL = "1.10/stable"
 ADMISSION_WEBHOOK = "admission-webhook"
 ADMISSION_WEBHOOK_TRUST = True
-METACONTROLLER_CHANNEL = "latest/edge"
+METACONTROLLER_CHANNEL = "4.11/stable"
 METACONTROLLER = "metacontroller-operator"
 METACONTROLLER_TRUST = True
-MINIO_CHANNEL = "latest/edge"
+MINIO_CHANNEL = "ckf-1.10/stable"
 MINIO = "minio"
 MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
-KUBEFLOW_PROFILES_CHANNEL = "latest/edge"
+KUBEFLOW_PROFILES_CHANNEL = "1.10/stable"
 KUBEFLOW_PROFILES = "kubeflow-profiles"
 KUBEFLOW_PROFILES_TRUST = True
 

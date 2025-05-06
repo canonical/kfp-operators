@@ -20,7 +20,7 @@ APP_NAME = "kfp-metadata-writer"
 MLMD = "mlmd"
 # Note(rgildein): The latest/edge is required, since we require grpc relation to use
 # k8s-service interface. https://github.com/canonical/mlmd-operator/pull/72
-MLMD_CHANNEL = "latest/edge"
+MLMD_CHANNEL = "ckf-1.10/stable"
 
 log = logging.getLogger(__name__)
 
