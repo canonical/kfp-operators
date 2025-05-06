@@ -6,6 +6,8 @@ import logging
 import time
 from pathlib import Path
 
+from charmed_kubeflow_chisme.testing import generate_context_from_charm_spec_dict
+from charms_dependencies import CHARMS
 from helpers.bundle_mgmt import render_bundle, deploy_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import update_charm_context
@@ -106,6 +108,8 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         if charmcraft_clean_flag == True:
             charmcraft_clean(charms_to_build)
 
+    charms_dict_context = generate_context_from_charm_spec_dict(CHARMS)
+    context.update(charms_dict_context)
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(
         ops_test, bundle_path=bundlefile_path, context=context

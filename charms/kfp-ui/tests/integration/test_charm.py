@@ -10,13 +10,15 @@ from charmed_kubeflow_chisme.testing import (
     GRAFANA_AGENT_APP,
     assert_logging,
     deploy_and_assert_grafana_agent,
+    generate_context_from_charm_spec_dict,
 )
+from charms_dependencies import CHARMS
 from pytest_operator.plugin import OpsTest
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_ROOT = "."
-BUNDLE = Path(__file__).parent / "bundle.yaml"
-APP_NAME = "kfp-ui"
+BUNDLE_PATH = Path(__file__).parent / "bundle.yaml.j2"
+APP_NAME = METADATA["name"]
 
 log = logging.getLogger(__name__)
 
@@ -39,8 +41,9 @@ async def test_build_and_deploy_with_relations(ops_test: OpsTest, request):
         resources=resources,
         trust=True,
     )
-
-    await ops_test.model.deploy(BUNDLE, trust=True)
+    context = generate_context_from_charm_spec_dict(CHARMS)
+    rendered_bundle = ops_test.render_bundle(BUNDLE_PATH, context)
+    await ops_test.model.deploy(rendered_bundle, trust=True)
     await ops_test.model.integrate(f"{APP_NAME}:kfp-api", "kfp-api:kfp-api")
     await ops_test.model.integrate(f"{APP_NAME}:object-storage", "minio:object-storage")
 

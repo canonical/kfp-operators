@@ -14,6 +14,7 @@ from charmed_kubeflow_chisme.testing import (
     assert_logging,
     deploy_and_assert_grafana_agent,
 )
+from charms_dependencies import CHARMS
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource, create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
@@ -25,49 +26,37 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_NAME = METADATA["name"]
-ISTIO_PILOT = "istio-pilot"
-ISTIO_PILOT_CHANNEL = "latest/edge"
-ISTIO_PILOT_TRUST = True
-
 CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
 CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
+ADMISSION_WEBHOOK = CHARMS["admission-webhook"]
+ISTIO_PILOT = CHARMS["istio-pilot"]
+METACONTROLLER_OPERATOR = CHARMS["metacontroller-operator"]
+MINIO = CHARMS["minio"]
+KUBEFLOW_PROFILES = CHARMS["kubeflow-profiles"]
 
 PodDefault = create_namespaced_resource(
     group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
 )
-
-ADMISSION_WEBHOOK_CHANNEL = "latest/edge"
-ADMISSION_WEBHOOK = "admission-webhook"
-ADMISSION_WEBHOOK_TRUST = True
-METACONTROLLER_CHANNEL = "latest/edge"
-METACONTROLLER = "metacontroller-operator"
-METACONTROLLER_TRUST = True
-MINIO_CHANNEL = "latest/edge"
-MINIO = "minio"
-MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
-KUBEFLOW_PROFILES_CHANNEL = "latest/edge"
-KUBEFLOW_PROFILES = "kubeflow-profiles"
-KUBEFLOW_PROFILES_TRUST = True
 
 
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, request):
     # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
     await ops_test.model.deploy(
-        entity_url=ADMISSION_WEBHOOK,
-        channel=ADMISSION_WEBHOOK_CHANNEL,
-        trust=ADMISSION_WEBHOOK_TRUST,
+        entity_url=ADMISSION_WEBHOOK.charm,
+        channel=ADMISSION_WEBHOOK.channel,
+        trust=ADMISSION_WEBHOOK.trust,
     )
 
     # TODO: The webhook charm must be active before the metacontroller is deployed, due to the bug
     # described here: https://github.com/canonical/metacontroller-operator/issues/86
     # Drop this wait_for_idle once the above issue is closed
-    await ops_test.model.wait_for_idle(apps=[ADMISSION_WEBHOOK], status="active")
+    await ops_test.model.wait_for_idle(apps=[ADMISSION_WEBHOOK.charm], status="active")
 
     await ops_test.model.deploy(
-        entity_url=METACONTROLLER,
-        channel=METACONTROLLER_CHANNEL,
-        trust=METACONTROLLER_TRUST,
+        entity_url=METACONTROLLER_OPERATOR.charm,
+        channel=METACONTROLLER_OPERATOR.channel,
+        trust=METACONTROLLER_OPERATOR.trust,
     )
 
     # Deploy the charm under test
@@ -89,26 +78,26 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
 
     # Deploy required relations
     await ops_test.model.deploy(
-        entity_url=MINIO, config=MINIO_CONFIG, trust=True, channel=MINIO_CHANNEL
+        entity_url=MINIO.charm, config=MINIO.config, trust=MINIO.trust, channel=MINIO.channel
     )
     await ops_test.model.add_relation(
         f"{CHARM_NAME}:object-storage",
-        f"{MINIO}:object-storage",
+        f"{MINIO.charm}:object-storage",
     )
 
     # Deploy charms responsible for CRDs creation
     await ops_test.model.deploy(
-        entity_url=KUBEFLOW_PROFILES,
-        channel=KUBEFLOW_PROFILES_CHANNEL,
-        trust=KUBEFLOW_PROFILES_TRUST,
+        entity_url=KUBEFLOW_PROFILES.charm,
+        channel=KUBEFLOW_PROFILES.channel,
+        trust=KUBEFLOW_PROFILES.trust,
     )
 
     # The profile controller needs AuthorizationPolicies to create Profiles
     # Deploy istio-pilot to provide the k8s cluster with this CRD
     await ops_test.model.deploy(
-        entity_url=ISTIO_PILOT,
-        channel=ISTIO_PILOT_CHANNEL,
-        trust=ISTIO_PILOT_TRUST,
+        entity_url=ISTIO_PILOT.charm,
+        channel=ISTIO_PILOT.channel,
+        trust=ISTIO_PILOT.trust,
     )
     # Wait for everything to deploy
     await ops_test.model.wait_for_idle(status="active", raise_on_blocked=False, timeout=60 * 10)
@@ -267,7 +256,9 @@ async def test_minio_config_changed(ops_test: OpsTest):
     await ops_test.model.applications["minio"].set_config(
         {"access-key": minio_access_key, "secret-key": minio_secret_key}
     )
-    await ops_test.model.wait_for_idle(apps=[MINIO, CHARM_NAME], status="active", timeout=600)
+    await ops_test.model.wait_for_idle(
+        apps=[MINIO.charm, CHARM_NAME], status="active", timeout=600
+    )
 
     await assert_minio_secret(minio_access_key, minio_secret_key, ops_test)
 
