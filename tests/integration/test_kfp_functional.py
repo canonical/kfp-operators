@@ -126,7 +126,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
 async def test_upload_pipeline(kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
     # Upload a pipeline and get the server response
-    pipeline_name = f"test-pipeline-sdk"
+    pipeline_name = f"test-pipeline"
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
         uploadfile=SAMPLE_PIPELINE,
         name=pipeline_name,
@@ -150,7 +150,7 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2
     create_run_response = kfp_client.create_run_from_pipeline_package(
         pipeline_file=SAMPLE_PIPELINE,
         arguments={},
-        run_name=f"test-run-sdk",
+        run_name=f"test-run",
         experiment_name=experiment_response.display_name,
         namespace=KUBEFLOW_PROFILE_NAMESPACE,
     )
