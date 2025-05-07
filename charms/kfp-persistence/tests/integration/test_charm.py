@@ -85,7 +85,7 @@ class TestCharm:
             idle_period=30,
         )
 
-        await ops_test.model.integrate(f"{APP_NAME}:kfp-api", f"{KFP_API}:kfp-api")
+        await ops_test.model.integrate(f"{APP_NAME}:kfp-api", f"{KFP_API.charm}:kfp-api")
 
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME],

@@ -230,7 +230,7 @@ async def test_model_resources(ops_test: OpsTest):
     Verifies that the secret was created, decoded secret-key matches the minio config value,
     and that the pods are running.
     """
-    minio_config = await ops_test.model.applications[MINIO].get_config()
+    minio_config = await ops_test.model.applications[MINIO.charm].get_config()
 
     await assert_minio_secret(
         access_key=minio_config["access-key"]["value"],
