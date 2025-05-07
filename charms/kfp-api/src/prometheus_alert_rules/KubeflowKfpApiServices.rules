@@ -26,9 +26,9 @@ groups:
 - name: KfpWorkflowAlerts
   rules:
   - alert: KFP_Failed_Workflow_Runs
-  	expr: resource_manager_workflow_runs_failed > 5
-  	for: 5m
-  	labels:
+    expr: resource_manager_workflow_runs_failed > 5
+    for: 5m
+    labels:
       severity: critical
     annotations:
       description: "There are currently more than 5 failed workflow runs."
