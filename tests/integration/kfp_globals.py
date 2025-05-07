@@ -21,10 +21,7 @@ KFP_CHARMS = [
 
 # Variables for uploading/creating pipelines/experiments/runs
 SAMPLE_PIPELINES_PATH = f"{basedir}/tests/integration/pipelines"
-SAMPLE_PIPELINE = {
-    "v1": f"{SAMPLE_PIPELINES_PATH}/sample_pipeline.yaml",
-    "v2": f"{SAMPLE_PIPELINES_PATH}/pipeline_container_no_input.yaml",
-}
+SAMPLE_PIPELINE = f"{SAMPLE_PIPELINES_PATH}/pipeline_container_no_input.yaml"
 
 SAMPLE_PIPELINE_NAME = "sample-pipeline"
 

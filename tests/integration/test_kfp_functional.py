@@ -30,7 +30,6 @@ from lightkube.generic_resource import create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
 from pytest_operator.plugin import OpsTest
 
-KFP_SDK_VERSION = "v2"
 log = logging.getLogger(__name__)
 
 
@@ -39,7 +38,7 @@ log = logging.getLogger(__name__)
 def upload_and_clean_pipeline_v2(kfp_client: kfp.Client):
     """Upload an arbitrary v2 pipeline and remove after test case execution."""
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
-        uploadfile=SAMPLE_PIPELINE[KFP_SDK_VERSION], name=SAMPLE_PIPELINE_NAME
+        uploadfile=SAMPLE_PIPELINE, name=SAMPLE_PIPELINE_NAME
     )
     # The newer pipelines backend requires the deletion of the pipelines versions
     # before we can actually remove the pipeline. This variable extracts the pipeline
@@ -127,9 +126,9 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
 async def test_upload_pipeline(kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
     # Upload a pipeline and get the server response
-    pipeline_name = f"test-pipeline-sdk-{KFP_SDK_VERSION}"
+    pipeline_name = f"test-pipeline"
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
-        uploadfile=SAMPLE_PIPELINE[KFP_SDK_VERSION],
+        uploadfile=SAMPLE_PIPELINE,
         name=pipeline_name,
     )
     # Upload a pipeline and get its ID
@@ -149,9 +148,9 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2
     # Create a run from a pipeline file (SAMPLE_PIPELINE) and an experiment (create_experiment).
     # This call uses the 'default' kubeflow service account to be able to edit Workflows
     create_run_response = kfp_client.create_run_from_pipeline_package(
-        pipeline_file=SAMPLE_PIPELINE[KFP_SDK_VERSION],
+        pipeline_file=SAMPLE_PIPELINE,
         arguments={},
-        run_name=f"test-run-sdk-{KFP_SDK_VERSION}",
+        run_name=f"test-run",
         experiment_name=experiment_response.display_name,
         namespace=KUBEFLOW_PROFILE_NAMESPACE,
     )
@@ -180,7 +179,7 @@ async def test_create_and_monitor_recurring_run(
     # This ScheduledWorkflow (Recurring Run) will run once every two seconds
     create_recurring_run_response = kfp_client.create_recurring_run(
         experiment_id=experiment_response.experiment_id,
-        job_name=f"recurring-job-{KFP_SDK_VERSION}",
+        job_name=f"recurring-job",
         pipeline_id=pipeline_response.pipeline_id,
         version_id=pipeline_version_id,
         enabled=True,
