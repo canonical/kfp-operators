@@ -14,18 +14,14 @@ from charmed_kubeflow_chisme.testing import (
     deploy_and_assert_grafana_agent,
     get_alert_rules,
 )
-from charms_dependencies import CHARMS
+from charms_dependencies import KFP_DB, KFP_VIZ, MINIO, MYSQL
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-KFP_VIZ = CHARMS["kfp-viz"]
-KFP_DB = CHARMS["charmed-osm-mariadb-k8s"]
 KFP_DB_APPLICATION_NAME = "kfp-db"
-MINIO = CHARMS["minio"]
-MYSQL = CHARMS["mysql-k8s"]
 
 
 class TestCharm:

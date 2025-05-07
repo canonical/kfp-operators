@@ -2,17 +2,15 @@
 
 from charmed_kubeflow_chisme.testing import CharmSpec
 
-CHARMS = {
-    "admission-webhook": CharmSpec(charm="admission-webhook", channel="latest/edge", trust=True),
-    "istio-pilot": CharmSpec(charm="istio-pilot", channel="latest/edge", trust=True),
-    "metacontroller-operator": CharmSpec(
-        charm="metacontroller-operator", channel="latest/edge", trust=True
-    ),
-    "minio": CharmSpec(
-        charm="minio",
-        channel="latest/edge",
-        trust=True,
-        config={"access-key": "minio", "secret-key": "minio-secret-key"},
-    ),
-    "kubeflow-profiles": CharmSpec(charm="kubeflow-profiles", channel="latest/edge", trust=True),
-}
+ADMISSION_WEBHOOK = CharmSpec(charm="admission-webhook", channel="latest/edge", trust=True)
+ISTIO_PILOT = CharmSpec(charm="istio-pilot", channel="latest/edge", trust=True)
+KUBEFLOW_PROFILES = CharmSpec(charm="kubeflow-profiles", channel="latest/edge", trust=True)
+METACONTROLLER_OPERATOR = CharmSpec(
+    charm="metacontroller-operator", channel="latest/edge", trust=True
+)
+MINIO = CharmSpec(
+    charm="minio",
+    channel="latest/edge",
+    trust=True,
+    config={"access-key": "minio", "secret-key": "minio-secret-key"},
+)

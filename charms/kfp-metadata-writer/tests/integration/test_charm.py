@@ -11,13 +11,12 @@ from charmed_kubeflow_chisme.testing import (
     assert_logging,
     deploy_and_assert_grafana_agent,
 )
-from charms_dependencies import CHARMS
+from charms_dependencies import MLMD
 from pytest_operator.plugin import OpsTest
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_ROOT = "."
 APP_NAME = METADATA["name"]
-MLMD = CHARMS["mlmd"]
 
 
 log = logging.getLogger(__name__)

@@ -14,7 +14,13 @@ from charmed_kubeflow_chisme.testing import (
     assert_logging,
     deploy_and_assert_grafana_agent,
 )
-from charms_dependencies import CHARMS
+from charms_dependencies import (
+    ADMISSION_WEBHOOK,
+    ISTIO_PILOT,
+    KUBEFLOW_PROFILES,
+    METACONTROLLER_OPERATOR,
+    MINIO,
+)
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource, create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
@@ -28,11 +34,6 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_NAME = METADATA["name"]
 CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
 CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
-ADMISSION_WEBHOOK = CHARMS["admission-webhook"]
-ISTIO_PILOT = CHARMS["istio-pilot"]
-METACONTROLLER_OPERATOR = CHARMS["metacontroller-operator"]
-MINIO = CHARMS["minio"]
-KUBEFLOW_PROFILES = CHARMS["kubeflow-profiles"]
 
 PodDefault = create_namespaced_resource(
     group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"

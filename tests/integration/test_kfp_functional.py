@@ -6,8 +6,19 @@ import logging
 import time
 from pathlib import Path
 
-from charmed_kubeflow_chisme.testing import generate_context_from_charm_spec_dict
-from charms_dependencies import CHARMS
+from charmed_kubeflow_chisme.testing import generate_context_from_charm_spec_list
+from charms_dependencies import (
+    ARGO_CONTROLLER,
+    ENVOY,
+    KUBEFLOW_PROFILES,
+    KUBEFLOW_ROLES,
+    METACONTROLLER_OPERATOR,
+    MINIO,
+    MLMD,
+    MYSQL_K8S,
+    ISTIO_GATEWAY,
+    ISTIO_PILOT,
+)
 from helpers.bundle_mgmt import render_bundle, deploy_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import update_charm_context
@@ -31,7 +42,18 @@ from lightkube import codecs
 from lightkube.generic_resource import create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
 from pytest_operator.plugin import OpsTest
-
+charms_dependencies_list = [
+    ARGO_CONTROLLER,
+    ENVOY,
+    KUBEFLOW_PROFILES,
+    KUBEFLOW_ROLES,
+    METACONTROLLER_OPERATOR,
+    MINIO,
+    MLMD,
+    MYSQL_K8S,
+    ISTIO_GATEWAY,
+    ISTIO_PILOT
+]
 log = logging.getLogger(__name__)
 
 
@@ -108,7 +130,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         if charmcraft_clean_flag == True:
             charmcraft_clean(charms_to_build)
 
-    charms_dict_context = generate_context_from_charm_spec_dict(CHARMS)
+    charms_dict_context = generate_context_from_charm_spec_list(charms_dependencies_list)
     context.update(charms_dict_context)
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(
