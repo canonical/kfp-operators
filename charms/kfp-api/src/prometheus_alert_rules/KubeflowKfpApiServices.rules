@@ -26,7 +26,7 @@ groups:
 - name: KfpResourceUsageAlerts
   rules:
   - alert: KFP_Too_Many_Open_File_Descriptors
-    expr: process_open_fds{juju_charm="kfp-api"} = process_max_fds{juju_charm="kfp-api"}
+    expr: process_open_fds{juju_charm="kfp-api"} == process_max_fds{juju_charm="kfp-api"}
     for: 1m
     labels:
       severity: critical
@@ -34,7 +34,7 @@ groups:
       description: "KFP has opened the maximum number of file descriptors."
 
   - alert: KFP_File_Descriptors_Exhausted_Prediction
-    expr: predict_linear(process_open_fds{juju_charm="kfp-api"}[5m], 86400) > process_max_fds{juju_charm="kfp-api"}
+    expr: predict_linear(process_open_fds{juju_charm="kfp-api"}[5m], 86400) >= process_max_fds{juju_charm="kfp-api"}
     for: 5m
     labels:
       severity: high
