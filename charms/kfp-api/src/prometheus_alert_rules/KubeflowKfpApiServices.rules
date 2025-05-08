@@ -23,39 +23,20 @@ groups:
         {{ $labels.juju_charm }} unit {{ $labels.juju_model }}/{{ $labels.juju_unit }} has been unreachable at least 50% of the time over the last 10 minutes.
         LABELS = {{ $labels }}
 
-- name: KfpWorkflowAlerts
-  rules:
-  - alert: KFP_Failed_Workflow_Runs
-    expr: resource_manager_workflow_runs_failed > 5
-    for: 5m
-    labels:
-      severity: critical
-    annotations:
-      description: "There are currently more than 5 failed workflow runs."
-
-- name: KfpRunAlerts
-  rules:
-  - alert: KFP_Sudden_Run_Increase
-    expr: run_server_run_count - run_server_run_count offset 5m > 50
-    for: 1m
-    labels:
-      severity: medium
-    annotations:
-    description: "More than 50 runs have been created in the past 5 minutes."
-
 - name: KfpResourceUsageAlerts
   rules:
   - alert: KFP_Too_Many_Open_File_Descriptors
-    expr: process_open_fds > process_max_fds * 0.9
+    expr: process_open_fds = process_max_fds
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: "KFP has opened the maximum number of file descriptors."
+
+  - alert: KFP_File_Descriptors_Exhausted_Prediction
+    expr: predict_linear(process_open_fds[5m], 1d) > process_max_fds
     for: 5m
     labels:
       severity: high
     annotations:
-      description: "KFP process has opened more than 90% of the maximum file descriptors in the past 5 minutes."
-  - alert: KFP_High_CPU_Usage
-    expr: rate(process_cpu_seconds_total[2m]) > 0.8
-    for: 5m
-    labels:
-      severity: high
-    annotations:
-      description: "KFP CPU consumption spiked by 80% in the past 2 minutes."
+      description: "KFP is on track to exhaust the maximum number of file descriptors in 24 hours."
