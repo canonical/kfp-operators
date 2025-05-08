@@ -34,7 +34,7 @@ groups:
       description: "KFP has opened the maximum number of file descriptors."
 
   - alert: KFP_File_Descriptors_Exhausted_Prediction
-    expr: predict_linear(process_open_fds[5m], 1d) > process_max_fds
+    expr: predict_linear(process_open_fds[5m], 86400) > process_max_fds
     for: 5m
     labels:
       severity: high
