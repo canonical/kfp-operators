@@ -22,3 +22,21 @@ groups:
       description: |
         {{ $labels.juju_charm }} unit {{ $labels.juju_model }}/{{ $labels.juju_unit }} has been unreachable at least 50% of the time over the last 10 minutes.
         LABELS = {{ $labels }}
+
+- name: KfpResourceUsageAlerts
+  rules:
+  - alert: KFP_Too_Many_Open_File_Descriptors
+    expr: process_open_fds{juju_charm="kfp-api"} == process_max_fds{juju_charm="kfp-api"}
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: "KFP has opened the maximum number of file descriptors."
+
+  - alert: KFP_File_Descriptors_Exhausted_Prediction
+    expr: predict_linear(process_open_fds{juju_charm="kfp-api"}[5m], 86400) >= process_max_fds{juju_charm="kfp-api"}
+    for: 5m
+    labels:
+      severity: high
+    annotations:
+      description: "KFP is on track to exhaust the maximum number of file descriptors in 24 hours."
