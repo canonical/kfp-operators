@@ -37,7 +37,7 @@ cffi==1.17.1
     # via
     #   cryptography
     #   pynacl
-charmed-kubeflow-chisme @ git+https://github.com/canonical/charmed-kubeflow-chisme@kf-7338-charm-dependency-spec
+charmed-kubeflow-chisme==0.4.9
     # via -r requirements-integration.in
 charset-normalizer==3.4.0
     # via requests
