@@ -11,28 +11,14 @@ from charmed_kubeflow_chisme.testing import (
     assert_logging,
     deploy_and_assert_grafana_agent,
 )
+from charms_dependencies import KFP_API, KFP_DB, KFP_VIZ, MINIO
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 
-APP_NAME = "kfp-persistence"
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
-
-KFP_API = "kfp-api"
-KFP_API_CHANNEL = "latest/edge"
-KFP_API_TRUST = True
-KFP_DB = "kfp-db"
-KFP_DB_CHANNEL = "8.0/stable"
-KFP_DB_CONFIG = {"profile": "testing"}
-KFP_DB_ENTITY = "mysql-k8s"
-KFP_DB_TRUST = True
-KFP_VIZ = "kfp-viz"
-KFP_VIZ_CHANNEL = "latest/edge"
-KFP_VIZ_TRUST = True
-MINIO_CHANNEL = "latest/edge"
-MINIO = "minio"
-MINIO_TRUST = True
-MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
+APP_NAME = METADATA["name"]
+KFP_DB_APPLICATION_NAME = "kfp-db"
 
 
 class TestCharm:
@@ -59,31 +45,35 @@ class TestCharm:
         )
 
         await ops_test.model.deploy(
-            entity_url=KFP_DB_ENTITY,
-            application_name=KFP_DB,
-            config=KFP_DB_CONFIG,
-            channel=KFP_DB_CHANNEL,
-            trust=KFP_DB_TRUST,
+            entity_url=KFP_DB.charm,
+            application_name=KFP_DB_APPLICATION_NAME,
+            config=KFP_DB.config,
+            channel=KFP_DB.channel,
+            trust=KFP_DB.trust,
         )
 
         await ops_test.model.deploy(
-            entity_url=MINIO, config=MINIO_CONFIG, channel=MINIO_CHANNEL, trust=MINIO_TRUST
+            entity_url=MINIO.charm, config=MINIO.config, channel=MINIO.channel, trust=MINIO.trust
         )
         await ops_test.model.deploy(
-            entity_url=KFP_VIZ, channel=KFP_VIZ_CHANNEL, trust=KFP_VIZ_TRUST
+            entity_url=KFP_VIZ.charm, channel=KFP_VIZ.channel, trust=KFP_VIZ.trust
         )
 
         # deploy kfp-api which needs to be related to this charm
         await ops_test.model.deploy(
-            entity_url=KFP_API, channel=KFP_API_CHANNEL, trust=KFP_API_TRUST
+            entity_url=KFP_API.charm, channel=KFP_API.channel, trust=KFP_API.trust
         )
 
-        await ops_test.model.integrate(f"{KFP_API}:relational-db", f"{KFP_DB}:database")
-        await ops_test.model.integrate(f"{KFP_API}:object-storage", f"{MINIO}:object-storage")
-        await ops_test.model.integrate(f"{KFP_API}:kfp-viz", f"{KFP_VIZ}:kfp-viz")
+        await ops_test.model.integrate(
+            f"{KFP_API.charm}:relational-db", f"{KFP_DB_APPLICATION_NAME}:database"
+        )
+        await ops_test.model.integrate(
+            f"{KFP_API.charm}:object-storage", f"{MINIO.charm}:object-storage"
+        )
+        await ops_test.model.integrate(f"{KFP_API.charm}:kfp-viz", f"{KFP_VIZ.charm}:kfp-viz")
 
         await ops_test.model.wait_for_idle(
-            apps=[KFP_API, KFP_DB],
+            apps=[KFP_API.charm, KFP_DB_APPLICATION_NAME],
             status="active",
             raise_on_blocked=False,
             raise_on_error=False,
@@ -91,7 +81,7 @@ class TestCharm:
             idle_period=30,
         )
 
-        await ops_test.model.integrate(f"{APP_NAME}:kfp-api", f"{KFP_API}:kfp-api")
+        await ops_test.model.integrate(f"{APP_NAME}:kfp-api", f"{KFP_API.charm}:kfp-api")
 
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME],
