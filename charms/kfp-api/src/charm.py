@@ -143,7 +143,7 @@ class KfpApiOperator(CharmBase):
         )
 
         self.dashboard_provider = GrafanaDashboardProvider(self)
-        
+
         self._logging = LogForwarder(charm=self)
 
     @property
