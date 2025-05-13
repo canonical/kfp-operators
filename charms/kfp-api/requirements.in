@@ -5,4 +5,5 @@ oci-image
 serialized-data-interface
 tenacity
 # from prometheus_k8s.v0.prometheus_scrape.py
-cosl
+# Pinning due to https://github.com/canonical/bundle-kubeflow/issues/1260
+cosl>=0.0.48
