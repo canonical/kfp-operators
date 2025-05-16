@@ -1,52 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "prometheusds",
-      "label": "Prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__requires": [
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": "8.0.6"
-    },
-    {
-      "type": "panel",
-      "id": "gauge",
-      "name": "Gauge",
-      "version": "8.0.6"
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": "8.0.6"
-    },
-    {
-      "type": "panel",
-      "id": "graph",
-      "name": "Graph (old)",
-      "version": "8.0.6"
-    },
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "8.0.6"
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -65,359 +17,953 @@
   },
   "description": "KFP Dashboard",
   "editable": true,
-  "gnetId": null,
+  "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
-      "id": 10,
-      "type": "stat",
-      "title": "Uptime",
-      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 0 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
+      "datasource": {
+        "uid": "${prometheusds}"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
           ],
-          "thresholds": { "mode": "percentage", "steps": [{ "color": "green", "value": null }] },
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "unit": "dtdurations"
         },
         "overrides": []
       },
-      "options": {
-        "reduceOptions": { "calcs": ["mean"], "fields": "", "values": false },
-        "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "none", "justifyMode": "auto"
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 0,
+        "y": 0
       },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.3",
       "targets": [
         {
-          "refId": "A",
-          "expr": "time() - max(minio_node_process_starttime_seconds{})",
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "expr": "time() - max(minio_node_process_starttime_seconds{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"})",
+          "format": "time_series",
           "instant": true,
           "legendFormat": "{{instance}}",
-          "format": "time_series"
+          "refId": "A"
         }
-      ]
+      ],
+      "title": "Uptime",
+      "type": "stat"
     },
     {
-      "id": 20,
-      "type": "stat",
-      "title": "Number of Buckets",
-      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 0 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheusds}"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
           ],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "dark-yellow", "value": 75000000 },
-              { "color": "dark-red", "value": 100000000 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           },
-          "unit": "short"
+          "unit": "percent"
         },
         "overrides": []
       },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "orientation": "horizontal", "textMode": "auto", "colorMode": "value", "graphMode": "area", "justifyMode": "auto"
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 4,
+        "y": 0
       },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "count(count by (bucket) (minio_bucket_usage_total_bytes{}))",
-          "instant": false,
-          "legendFormat": "",
-          "format": "time_series",
-          "interval": "1m"
-        }
-      ]
-    },
-    {
-      "id": 30,
-      "type": "stat",
-      "title": "Number of Objects",
-      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 0 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "dark-yellow", "value": 75000000 },
-              { "color": "dark-red", "value": 100000000 }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "orientation": "horizontal", "textMode": "auto", "colorMode": "value", "graphMode": "area", "justifyMode": "auto"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "topk(1, sum(minio_bucket_usage_object_total{}) by (instance))",
-          "instant": false,
-          "legendFormat": "",
-          "format": "time_series",
-          "interval": "1m"
-        }
-      ]
-    },
-    {
-      "id": 40,
-      "type": "stat",
-      "title": "Free Disk Space",
-      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": 0 },
-              { "color": "orange", "value": 10737418240 },
-              { "color": "green", "value": 10737418241 }
-            ]
-          },
-          "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
-          ]
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "area", "justifyMode": "auto"
-      },
-      "targets": [
-        { "refId": "A", "expr": "minio_node_disk_free_bytes{}", "instant": true, "legendFormat": "{{instance}}", "format": "table" }
-      ]
-    },
-    {
-      "id": 50,
-      "type": "gauge",
-      "title": "Disk Usage",
-      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent", "min": 0, "max": 100,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 80 },
-              { "color": "red", "value": 90 }
-            ]
-          },
-          "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
-          ]
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showThresholdLabels": false, "showThresholdMarkers": true
-      },
-      "targets": [
-        { "refId": "A", "expr": "(minio_node_disk_used_bytes{} / minio_node_disk_total_bytes{}) * 100", "legendFormat": "{{instance}}", "format": "table" }
-      ]
-    },
-    {
-      "id": 60,
-      "type": "stat",
-      "title": "Memory Usage",
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 5 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 3221225472 },
-              { "color": "red", "value": 4294967296 }
-            ]
-          },
-          "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
-          ]
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "orientation": "auto", "textMode": "auto", "colorMode": "value", "graphMode": "area", "justifyMode": "auto"
-      },
-      "targets": [
-        { "refId": "A", "expr": "minio_node_process_resident_memory_bytes{}", "instant": true, "legendFormat": "{{instance}}", "format": "table" }
-      ]
-    },
-    {
       "id": 70,
-      "type": "gauge",
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "editorMode": "code",
+          "expr": "process_open_fds{juju_charm=\"kfp-api\"} / process_max_fds{juju_charm=\"kfp-api\"} * 100",
+          "format": "table",
+          "legendFormat": "{{instance}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
       "title": "Open File Descriptors",
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 5 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheusds}"
+      },
+      "description": "Uses the recent metrics to create a linear prediction of the file descriptors in 1 day.",
       "fieldConfig": {
         "defaults": {
-          "unit": "percent", "min": 0, "max": 100,
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 80 },
-              { "color": "red", "value": 90 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           },
-          "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
-          ]
+          "unit": "percent"
         },
         "overrides": []
       },
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 10,
+        "y": 0
+      },
+      "id": 50,
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showThresholdLabels": false, "showThresholdMarkers": true
-      },
-      "targets": [
-        { "refId": "A", "expr": "(minio_node_file_descriptor_open_total{} / minio_node_file_descriptor_limit_total{}) * 100", "legendFormat": "{{instance}}", "format": "table" }
-      ]
-    },
-    {
-      "id": 80,
-      "type": "timeseries",
-      "title": "Total S3 Requests Rate",
-      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 5 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "custom": { "lineWidth": 1, "fillOpacity": 10, "spanNulls": false, "drawStyle": "line", "lineInterpolation": "smooth", "gradientMode": "opacity", "axisPlacement": "auto" },
-          "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          "fields": "",
+          "values": false
         },
-        "overrides": []
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
       },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
+      "pluginVersion": "9.5.3",
       "targets": [
-        { "refId": "A", "expr": "sum(rate(minio_s3_requests_total[5m]))", "legendFormat": "Total Requests Rate" }
-      ]
+        {
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "editorMode": "code",
+          "expr": "predict_linear(process_open_fds{juju_charm=~\"$juju_application\"}[5m], 86400) / process_max_fds{juju_charm=~\"$juju_application\"} * 100",
+          "format": "table",
+          "legendFormat": "{{instance}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Open File Descriptors in 1 Day",
+      "type": "gauge"
     },
     {
-      "id": 90,
-      "type": "timeseries",
-      "title": "S3 Request Error Rate",
-      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 10 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P371DCAC216EEAACD"
+      },
+      "description": "The current number of pipelines in Kubeflow Pipelines instance",
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
-          "custom": { "lineWidth": 1, "fillOpacity": 10, "spanNulls": false, "drawStyle": "line", "lineInterpolation": "smooth", "gradientMode": "opacity", "axisPlacement": "auto" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.1 }] },
-          "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
-          ]
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 0,
+        "y": 5
+      },
+      "id": 121,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.3",
       "targets": [
-        { "refId": "A", "expr": "rate(minio_s3_requests_errors_total[2m]) / rate(minio_s3_requests_total[2m])", "legendFormat": "{{instance}} Error Rate", "interval": "2m" }
-      ]
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P371DCAC216EEAACD"
+          },
+          "editorMode": "code",
+          "expr": "pipeline_server_pipeline_count",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Pipelines",
+      "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheusds}"
+      },
+      "description": "The current number of jobs in the Kubeflow Pipelines instance",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "dark-yellow",
+                "value": 75000000
+              },
+              {
+                "color": "dark-red",
+                "value": 100000000
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 4,
+        "y": 5
+      },
+      "id": 30,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "editorMode": "code",
+          "expr": "job_server_job_count",
+          "format": "time_series",
+          "instant": false,
+          "interval": "1m",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Jobs",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P371DCAC216EEAACD"
+      },
+      "description": "The current number of runs in Kubeflow Pipelines instance",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 8,
+        "y": 5
+      },
+      "id": 122,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P371DCAC216EEAACD"
+          },
+          "editorMode": "code",
+          "expr": "run_server_run_count",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Runs",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "uid": "${prometheusds}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "id": 80,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.0.6",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "expr": "sum(rate(minio_s3_requests_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[5m]))",
+          "legendFormat": "Total Requests Rate",
+          "refId": "A"
+        }
+      ],
+      "title": "Total S3 Requests Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "uid": "${prometheusds}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 3221225472
+              },
+              {
+                "color": "red",
+                "value": 4294967296
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 10
+      },
+      "id": 60,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "expr": "minio_node_process_resident_memory_bytes{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory Usage",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "uid": "${prometheusds}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 10
+      },
       "id": 100,
-      "type": "timeseries",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.0.6",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "expr": "rate(minio_s3_requests_rejected_auth_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[2m]) / rate(minio_s3_requests_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[2m])",
+          "interval": "2m",
+          "legendFormat": "{{instance}} Auth Failure %",
+          "refId": "A"
+        }
+      ],
       "title": "S3 Auth Failure Rate",
-      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 10 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "uid": "${prometheusds}"
+      },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
-          "custom": { "lineWidth": 1, "fillOpacity": 10, "spanNulls": false, "drawStyle": "line", "lineInterpolation": "smooth", "gradientMode": "opacity", "axisPlacement": "auto" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.05 }] },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
           "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
-          ]
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
+            ]
+          },
+          "unit": "percentunit"
         },
         "overrides": []
       },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
-      "targets": [
-        { "refId": "A", "expr": "rate(minio_s3_requests_rejected_auth_total[2m]) / rate(minio_s3_requests_total[2m])", "legendFormat": "{{instance}} Auth Failure %", "interval": "2m" }
-      ]
-    },
-    {
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 10
+      },
       "id": 110,
-      "type": "timeseries",
-      "title": "Invalid S3 Request Rate",
-      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 10 },
-      "datasource": "${prometheusds}",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
       "pluginVersion": "8.0.6",
+      "targets": [
+        {
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "expr": "rate(minio_s3_requests_rejected_invalid_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[2m]) / rate(minio_s3_requests_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[2m])",
+          "interval": "2m",
+          "legendFormat": "{{instance}} Invalid Req %",
+          "refId": "A"
+        }
+      ],
+      "title": "Invalid S3 Request Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "uid": "${prometheusds}"
+      },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
-          "custom": { "lineWidth": 1, "fillOpacity": 10, "spanNulls": false, "drawStyle": "line", "lineInterpolation": "smooth", "gradientMode": "opacity", "axisPlacement": "auto" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.05 }] },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
           "mappings": [
-            { "type": "special", "options": { "match": "null", "result": { "text": "N/A" } } }
-          ]
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          },
+          "unit": "percentunit"
         },
         "overrides": []
       },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 15
+      },
+      "id": 90,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.0.6",
       "targets": [
-        { "refId": "A", "expr": "rate(minio_s3_requests_rejected_invalid_total[2m]) / rate(minio_s3_requests_total[2m])", "legendFormat": "{{instance}} Invalid Req %", "interval": "2m" }
-      ]
+        {
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "expr": "rate(minio_s3_requests_errors_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[2m]) / rate(minio_s3_requests_total{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[2m])",
+          "interval": "2m",
+          "legendFormat": "{{instance}} Error Rate",
+          "refId": "A"
+        }
+      ],
+      "title": "S3 Request Error Rate",
+      "type": "timeseries"
     },
     {
-      "id": 120,
-      "type": "graph",
-      "title": "Node IO",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 17 },
-      "datasource": "${prometheusds}",
-      "pluginVersion": "8.0.6",
       "aliasColors": {},
       "bars": true,
       "dashLength": 10,
       "dashes": false,
+      "datasource": {
+        "uid": "${prometheusds}"
+      },
       "fill": 1,
       "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
       "hiddenSeries": false,
-      "legend": { "avg": false, "current": false, "max": false, "min": false, "show": true, "total": false, "values": false },
+      "id": 120,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
       "lines": true,
       "linewidth": 1,
       "nullPointMode": "null",
-      "options": { "alertThreshold": true },
+      "options": {
+        "alertThreshold": true
+      },
       "percentage": false,
+      "pluginVersion": "9.5.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -426,36 +972,238 @@
       "stack": false,
       "steppedLine": false,
       "targets": [
-        { "refId": "A", "expr": "rate(minio_node_io_rchar_bytes{}[$__rate_interval])", "legendFormat": "Node RChar [{{server}}]", "format": "time_series", "instant": false },
-        { "refId": "B", "expr": "rate(minio_node_io_wchar_bytes{}[$__rate_interval])", "legendFormat": "Node WChar [{{server}}]" }
+        {
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "expr": "rate(minio_node_io_rchar_bytes{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[$__rate_interval])",
+          "format": "time_series",
+          "instant": false,
+          "legendFormat": "Node RChar [{{server}}]",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "uid": "${prometheusds}"
+          },
+          "expr": "rate(minio_node_io_wchar_bytes{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[$__rate_interval])",
+          "legendFormat": "Node WChar [{{server}}]",
+          "refId": "B"
+        }
       ],
       "thresholds": [],
-      "timeFrom": null, "timeRegions": [], "timeShift": null,
-      "tooltip": { "shared": true, "sort": 0, "value_type": "individual" },
-      "xaxis": { "buckets": null, "mode": "time", "name": null, "show": true, "values": [] },
+      "timeRegions": [],
+      "title": "Node IO",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
       "yaxes": [
-        { "format": "bytes", "label": null, "logBase": 1, "max": null, "min": null, "show": true },
-        { "format": "short", "label": null, "logBase": 1, "max": null, "min": null, "show": true }
+        {
+          "format": "bytes",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
       ],
-      "yaxis": { "align": false, "alignLevel": null }
+      "yaxis": {
+        "align": false
+      }
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 30,
+  "schemaVersion": 38,
   "style": "dark",
-  "tags": ["minio", "revised"],
+  "tags": [
+    "revised",
+    "charm: grafana-agent-k8s",
+    "kfp"
+  ],
   "templating": {
     "list": [
       {
-        "allValue": null,
-        "current": {},
-        "datasource": "${prometheusds}",
-        "definition": "label_values(job)",
-        "description": null,
-        "error": null,
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "hide": 0,
         "includeAll": true,
-        "label": null,
+        "label": "Loki datasource",
+        "multi": true,
+        "name": "lokids",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Prometheus datasource",
+        "multi": true,
+        "name": "prometheusds",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "uid": "${prometheusds}"
+        },
+        "definition": "label_values(up{juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_application=~\"$juju_application\"},juju_unit)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Juju unit",
+        "multi": true,
+        "name": "juju_unit",
+        "options": [],
+        "query": {
+          "query": "label_values(up{juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_application=~\"$juju_application\"},juju_unit)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "uid": "${prometheusds}"
+        },
+        "definition": "label_values(up{juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\"},juju_application)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Juju application",
+        "multi": true,
+        "name": "juju_application",
+        "options": [],
+        "query": {
+          "query": "label_values(up{juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\"},juju_application)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "uid": "${prometheusds}"
+        },
+        "definition": "label_values(up{juju_model=~\"$juju_model\"},juju_model_uuid)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Juju model uuid",
+        "multi": true,
+        "name": "juju_model_uuid",
+        "options": [],
+        "query": {
+          "query": "label_values(up{juju_model=~\"$juju_model\"},juju_model_uuid)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "uid": "${prometheusds}"
+        },
+        "definition": "label_values(up,juju_model)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Juju model",
+        "multi": true,
+        "name": "juju_model",
+        "options": [],
+        "query": {
+          "query": "label_values(up,juju_model)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "uid": "${prometheusds}"
+        },
+        "definition": "label_values(job)",
+        "hide": 0,
+        "includeAll": true,
         "multi": true,
         "name": "scrape_jobs",
         "options": [],
@@ -471,13 +1219,37 @@
       }
     ]
   },
-  "time": { "from": "now-3h", "to": "now" },
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
   "timepicker": {
-    "refresh_intervals": ["10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"],
-    "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    "refresh_intervals": [
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
   },
   "timezone": "",
   "title": "KFP Dashboard",
-  "uid": "QgmJnqnno",
-  "version": 20
+  "uid": "202b0185445e3c5bf4767ef6876049f34b4ef083",
+  "version": 1,
+  "weekStart": ""
 }
