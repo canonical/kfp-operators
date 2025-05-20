@@ -105,7 +105,7 @@
         "type": "prometheus",
         "uid": "${prometheusds}"
       },
-      "description": "Uses recent metrics to create a linear prediction of the open file descriptors after 1 day.",
+      "description": "Uses recent metrics of the open file descriptors to create a linear prediction of the open file descriptors after 1 day",
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -168,7 +168,7 @@
             "uid": "${prometheusds}"
           },
           "editorMode": "code",
-          "expr": "predict_linear(process_open_fds{juju_application=~\"$juju_application\",juju_charm=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[5m], 86400) / process_max_fds{juju_application=~\"$juju_application\",juju_charm=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"} * 100",
+          "expr": "predict_linear(process_open_fds{juju_application=~\"$juju_application\",juju_charm=\"kfp-api\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}[5m], 86400) / process_max_fds{juju_application=~\"$juju_application\",juju_charm=\"kfp-api\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"} * 100",
           "format": "table",
           "legendFormat": "{{instance}}",
           "range": true,
@@ -249,7 +249,7 @@
         "type": "prometheus",
         "uid": "${prometheusds}"
       },
-      "description": "The current number of pipelines in Kubeflow Pipelines instance",
+      "description": "The current number of pipelines in the Kubeflow Pipelines instance",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -394,7 +394,7 @@
         "type": "prometheus",
         "uid": "${prometheusds}"
       },
-      "description": "The current number of runs in Kubeflow Pipelines instance",
+      "description": "The current number of runs in the Kubeflow Pipelines instance",
       "fieldConfig": {
         "defaults": {
           "color": {
