@@ -235,7 +235,7 @@
             "uid": "PF7C1FE24F4005639"
           },
           "editorMode": "code",
-          "expr": "experiment_server_run_count",
+          "expr": "experiment_server_run_count{juju_application=~\"$juju_application\",juju_charm=\"kfp-api\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -301,7 +301,7 @@
             "uid": "P371DCAC216EEAACD"
           },
           "editorMode": "code",
-          "expr": "pipeline_server_pipeline_count",
+          "expr": "pipeline_server_pipeline_count{juju_application=~\"$juju_application\",juju_charm=\"kfp-api\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -378,7 +378,7 @@
             "uid": "${prometheusds}"
           },
           "editorMode": "code",
-          "expr": "job_server_job_count{juju_application=~\"$juju_application\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
+          "expr": "job_server_job_count{juju_application=~\"$juju_application\",juju_charm=\"kfp-api\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
           "format": "time_series",
           "instant": false,
           "interval": "1m",
@@ -446,7 +446,7 @@
             "uid": "P371DCAC216EEAACD"
           },
           "editorMode": "code",
-          "expr": "run_server_run_count",
+          "expr": "run_server_run_count{juju_application=~\"$juju_application\",juju_charm=\"kfp-api\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_unit=~\"$juju_unit\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
