@@ -5,4 +5,7 @@ selenium
 selenium-wire
 tenacity
 # This is required due to the abstraction of cos integration
-charmed-kubeflow-chisme>=0.4.0
+# "charmed-kubeflow-chisme" pinned to avoid closed "latest" tracks with COS charms, see:
+- https://github.com/canonical/charmed-kubeflow-chisme/pull/157
+- https://discourse.charmhub.io/t/closing-the-latest-track-for-all-observability-charms/18054#p-37982-closing-the-latest-track-2
+charmed-kubeflow-chisme>=0.4.11
