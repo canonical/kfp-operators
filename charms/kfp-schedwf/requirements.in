@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 # "charmed-kubeflow-chisme" pinned to avoid closed "latest" tracks with COS charms, see:
-# canonical/charmed-kubeflow-chisme#155
+# https://github.com/canonical/charmed-kubeflow-chisme/issues/155
 charmed-kubeflow-chisme>=0.4.11
 lightkube
 ops
