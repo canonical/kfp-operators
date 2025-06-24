@@ -111,7 +111,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
         for charm in KFP_CHARMS:
             # NOTE: The full path for the charm is hardcoded here. It relies on the downloaded
             # artifacts having the format below and existing in the exact path under `charms_path`.
-            cached_charm = f"{charms_path}/{charm}/{charm}_ubuntu@20.04-amd64.charm"
+            cached_charm = f"{charms_path}/{charm}/{charm}_ubuntu@24.04-amd64.charm"
             update_charm_context(context, charm, cached_charm)
     # Otherwise build the charms with ops_test
     else:
