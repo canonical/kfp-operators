@@ -18,14 +18,14 @@ def get_charm_name(metadata_file: Union[Path, str]) -> str:
 def get_charm_file(charm_dir: Path) -> Path:
     """Returns the path to the .charm file representing the charm in the given directory
 
-    TODO: This just assumes the suffix on the file name will be "ubuntu-20.04-amd64".
+    TODO: This just assumes the suffix on the file name will be "ubuntu@24.04-amd64".
           Fix this in future
     """
     charm_dir = Path(charm_dir)
     metadata_file = charm_dir / "metadata.yaml"
     charm_name = get_charm_name(metadata_file)
 
-    return (charm_dir / f"{charm_name}_ubuntu-20.04-amd64.charm").absolute()
+    return (charm_dir / f"{charm_name}_ubuntu@24.04-amd64.charm").absolute()
 
 
 def get_resources_from_charm_dir(charm_dir: Path) -> Dict[str, str]:

@@ -57,10 +57,10 @@ jobs:
           - kfp-viz
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v5.3.0
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5.6.0
         with:
-          python-version: 3.8
+          python-version: "3.12"
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-lint
 
@@ -81,10 +81,10 @@ jobs:
           - kfp-viz
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v5.3.0
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5.6.0
         with:
-          python-version: 3.8
+          python-version: "3.12"
       - run: python3 -m pip install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
@@ -136,6 +136,7 @@ jobs:
     uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v29.0.0
     with:
       path-to-charm-directory: ${{ matrix.charm }}
+      cache: false
 
   release:
     strategy:
@@ -183,11 +184,6 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v5.3.0
-        with:
-          python-version: 3.8
-
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
@@ -209,9 +205,9 @@ jobs:
           # https://github.com/canonical/kfp-operators/issues/389
           juju add-model kubeflow
           # Pass the path where the charm artefact is downloaded to the tox command
-          # FIXME: Right now the complete path is half hardcoded to <charm name>_ubuntu@20.04-amd64.charm
+          # FIXME: Right now the complete path is half hardcoded to <charm name>_ubuntu@24.04-amd64.charm
           # We need to find a better way to dynamically get this value
-          tox -e ${{ matrix.charm }}-integration -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@20.04-amd64.charm
+          tox -e ${{ matrix.charm }}-integration -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
@@ -237,11 +233,6 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v3
-
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v5.3.0
-        with:
-          python-version: 3.8
 
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main

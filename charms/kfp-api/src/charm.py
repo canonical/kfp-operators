@@ -27,8 +27,8 @@ from lightkube.generic_resource import load_in_cluster_generic_resources
 from lightkube.models.core_v1 import ServicePort
 from lightkube.resources.core_v1 import Service, ServiceAccount
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
+from ops import main
 from ops.charm import CharmBase
-from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, ModelError, WaitingStatus
 from ops.pebble import CheckStatus, Layer
 from serialized_data_interface import (
