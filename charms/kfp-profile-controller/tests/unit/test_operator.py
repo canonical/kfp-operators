@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 import json
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -21,7 +22,10 @@ from charm import (
 )
 
 # Load the custom images from the JSON
-with open("charms/kfp-profile-controller/src/default-custom-images.json", "r") as f:
+CUSTOM_IMAGES_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "src" / "default-custom-images.json"
+)
+with CUSTOM_IMAGES_PATH.open() as f:
     custom_images = json.load(f)
 
 MOCK_OBJECT_STORAGE_DATA = {
