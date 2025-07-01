@@ -1,6 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,6 +19,10 @@ from charm import (
     METADATA_GRPC_SERVICE_PORT,
     KfpProfileControllerOperator,
 )
+
+# Load the custom images from the JSON
+with open("charms/kfp-profile-controller/src/default-custom-images.json", "r") as f:
+    custom_images = json.load(f)
 
 MOCK_OBJECT_STORAGE_DATA = {
     "access-key": "access-key",
@@ -40,10 +45,11 @@ EXPECTED_ENVIRONMENT = {
     "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
     "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
     "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
-    "FRONTEND_IMAGE": "docker.io/charmedkubeflow/frontend",
-    "FRONTEND_TAG": "2.4.1-5984eac",
-    "VISUALIZATION_SERVER_IMAGE": "docker.io/charmedkubeflow/visualization-server",
-    "VISUALIZATION_SERVER_TAG": "2.4.1-f7dc003",
+    # Using custom image and tag from the JSON file
+    "FRONTEND_IMAGE": custom_images["frontend"].split(":")[0],
+    "FRONTEND_TAG": custom_images["frontend"].split(":")[1],
+    "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
+    "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
 }
 
 
