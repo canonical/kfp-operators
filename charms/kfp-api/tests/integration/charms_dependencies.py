@@ -8,10 +8,10 @@ KFP_DB = CharmSpec(
     config={"database": "mlpipeline"},
     trust=True,
 )
-KFP_VIZ = CharmSpec(charm="kfp-viz", channel="latest/edge", trust=True)
+KFP_VIZ = CharmSpec(charm="kfp-viz", channel="2.4/stable", trust=True)
 MINIO = CharmSpec(
     charm="minio",
-    channel="latest/edge",
+    channel="ckf-1.10/stable",
     trust=True,
     config={"access-key": "minio", "secret-key": "minio-secret-key"},
 )
