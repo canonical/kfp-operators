@@ -23,7 +23,7 @@ from charm import (
 
 # Load the custom images from the JSON
 CUSTOM_IMAGES_PATH = (
-    Path(__file__).resolve().parent.parent.parent / "src" / "default-custom-images.json"
+    Path("./src/default-custom-images.json")
 )
 with CUSTOM_IMAGES_PATH.open() as f:
     custom_images = json.load(f)
