@@ -11,9 +11,7 @@ This directory has the following structure:
 ├── README.md
 └── integration
     ├── bundles
-    |   ├── kfp_1.8_stable_install.yaml.j2
-    │   ├── kfp_1.7_stable_install.yaml.j2
-    │   └── kfp_latest_edge.yaml.j2
+    │   └── bundle.yaml.j2
     ├── conftest.py
     ├── helpers
     │   ├── bundle_mgmt.py
@@ -50,7 +48,7 @@ This directory has the following structure:
 
 #### Functional tests
 
-The test suite for functional tests will deploy the `kfp_latest_edge.yaml.j2` bundle, upload a pipeline, create an experiment, create a run and a recurring run, and run health checks on the visualisation and viewer servers.
+The test suite for functional tests will deploy the `bundle.yaml.j2` bundle, upload a pipeline, create an experiment, create a run and a recurring run, and run health checks on the visualisation and viewer servers.
 Communication with the KFP API happens using the KFP Python SDK. A `kfp.client` is configured using a test profile (`Profile`) to be able to execute pipeline operations (create runs, experiments, upload pipelines, etc.).
 
 > NOTE: This test suite does not deploy the `kfp-profile-controller` as the tests for that component are already covered in the charm's directory.

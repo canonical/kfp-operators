@@ -11,16 +11,13 @@ from charmed_kubeflow_chisme.testing import (
     assert_logging,
     deploy_and_assert_grafana_agent,
 )
+from charms_dependencies import MLMD
 from pytest_operator.plugin import OpsTest
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_ROOT = "."
+APP_NAME = METADATA["name"]
 
-APP_NAME = "kfp-metadata-writer"
-MLMD = "mlmd"
-# Note(rgildein): The latest/edge is required, since we require grpc relation to use
-# k8s-service interface. https://github.com/canonical/mlmd-operator/pull/72
-MLMD_CHANNEL = "ckf-1.10/stable"
 
 log = logging.getLogger(__name__)
 
@@ -44,9 +41,11 @@ async def test_build_and_deploy_with_relations(ops_test: OpsTest, request):
         trust=True,
     )
 
-    await ops_test.model.deploy(entity_url=MLMD, channel=MLMD_CHANNEL, trust=True)
-    await ops_test.model.integrate(f"{MLMD}:grpc", f"{APP_NAME}:grpc")
-    await ops_test.model.wait_for_idle(apps=[APP_NAME, MLMD], status="active", timeout=10 * 60)
+    await ops_test.model.deploy(entity_url=MLMD.charm, channel=MLMD.channel, trust=MLMD.trust)
+    await ops_test.model.integrate(f"{MLMD.charm}:grpc", f"{APP_NAME}:grpc")
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, MLMD.charm], status="active", timeout=10 * 60
+    )
 
     # Deploying grafana-agent-k8s and add all relations
     await deploy_and_assert_grafana_agent(

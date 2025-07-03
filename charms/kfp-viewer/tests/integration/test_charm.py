@@ -15,7 +15,7 @@ from pytest_operator.plugin import OpsTest
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_ROOT = "."
-APP_NAME = "kfp-viewer"
+APP_NAME = METADATA["name"]
 
 log = logging.getLogger(__name__)
 

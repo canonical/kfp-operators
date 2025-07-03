@@ -14,29 +14,14 @@ from charmed_kubeflow_chisme.testing import (
     deploy_and_assert_grafana_agent,
     get_alert_rules,
 )
+from charms_dependencies import KFP_DB, KFP_VIZ, MINIO, MYSQL
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 
-APP_NAME = "kfp-api"
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
-
-KFP_DB = "kfp-db"
-MARIADB_CHANNEL = "latest/edge"
-MARIADB_CONFIG = {"database": "mlpipeline"}
-MARIADB_CHARM = "charmed-osm-mariadb-k8s"
-MARIADB_TRUST = True
-KFP_VIZ = "kfp-viz"
-KFP_VIZ_CHANNEL = "2.4/stable"
-KFP_VIZ_TRUST = True
-MINIO_CHANNEL = "ckf-1.10/stable"
-MINIO = "minio"
-MINIO_TRUST = True
-MINIO_CONFIG = {"access-key": "minio", "secret-key": "minio-secret-key"}
-MYSQL = "mysql-k8s"
-MYSQL_CHANNEL = "8.0/stable"
-MYSQL_CONFIG = {"profile": "testing"}
-MYSQL_TRUST = True
+APP_NAME = METADATA["name"]
+KFP_DB_APPLICATION_NAME = "kfp-db"
 
 
 class TestCharm:
@@ -67,29 +52,31 @@ class TestCharm:
         # 1) The team has accepted and started using mysql-k8s more extensively
         # 2) The repository level integration tests use mysql-k8s only
         await ops_test.model.deploy(
-            entity_url=MARIADB_CHARM,
-            application_name=KFP_DB,
-            config=MARIADB_CONFIG,
-            channel=MARIADB_CHANNEL,
-            trust=MARIADB_TRUST,
+            entity_url=KFP_DB.charm,
+            application_name=KFP_DB_APPLICATION_NAME,
+            config=KFP_DB.config,
+            channel=KFP_DB.channel,
+            trust=KFP_DB.trust,
         )
         await ops_test.model.deploy(
-            entity_url=MINIO, config=MINIO_CONFIG, channel=MINIO_CHANNEL, trust=MINIO_TRUST
+            entity_url=MINIO.charm, config=MINIO.config, channel=MINIO.channel, trust=MINIO.trust
         )
         await ops_test.model.deploy(
-            entity_url=KFP_VIZ, channel=KFP_VIZ_CHANNEL, trust=KFP_VIZ_TRUST
+            entity_url=KFP_VIZ.charm, channel=KFP_VIZ.channel, trust=KFP_VIZ.trust
         )
 
         # FIXME: This assertion belongs to unit tests
         # test no database relation, charm should be in blocked state
         # assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
 
-        await ops_test.model.add_relation(f"{APP_NAME}:mysql", f"{KFP_DB}:mysql")
-        await ops_test.model.add_relation(f"{APP_NAME}:object-storage", f"{MINIO}:object-storage")
-        await ops_test.model.add_relation(f"{APP_NAME}:kfp-viz", f"{KFP_VIZ}:kfp-viz")
+        await ops_test.model.add_relation(f"{APP_NAME}:mysql", f"{KFP_DB_APPLICATION_NAME}:mysql")
+        await ops_test.model.add_relation(
+            f"{APP_NAME}:object-storage", f"{MINIO.charm}:object-storage"
+        )
+        await ops_test.model.add_relation(f"{APP_NAME}:kfp-viz", f"{KFP_VIZ.charm}:kfp-viz")
 
         await ops_test.model.wait_for_idle(
-            apps=[APP_NAME, KFP_VIZ, KFP_DB, MINIO],
+            apps=[APP_NAME, KFP_VIZ.charm, KFP_DB_APPLICATION_NAME, MINIO.charm],
             status="active",
             raise_on_blocked=False,
             raise_on_error=False,
@@ -109,13 +96,13 @@ class TestCharm:
         """Test failure of addition of relational-db relation with mysql relation present."""
         # deploy mysql-k8s charm
         await ops_test.model.deploy(
-            MYSQL,
-            channel=MYSQL_CHANNEL,
-            config=MYSQL_CONFIG,
-            trust=MYSQL_TRUST,
+            MYSQL.charm,
+            channel=MYSQL.channel,
+            config=MYSQL.config,
+            trust=MYSQL.trust,
         )
         await ops_test.model.wait_for_idle(
-            apps=[MYSQL],
+            apps=[MYSQL.charm],
             status="active",
             raise_on_blocked=True,
             timeout=90 * 30,
@@ -124,7 +111,7 @@ class TestCharm:
 
         # add relational-db relation which should put charm into blocked state,
         # because at this point mysql relation is already established
-        await ops_test.model.relate(f"{APP_NAME}:relational-db", f"{MYSQL}:database")
+        await ops_test.model.relate(f"{APP_NAME}:relational-db", f"{MYSQL.charm}:database")
 
         # verify that charm goes into blocked state
         await ops_test.model.wait_for_idle(
@@ -138,7 +125,9 @@ class TestCharm:
         assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
 
         # remove just added relational-db relation
-        await ops_test.juju("remove-relation", f"{APP_NAME}:relational-db", f"{MYSQL}:database")
+        await ops_test.juju(
+            "remove-relation", f"{APP_NAME}:relational-db", f"{MYSQL.charm}:database"
+        )
 
     # FIXME: this test case belongs in unit tests as it is asserting the status of the
     # unit under a certain condition, we don't actually need the presence of any deployed
@@ -159,7 +148,9 @@ class TestCharm:
 
         # remove existing mysql relation which should put charm into blocked state,
         # because there will be no database relations
-        await ops_test.juju("remove-relation", f"{APP_NAME}:mysql", f"{KFP_DB}:mysql")
+        await ops_test.juju(
+            "remove-relation", f"{APP_NAME}:mysql", f"{KFP_DB_APPLICATION_NAME}:mysql"
+        )
 
         # verify that charm goes into blocked state
         await ops_test.model.wait_for_idle(
@@ -172,7 +163,7 @@ class TestCharm:
         assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
 
         # add relational-db relation which should put charm into active state
-        await ops_test.model.relate(f"{APP_NAME}:relational-db", f"{MYSQL}:database")
+        await ops_test.model.relate(f"{APP_NAME}:relational-db", f"{MYSQL.charm}:database")
 
         # verify that charm goes into active state
         await ops_test.model.wait_for_idle(
@@ -193,7 +184,7 @@ class TestCharm:
 
         # add mysql relation which should put charm into blocked state,
         # because at this point relational-db relation is already established
-        await ops_test.model.relate(f"{APP_NAME}:mysql", f"{KFP_DB}:mysql")
+        await ops_test.model.relate(f"{APP_NAME}:mysql", f"{KFP_DB_APPLICATION_NAME}:mysql")
 
         # verify that charm goes into blocked state
         await ops_test.model.wait_for_idle(

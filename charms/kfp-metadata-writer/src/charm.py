@@ -17,8 +17,8 @@ from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from lightkube.resources.core_v1 import ServiceAccount
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
+from ops import main
 from ops.charm import CharmBase
-from ops.main import main
 
 from components.k8s_service_info_requirer_component import K8sServiceInfoRequirerComponent
 from components.pebble_component import KfpMetadataWriterInputs, KfpMetadataWriterPebbleService

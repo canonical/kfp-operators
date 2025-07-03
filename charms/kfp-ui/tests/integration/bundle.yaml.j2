@@ -1,0 +1,44 @@
+bundle: kubernetes
+applications:
+  kfp-api:
+    charm: {{ kfp_api_charm }}
+    channel: {{ kfp_api_channel }}
+    base: ubuntu@24.04/stable
+    scale: 1
+    trust: {{ kfp_api_trust }}
+  kfp-viz:
+    charm: {{ kfp_viz_charm }}
+    channel: {{ kfp_viz_channel }}
+    base: ubuntu@24.04/stable
+    scale: 1
+    trust: {{ kfp_viz_trust }}
+  minio:
+    charm: {{ minio_charm }}
+    channel: {{ minio_channel }}
+    base: ubuntu@24.04/stable
+    scale: 1
+    {% if minio_config %}
+    options:
+      {% for key, val in minio_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ minio_trust }}
+  mysql-k8s:
+    charm: {{ mysql_k8s_charm }}
+    channel: {{ mysql_k8s_channel }}
+    scale: 1
+    {% if mysql_k8s_config %}
+    options:
+      {% for key, val in mysql_k8s_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ mysql_k8s_trust }}
+relations:
+- - kfp-api:object-storage
+  - minio:object-storage
+- - kfp-api:relational-db
+  - mysql-k8s:database
+- - kfp-api:kfp-viz
+  - kfp-viz:kfp-viz

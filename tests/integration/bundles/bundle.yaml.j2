@@ -1,38 +1,74 @@
 bundle: kubernetes
 name: kubeflow-pipelines
 applications:
-  argo-controller:         { charm: ch:argo-controller, channel: latest/edge, scale: 1, trust: true }
-  metacontroller-operator: { charm: ch:metacontroller-operator, channel: latest/edge, scale: 1, trust: true }
-  minio:                   { charm: ch:minio, channel: latest/edge,       scale: 1 }
-  mlmd:                    { charm: ch:mlmd, channel: latest/edge, scale: 1, trust: true}
-  envoy:                   { charm: ch:envoy, channel: latest/edge, scale: 1 }
-  kubeflow-profiles:       { charm: ch:kubeflow-profiles, channel: latest/edge, scale: 1, trust: true }
+  argo-controller:
+    charm: {{ argo_controller_charm }}
+    channel: {{ argo_controller_channel }}
+    scale: 1
+    trust: {{ argo_controller_trust }}
+  metacontroller-operator:
+    charm: {{ metacontroller_operator_charm }}
+    channel: {{ metacontroller_operator_channel }}
+    scale: 1
+    trust: {{ metacontroller_operator_trust }}
+  minio:
+    charm: {{ minio_charm }}
+    channel: {{ minio_channel }}
+    scale: 1
+    trust: {{ minio_trust }}
+  mlmd:
+    charm: {{ mlmd_charm }}
+    channel: {{ mlmd_channel }}
+    scale: 1
+    trust: {{ mlmd_trust }}
+  envoy:
+    charm: {{ envoy_charm }}
+    channel: {{ envoy_channel }}
+    scale: 1
+    trust: {{ envoy_trust }}
+  kubeflow-profiles:
+    charm: {{ kubeflow_profiles_charm }}
+    channel: {{ kubeflow_profiles_channel }}
+    scale: 1
+    trust: {{ kubeflow_profiles_trust }}
   istio-ingressgateway:
-    charm: istio-gateway
-    channel: latest/edge
+    charm: {{ istio_gateway_charm }}
+    channel: {{ istio_gateway_channel }}
     scale: 1
+    {% if istio_gateway_config %}
     options:
-      kind: ingress
-    trust: true
+      {% for key, val in istio_gateway_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ istio_gateway_trust }}
   istio-pilot:
-    charm: istio-pilot
-    channel: latest/edge
+    charm: {{ istio_pilot_charm }}
+    channel: {{ istio_pilot_channel }}
     scale: 1
+    {% if istio_pilot_config %}
     options:
-      default-gateway: kubeflow-gateway
-    trust: true
+      {% for key, val in istio_pilot_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ istio_pilot_trust }}
   kfp-db:
-    charm: mysql-k8s
-    channel: 8.0/stable
+    charm: {{ mysql_k8s_charm }}
+    channel: {{ mysql_k8s_channel }}
     scale: 1
+    {% if mysql_k8s_config %}
     options:
-      profile: testing
-    trust: true
+      {% for key, val in mysql_k8s_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ mysql_k8s_trust }}
   kubeflow-roles:
-    charm: kubeflow-roles
-    channel: latest/edge
+    charm: {{ kubeflow_roles_charm }}
+    channel: {{ kubeflow_roles_channel }}
     scale: 1
-    trust: true
+    trust: {{ kubeflow_roles_trust }}
   kfp-api:
     charm: {{ kfp_api }}
     resources: {{ kfp_api_resources }}
