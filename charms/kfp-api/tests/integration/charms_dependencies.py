@@ -11,7 +11,7 @@ KFP_DB = CharmSpec(
 KFP_VIZ = CharmSpec(charm="kfp-viz", channel="latest/edge", trust=True)
 MINIO = CharmSpec(
     charm="minio",
-    channel="latest/edge",
+    channel="2.4/stable",
     trust=True,
     config={"access-key": "minio", "secret-key": "minio-secret-key"},
 )
