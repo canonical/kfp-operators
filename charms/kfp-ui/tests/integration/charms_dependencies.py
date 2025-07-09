@@ -2,8 +2,8 @@
 
 from charmed_kubeflow_chisme.testing import CharmSpec
 
-KFP_API = CharmSpec(charm="kfp-api", channel="2.4/stable", trust=True)
-KFP_VIZ = CharmSpec(charm="kfp-viz", channel="2.4/stable", trust=True)
+KFP_API = CharmSpec(charm="kfp-api", channel="latest/edge", trust=True)
+KFP_VIZ = CharmSpec(charm="kfp-viz", channel="latest/edge", trust=True)
 MINIO = CharmSpec(
     charm="minio",
     channel="ckf-1.10/stable",
