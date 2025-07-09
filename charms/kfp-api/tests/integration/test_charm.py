@@ -40,6 +40,7 @@ class TestCharm:
             if not (entity_url := request.config.getoption("--charm-path"))
             else entity_url
         )
+        logger.warning(f"Entity URL: {entity_url}")
 
         await ops_test.model.deploy(
             entity_url=entity_url,
@@ -59,7 +60,7 @@ class TestCharm:
             trust=KFP_DB.trust,
         )
         await ops_test.model.deploy(
-            entity_url=MINIO.charm, config=MINIO.config, channel=MINIO.channel, trust=MINIO.trust
+            entity_url=MINIO.charm, config=MINIO.config, channel=MINIO.channel, trust=MINIO.trust, base="ubuntu@20.04"
         )
         await ops_test.model.deploy(
             entity_url=KFP_VIZ.charm, channel=KFP_VIZ.channel, trust=KFP_VIZ.trust
