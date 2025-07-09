@@ -60,7 +60,11 @@ class TestCharm:
             trust=KFP_DB.trust,
         )
         await ops_test.model.deploy(
-            entity_url=MINIO.charm, config=MINIO.config, channel=MINIO.channel, trust=MINIO.trust, base="ubuntu@20.04"
+            entity_url=MINIO.charm,
+            config=MINIO.config,
+            channel=MINIO.channel,
+            trust=MINIO.trust,
+            base="ubuntu@20.04",
         )
         await ops_test.model.deploy(
             entity_url=KFP_VIZ.charm, channel=KFP_VIZ.channel, trust=KFP_VIZ.trust
