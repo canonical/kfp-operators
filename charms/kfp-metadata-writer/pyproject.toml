@@ -38,3 +38,58 @@ docstring-convention = "google"
 copyright-check = "True"
 copyright-author = "Canonical Ltd."
 copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.charm]
+optional = true
+
+[tool.poetry.group.charm.dependencies]
+charmed-kubeflow-chisme = ">=0.4.11"
+cosl = "^1.0.0"
+lightkube = "^0.17.1"
+ops = "^2.22.0"
+pydantic = "^2.11.7"
+serialized-data-interface = "^0.7.0"
+
+[tool.poetry.group.fmt]
+optional = true
+
+[tool.poetry.group.fmt.dependencies]
+black = "^25.1.0"
+isort = "^6.0.1"
+
+[tool.poetry.group.lint]
+optional = true
+
+[tool.poetry.group.lint.dependencies]
+black = "^25.1.0"
+codespell = "^2.4.1"
+flake8 = "^7.0.0"
+flake8-builtins = "^2.5.0"
+flake8-copyright = "^0.2.4"
+isort = "^6.0.1"
+pep8-naming = "^0.15.1"
+pyproject-flake8 = "^7.0.0"
+
+[tool.poetry.group.unit]
+optional = true
+
+[tool.poetry.group.unit.dependencies]
+coverage = "^7.9.1"
+ops = "^2.22.0"
+pytest = "^8.4.1"
+pytest-mock = "^3.14.1"
+pyyaml = "^6.0.2"
+
+[tool.poetry.group.integration]
+optional = true
+
+[tool.poetry.group.integration.dependencies]
+charmed-kubeflow-chisme = ">=0.4.11"
+pytest-operator = "^0.42.0"
+
+[project]
+name = "kfp-operators"
+requires-python = ">=3.12,<4.0"
