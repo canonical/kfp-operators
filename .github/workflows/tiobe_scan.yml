@@ -1,0 +1,59 @@
+name: TICS run self-hosted test (github-action)
+
+on:
+  workflow_dispatch: # Allows manual triggering
+  schedule:
+    - cron: "0 2 * * 6" # Every Saturday 2:00 AM UTC
+
+jobs:
+  build:
+    runs-on: [self-hosted, linux, amd64, tiobe, jammy]
+
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install tox
+          pip install pylint flake8
+
+      - name: Run tox tests to create coverage.xml
+        run: |
+          tox run -e kfp-api-unit
+          tox run -e kfp-metadata-writer-unit
+          tox run -e kfp-persistence-unit
+          tox run -e kfp-profile-controller-unit
+          tox run -e kfp-schedwf-unit
+          tox run -e kfp-ui-unit
+          tox run -e kfp-viewer-unit
+          tox run -e kfp-viz-unit
+          
+
+      - name: move results to necessary folder for TICS
+        run: |
+          mkdir cover
+          cp charms/kfp-api/coverage.xml cover/kfp-api.xml
+          cp charms/kfp-metadata-writer/coverage.xml cover/kfp-metadata-writer.xml
+          cp charms/kfp-persistence/coverage.xml cover/kfp-persistence.xml
+          cp charms/kfp-profile-controller/coverage.xml cover/kfp-profile-controller.xml
+          cp charms/kfp-schedwf/coverage.xml cover/kfp-schedwf.xml
+          cp charms/kfp-ui/coverage.xml cover/kfp-ui.xml
+          cp charms/kfp-viewer/coverage.xml cover/kfp-viewer.xml
+          cp charms/kfp-viz/coverage.xml cover/kfp-viz.xml
+          
+
+      - name: Run TICS analysis with github-action
+        uses: tiobe/tics-github-action@v3
+        with:
+          mode: qserver
+          project: kfp-operators
+          branchdir: .
+          viewerUrl: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=default
+          ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
+          installTics: true

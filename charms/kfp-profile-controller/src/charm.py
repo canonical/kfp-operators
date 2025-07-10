@@ -29,8 +29,8 @@ from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServ
 from lightkube.generic_resource import create_global_resource
 from lightkube.models.core_v1 import ServicePort
 from lightkube.resources.core_v1 import Secret
+from ops import main
 from ops.charm import CharmBase
-from ops.main import main
 from ops.model import BlockedStatus
 
 from components.pebble_components import (

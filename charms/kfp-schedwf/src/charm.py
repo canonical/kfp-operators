@@ -18,8 +18,8 @@ from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from lightkube.resources.core_v1 import ServiceAccount
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
+from ops import main
 from ops.charm import CharmBase
-from ops.main import main
 
 from components.pebble_component import KfpSchedwfPebbleService
 
