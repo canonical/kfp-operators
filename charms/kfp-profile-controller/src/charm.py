@@ -54,7 +54,7 @@ K8S_RESOURCE_FILES = [
     "src/templates/secrets.yaml.j2",
 ]
 KFP_DEFAULT_PIPELINE_ROOT = ""
-KFP_IMAGES_VERSION = "2.4.1"  # Remember to change this version also in default-custom-images.json
+KFP_IMAGES_VERSION = "2.5.0"  # Remember to change this version also in default-custom-images.json
 # This service name must be the Service from the mlmd-operator
 # FIXME: leaving it hardcoded now, but we should share this
 # host and port through relation data
