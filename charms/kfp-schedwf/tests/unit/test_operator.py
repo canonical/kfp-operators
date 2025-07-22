@@ -47,8 +47,33 @@ def test_kubernetes_component_created(harness, mocked_lightkube_client):
     assert mocked_lightkube_client.apply.call_count == 1
 
 
+def test_no_sa_token_file(harness, mocked_kubernetes_client, mocked_lightkube_client):
+    """Test the unit status when the SA token file is missing."""
+    harness.begin()
+    harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
+
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.kubernetes_resources.component.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
+
+    with pytest.raises(GenericCharmRuntimeError) as err:
+        harness.charm.sa_token.get_status()
+
+    assert err.value.msg == "SA token file is not present in charm"
+    # The base charm arbitrarily sets the unit status to BlockedStatus
+    # We should fix this in charmed-kubeflow-chisme as it doesn't really
+    # show the actual error and can be misleading
+    assert isinstance(harness.charm.unit.status, BlockedStatus)
+    assert (
+        harness.charm.unit.status.message
+        == "[sa-token:scheduledworkflow] Failed to compute status.  See logs for details."
+    )
+
+
+@patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")
 def test_pebble_service_container_running(harness, mocked_lightkube_client):
-    """Test that the pebble service of the charm's kfp-viewer container is running."""
+    """Test that the pebble service of the charm's kfp-schedwf container is running."""
     harness.set_leader(True)
     harness.begin()
     harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
@@ -69,7 +94,7 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
 
 
 def test_pebble_service_is_replanned_on_config_changed(harness, mocked_lightkube_client):
-    """Test that the pebble service of the charm's kfp-viewer container is running."""
+    """Test that the pebble service of the charm's kfp-schedwf container is running."""
     harness.set_leader(True)
     harness.begin()
     harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
