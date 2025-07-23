@@ -142,3 +142,11 @@ def mocked_lightkube_client(mocker):
     mocked_lightkube_client = MagicMock()
     mocker.patch("charm.lightkube.Client", return_value=mocked_lightkube_client)
     yield mocked_lightkube_client
+
+
+@pytest.fixture()
+def mocked_kubernetes_client(mocker):
+    """Mocks the kubernetes client in sa token component."""
+    mocked_kubernetes_client = MagicMock()
+    mocker.patch("charm.SaTokenComponent.kubernetes_client")
+    yield mocked_kubernetes_client
