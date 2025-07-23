@@ -2,14 +2,6 @@
 # These manifest files have been modified to suit the needs of the charm; the app label, metadata name,
 # and namespace fields will be rendered with information from the application and the model.
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app: {{ app_name }}
-  name: {{ app_name }}-sa
-  namespace: {{ namespace }}
----
 # manifests/apps/pipeline/upstream/base/installs/multi-user/view-edit-cluster-roles.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
