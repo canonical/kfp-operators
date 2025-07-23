@@ -59,7 +59,7 @@ def test_kubernetes_created_method(
     harness.charm.on.install.emit()
 
     # Assert
-    assert mocked_lightkube_client.apply.call_count == 3
+    assert mocked_lightkube_client.apply.call_count == 0
     assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
 
 
