@@ -27,7 +27,7 @@ from components.sa_token_component import SaTokenComponent
 logger = logging.getLogger(__name__)
 
 K8S_RESOURCE_FILES = ["src/templates/crds.yaml"]
-SA_NAME = "ml-pipeline-scheduledworkflow"
+SA_NAME = "kfp-schedwf"
 SA_TOKEN_PATH = "src/"
 SA_TOKEN_FILENAME = "scheduledworkflow-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
