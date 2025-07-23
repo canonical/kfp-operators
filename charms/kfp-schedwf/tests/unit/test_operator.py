@@ -3,8 +3,9 @@
 
 from unittest.mock import MagicMock, patch
 
+from charmed_kubeflow_chisme.exceptions import GenericCharmRuntimeError
 import pytest
-from ops.model import ActiveStatus, WaitingStatus
+from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import KfpSchedwf

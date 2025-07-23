@@ -60,7 +60,7 @@ class KfpSchedwf(CharmBase):
                 ),
                 context_callable=lambda: {
                     "app_name": self.app.name,
-                    "namespace": self._namespace
+                    "namespace": self._namespace,
                     "sa_name": SA_NAME,
                 },
                 lightkube_client=lightkube.Client(),
