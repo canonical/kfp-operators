@@ -8,6 +8,7 @@ https://github.com/canonical/kfp-operators
 """
 
 import logging
+from pathlib import Path
 
 import lightkube
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
