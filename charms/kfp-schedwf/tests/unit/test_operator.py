@@ -44,7 +44,7 @@ def test_kubernetes_component_created(harness, mocked_lightkube_client):
 
     # Assert that expected amount of apply calls were made
     # This simulates the Kubernetes resources being created
-    assert mocked_lightkube_client.apply.call_count == 4
+    assert mocked_lightkube_client.apply.call_count == 1
 
 
 def test_pebble_service_container_running(harness, mocked_lightkube_client):
