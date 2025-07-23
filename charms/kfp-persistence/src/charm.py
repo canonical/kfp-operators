@@ -33,7 +33,7 @@ from components.sa_token_component import SaTokenComponent
 log = logging.getLogger()
 
 K8S_RESOURCE_FILES = ["src/templates/auth_manifests.yaml.j2"]
-SA_NAME = "ml-pipeline-persistenceagent"
+SA_NAME = "kfp-persistence"
 SA_TOKEN_PATH = "src/"
 SA_TOKEN_FILENAME = "persistenceagent-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
