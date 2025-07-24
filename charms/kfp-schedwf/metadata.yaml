@@ -12,7 +12,7 @@ resources:
     type: oci-image
     description: Backing OCI image
     # The container's `user` needs to be updated when switching from upstream image to rock
-    upstream-source: ghcr.io/kubeflow/kfp-scheduledworkflow:2.5.0
+    upstream-source: ghcr.io/kubeflow/kfp-scheduled-workflow-controller:2.5.0
 requires:
   logging:
     interface: loki_push_api
