@@ -40,7 +40,6 @@ class KfpSchedwf(CharmBase):
         super().__init__(*args)
 
         self.charm_reconciler = CharmReconciler(self)
-        self._namespace = self.model.name
 
         self.leadership_gate = self.charm_reconciler.add(
             component=LeadershipGateComponent(
@@ -61,7 +60,7 @@ class KfpSchedwf(CharmBase):
                 ),
                 context_callable=lambda: {
                     "app_name": self.app.name,
-                    "namespace": self._namespace,
+                    "namespace": self.model.name,
                     "sa_name": SA_NAME,
                 },
                 lightkube_client=lightkube.Client(),
