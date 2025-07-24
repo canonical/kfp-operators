@@ -49,7 +49,7 @@ def test_kubernetes_component_created(harness, mocked_lightkube_client):
 
 
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/non-existent-file")
-def test_no_sa_token_file(harness, mocked_kubernetes_client, mocked_lightkube_client):
+def test_no_sa_token_file(harness, mocked_sa_component_kubernetes_client, mocked_lightkube_client):
     """Test the unit status when the SA token file is missing."""
     harness.begin()
     harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
@@ -149,7 +149,7 @@ def mocked_lightkube_client(mocker):
 
 
 @pytest.fixture()
-def mocked_kubernetes_client(mocker):
+def mocked_sa_component_kubernetes_client(mocker):
     """Mocks the kubernetes client in sa token component."""
     mocked_kubernetes_client = MagicMock()
     mocker.patch("charm.SaTokenComponent.kubernetes_client")
