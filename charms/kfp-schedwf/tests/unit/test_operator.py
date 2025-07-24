@@ -48,15 +48,14 @@ def test_kubernetes_component_created(harness, mocked_lightkube_client):
     assert mocked_lightkube_client.apply.call_count == 1
 
 
+@patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/non-existent-file")
 def test_no_sa_token_file(harness, mocked_kubernetes_client, mocked_lightkube_client):
     """Test the unit status when the SA token file is missing."""
     harness.begin()
     harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
 
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
-    harness.charm.kubernetes_resources.component.get_status = MagicMock(
-        return_value=ActiveStatus()
-    )
+    harness.charm.kubernetes_resources.component.get_status = MagicMock(return_value=ActiveStatus())
 
     with pytest.raises(GenericCharmRuntimeError) as err:
         harness.charm.sa_token.get_status()
@@ -80,6 +79,7 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
     harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
 
     harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.sa_token.get_status = MagicMock(return_value=ActiveStatus())
 
     harness.charm.on.install.emit()
 
@@ -94,6 +94,7 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
     assert environment["CRON_SCHEDULE_TIMEZONE"] == harness.charm.config.get("timezone")
 
 
+@patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")
 def test_pebble_service_is_replanned_on_config_changed(harness, mocked_lightkube_client):
     """Test that the pebble service of the charm's kfp-schedwf container is running."""
     harness.set_leader(True)
@@ -101,6 +102,7 @@ def test_pebble_service_is_replanned_on_config_changed(harness, mocked_lightkube
     harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
 
     harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.sa_token.get_status = MagicMock(return_value=ActiveStatus())
 
     harness.charm.on.install.emit()
 
@@ -116,12 +118,14 @@ def test_pebble_service_is_replanned_on_config_changed(harness, mocked_lightkube
     assert environment["LOG_LEVEL"] == harness.charm.config.get("log-level")
 
 
+@patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")
 def test_install_before_pebble_service_container(harness, mocked_lightkube_client):
     """Test that charm waits when install event happens before pebble-service-container is ready."""
     harness.set_leader(True)
     harness.begin()
 
     harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.sa_token.get_status = MagicMock(return_value=ActiveStatus())
 
     harness.charm.on.install.emit()
 
