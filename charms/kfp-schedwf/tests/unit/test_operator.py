@@ -55,7 +55,9 @@ def test_no_sa_token_file(harness, mocked_sa_component_kubernetes_client, mocked
     harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
 
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
-    harness.charm.kubernetes_resources.component.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.kubernetes_resources.component.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
 
     # NOTE: without relations, this is necessary for the charm to be installed before
     # "charm.sa_token.get_status()" can be called later on:
