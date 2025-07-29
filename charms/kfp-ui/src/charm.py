@@ -10,16 +10,13 @@ https://github.com/canonical/kfp-operators
 import logging
 from pathlib import Path
 
-import lightkube
 from charmed_kubeflow_chisme.components import (
     CharmReconciler,
     ContainerFileTemplate,
-    KubernetesComponent,
     LeadershipGateComponent,
     SdiRelationBroadcasterComponent,
     SdiRelationDataReceiverComponent,
 )
-from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
     DashboardLink,
     KubeflowDashboardLinksRequirer,
@@ -27,8 +24,6 @@ from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from lightkube.models.core_v1 import ServicePort
-from lightkube.resources.core_v1 import ServiceAccount
-from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from ops import CharmBase, main
 
 from components.pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleService
@@ -36,7 +31,6 @@ from components.pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleS
 logger = logging.getLogger(__name__)
 
 TEMPLATES_PATH = Path("src/templates")
-K8S_RESOURCE_FILES = [TEMPLATES_PATH / "auth_manifests.yaml.j2"]
 
 CONFIG_JSON_TEMPLATE_FILE = TEMPLATES_PATH / "config.json"
 CONFIG_JSON_DESTINATION_PATH = "/config/config.json"
@@ -168,21 +162,6 @@ class KfpUiOperator(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
-        self.kubernetes_resources = self.charm_reconciler.add(
-            component=KubernetesComponent(
-                charm=self,
-                name="kubernetes:auth",
-                resource_templates=K8S_RESOURCE_FILES,
-                krh_resource_types={ClusterRole, ClusterRoleBinding, ServiceAccount},
-                krh_labels=create_charm_default_labels(
-                    self.app.name, self.model.name, scope="auth"
-                ),
-                context_callable=lambda: {"app_name": self.app.name, "namespace": self.model.name},
-                lightkube_client=lightkube.Client(),  # TODO: Make this easier to test on
-            ),
-            depends_on=[self.leadership_gate],
-        )
-
         self.object_storage_relation = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
                 charm=self,
@@ -243,7 +222,6 @@ class KfpUiOperator(CharmBase):
             ),
             depends_on=[
                 self.leadership_gate,
-                self.kubernetes_resources,
                 self.object_storage_relation,
                 self.kfp_api_relation,
             ],

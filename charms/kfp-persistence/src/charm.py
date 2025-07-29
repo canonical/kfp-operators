@@ -10,18 +10,13 @@ https://github.com/canonical/kfp-operators/
 import logging
 from pathlib import Path
 
-import lightkube
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
-from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.components.pebble_component import ContainerFileTemplate
 from charmed_kubeflow_chisme.components.serialised_data_interface_components import (
     SdiRelationDataReceiverComponent,
 )
-from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
-from lightkube.resources.core_v1 import ServiceAccount
-from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from ops import CharmBase, main
 
 from components.pebble_components import (
@@ -32,8 +27,7 @@ from components.sa_token_component import SaTokenComponent
 
 log = logging.getLogger()
 
-K8S_RESOURCE_FILES = ["src/templates/auth_manifests.yaml.j2"]
-SA_NAME = "ml-pipeline-persistenceagent"
+SA_NAME = "kfp-persistence"
 SA_TOKEN_PATH = "src/"
 SA_TOKEN_FILENAME = "persistenceagent-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
@@ -62,25 +56,6 @@ class KfpPersistenceOperator(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
-        self.kubernetes_resources = self.charm_reconciler.add(
-            component=KubernetesComponent(
-                charm=self,
-                name="kubernetes:auth",
-                resource_templates=K8S_RESOURCE_FILES,
-                krh_resource_types={ClusterRole, ClusterRoleBinding, ServiceAccount},
-                krh_labels=create_charm_default_labels(
-                    self.app.name, self.model.name, scope="auth"
-                ),
-                context_callable=lambda: {
-                    "app_name": self.app.name,
-                    "namespace": self.model.name,
-                    "sa_name": SA_NAME,
-                },
-                lightkube_client=lightkube.Client(),
-            ),
-            depends_on=[self.leadership_gate],
-        )
-
         self.sa_token = self.charm_reconciler.add(
             component=SaTokenComponent(
                 charm=self,
@@ -92,7 +67,7 @@ class KfpPersistenceOperator(CharmBase):
                 path=SA_TOKEN_PATH,
                 expiration=4294967296,
             ),
-            depends_on=[self.leadership_gate, self.kubernetes_resources],
+            depends_on=[self.leadership_gate],
         )
         self.persistenceagent_container = self.charm_reconciler.add(
             component=PersistenceAgentPebbleService(
@@ -125,12 +100,7 @@ class KfpPersistenceOperator(CharmBase):
                     ],
                 ),
             ),
-            depends_on=[
-                self.leadership_gate,
-                self.kfp_api_relation,
-                self.kubernetes_resources,
-                self.sa_token,
-            ],
+            depends_on=[self.leadership_gate, self.kfp_api_relation, self.sa_token],
         )
 
         self.charm_reconciler.install_default_event_handlers()

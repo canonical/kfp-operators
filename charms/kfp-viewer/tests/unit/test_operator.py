@@ -55,7 +55,7 @@ def test_kubernetes_component_created(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
 
     # Assert that expected amount of Kubernetes resources were created
-    assert mocked_lightkube_client.apply.call_count == 4
+    assert mocked_lightkube_client.apply.call_count == 1
 
 
 def test_pebble_service_container_running(harness, mocked_lightkube_client):
