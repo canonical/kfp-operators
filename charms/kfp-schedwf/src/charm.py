@@ -50,7 +50,7 @@ class KfpSchedwf(CharmBase):
                 timezone=self.model.config["timezone"],
                 log_level=self.model.config["log-level"],
             ),
-            depends_on=[],
+            depends_on=[self.leadership_gate],
         )
 
         self.charm_reconciler.install_default_event_handlers()
