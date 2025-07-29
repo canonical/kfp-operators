@@ -56,25 +56,6 @@ class KfpPersistenceOperator(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
-        self.kubernetes_resources = self.charm_reconciler.add(
-            component=KubernetesComponent(
-                charm=self,
-                name="kubernetes:auth",
-                resource_templates=K8S_RESOURCE_FILES,
-                krh_resource_types={ClusterRole, ClusterRoleBinding, ServiceAccount},
-                krh_labels=create_charm_default_labels(
-                    self.app.name, self.model.name, scope="auth"
-                ),
-                context_callable=lambda: {
-                    "app_name": self.app.name,
-                    "namespace": self.model.name,
-                    "sa_name": SA_NAME,
-                },
-                lightkube_client=lightkube.Client(),
-            ),
-            depends_on=[self.leadership_gate],
-        )
-
         # creating a serviceAccountToken injected via a mounted projected volume:
         self.sa_token = self.charm_reconciler.add(
             component=SaTokenComponent(
