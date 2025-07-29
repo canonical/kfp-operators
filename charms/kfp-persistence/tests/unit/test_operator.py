@@ -121,7 +121,7 @@ def test_no_sa_token_file(harness, mocked_kubernetes_client):
 
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/persistenceagent-sa-token")
 def test_pebble_services_running(harness):
-    """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
+    """Test that the pebble services successfully start."""
     # Arrange
     harness.begin()
     harness.set_can_connect("persistenceagent", True)

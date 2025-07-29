@@ -204,7 +204,7 @@ def assert_relation_data_send_as_expected(harness, expected_relation_data, rel_i
 
 
 def test_pebble_services_running(harness, mocked_kubernetes_service_patch):
-    """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
+    """Test that the pebble services successfully start."""
     # Arrange
     harness.begin()
     harness.set_can_connect("ml-pipeline-ui", True)
