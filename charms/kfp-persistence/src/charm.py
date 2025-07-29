@@ -56,6 +56,7 @@ class KfpPersistenceOperator(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
+        # creating a serviceAccountToken injected via a mounted projected volume:
         self.sa_token = self.charm_reconciler.add(
             component=SaTokenComponent(
                 charm=self,

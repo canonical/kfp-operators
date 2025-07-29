@@ -14,7 +14,7 @@ resources:
     type: oci-image
     description: OCI image for KFP Metadata Writer
     # The container's `user` needs to be updated when switching from upstream image to rock
-    upstream-source: docker.io/charmedkubeflow/metadata-writer:2.4.1-82e23c1
+    upstream-source: ghcr.io/kubeflow/kfp-metadata-writer:2.5.0
 requires:
   grpc:
     interface: k8s-service

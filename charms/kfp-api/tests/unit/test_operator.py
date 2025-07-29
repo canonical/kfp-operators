@@ -437,7 +437,11 @@ class TestCharm:
             "LOG_LEVEL": harness.charm.config["log-level"],
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_HOST": kfp_viz_data["service-name"],
             "ML_PIPELINE_VISUALIZATIONSERVER_SERVICE_PORT": kfp_viz_data["service-port"],
+            "PIPELINE_LOG_LEVEL": "1",
+            "PUBLISH_LOGS": "true",
             "CACHE_IMAGE": harness.charm.config["cache-image"],
+            "V2_DRIVER_IMAGE": harness.charm.config["driver-image"],
+            "V2_LAUNCHER_IMAGE": harness.charm.config["launcher-image"],
             "ARCHIVE_CONFIG_LOG_FILE_NAME": harness.charm.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": harness.charm.config["log-archive-prefix"],
             # OBJECTSTORECONFIG_HOST and _PORT currently have no effect due to
@@ -449,8 +453,6 @@ class TestCharm:
             ),
             "OBJECTSTORECONFIG_PORT": str(objectstorage_data["port"]),
             "OBJECTSTORECONFIG_REGION": "",
-            "V2_LAUNCHER_IMAGE": harness.charm.config["launcher-image"],
-            "V2_DRIVER_IMAGE": harness.charm.config["driver-image"],
         }
         test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
 
