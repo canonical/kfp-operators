@@ -23,14 +23,6 @@ def harness():
 
 
 @pytest.fixture()
-def mocked_lightkube_client(mocker):
-    """Mocks the Lightkube Client in charm.py, returning a mock instead."""
-    mocked_lightkube_client = MagicMock()
-    mocker.patch("charm.lightkube.Client", return_value=mocked_lightkube_client)
-    yield mocked_lightkube_client
-
-
-@pytest.fixture()
 def mocked_kubernetes_client(mocker):
     """Mocks the kubernetes client in sa token component."""
     mocked_kubernetes_client = MagicMock()
@@ -38,13 +30,13 @@ def mocked_kubernetes_client(mocker):
     yield mocked_kubernetes_client
 
 
-def test_log_forwarding(harness: Harness, mocked_lightkube_client):
+def test_log_forwarding(harness: Harness):
     with patch("charm.LogForwarder") as mock_logging:
         harness.begin()
         mock_logging.assert_called_once_with(charm=harness.charm)
 
 
-def test_not_leader(harness, mocked_lightkube_client):
+def test_not_leader(harness):
     """Test not a leader scenario."""
     harness.begin_with_initial_hooks()
     assert harness.charm.model.unit.status == WaitingStatus(
@@ -56,7 +48,7 @@ RELATION_NAME = "kfp-api"
 OTHER_APP_NAME = "kfp-api-provider"
 
 
-def test_kfp_api_relation_with_data(harness, mocked_lightkube_client):
+def test_kfp_api_relation_with_data(harness):
     """Test that if Leadership is Active, the kfp-api relation operates as expected."""
     # Arrange
     harness.begin()
@@ -72,7 +64,7 @@ def test_kfp_api_relation_with_data(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.kfp_api_relation.status, ActiveStatus)
 
 
-def test_kfp_api_relation_without_data(harness, mocked_lightkube_client):
+def test_kfp_api_relation_without_data(harness):
     """Test that the kfp-api relation goes Blocked if no data is available."""
     # Arrange
     harness.begin()
@@ -88,7 +80,7 @@ def test_kfp_api_relation_without_data(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
-def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
+def test_kfp_api_relation_without_relation(harness):
     """Test that the kfp-api relation goes Blocked if no relation is established."""
     # Arrange
     harness.begin()
@@ -104,15 +96,12 @@ def test_kfp_api_relation_without_relation(harness, mocked_lightkube_client):
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
-def test_no_sa_token_file(harness, mocked_kubernetes_client, mocked_lightkube_client):
+def test_no_sa_token_file(harness, mocked_kubernetes_client):
     """Test the unit status when the SA token file is missing."""
     harness.begin()
     harness.set_can_connect("persistenceagent", True)
 
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
-    harness.charm.kubernetes_resources.component.get_status = MagicMock(
-        return_value=ActiveStatus()
-    )
     add_sdi_relation_to_harness(harness, "kfp-api", data=MOCK_KFP_API_DATA)
     harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
 
@@ -131,7 +120,7 @@ def test_no_sa_token_file(harness, mocked_kubernetes_client, mocked_lightkube_cl
 
 
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/persistenceagent-sa-token")
-def test_pebble_services_running(harness, mocked_lightkube_client):
+def test_pebble_services_running(harness):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
     harness.begin()
@@ -139,7 +128,6 @@ def test_pebble_services_running(harness, mocked_lightkube_client):
 
     # Mock:
     # * leadership_gate_component_item to be active and executed
-    # * kubernetes_resources_component_item to be active and executed
     # * object_storage_relation_component to be active and executed, and have data that can be
     #   returned
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())

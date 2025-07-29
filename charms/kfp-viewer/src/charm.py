@@ -26,7 +26,7 @@ from components.pebble_component import KfpViewerPebbleService
 
 logger = logging.getLogger(__name__)
 
-K8S_RESOURCE_FILES = ["src/templates/auth_manifests.yaml.j2", "src/templates/crds.yaml.j2"]
+K8S_RESOURCE_FILES = ["src/templates/crds.yaml.j2"]
 
 
 class KfpViewer(CharmBase):

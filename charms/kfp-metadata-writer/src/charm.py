@@ -9,14 +9,10 @@ https://github.com/canonical/kfp-operators
 
 import logging
 
-import lightkube
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
-from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
-from lightkube.resources.core_v1 import ServiceAccount
-from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from ops import main
 from ops.charm import CharmBase
 
@@ -26,7 +22,6 @@ from components.pebble_component import KfpMetadataWriterInputs, KfpMetadataWrit
 logger = logging.getLogger(__name__)
 
 GRPC_RELATION_NAME = "grpc"
-K8S_RESOURCE_FILES = ["src/templates/auth_manifests.yaml.j2"]
 LOGGING_RELATION_NAME = "logging"
 
 
@@ -54,21 +49,6 @@ class KfpMetadataWriter(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
-        self.kubernetes_resources = self.charm_reconciler.add(
-            component=KubernetesComponent(
-                charm=self,
-                name="kubernetes:auth",
-                resource_templates=K8S_RESOURCE_FILES,
-                krh_resource_types={ClusterRole, ClusterRoleBinding, ServiceAccount},
-                krh_labels=create_charm_default_labels(
-                    self.app.name, self.model.name, scope="auth"
-                ),
-                context_callable=lambda: {"app_name": self.app.name, "namespace": self._namespace},
-                lightkube_client=lightkube.Client(),
-            ),
-            depends_on=[self.leadership_gate],
-        )
-
         self.pebble_service_container = self.charm_reconciler.add(
             component=KfpMetadataWriterPebbleService(
                 charm=self,
@@ -81,7 +61,7 @@ class KfpMetadataWriter(CharmBase):
                     METADATA_GRPC_SERVICE_SERVICE_PORT=self.grpc_relation.component.get_service_info().port,  # noqa
                 ),
             ),
-            depends_on=[self.kubernetes_resources, self.grpc_relation],
+            depends_on=[self.grpc_relation],
         )
 
         self.charm_reconciler.install_default_event_handlers()
