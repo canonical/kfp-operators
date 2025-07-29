@@ -1,4 +1,4 @@
 {
-    "visualization_server": "ghcr.io/kubeflow/kfp-visualization-server:2.5.0",
-    "frontend": "ghcr.io/kubeflow/kfp-frontend:2.5.0"
+    "visualization_server": "docker.io/charmedkubeflow/visualization-server:2.5.0-400719c",
+    "frontend": "docker.io/charmedkubeflow/frontend:2.5.0-308f3e0"
 }
