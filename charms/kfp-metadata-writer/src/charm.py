@@ -11,7 +11,6 @@ import logging
 
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
-from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from ops import main
 from ops.charm import CharmBase

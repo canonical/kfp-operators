@@ -16,7 +16,6 @@ from charmed_kubeflow_chisme.components.pebble_component import ContainerFileTem
 from charmed_kubeflow_chisme.components.serialised_data_interface_components import (
     SdiRelationDataReceiverComponent,
 )
-from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from ops import CharmBase, main
 

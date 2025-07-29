@@ -17,7 +17,6 @@ from charmed_kubeflow_chisme.components import (
     SdiRelationBroadcasterComponent,
     SdiRelationDataReceiverComponent,
 )
-from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
     DashboardLink,
     KubeflowDashboardLinksRequirer,
