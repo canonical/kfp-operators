@@ -54,7 +54,7 @@ class KfpSchedwf(CharmBase):
                 context_callable=lambda: {"app_name": self.app.name, "namespace": self._namespace},
                 lightkube_client=lightkube.Client(),
             ),
-            depends_on=[self.kubernetes_resources],
+            depends_on=[self.leadership_gate],
         )
 
         # The service_name should be consistent with the rock predefined
@@ -69,7 +69,7 @@ class KfpSchedwf(CharmBase):
                 timezone=self.model.config["timezone"],
                 log_level=self.model.config["log-level"],
             ),
-            depends_on=[self.leadership_gate],
+            depends_on=[self.kubernetes_resources],
         )
 
         self.charm_reconciler.install_default_event_handlers()
