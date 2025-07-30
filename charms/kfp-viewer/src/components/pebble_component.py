@@ -46,7 +46,7 @@ class KfpViewerPebbleService(PebbleServiceComponent):
                         ),
                         "startup": "enabled",
                         "environment": self.environment,
-                        # "user": "_daemon_",  # This is needed only for rocks
+                        "user": "_daemon_",  # This is needed only for rocks
                     }
                 },
             }
