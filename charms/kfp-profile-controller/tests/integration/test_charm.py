@@ -32,8 +32,8 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_NAME = METADATA["name"]
-CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:2.3.0"
-CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:2.3.0"
+CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
+CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
 
 PodDefault = create_namespaced_resource(
     group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
