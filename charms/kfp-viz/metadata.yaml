@@ -12,7 +12,7 @@ resources:
     type: oci-image
     description: OCI image for ml-pipeline-visualizationserver
     # The container's `user` needs to be updated when switching from upstream image to rock
-    upstream-source: ghcr.io/kubeflow/kfp-visualization-server:2.5.0
+    upstream-source: docker.io/charmedkubeflow/visualization-server:2.5.0-400719c
 provides:
   kfp-viz:
     interface: k8s-service

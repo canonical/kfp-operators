@@ -53,7 +53,6 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                         "summary": "entry point for kfp-profile-controller",
                         "command": "python3 /hooks/sync.py",  # Must be a string
                         "startup": "enabled",
-                        # "user": "_daemon_",  # This is needed only for rocks
                         "environment": {
                             "MINIO_HOST": inputs.MINIO_HOST,
                             "MINIO_PORT": inputs.MINIO_PORT,
