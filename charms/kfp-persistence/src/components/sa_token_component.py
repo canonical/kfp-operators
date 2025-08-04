@@ -54,10 +54,7 @@ class SaTokenComponent(Component):
     @property
     def kubernetes_client(self) -> CoreV1Api:
         """Load cluster configuration and return a CoreV1 Kubernetes client."""
-        try:
-            kubernetes.config.load_incluster_config()
-        except ConfigException:
-            kubernetes.config.load_kube_config()
+        kubernetes.config.load_incluster_config()
 
         api_client = kubernetes.client.ApiClient()
         core_v1_api = kubernetes.client.CoreV1Api(api_client)
