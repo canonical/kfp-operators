@@ -57,7 +57,7 @@ options:
   driver-image:
     type: string
     # Source: https://github.com/kubeflow/pipelines/blob/2.5.0/backend/src/v2/compiler/argocompiler/container.go#L45
-    default: "docker.io/charmedkubeflow/kfp-driver:2.5.0-1c1a3c7"
+    default: "docker.io/charmedkubeflow/kfp-driver:2.5.0-0272ab2"
     description: Driver image used during a pipeline's steps.
   log-level:
     type: string
