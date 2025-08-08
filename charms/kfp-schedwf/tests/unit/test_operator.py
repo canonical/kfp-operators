@@ -10,6 +10,8 @@ from ops.testing import Harness
 
 from charm import KfpSchedwf
 
+SERVICE_ACCOUNT_NAME = "kfp-schedwf"
+
 
 def test_log_forwarding(harness: Harness, mocked_lightkube_client):
     with patch("charm.LogForwarder") as mock_logging:
@@ -66,7 +68,10 @@ def test_no_sa_token_file(harness, mocked_sa_component_kubernetes_client, mocked
     with pytest.raises(GenericCharmRuntimeError) as err:
         harness.charm.sa_token.get_status()
 
-    assert err.value.msg == "SA token file is not present in charm"
+    assert (
+        err.value.msg
+        == f"Token file for {SERVICE_ACCOUNT_NAME} ServiceAccount not present in charm."
+    )
     # The base charm arbitrarily sets the unit status to BlockedStatus
     # We should fix this in charmed-kubeflow-chisme as it doesn't really
     # show the actual error and can be misleading

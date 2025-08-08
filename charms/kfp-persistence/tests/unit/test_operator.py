@@ -12,6 +12,9 @@ from ops.testing import Harness
 from charm import KfpPersistenceOperator
 
 MOCK_KFP_API_DATA = {"service-name": "service-name", "service-port": "1234"}
+OTHER_APP_NAME = "kfp-api-provider"
+RELATION_NAME = "kfp-api"
+SERVICE_ACCOUNT_NAME = "kfp-persistence"
 
 
 @pytest.fixture
@@ -42,10 +45,6 @@ def test_not_leader(harness):
     assert harness.charm.model.unit.status == WaitingStatus(
         "[leadership-gate] Waiting for leadership"
     )
-
-
-RELATION_NAME = "kfp-api"
-OTHER_APP_NAME = "kfp-api-provider"
 
 
 def test_kfp_api_relation_with_data(harness):
@@ -108,7 +107,10 @@ def test_no_sa_token_file(harness, mocked_kubernetes_client):
     with pytest.raises(GenericCharmRuntimeError) as err:
         harness.charm.sa_token.get_status()
 
-    assert err.value.msg == "SA token file is not present in charm"
+    assert (
+        err.value.msg
+        == f"Token file for {SERVICE_ACCOUNT_NAME} ServiceAccount not present in charm."
+    )
     # The base charm arbitrarily sets the unit status to BlockedStatus
     # We should fix this in charmed-kubeflow-chisme as it doesn't really
     # show the actual error and can be misleading
