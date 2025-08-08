@@ -26,7 +26,7 @@ def harness():
 def mocked_kubernetes_client(mocker):
     """Mocks the kubernetes client in sa token component."""
     mocked_kubernetes_client = MagicMock()
-    mocker.patch("charm.SaTokenComponent.kubernetes_client")
+    mocker.patch("charm.SATokenComponent.kubernetes_client")
     yield mocked_kubernetes_client
 
 
