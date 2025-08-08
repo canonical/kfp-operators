@@ -10,9 +10,10 @@ https://github.com/canonical/kfp-operators/
 import logging
 from pathlib import Path
 
-from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler, SATokenComponent
+from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.components.pebble_component import ContainerFileTemplate
+from charmed_kubeflow_chisme.components.sa_token_component import SATokenComponent
 from charmed_kubeflow_chisme.components.serialised_data_interface_components import (
     SdiRelationDataReceiverComponent,
 )
