@@ -13,6 +13,7 @@ from pathlib import Path
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.components.pebble_component import ContainerFileTemplate
+from charmed_kubeflow_chisme.components.sa_token_component import SATokenComponent
 from charmed_kubeflow_chisme.components.serialised_data_interface_components import (
     SdiRelationDataReceiverComponent,
 )
@@ -23,7 +24,6 @@ from components.pebble_components import (
     PersistenceAgentPebbleService,
     PesistenceAgentServiceConfig,
 )
-from components.sa_token_component import SaTokenComponent
 
 log = logging.getLogger()
 
@@ -58,7 +58,7 @@ class KfpPersistenceOperator(CharmBase):
 
         # creating a serviceAccountToken injected via a mounted projected volume:
         self.sa_token = self.charm_reconciler.add(
-            component=SaTokenComponent(
+            component=SATokenComponent(
                 charm=self,
                 name="sa-token:persistenceagent",
                 audiences=["pipelines.kubeflow.org"],
