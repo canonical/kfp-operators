@@ -15,6 +15,7 @@ from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.components.pebble_component import ContainerFileTemplate
+from charmed_kubeflow_chisme.components.sa_token_component import SATokenComponent
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
@@ -22,7 +23,6 @@ from ops import main
 from ops.charm import CharmBase
 
 from components.pebble_component import KfpSchedwfPebbleService
-from components.sa_token_component import SaTokenComponent
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class KfpSchedwf(CharmBase):
 
         # creating a serviceAccountToken injected via a mounted projected volume:
         self.sa_token = self.charm_reconciler.add(
-            component=SaTokenComponent(
+            component=SATokenComponent(
                 charm=self,
                 name="sa-token:scheduledworkflow",
                 audiences=["pipelines.kubeflow.org"],
