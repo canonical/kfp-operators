@@ -12,8 +12,9 @@ applications:
     scale: 1
     trust: {{ metacontroller_operator_trust }}
   minio:
+    base: ubuntu@24.04
     charm: {{ minio_charm }}
-    channel: {{ minio_channel }}
+    channel: latest/edge/pr-252
     scale: 1
     trust: {{ minio_trust }}
   mlmd:
