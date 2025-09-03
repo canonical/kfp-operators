@@ -103,17 +103,6 @@ DASHBOARD_LINKS = [
 ]
 
 
-def load_service_config():
-    """Loads user and command from service config file"""
-    with open(SERVICE_CONFIG_PATH, "r") as file:
-        config = yaml.safe_load(file)
-        user = config.get("user", "")
-        command = config.get("command", "")
-        if not command:
-            raise ValueError("Command cannot be empty in the configuration.")
-        return user, command
-
-
 class KfpUiOperator(CharmBase):
     """Charm for the Kubeflow Pipelines UI.
 
@@ -124,7 +113,12 @@ class KfpUiOperator(CharmBase):
         super().__init__(*args)
 
         # Load user and command from service config file
-        self.user, self.command = load_service_config()
+        with open(SERVICE_CONFIG_PATH, "r") as file:
+            service_config = yaml.safe_load(file)
+        self.user = service_config.get("user", "")
+        self.command = service_config.get("command", "")
+        if not self.command:
+            raise ValueError("Command cannot be empty in the configuration.")
 
         # add links in kubeflow-dashboard sidebar
         self.kubeflow_dashboard_sidebar = KubeflowDashboardLinksRequirer(
