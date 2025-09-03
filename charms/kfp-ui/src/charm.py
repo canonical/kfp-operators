@@ -10,6 +10,7 @@ https://github.com/canonical/kfp-operators
 import logging
 from pathlib import Path
 
+import yaml
 from charmed_kubeflow_chisme.components import (
     CharmReconciler,
     ContainerFileTemplate,
@@ -31,6 +32,7 @@ from components.pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleS
 logger = logging.getLogger(__name__)
 
 TEMPLATES_PATH = Path("src/templates")
+SERVICE_CONFIG_PATH = Path("src/service-config.yaml")
 
 CONFIG_JSON_TEMPLATE_FILE = TEMPLATES_PATH / "config.json"
 CONFIG_JSON_DESTINATION_PATH = "/config/config.json"
@@ -101,6 +103,17 @@ DASHBOARD_LINKS = [
 ]
 
 
+def load_service_config():
+    """Loads user and command from service config file"""
+    with open(SERVICE_CONFIG_PATH, "r") as file:
+        config = yaml.safe_load(file)
+        user = config.get("user", "")
+        command = config.get("command", "")
+        if not command:
+            raise ValueError("Command cannot be empty in the configuration.")
+        return user, command
+
+
 class KfpUiOperator(CharmBase):
     """Charm for the Kubeflow Pipelines UI.
 
@@ -109,6 +122,9 @@ class KfpUiOperator(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
+
+        # Load user and command from service config file
+        self.user, self.command = load_service_config()
 
         # add links in kubeflow-dashboard sidebar
         self.kubeflow_dashboard_sidebar = KubeflowDashboardLinksRequirer(
@@ -218,6 +234,8 @@ class KfpUiOperator(CharmBase):
                     ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation.component.get_data()[
                         "service-port"
                     ],
+                    USER=self.user,
+                    COMMAND=self.command,
                 ),
             ),
             depends_on=[
