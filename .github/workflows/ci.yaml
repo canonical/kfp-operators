@@ -56,7 +56,7 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: pipx install tox
       - run: tox -e ${{ matrix.charm }}-lint
 
@@ -76,7 +76,7 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: pipx install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
@@ -108,7 +108,7 @@ jobs:
       charm-paths: ${{ steps.get-charm-paths.outputs.charm-paths }}
       charm-channel: ${{ steps.select-channel.outputs.name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Get paths for all charms in this repo
@@ -174,7 +174,7 @@ jobs:
       - name: Maximise GH runner space
         uses: jlumbroso/free-disk-space@v1.3.1
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install dependencies
         run: pipx install tox
 
@@ -226,7 +226,7 @@ jobs:
         uses: jlumbroso/free-disk-space@v1.3.1
 
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install dependencies
         run: pipx install tox
 
