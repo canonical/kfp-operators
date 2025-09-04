@@ -14,6 +14,7 @@ class PesistenceAgentServiceConfig:
     """Defines configuration for PersistenceAgent Service."""
 
     KFP_API_SERVICE_NAME: str
+    USER: str
 
 
 class PersistenceAgentPebbleService(PebbleServiceComponent):
@@ -59,27 +60,31 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
         )
 
         # generate and return layer
-        return Layer(
-            {
-                "services": {
-                    self.service_name: {
-                        "override": "replace",
-                        "summary": "persistenceagent service",
-                        "command": " ".join(command),
-                        "startup": "enabled",
-                        "user": "_daemon_",  # This is needed only for rocks
-                        "environment": self._environment,
-                    }
-                },
-                "checks": {
-                    "persistenceagent-get": {
-                        "override": "replace",
-                        "period": "30s",
-                        "http": {"url": "http://localhost:8080/metrics"},
-                    }
-                },
-            }
-        )
+        layer_dict = {
+            "services": {
+                self.service_name: {
+                    "override": "replace",
+                    "summary": "persistenceagent service",
+                    "command": " ".join(command),
+                    "startup": "enabled",
+                    "environment": self._environment,
+                }
+            },
+            "checks": {
+                "persistenceagent-get": {
+                    "override": "replace",
+                    "period": "30s",
+                    "http": {"url": "http://localhost:8080/metrics"},
+                }
+            },
+        }
+
+        # Add the user only if it's not empty
+        # User is set to _daemon_ only for rock, empty for upstream.
+        if service_config.USER:
+            layer_dict["services"][self.service_name]["user"] = service_config.USER
+
+        return Layer(layer_dict)
 
     def get_status(self) -> StatusBase:
         """Return status."""
