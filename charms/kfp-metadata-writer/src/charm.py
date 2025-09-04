@@ -8,7 +8,9 @@ https://github.com/canonical/kfp-operators
 """
 
 import logging
+from pathlib import Path
 
+import yaml
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
@@ -20,6 +22,8 @@ from components.pebble_component import KfpMetadataWriterInputs, KfpMetadataWrit
 
 logger = logging.getLogger(__name__)
 
+SERVICE_CONFIG_PATH = Path("src/service-config.yaml")
+
 GRPC_RELATION_NAME = "grpc"
 LOGGING_RELATION_NAME = "logging"
 
@@ -28,6 +32,11 @@ class KfpMetadataWriter(CharmBase):
     def __init__(self, *args):
         """Charm for the Kubeflow Pipelines Metadata Writer."""
         super().__init__(*args)
+
+        # Load user from service config file
+        with open(SERVICE_CONFIG_PATH, "r") as file:
+            service_config = yaml.safe_load(file)
+        self.user = service_config.get("user", "")
 
         self.charm_reconciler = CharmReconciler(self)
         self._namespace = self.model.name
@@ -58,6 +67,7 @@ class KfpMetadataWriter(CharmBase):
                 inputs_getter=lambda: KfpMetadataWriterInputs(
                     METADATA_GRPC_SERVICE_SERVICE_HOST=self.grpc_relation.component.get_service_info().name,  # noqa
                     METADATA_GRPC_SERVICE_SERVICE_PORT=self.grpc_relation.component.get_service_info().port,  # noqa
+                    USER=self.user,
                 ),
             ),
             depends_on=[self.grpc_relation],

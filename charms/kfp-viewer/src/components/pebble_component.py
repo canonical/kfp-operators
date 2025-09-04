@@ -1,11 +1,19 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
+import dataclasses
 import logging
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
 from ops.pebble import Layer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class KfpViewerInputs:
+    """Defines configuration for KfpViewer Service."""
+
+    USER: str
 
 
 class KfpViewerPebbleService(PebbleServiceComponent):
@@ -30,24 +38,34 @@ class KfpViewerPebbleService(PebbleServiceComponent):
         This method is required for subclassing PebbleServiceContainer
         """
         logger.info("PebbleServiceComponent.get_layer executing")
-        return Layer(
-            {
-                "summary": "kfp-viewer layer",
-                "description": "Pebble config layer for kfp-viewer",
-                "services": {
-                    self.service_name: {
-                        "override": "replace",
-                        "summary": "Entry point for kfp-viewer image",
-                        "command": (
-                            "/bin/controller"
-                            " -logtostderr=true"
-                            f" -max_num_viewers={self.max_num_viewers}"
-                            f" --namespace={self.namespace}"
-                        ),
-                        "startup": "enabled",
-                        "environment": self.environment,
-                        "user": "_daemon_",  # This is needed only for rocks
-                    }
-                },
-            }
-        )
+
+        try:
+            inputs: KfpViewerInputs = self._inputs_getter()
+        except Exception as err:
+            raise ValueError("Failed to get inputs for Pebble container.") from err
+
+        layer_dict = {
+            "summary": "kfp-viewer layer",
+            "description": "Pebble config layer for kfp-viewer",
+            "services": {
+                self.service_name: {
+                    "override": "replace",
+                    "summary": "Entry point for kfp-viewer image",
+                    "command": (
+                        "/bin/controller"
+                        " -logtostderr=true"
+                        f" -max_num_viewers={self.max_num_viewers}"
+                        f" --namespace={self.namespace}"
+                    ),
+                    "startup": "enabled",
+                    "environment": self.environment,
+                }
+            },
+        }
+
+        # Add the user only if it's not empty
+        # User is set to _daemon_ only for rock, empty for upstream.
+        if inputs.USER:
+            layer_dict["services"][self.service_name]["user"] = inputs.USER
+
+        return Layer(layer_dict)

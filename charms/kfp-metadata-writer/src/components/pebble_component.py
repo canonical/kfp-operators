@@ -15,6 +15,7 @@ class KfpMetadataWriterInputs:
 
     METADATA_GRPC_SERVICE_SERVICE_HOST: str
     METADATA_GRPC_SERVICE_SERVICE_PORT: str
+    USER: str
 
 
 class KfpMetadataWriterPebbleService(PebbleServiceComponent):
@@ -51,19 +52,24 @@ class KfpMetadataWriterPebbleService(PebbleServiceComponent):
             "METADATA_GRPC_SERVICE_SERVICE_HOST": inputs.METADATA_GRPC_SERVICE_SERVICE_HOST,
             "METADATA_GRPC_SERVICE_SERVICE_PORT": inputs.METADATA_GRPC_SERVICE_SERVICE_PORT,
         }
-        return Layer(
-            {
-                "summary": "kfp-metadata-writer layer",
-                "description": "Pebble config layer for kfp-metadata-writer",
-                "services": {
-                    self.service_name: {
-                        "override": "replace",
-                        "summary": "Entry point for kfp-metadata-writer oci-image",
-                        "command": "python3 -u /kfp/metadata_writer/metadata_writer.py",
-                        "startup": "enabled",
-                        "user": "_daemon_",  # This is needed only for rocks
-                        "environment": environment,
-                    }
-                },
-            }
-        )
+
+        layer_dict = {
+            "summary": "kfp-metadata-writer layer",
+            "description": "Pebble config layer for kfp-metadata-writer",
+            "services": {
+                self.service_name: {
+                    "override": "replace",
+                    "summary": "Entry point for kfp-metadata-writer oci-image",
+                    "command": "python3 -u /kfp/metadata_writer/metadata_writer.py",
+                    "startup": "enabled",
+                    "environment": environment,
+                }
+            },
+        }
+
+        # Add the user only if it's not empty
+        # User is set to _daemon_ only for rock, empty for upstream.
+        if inputs.USER:
+            layer_dict["services"][self.service_name]["user"] = inputs.USER
+
+        return Layer(layer_dict)

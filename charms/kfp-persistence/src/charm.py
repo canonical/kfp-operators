@@ -10,6 +10,7 @@ https://github.com/canonical/kfp-operators/
 import logging
 from pathlib import Path
 
+import yaml
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.components.pebble_component import ContainerFileTemplate
@@ -27,6 +28,7 @@ from components.pebble_components import (
 
 log = logging.getLogger()
 
+SERVICE_CONFIG_PATH = Path("src/service-config.yaml")
 SA_NAME = "kfp-persistence"
 SA_TOKEN_PATH = "src/"
 SA_TOKEN_FILENAME = "persistenceagent-sa-token"
@@ -40,6 +42,11 @@ class KfpPersistenceOperator(CharmBase):
     def __init__(self, *args, **kwargs):
         """Initialize charm and setup the container."""
         super().__init__(*args, **kwargs)
+
+        # Load user from service config file
+        with open(SERVICE_CONFIG_PATH, "r") as file:
+            service_config = yaml.safe_load(file)
+        self.user = service_config.get("user", "")
 
         # Charm logic
         self.charm_reconciler = CharmReconciler(self)
@@ -99,6 +106,7 @@ class KfpPersistenceOperator(CharmBase):
                     KFP_API_SERVICE_NAME=self.kfp_api_relation.component.get_data()[
                         "service-name"
                     ],
+                    USER=self.user,
                 ),
             ),
             depends_on=[self.leadership_gate, self.kfp_api_relation, self.sa_token],
