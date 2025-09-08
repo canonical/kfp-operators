@@ -10,6 +10,7 @@ https://github.com/canonical/kfp-operators/
 import logging
 from pathlib import Path
 
+import yaml
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRuntimeError
 from charmed_kubeflow_chisme.kubernetes import (
     KubernetesResourceHandler,
@@ -40,6 +41,7 @@ from serialized_data_interface import (
 from serialized_data_interface.errors import RelationDataError
 
 CONFIG_DIR = Path("/config")
+SERVICE_CONFIG_PATH = Path("src/service-config.yaml")
 SAMPLE_CONFIG = CONFIG_DIR / "sample_config.json"
 METRICS_PATH = "/metrics"
 PROBE_PATH = "/apis/v1beta1/healthz"
@@ -59,6 +61,11 @@ class KfpApiOperator(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
+
+        # Load user from service config file
+        with open(SERVICE_CONFIG_PATH, "r") as file:
+            service_config = yaml.safe_load(file)
+        self.user = service_config.get("user", "")
 
         # retrieve configuration and base settings
         self.logger = logging.getLogger(__name__)
@@ -219,7 +226,6 @@ class KfpApiOperator(CharmBase):
                     "command": f"bash -c '{self._exec_command}'",
                     "startup": "enabled",
                     "environment": self.service_environment,
-                    "user": "_daemon_",  # This is needed only for rocks
                     "on-check-failure": {"kfp-api-up": "restart"},
                 }
             },
@@ -233,6 +239,12 @@ class KfpApiOperator(CharmBase):
                 }
             },
         }
+
+        # Change the value of user in `service-config.yaml`:
+        # - upstream: Leave string empty
+        # - rock: _daemon_
+        if self.user:
+            layer_config["services"][KFP_API_SERVICE_NAME]["user"] = self.user
 
         return Layer(layer_config)
 

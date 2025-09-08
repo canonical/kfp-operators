@@ -8,7 +8,9 @@ https://github.com/canonical/kfp-operators
 """
 
 import logging
+from pathlib import Path
 
+import yaml
 from charmed_kubeflow_chisme.components import (
     CharmReconciler,
     LeadershipGateComponent,
@@ -20,9 +22,11 @@ from lightkube.models.core_v1 import ServicePort
 from ops import main
 from ops.charm import CharmBase
 
-from components.pebble_components import KfpVizPebbleService
+from components.pebble_components import KfpVizInputs, KfpVizPebbleService
 
 logger = logging.getLogger()
+
+SERVICE_CONFIG_PATH = Path("src/service-config.yaml")
 
 
 class KfpVizOperator(CharmBase):
@@ -33,6 +37,11 @@ class KfpVizOperator(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
+
+        # Load user from service config file
+        with open(SERVICE_CONFIG_PATH, "r") as file:
+            service_config = yaml.safe_load(file)
+        self.user = service_config.get("user", "")
 
         http_port = ServicePort(int(self.model.config["http-port"]), name="http")
         self.service_patcher = KubernetesServicePatch(
@@ -72,6 +81,7 @@ class KfpVizOperator(CharmBase):
                 name="kfp-viz-pebble-service",
                 container_name="ml-pipeline-visualizationserver",
                 service_name="vis-server",
+                inputs_getter=lambda: KfpVizInputs(USER=self.user),
             )
         )
 
