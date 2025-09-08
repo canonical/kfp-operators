@@ -42,7 +42,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                 self.service_name: {
                     "override": "replace",
                     "summary": "entry point for ml-pipeline-ui",
-                    # command in service-config.yaml should be updated each time we switch from upstream image to rock
+                    # command in service-config.yaml should be updated upstream image/rock
                     #  - upstream: "command": "node dist/server.js ../client/ 3000"
                     #  - rock: "command": "node /server/dist/server.js /client/ 3000"
                     "command": inputs.COMMAND,
