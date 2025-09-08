@@ -240,8 +240,9 @@ class KfpApiOperator(CharmBase):
             },
         }
 
-        # Add the user only if it's not empty
-        # User is set to _daemon_ only for rock, empty for upstream.
+        # Change the value of user in `service-config.yaml`:
+        # - upstream: Leave string empty
+        # - rock: _daemon_
         if self.user:
             layer_config["services"][KFP_API_SERVICE_NAME]["user"] = self.user
 

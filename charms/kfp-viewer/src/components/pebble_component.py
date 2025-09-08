@@ -63,8 +63,9 @@ class KfpViewerPebbleService(PebbleServiceComponent):
             },
         }
 
-        # Add the user only if it's not empty
-        # User is set to _daemon_ only for rock, empty for upstream.
+        # Change the value of user in `service-config.yaml`:
+        # - upstream: Leave string empty
+        # - rock: _daemon_
         if inputs.USER:
             layer_dict["services"][self.service_name]["user"] = inputs.USER
 

@@ -79,8 +79,9 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
             },
         }
 
-        # Add the user only if it's not empty
-        # User is set to _daemon_ only for rock, empty for upstream.
+        # Change the value of user in `service-config.yaml`:
+        # - upstream: Leave string empty
+        # - rock: _daemon_
         if service_config.USER:
             layer_dict["services"][self.service_name]["user"] = service_config.USER
 
