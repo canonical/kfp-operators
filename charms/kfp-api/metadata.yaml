@@ -16,7 +16,7 @@ resources:
     type: oci-image
     description: Backing OCI image
     # The container's `user` needs to be updated when switching from upstream image to rock
-    upstream-source: docker.io/charmedkubeflow/api-server:2.5.0-d7e9bcb
+    upstream-source: docker.io/charmedkubeflow/api-server:2.5.0-ab15dcc
 requires:
   mysql:
     interface: mysql
