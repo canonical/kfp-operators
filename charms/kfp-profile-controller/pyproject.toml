@@ -88,7 +88,7 @@ optional = true
 [tool.poetry.group.integration.dependencies]
 juju = "<4.0"
 charmed-kubeflow-chisme = ">=0.4.12"
-lightkube = "^0.15.6"
+lightkube = "^0.17.0"
 pytest-operator = "^0.38.0"
 selenium = "^4.27.1"
 selenium-wire = "^5.1.0"
