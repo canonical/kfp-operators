@@ -88,7 +88,7 @@ optional = true
 
 [tool.poetry.group.integration.dependencies]
 charmed-kubeflow-chisme = ">=0.4.12"
-pytest-operator = "^0.42.0"
+pytest-operator = "^0.43.0"
 
 [project]
 name = "kfp-operators"
