@@ -68,7 +68,7 @@ flake8 = "^7.0.0"
 flake8-builtins = "^2.5.0"
 flake8-copyright = "^0.2.4"
 isort = "^5.13.2"
-pep8-naming = "^0.14.1"
+pep8-naming = "^0.15.0"
 pyproject-flake8 = "^7.0.0"
 
 [tool.poetry.group.unit]
@@ -89,7 +89,7 @@ optional = true
 juju = "<4.0"
 charmed-kubeflow-chisme = ">=0.4.12"
 lightkube = "^0.15.6"
-pytest-operator = "^0.38.0"
+pytest-operator = "^0.43.0"
 selenium = "^4.27.1"
 selenium-wire = "^5.1.0"
 tenacity = "^9.0.0"
