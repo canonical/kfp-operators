@@ -48,7 +48,7 @@ optional = true
 [tool.poetry.group.charm.dependencies]
 charmed-kubeflow-chisme = ">=0.4.12"
 cosl = "^0.0.45"
-kubernetes = "^30.1.0"
+kubernetes = "^33.0.0"
 lightkube = "^0.15.6"
 ops = "^2.17.1"
 serialized-data-interface = "^0.7.0"
