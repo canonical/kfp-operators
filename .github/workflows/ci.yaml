@@ -207,7 +207,7 @@ jobs:
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
         with:
           artifact-prefix: ${{ matrix.charm }}
-        if: always()
+        if: failure()
 
   test-bundle:
     name: Test the bundle
