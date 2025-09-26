@@ -11,3 +11,9 @@ options:
     description: >
       YAML or JSON formatted input defining images to use in Katib
       For usage details, see https://github.com/canonical/kfp-operators.
+  default-pipeline-root:
+    type: string
+    default: "minio://mlpipeline/v2/artifacts"
+    description: >
+      Default pipeline root for the object storage bucket, refer to:
+      https://www.kubeflow.org/docs/components/pipelines/concepts/pipeline-root

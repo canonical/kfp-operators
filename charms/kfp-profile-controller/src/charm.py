@@ -53,7 +53,7 @@ K8S_RESOURCE_FILES = [
     "src/templates/crd_manifests.yaml.j2",
     "src/templates/secrets.yaml.j2",
 ]
-KFP_DEFAULT_PIPELINE_ROOT = ""
+KFP_DEFAULT_PIPELINE_ROOT = "minio://mlpipeline/v2/artifacts"
 KFP_IMAGES_VERSION = "2.5.0"  # Remember to change this version also in default-custom-images.json
 # This service name must be the Service from the mlmd-operator
 # FIXME: leaving it hardcoded now, but we should share this
@@ -198,7 +198,7 @@ class KfpProfileControllerOperator(CharmBase):
                         "secret-key"
                     ],
                     KFP_VERSION=KFP_IMAGES_VERSION,
-                    KFP_DEFAULT_PIPELINE_ROOT="",
+                    KFP_DEFAULT_PIPELINE_ROOT=self.model.config["default-pipeline-root"],
                     DISABLE_ISTIO_SIDECAR=DISABLE_ISTIO_SIDECAR,
                     CONTROLLER_PORT=CONTROLLER_PORT,
                     METADATA_GRPC_SERVICE_HOST=METADATA_GRPC_SERVICE_HOST,
