@@ -268,9 +268,9 @@ async def test_minio_config_changed(ops_test: OpsTest):
 
 async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
     """Test that the sync webhook deploys the desired resources."""
-    # skipping kfp-launcher ConfigMap since the charm hardcodes KFP_DEFAULT_PIPELINE_ROOT to ""
     desired_resources = [
         (ConfigMap, "metadata-grpc-configmap"),
+        (ConfigMap, "kfp-launcher"),
         (Deployment, "ml-pipeline-visualizationserver"),
         (Service, "ml-pipeline-visualizationserver"),
         (Deployment, "ml-pipeline-ui-artifact"),
