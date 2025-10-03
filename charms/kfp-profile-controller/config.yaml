@@ -19,3 +19,6 @@ options:
     description: >
       Default pipeline root for the object storage bucket, refer to:
       https://www.kubeflow.org/docs/components/pipelines/concepts/pipeline-root
+
+      Note that manual deletion of old ConfigMaps are required when updating this, refer to:
+      https://github.com/kubeflow/manifests/blob/v1.10.1/apps/pipeline/upstream/base/installs/generic/pipeline-install-config.yaml#L40-L42
