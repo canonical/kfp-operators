@@ -34,7 +34,7 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
         super().__init__(*args, **kwargs)
         # NOTE: necessary for the (default) Pebble service to be updated on
         # charm configuration changes, as its environment depends on them:
-        self._events_to_observe.append(getattr(self._charm.on, "config-changed"))
+        self._events_to_observe.append(getattr(self._charm.on, "config_changed"))
 
     def get_layer(self) -> Layer:
         try:
