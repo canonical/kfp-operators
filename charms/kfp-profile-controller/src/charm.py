@@ -53,7 +53,6 @@ K8S_RESOURCE_FILES = [
     "src/templates/crd_manifests.yaml.j2",
     "src/templates/secrets.yaml.j2",
 ]
-KFP_DEFAULT_PIPELINE_ROOT = ""
 KFP_IMAGES_VERSION = "2.5.0"  # Remember to change this version also in default-custom-images.json
 # This service name must be the Service from the mlmd-operator
 # FIXME: leaving it hardcoded now, but we should share this
@@ -111,6 +110,7 @@ class KfpProfileControllerOperator(CharmBase):
         except ErrorWithStatus as e:
             self.unit.status = e.status
             return
+        self.default_pipeline_root = self.model.config["default_pipeline_root"]
 
         # expose controller's port
         http_port = ServicePort(CONTROLLER_PORT, name="http")
@@ -198,7 +198,7 @@ class KfpProfileControllerOperator(CharmBase):
                         "secret-key"
                     ],
                     KFP_VERSION=KFP_IMAGES_VERSION,
-                    KFP_DEFAULT_PIPELINE_ROOT="",
+                    KFP_DEFAULT_PIPELINE_ROOT=self.default_pipeline_root,
                     DISABLE_ISTIO_SIDECAR=DISABLE_ISTIO_SIDECAR,
                     CONTROLLER_PORT=CONTROLLER_PORT,
                     METADATA_GRPC_SERVICE_HOST=METADATA_GRPC_SERVICE_HOST,

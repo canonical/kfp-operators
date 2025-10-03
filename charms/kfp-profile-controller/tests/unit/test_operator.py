@@ -14,7 +14,6 @@ from ops.testing import Harness
 from charm import (
     CONTROLLER_PORT,
     DISABLE_ISTIO_SIDECAR,
-    KFP_DEFAULT_PIPELINE_ROOT,
     KFP_IMAGES_VERSION,
     METADATA_GRPC_SERVICE_HOST,
     METADATA_GRPC_SERVICE_PORT,
@@ -25,6 +24,8 @@ from charm import (
 CUSTOM_IMAGES_PATH = Path("./src/default-custom-images.json")
 with CUSTOM_IMAGES_PATH.open() as f:
     custom_images = json.load(f)
+
+KFP_DEFAULT_PIPELINE_ROOT = "minio://mlpipeline/v2/artifacts"
 
 MOCK_OBJECT_STORAGE_DATA = {
     "access-key": "access-key",
