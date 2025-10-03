@@ -11,7 +11,7 @@ options:
     description: >
       YAML or JSON formatted input defining images to use in Katib
       For usage details, see https://github.com/canonical/kfp-operators.
-  default-pipeline-root:
+  default_pipeline_root:
     type: string
     # defaulting to the upstream default:
     # https://www.kubeflow.org/docs/components/pipelines/operator-guides/configure-object-store

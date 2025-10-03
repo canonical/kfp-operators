@@ -110,7 +110,7 @@ class KfpProfileControllerOperator(CharmBase):
         except ErrorWithStatus as e:
             self.unit.status = e.status
             return
-        self.default_pipeline_root = self.model.config["default-pipeline-root"]
+        self.default_pipeline_root = self.model.config["default_pipeline_root"]
 
         # expose controller's port
         http_port = ServicePort(CONTROLLER_PORT, name="http")
