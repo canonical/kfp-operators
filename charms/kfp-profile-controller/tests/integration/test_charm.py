@@ -301,9 +301,7 @@ async def test_change_to_config_for_deafult_pipeline_root(
 
     # NOTE: simulating the necessary manual deletion of the old ConfigMap by the user:
     # https://github.com/kubeflow/manifests/blob/v1.10.1/apps/pipeline/upstream/base/installs/generic/pipeline-install-config.yaml#L40-L42  # noqa: E501 # fmt: skip
-    lightkube_client.delete(
-        res=ConfigMap, name="kfp-launcher", namespace=profile
-    )
+    lightkube_client.delete(res=ConfigMap, name="kfp-launcher", namespace=profile)
 
     await ops_test.model.applications[CHARM_NAME].set_config(
         {"default_pipeline_root": updated_deafult_pipeline_root}
