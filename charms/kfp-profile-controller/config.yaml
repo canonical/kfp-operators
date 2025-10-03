@@ -13,6 +13,8 @@ options:
       For usage details, see https://github.com/canonical/kfp-operators.
   default-pipeline-root:
     type: string
+    # defaulting to the upstream default:
+    # https://www.kubeflow.org/docs/components/pipelines/operator-guides/configure-object-store
     default: "minio://mlpipeline/v2/artifacts"
     description: >
       Default pipeline root for the object storage bucket, refer to:
