@@ -34,6 +34,7 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_NAME = METADATA["name"]
 CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
 CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
+KFP_DEFAULT_PIPELINE_ROOT = "minio://mlpipeline/v2/artifacts"
 
 PodDefault = create_namespaced_resource(
     group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
@@ -280,6 +281,39 @@ async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
     ]
     for resource, name in desired_resources:
         lightkube_client.get(resource, name=name, namespace=profile)
+
+
+async def test_default_config_for_deafult_pipeline_root(
+    lightkube_client: lightkube.Client, profile: str
+):
+    """Test that the default config for the default pipeline root is applied to KFP launcher."""
+    kfp_launcher_configmap = lightkube_client.get(
+        res=ConfigMap,
+        name="kfp-launcher",
+        namespace=profile
+    )
+    assert kfp_launcher_configmap.data["defaultPipelineRoot"] == KFP_DEFAULT_PIPELINE_ROOT
+
+
+async def test_change_to_config_for_deafult_pipeline_root(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Test that a config change for the default pipeline root is applied to KFP launcher."""
+    updated_deafult_pipeline_root = "s3://mlpipeline/whatever/path"
+
+    await ops_test.model.applications[CHARM_NAME].set_config(
+        {"default_pipeline_root": updated_deafult_pipeline_root}
+    )
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
+    )
+
+    kfp_launcher_configmap = lightkube_client.get(
+        res=ConfigMap,
+        name="kfp-launcher",
+        namespace=profile
+    )
+    assert kfp_launcher_configmap.data["defaultPipelineRoot"] == updated_deafult_pipeline_root
 
 
 async def test_change_custom_images(
