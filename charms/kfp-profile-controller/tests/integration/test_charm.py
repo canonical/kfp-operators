@@ -288,9 +288,7 @@ async def test_default_config_for_deafult_pipeline_root(
 ):
     """Test that the default config for the default pipeline root is applied to KFP launcher."""
     kfp_launcher_configmap = lightkube_client.get(
-        res=ConfigMap,
-        name="kfp-launcher",
-        namespace=profile
+        res=ConfigMap, name="kfp-launcher", namespace=profile
     )
     assert kfp_launcher_configmap.data["defaultPipelineRoot"] == KFP_DEFAULT_PIPELINE_ROOT
 
@@ -309,9 +307,7 @@ async def test_change_to_config_for_deafult_pipeline_root(
     )
 
     kfp_launcher_configmap = lightkube_client.get(
-        res=ConfigMap,
-        name="kfp-launcher",
-        namespace=profile
+        res=ConfigMap, name="kfp-launcher", namespace=profile
     )
     assert kfp_launcher_configmap.data["defaultPipelineRoot"] == updated_deafult_pipeline_root
 
