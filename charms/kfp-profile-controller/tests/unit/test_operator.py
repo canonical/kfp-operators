@@ -29,7 +29,7 @@ CUSTOM_IMAGES_PATH = Path("./src/default-custom-images.json")
 with CUSTOM_IMAGES_PATH.open() as f:
     custom_images = json.load(f)
 
-KFP_DEFAULT_PIPELINE_ROOT = "minio://mlpipeline/v2/artifacts"
+KFP_DEFAULT_PIPELINE_ROOT = ""
 
 MOCK_OBJECT_STORAGE_DATA = {
     "access-key": "access-key",
