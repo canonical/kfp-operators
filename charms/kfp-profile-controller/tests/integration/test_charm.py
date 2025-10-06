@@ -1,10 +1,10 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from copy import deepcopy
 import json
 import logging
 from base64 import b64decode
+from copy import deepcopy
 from pathlib import Path
 
 import lightkube
