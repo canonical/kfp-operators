@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_NAME = METADATA["name"]
+CONFIG_NAME_FOR_CUSTOM_IMAGES = "custom_images"
 CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = "default_pipeline_root"
 CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
 CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
@@ -371,7 +372,7 @@ async def test_change_custom_images(
         "frontend": CUSTOM_FRONTEND_IMAGE,
     }
     await ops_test.model.applications[CHARM_NAME].set_config(
-        {"custom_images": json.dumps(custom_images)}
+        {CONFIG_NAME_FOR_CUSTOM_IMAGES: json.dumps(custom_images)}
     )
 
     await ops_test.model.wait_for_idle(
