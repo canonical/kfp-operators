@@ -293,7 +293,7 @@ async def test_sync_webhook_before_config_changes(
 async def test_default_config_for_deafult_pipeline_root(
     lightkube_client: lightkube.Client, profile: str
 ):
-    """Test thst the default config for the default pipeline root is applied correctly."""
+    """Test that the default config for the default pipeline root is applied correctly."""
     kfp_launcher_configmap = lightkube_client.get(
         res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile
     )
