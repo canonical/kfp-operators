@@ -192,7 +192,7 @@ def test_pebble_services_running(
     expected_environment,
     harness,
     mocked_lightkube_client,
-    mocked_kubernetes_service_patch
+    mocked_kubernetes_service_patch,
 ):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange

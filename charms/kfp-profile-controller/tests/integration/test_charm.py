@@ -296,9 +296,7 @@ async def test_default_config_for_deafult_pipeline_root(
 ):
     """Test that the default config for the default pipeline root is applied as intended."""
     with pytest.raises(lightkube.ApiError):
-        lightkube_client.get(
-            res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile
-        )
+        lightkube_client.get(res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile)
 
 
 async def test_first_change_to_config_for_deafult_pipeline_root(
@@ -352,9 +350,7 @@ async def test_yet_another_change_to_config_for_deafult_pipeline_root(
     )
 
 
-async def test_sync_webhook_after_config_changes(
-    lightkube_client: lightkube.Client, profile: str
-):
+async def test_sync_webhook_after_config_changes(lightkube_client: lightkube.Client, profile: str):
     """Test that the sync webhook deploys the desired resources."""
     desired_resources = deepcopy(EXPECTED_SYNC_WEBHOOK_RESOURCES_BY_DEFAULT)
     desired_resources.append((ConfigMap, "kfp-launcher"))
