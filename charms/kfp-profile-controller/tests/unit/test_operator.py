@@ -191,20 +191,20 @@ def test_kubernetes_created_method(
 
 
 @pytest.mark.parametrize(
-    "do_update_config,expected_environment",
+    "do_update_config_for_default_pipeline_root,expected_environment",
     (
         (
             False,
-            EXPECTED_ENVIRONMENT_BY_DEFAULT
+            EXPECTED_ENVIRONMENT_BY_DEFAULT,
         ),
         (
             True,
-            EXPECTED_ENVIRONMENT_AFTER_DEFAULT_PIPELINE_ROOT_UPDATE
+            EXPECTED_ENVIRONMENT_AFTER_DEFAULT_PIPELINE_ROOT_UPDATE,
         ),
     ),
 )
 def test_pebble_services_running(
-    do_update_config,
+    do_update_config_for_default_pipeline_root,
     expected_environment,
     harness,
     mocked_lightkube_client,
@@ -212,7 +212,7 @@ def test_pebble_services_running(
 ):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
-    if do_update_config:
+    if do_update_config_for_default_pipeline_root:
         harness.update_config(
             {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: "s3://whatever-s3-bucket/whatever/s3/path"}
         )
