@@ -58,10 +58,6 @@ EXPECTED_ENVIRONMENT_BY_DEFAULT = {
     "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
     "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
 }
-EXPECTED_ENVIRONMENT_AFTER_DEFAULT_PIPELINE_ROOT_UPDATE = deepcopy(EXPECTED_ENVIRONMENT_BY_DEFAULT)
-EXPECTED_ENVIRONMENT_AFTER_DEFAULT_PIPELINE_ROOT_UPDATE["KFP_DEFAULT_PIPELINE_ROOT"] = (
-    "s3://whatever-s3-bucket/whatever/s3/path"
-)
 
 
 @pytest.fixture
@@ -190,19 +186,7 @@ def test_kubernetes_created_method(
     assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
 
 
-@pytest.mark.parametrize(
-    "do_update_config_for_default_pipeline_root,expected_environment",
-    (
-        (
-            False,
-            EXPECTED_ENVIRONMENT_BY_DEFAULT,
-        ),
-        (
-            True,
-            EXPECTED_ENVIRONMENT_AFTER_DEFAULT_PIPELINE_ROOT_UPDATE,
-        ),
-    ),
-)
+@pytest.mark.parametrize("do_update_config_for_default_pipeline_root", (False, True))
 def test_pebble_services_running(
     do_update_config_for_default_pipeline_root,
     expected_environment,
@@ -212,10 +196,13 @@ def test_pebble_services_running(
 ):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
+    expected_environment = deepcopy(EXPECTED_ENVIRONMENT_BY_DEFAULT)
     if do_update_config_for_default_pipeline_root:
+        updated_default_pipeline_root = "s3://whatever-s3-bucket/whatever/s3/path"
         harness.update_config(
-            {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: "s3://whatever-s3-bucket/whatever/s3/path"}
+            {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_default_pipeline_root}
         )
+        expected_environment["KFP_DEFAULT_PIPELINE_ROOT"] = updated_default_pipeline_root
     harness.begin()
     harness.set_can_connect("kfp-profile-controller", True)
 
