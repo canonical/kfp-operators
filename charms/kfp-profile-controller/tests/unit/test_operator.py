@@ -189,7 +189,6 @@ def test_kubernetes_created_method(
 @pytest.mark.parametrize("do_update_config_for_default_pipeline_root", (False, True))
 def test_pebble_services_running(
     do_update_config_for_default_pipeline_root,
-    expected_environment,
     harness,
     mocked_lightkube_client,
     mocked_kubernetes_service_patch,
