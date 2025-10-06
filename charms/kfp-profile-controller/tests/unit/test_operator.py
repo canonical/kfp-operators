@@ -21,8 +21,8 @@ from charm import (
     KfpProfileControllerOperator,
 )
 
-CONFIG_NAME_FOR_CUSTOM_IMAGES = 
-CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = 
+CONFIG_NAME_FOR_CUSTOM_IMAGES = "custom_images"
+CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = "default_pipeline_root"
 
 # Load the custom images from the JSON
 CUSTOM_IMAGES_PATH = Path("./src/default-custom-images.json")
