@@ -1,6 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from copy import deepcopy
 import json
 import logging
 from base64 import b64decode
@@ -32,13 +33,25 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_NAME = METADATA["name"]
+CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = "default_pipeline_root"
 CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
 CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
-KFP_DEFAULT_PIPELINE_ROOT = "minio://mlpipeline/v2/artifacts"
+KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT = "defaultPipelineRoot"
+KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
 
 PodDefault = create_namespaced_resource(
     group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
 )
+
+EXPECTED_SYNC_WEBHOOK_RESOURCES_BY_DEFAULT = [
+    (ConfigMap, "metadata-grpc-configmap"),
+    (Deployment, "ml-pipeline-visualizationserver"),
+    (Service, "ml-pipeline-visualizationserver"),
+    (Deployment, "ml-pipeline-ui-artifact"),
+    (Service, "ml-pipeline-ui-artifact"),
+    (PodDefault, "access-ml-pipeline"),
+    (Secret, "mlpipeline-minio-artifact"),
+]
 
 
 @pytest.mark.abort_on_fail
@@ -267,18 +280,12 @@ async def test_minio_config_changed(ops_test: OpsTest):
     assert ops_test.model.applications[CHARM_NAME].units[0].workload_status == "active"
 
 
-async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
+async def test_sync_webhook_before_config_changes(
+    lightkube_client: lightkube.Client, profile: str
+):
     """Test that the sync webhook deploys the desired resources."""
-    desired_resources = [
-        (ConfigMap, "metadata-grpc-configmap"),
-        (ConfigMap, "kfp-launcher"),
-        (Deployment, "ml-pipeline-visualizationserver"),
-        (Service, "ml-pipeline-visualizationserver"),
-        (Deployment, "ml-pipeline-ui-artifact"),
-        (Service, "ml-pipeline-ui-artifact"),
-        (PodDefault, "access-ml-pipeline"),
-        (Secret, "mlpipeline-minio-artifact"),
-    ]
+    desired_resources = deepcopy(EXPECTED_SYNC_WEBHOOK_RESOURCES_BY_DEFAULT)
+
     for resource, name in desired_resources:
         lightkube_client.get(resource, name=name, namespace=profile)
 
@@ -286,21 +293,42 @@ async def test_sync_webhook(lightkube_client: lightkube.Client, profile: str):
 async def test_default_config_for_deafult_pipeline_root(
     lightkube_client: lightkube.Client, profile: str
 ):
-    """Test that the default config for the default pipeline root is applied to KFP launcher."""
+    """Test thst the default config for the default pipeline root is applied correctly."""
     kfp_launcher_configmap = lightkube_client.get(
-        res=ConfigMap, name="kfp-launcher", namespace=profile
+        res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile
     )
-    assert kfp_launcher_configmap.data["defaultPipelineRoot"] == KFP_DEFAULT_PIPELINE_ROOT
 
 
-async def test_change_to_config_for_deafult_pipeline_root(
+async def test_first_change_to_config_for_deafult_pipeline_root(
     ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
 ):
-    """Test that a config change for the default pipeline root is applied to KFP launcher."""
-    updated_deafult_pipeline_root = "s3://mlpipeline/whatever/path"
+    """Test that a first config change for the default pipeline root results in a ConfigMap."""
+    updated_deafult_pipeline_root = "minio://whatever-minio-bucket/whatever/minio/path"
 
     await ops_test.model.applications[CHARM_NAME].set_config(
-        {"default_pipeline_root": updated_deafult_pipeline_root}
+        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_deafult_pipeline_root}
+    )
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
+    )
+
+    kfp_launcher_configmap = lightkube_client.get(
+        res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile
+    )
+    assert (
+        kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
+        == updated_deafult_pipeline_root
+    )
+
+
+async def test_yet_another_change_to_config_for_deafult_pipeline_root(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Test that another config change for the default pipeline root updates the ConfigMap."""
+    updated_deafult_pipeline_root = "s3://whatever-s3-bucket/whatever/s3/path"
+
+    await ops_test.model.applications[CHARM_NAME].set_config(
+        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_deafult_pipeline_root}
     )
     await ops_test.model.wait_for_idle(
         apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
@@ -308,15 +336,29 @@ async def test_change_to_config_for_deafult_pipeline_root(
 
     # NOTE: simulating the necessary manual deletion of the old ConfigMap by the user:
     # https://github.com/kubeflow/manifests/blob/v1.10.1/apps/pipeline/upstream/base/installs/generic/pipeline-install-config.yaml#L40-L42  # noqa: E501 # fmt: skip
-    lightkube_client.delete(res=ConfigMap, name="kfp-launcher", namespace=profile)
+    lightkube_client.delete(res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile)
     await ops_test.model.wait_for_idle(
         apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
     )
 
     kfp_launcher_configmap = lightkube_client.get(
-        res=ConfigMap, name="kfp-launcher", namespace=profile
+        res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile
     )
-    assert kfp_launcher_configmap.data["defaultPipelineRoot"] == updated_deafult_pipeline_root
+    assert (
+        kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
+        == updated_deafult_pipeline_root
+    )
+
+
+async def test_sync_webhook_after_config_changes(
+    lightkube_client: lightkube.Client, profile: str
+):
+    """Test that the sync webhook deploys the desired resources."""
+    desired_resources = deepcopy(EXPECTED_SYNC_WEBHOOK_RESOURCES_BY_DEFAULT)
+    desired_resources.append((ConfigMap, "kfp-launcher"))
+
+    for resource, name in desired_resources:
+        lightkube_client.get(resource, name=name, namespace=profile)
 
 
 async def test_change_custom_images(

@@ -1,6 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from copy import deepcopy
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -20,6 +21,9 @@ from charm import (
     KfpProfileControllerOperator,
 )
 
+CONFIG_NAME_FOR_CUSTOM_IMAGES = 
+CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = 
+
 # Load the custom images from the JSON
 CUSTOM_IMAGES_PATH = Path("./src/default-custom-images.json")
 with CUSTOM_IMAGES_PATH.open() as f:
@@ -36,7 +40,7 @@ MOCK_OBJECT_STORAGE_DATA = {
     "secure": True,
 }
 
-EXPECTED_ENVIRONMENT = {
+EXPECTED_ENVIRONMENT_BY_DEFAULT = {
     "CONTROLLER_PORT": CONTROLLER_PORT,
     "DISABLE_ISTIO_SIDECAR": DISABLE_ISTIO_SIDECAR,
     "KFP_DEFAULT_PIPELINE_ROOT": KFP_DEFAULT_PIPELINE_ROOT,
@@ -54,6 +58,10 @@ EXPECTED_ENVIRONMENT = {
     "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
     "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
 }
+EXPECTED_ENVIRONMENT_AFTER_DEFAULT_PIPELINE_ROOT_UPDATE = deepcopy(EXPECTED_ENVIRONMENT_BY_DEFAULT)
+EXPECTED_ENVIRONMENT_AFTER_DEFAULT_PIPELINE_ROOT_UPDATE["KFP_DEFAULT_PIPELINE_ROOT"] = (
+    "s3://whatever-s3-bucket/whatever/s3/path"
+)
 
 
 @pytest.fixture
@@ -182,11 +190,32 @@ def test_kubernetes_created_method(
     assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
 
 
+@pytest.mark.parametrize(
+    "do_update_config,expected_environment",
+    (
+        (
+            False,
+            EXPECTED_ENVIRONMENT_BY_DEFAULT
+        ),
+        (
+            True,
+            EXPECTED_ENVIRONMENT_AFTER_DEFAULT_PIPELINE_ROOT_UPDATE
+        ),
+    ),
+)
 def test_pebble_services_running(
-    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+    do_update_config,
+    expected_environment,
+    harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch
 ):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
+    if do_update_config:
+        harness.update_config(
+            {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: "s3://whatever-s3-bucket/whatever/s3/path"}
+        )
     harness.begin()
     harness.set_can_connect("kfp-profile-controller", True)
 
@@ -209,14 +238,14 @@ def test_pebble_services_running(
     assert service.is_running()
     # Assert the environment variables that are set from inputs are correctly applied
     environment = container.get_plan().services["kfp-profile-controller"].environment
-    assert environment == EXPECTED_ENVIRONMENT
+    assert environment == expected_environment
 
 
 def test_custom_images_config_with_incorrect_config(
     harness, mocked_lightkube_client, mocked_kubernetes_service_patch
 ):
     """Asserts that the unit goes to blocked on corrupted config input."""
-    harness.update_config({"custom_images": "{"})
+    harness.update_config({CONFIG_NAME_FOR_CUSTOM_IMAGES: "{"})
     harness.begin()
 
     assert isinstance(harness.model.unit.status, BlockedStatus)
@@ -227,7 +256,9 @@ def test_custom_images_config_with_incorrect_images_names(
     harness, mocked_lightkube_client, mocked_kubernetes_service_patch
 ):
     """Asserts that the unit goes to blocked on incorrect images names in the config input."""
-    harness.update_config({"custom_images": yaml.dump({"name1": "image1", "name2": "image2"})})
+    harness.update_config(
+        {CONFIG_NAME_FOR_CUSTOM_IMAGES: yaml.dump({"name1": "image1", "name2": "image2"})}
+    )
     harness.begin()
 
     assert isinstance(harness.model.unit.status, BlockedStatus)

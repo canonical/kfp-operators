@@ -15,7 +15,7 @@ options:
     type: string
     # defaulting to the upstream default:
     # https://www.kubeflow.org/docs/components/pipelines/operator-guides/configure-object-store
-    default: "minio://mlpipeline/v2/artifacts"
+    default: ""
     description: >
       Default pipeline root for the object storage bucket, refer to:
       https://www.kubeflow.org/docs/components/pipelines/concepts/pipeline-root
