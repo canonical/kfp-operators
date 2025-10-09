@@ -78,7 +78,7 @@ optional = true
 coverage = "^7.6.1"
 ops = "^2.17.1"
 pytest = "^8.3.4"
-pytest-lazy-fixture = "^0.6.3"
+pytest-lazy-fixtures = "^1.4.0"
 pytest-mock = "^3.14.0"
 pyyaml = "^6.0.2"
 
