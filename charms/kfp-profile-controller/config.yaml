@@ -11,3 +11,14 @@ options:
     description: >
       YAML or JSON formatted input defining images to use in Katib
       For usage details, see https://github.com/canonical/kfp-operators.
+  default_pipeline_root:
+    type: string
+    # defaulting to the upstream default:
+    # https://www.kubeflow.org/docs/components/pipelines/operator-guides/configure-object-store
+    default: ""
+    description: >
+      Default pipeline root for the object storage bucket, refer to:
+      https://www.kubeflow.org/docs/components/pipelines/concepts/pipeline-root
+
+      Note that manual deletion of old ConfigMaps is required after updating this, refer to:
+      https://github.com/kubeflow/manifests/blob/v1.10.1/apps/pipeline/upstream/base/installs/generic/pipeline-install-config.yaml#L40-L42
