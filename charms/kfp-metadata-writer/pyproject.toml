@@ -46,7 +46,7 @@ package-mode = false
 optional = true
 
 [tool.poetry.group.charm.dependencies]
-charmed-kubeflow-chisme = ">=0.4.11"
+charmed-kubeflow-chisme = ">=0.4.12"
 cosl = "^1.0.0"
 lightkube = "^0.17.1"
 ops = "^2.22.0"
@@ -87,7 +87,7 @@ pyyaml = "^6.0.2"
 optional = true
 
 [tool.poetry.group.integration.dependencies]
-charmed-kubeflow-chisme = ">=0.4.11"
+charmed-kubeflow-chisme = ">=0.4.12"
 pytest-operator = "^0.42.0"
 
 [project]
