@@ -1,6 +1,7 @@
 resource "juju_application" "kfp_persistence" {
   charm {
     name     = "kfp-persistence"
+    base     = var.base
     channel  = var.channel
     revision = var.revision
   }
