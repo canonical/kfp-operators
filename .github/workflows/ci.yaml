@@ -149,7 +149,7 @@ jobs:
       charmhub-token: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
 
   integration:
-    name: Integration tests (microk8s)
+    name: Integration tests
     needs:
       - build
     runs-on: ubuntu-24.04
@@ -218,14 +218,16 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-      # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
-      # Ideally we'd use self-hosted runners, but this effort is still not stable
-      # This action will remove unused software (dotnet, haskell, android libs, codeql,
-      # and docker images) from the GH runner.
-      # This leaves ~45GB free as of 2024-04-10, but this amount has varied as GH changed their
-      # runners
       - name: Maximise GH runner space
-        uses: jlumbroso/free-disk-space@v1.3.1
+        uses: easimon/maximize-build-space@v8
+        with:
+          root-reserve-mb: 34816
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+
 
       - name: Check out code
         uses: actions/checkout@v4
