@@ -166,15 +166,13 @@ jobs:
           - kfp-metadata-writer
           - kfp-viz
     steps:
+      # Ideally we'd use self-hosted runners, but this effort is still not stable
+      # This action will remove unused software (dotnet, haskell, android libs, codeql,
+      # and docker images) from the GH runner.
+      # This leaves ~45GB free as of 2024-04-10, but this amount has varied as GH changed their
+      # runners
       - name: Maximise GH runner space
-        uses: easimon/maximize-build-space@v8
-        with:
-          root-reserve-mb: 34816
-          remove-dotnet: 'true'
-          remove-haskell: 'true'
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+        uses: jlumbroso/free-disk-space@v1.3.1
 
       - uses: actions/checkout@v4
       - name: Install dependencies
@@ -218,16 +216,14 @@ jobs:
     strategy:
       fail-fast: false
     steps:
+      # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
+      # Ideally we'd use self-hosted runners, but this effort is still not stable
+      # This action will remove unused software (dotnet, haskell, android libs, codeql,
+      # and docker images) from the GH runner.
+      # This leaves ~45GB free as of 2024-04-10, but this amount has varied as GH changed their
+      # runners
       - name: Maximise GH runner space
-        uses: easimon/maximize-build-space@v8
-        with:
-          root-reserve-mb: 34816
-          remove-dotnet: 'true'
-          remove-haskell: 'true'
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-
+        uses: jlumbroso/free-disk-space@v1.3.1
 
       - name: Check out code
         uses: actions/checkout@v4
@@ -255,6 +251,10 @@ jobs:
           juju add-model kubeflow
           tox -e bundle-integration -- --model kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=./tests/integration/bundles/bundle.yaml.j2
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 60
+          
       - name: Get all
         run: kubectl get all -A
         if: failure()
