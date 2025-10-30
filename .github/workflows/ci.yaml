@@ -254,6 +254,7 @@ jobs:
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 60
+        if: failure()
           
       - name: Get all
         run: kubectl get all -A
