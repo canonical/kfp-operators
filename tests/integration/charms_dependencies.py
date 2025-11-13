@@ -28,7 +28,7 @@ METACONTROLLER_OPERATOR = CharmSpec(
 )
 MINIO = CharmSpec(
     charm="minio",
-    channel="latest/edge",
+    channel="latest/edge/pr-273",
     trust=False
 )
 MLMD = CharmSpec(
