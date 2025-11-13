@@ -1,6 +1,7 @@
 resource "juju_application" "kfp_metadata_writer" {
   charm {
     name     = "kfp-metadata-writer"
+    base     = var.base
     channel  = var.channel
     revision = var.revision
   }
