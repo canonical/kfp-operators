@@ -132,9 +132,6 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
 
     charms_dict_context = generate_context_from_charm_spec_list(charms_dependencies_list)
     context.update(charms_dict_context)
-    context["minio_base"] = "ubuntu@24.04"
-    context["base"] = "ubuntu@24.04"
-    log.warning(context)
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(
         ops_test, bundle_path=bundlefile_path, context=context
