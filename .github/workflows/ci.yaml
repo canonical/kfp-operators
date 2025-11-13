@@ -251,11 +251,6 @@ jobs:
           juju add-model kubeflow
           tox -e bundle-integration -- --model kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=./tests/integration/bundles/bundle.yaml.j2
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 60
-        if: failure()
-          
       - name: Get all
         run: kubectl get all -A
         if: failure()
