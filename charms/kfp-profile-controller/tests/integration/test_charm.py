@@ -27,7 +27,7 @@ from lightkube.generic_resource import create_global_resource, create_namespaced
 from lightkube.resources.apps_v1 import Deployment
 from lightkube.resources.core_v1 import ConfigMap, Namespace, Secret, Service, ServiceAccount
 from pytest_operator.plugin import OpsTest
-from tenacity import retry, stop_after_delay, wait_exponential
+from tenacity import Retrying, retry, stop_after_delay, wait_exponential, wait_fixed
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,20 @@ EXPECTED_SYNC_WEBHOOK_RESOURCES_BY_DEFAULT = [
     (PodDefault, "access-ml-pipeline"),
     (Secret, "mlpipeline-minio-artifact"),
 ]
+
+RETRY_FOR_ONE_MINUTE = Retrying(
+    stop=stop_after_delay(60 * 1),
+    wait=wait_fixed(5),
+    reraise=True,
+)
+
+
+def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> ConfigMap:
+    """Waits until a specified configmap is available, to a maximum of 1 minute"""
+    for attempt in RETRY_FOR_ONE_MINUTE:
+        with attempt:
+            return client.get(res=ConfigMap, name=name, namespace=namespace)
+    raise TimeoutError(f"ConfigMap {name} in namespace {namespace} not present.")
 
 
 @pytest.mark.abort_on_fail
@@ -312,8 +326,8 @@ async def test_first_change_to_config_for_deafult_pipeline_root(
         apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
     )
 
-    kfp_launcher_configmap = lightkube_client.get(
-        res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile
+    kfp_launcher_configmap = wait_for_configmap(
+        lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, profile
     )
     assert (
         kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
@@ -341,8 +355,8 @@ async def test_yet_another_change_to_config_for_deafult_pipeline_root(
         apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
     )
 
-    kfp_launcher_configmap = lightkube_client.get(
-        res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile
+    kfp_launcher_configmap = wait_for_configmap(
+        lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, profile
     )
     assert (
         kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
