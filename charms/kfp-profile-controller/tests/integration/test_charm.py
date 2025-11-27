@@ -66,7 +66,7 @@ def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> C
     for attempt in RETRY_FOR_ONE_MINUTE:
         with attempt:
             return client.get(res=ConfigMap, name=name, namespace=namespace)
-    raise TimeoutError(f"ConfigMap {name} not present.")
+    raise TimeoutError(f"ConfigMap {name} in namespace {namespace} not present.")
 
 
 @pytest.mark.abort_on_fail
