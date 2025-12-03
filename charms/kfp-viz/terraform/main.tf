@@ -1,6 +1,7 @@
 resource "juju_application" "kfp_viz" {
   charm {
     name     = "kfp-viz"
+    base     = var.base
     channel  = var.channel
     revision = var.revision
   }
