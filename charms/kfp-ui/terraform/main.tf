@@ -1,6 +1,7 @@
 resource "juju_application" "kfp_ui" {
   charm {
     name     = "kfp-ui"
+    base     = var.base
     channel  = var.channel
     revision = var.revision
   }

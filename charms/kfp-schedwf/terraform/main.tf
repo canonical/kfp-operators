@@ -1,6 +1,7 @@
 resource "juju_application" "kfp_schedwf" {
   charm {
     name     = "kfp-schedwf"
+    base     = var.base
     channel  = var.channel
     revision = var.revision
   }
