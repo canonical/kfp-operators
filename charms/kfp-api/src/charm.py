@@ -362,9 +362,10 @@ class KfpApiOperator(CharmBase):
                 services_not_ready = self._get_services_not_active()
                 if len(services_not_ready) > 0:
                     service_names = ", ".join([service.name for service in services_not_ready])
-                    return WaitingStatus(
+                    raise ErrorWithStatus(
                         f"Waiting for Pebble services ({service_names}).  If this persists,"
-                        f" it could be a blocking configuration error."
+                        f" it could be a blocking configuration error.",
+                        WaitingStatus,
                     )
 
                 # verify if container is alive/up
@@ -381,7 +382,7 @@ class KfpApiOperator(CharmBase):
                 raise ErrorWithStatus("Workload failed health check", MaintenanceStatus)
             self.model.unit.status = ActiveStatus()
         else:
-            self.model.unit.status = WaitingStatus("Waiting for Pebble to be ready.")
+            raise ErrorWithStatus("Waiting for Pebble to be ready.", WaitingStatus)
 
     def _send_info(self, interfaces):
         if interfaces["kfp-api"]:
