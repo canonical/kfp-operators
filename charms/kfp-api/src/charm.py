@@ -333,7 +333,7 @@ class KfpApiOperator(CharmBase):
         """Returns a list of Pebble services that are defined in get_layer but not active."""
         services_expected = [
             ServiceInfo(service_name, "disabled", "inactive")
-            for service_name in self._kfp_api_layer().services.keys()
+            for service_name in self._kfp_api_layer.services.keys()
         ]
         if not self.unit.get_container(self._container_name).can_connect():
             return services_expected
