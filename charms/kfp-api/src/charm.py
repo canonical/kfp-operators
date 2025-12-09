@@ -31,7 +31,7 @@ from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBi
 from ops import main
 from ops.charm import CharmBase
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, ModelError, WaitingStatus
-from ops.pebble import CheckStatus, Layer
+from ops.pebble import CheckStatus, Layer, ServiceInfo
 from serialized_data_interface import (
     NoCompatibleVersions,
     NoVersionsListed,
@@ -329,12 +329,44 @@ class KfpApiOperator(CharmBase):
                 BlockedStatus,
             )
 
+    def _get_services_not_active(self):
+        """Returns a list of Pebble services that are defined in get_layer but not active."""
+        services_expected = [
+            ServiceInfo(service_name, "disabled", "inactive")
+            for service_name in self._kfp_api_layer().services.keys()
+        ]
+        if not self.unit.get_container(self._container_name).can_connect():
+            return services_expected
+
+        container = self.unit.get_container(self._container_name)
+        services = container.get_services()
+
+        # Get any services that should be active, but are not in the container at all
+        services_not_found = [
+            service for service in services_expected if service.name not in services.keys()
+        ]
+        services_not_active = [
+            service for service in services.values() if not service.is_running()
+        ]
+
+        services_not_ready = services_not_found + services_not_active
+
+        return services_not_ready
+
     def _check_status(self):
         """Check status of workload and set status accordingly."""
         self._check_leader()
         container = self.unit.get_container(self._container_name)
         if container:
             try:
+                services_not_ready = self.get_services_not_active()
+                if len(services_not_ready) > 0:
+                    service_names = ", ".join([service.name for service in services_not_ready])
+                    return WaitingStatus(
+                        f"Waiting for Pebble services ({service_names}).  If this persists,"
+                        f" it could be a blocking configuration error."
+                    )
+
                 # verify if container is alive/up
                 check = container.get_check("kfp-api-up")
             except ModelError as error:
@@ -348,6 +380,8 @@ class KfpApiOperator(CharmBase):
                 )
                 raise ErrorWithStatus("Workload failed health check", MaintenanceStatus)
             self.model.unit.status = ActiveStatus()
+        else:
+            self.model.unit.status = WaitingStatus("Waiting for Pebble to be ready.")
 
     def _send_info(self, interfaces):
         if interfaces["kfp-api"]:
@@ -721,6 +755,7 @@ class KfpApiOperator(CharmBase):
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             update_layer(self._container_name, self._container, self._kfp_api_layer, self.logger)
             self._send_info(self._get_interfaces())
+            self._check_status()
         except ErrorWithStatus as err:
             self.model.unit.status = err.status
             self.logger.error(f"Failed to handle {event} with error: {err}")
