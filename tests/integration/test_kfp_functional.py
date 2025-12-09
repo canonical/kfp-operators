@@ -146,7 +146,13 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # Also check status of the unit instead of application due to
     # https://github.com/juju/juju/issues/18625
     log.info("Waiting on model applications to be active")
-    sh.juju("wait-for","model","kubeflow", query="forEach(units, unit => unit.workload-status == 'active')", timeout="30m")
+    await ops_test.model.wait_for_idle(
+        status="active",
+        raise_on_blocked=False,  # These apps block while waiting for each other to deploy/relate
+        raise_on_error=True,
+        timeout=3600,
+        idle_period=30,
+    )
 
 # ---- KFP API Server focused test cases
 async def test_upload_pipeline(kfp_client):
