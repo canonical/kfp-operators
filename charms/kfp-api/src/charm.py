@@ -359,7 +359,7 @@ class KfpApiOperator(CharmBase):
         container = self.unit.get_container(self._container_name)
         if container:
             try:
-                services_not_ready = self.get_services_not_active()
+                services_not_ready = self._get_services_not_active()
                 if len(services_not_ready) > 0:
                     service_names = ", ".join([service.name for service in services_not_ready])
                     return WaitingStatus(
