@@ -32,7 +32,7 @@ WAIT_TIMEOUT = 20 * 60
 @pytest.fixture(scope="module")
 def juju(request: pytest.FixtureRequest):
     keep_models = bool(request.config.getoption("--keep-models"))
-    model_name = "kubeflow"
+    model_name = request.config.getoption("--model")
 
     def print_debug_log(juju_instance: jubilant.Juju):
         if request.session.testsfailed:
@@ -125,7 +125,7 @@ def pytest_addoption(parser: Parser):
         action="store",
         help="Juju model to use; if not provided, a new model "
         "will be created for each test which requires one",
-        default=None,
+        default="kubeflow",
     )
     parser.addoption(
         "--bundle",
