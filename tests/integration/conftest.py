@@ -126,25 +126,19 @@ def pytest_addoption(parser: Parser):
         help="keep temporarily-created models",
     )
     parser.addoption(
+        "--model",
+        action="store",
+        help="Juju model to use; if not provided, a new model "
+        "will be created for each test which requires one",
+        default=None,
+    )
+    parser.addoption(
         "--bundle",
         default="./tests/integration/bundles/bundle.yaml.j2",
         help="Path to bundle file to use as the template for tests.  This must include all charms"
         "built by this bundle, where the locally built charms will replace those specified. "
         "This is useful for testing this bundle against different external dependencies. "
         "An example file is in ./tests/integration/bundles/bundle.yaml.j2",
-    )
-    parser.addoption(
-        "--no-build",
-        action="store_true",
-        help="Whether the charms in this repository should be built locally and used"
-        "to render the bundle definition template."
-        "If set to False, the integration tests will be run against charms in Charmhub.",
-    )
-    parser.addoption(
-        "--charmcraft-clean",
-        action="store_true",
-        help="Whether to run charmcraft clean and delete lxc instances created by charmcraft."
-        "It defaults to False."
     )
     parser.addoption(
         "--charms-path",

@@ -22,7 +22,6 @@ from charms_dependencies import (
 from helpers.bundle_mgmt import render_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import update_charm_context
-from helpers.charmcraft import charmcraft_clean
 from kfp_globals import (
     CHARM_PATH_TEMPLATE,
     KFP_CHARMS,
@@ -42,7 +41,6 @@ import tenacity
 from lightkube import codecs
 from lightkube.generic_resource import create_namespaced_resource
 from lightkube.resources.apps_v1 import Deployment
-from pytest_operator.plugin import OpsTest
 charms_dependencies_list = [
     ARGO_CONTROLLER,
     ENVOY,
@@ -93,9 +91,8 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
+def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
     """Build and deploy kfp-operators charms."""
-    charmcraft_clean_flag = True if request.config.getoption("--charmcraft-clean") else False
 
     # Immediately raise an error if the model name is not kubeflow
     if juju.model != "kubeflow":
@@ -119,7 +116,7 @@ async def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
     context.update(charms_dict_context)
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(
-        ops_test, bundle_path=bundlefile_path, context=context
+        bundle_path=bundlefile_path, context=context
     )
 
     # Deploy the kfp-operators bundle from the rendered bundle file
@@ -251,13 +248,9 @@ async def test_apply_sample_viewer(lightkube_client):
     assert viewer is not None
 
 
-async def test_viz_server_healthcheck(ops_test: OpsTest):
+async def test_viz_server_healthcheck(juju: jubilant.Juju):
     """Run a healthcheck on the server endpoint."""
-    # This is a workaround for canonical/kfp-operators#549
-    # Leave model=kubeflow as this test case
-    # should always be executed on that model
-    juju_status = sh.juju.status(format="json", no_color=True, model="kubeflow")
-    kfp_viz_unit = json.loads(juju_status)["applications"]["kfp-viz"]["units"]["kfp-viz/0"]
+    kfp_viz_unit = juju.status().apps["kfp-viz"]["units"]["kfp-viz/0"]
     url = kfp_viz_unit["address"]
 
     headers = {"kubeflow-userid": "user"}
