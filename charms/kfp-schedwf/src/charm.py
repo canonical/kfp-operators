@@ -11,7 +11,6 @@ import logging
 from pathlib import Path
 
 import lightkube
-import yaml
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
@@ -23,11 +22,10 @@ from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from ops import main
 from ops.charm import CharmBase
 
-from components.pebble_component import KfpSchedwfInputs, KfpSchedwfPebbleService
+from components.pebble_component import KfpSchedwfPebbleService
 
 logger = logging.getLogger(__name__)
 
-SERVICE_CONFIG_PATH = Path("src/service-config.yaml")
 K8S_RESOURCE_FILES = ["src/templates/crds.yaml"]
 SA_NAME = "kfp-schedwf"
 SA_TOKEN_PATH = "src/"
@@ -40,11 +38,6 @@ class KfpSchedwf(CharmBase):
     def __init__(self, *args):
         """Charm for the Kubeflow Pipelines Viewer CRD controller."""
         super().__init__(*args)
-
-        # Load user from service config file
-        with open(SERVICE_CONFIG_PATH, "r") as file:
-            service_config = yaml.safe_load(file)
-        self.user = service_config.get("user", "")
 
         self.charm_reconciler = CharmReconciler(self)
 
@@ -105,9 +98,6 @@ class KfpSchedwf(CharmBase):
                         destination_path=SA_TOKEN_DESTINATION_PATH,
                     )
                 ],
-                inputs_getter=lambda: KfpSchedwfInputs(
-                    USER=self.user,
-                ),
                 timezone=self.model.config["timezone"],
                 log_level=self.model.config["log-level"],
             ),
