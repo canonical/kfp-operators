@@ -115,7 +115,6 @@ class KfpUiOperator(CharmBase):
         # Load user and command from service config file
         with open(SERVICE_CONFIG_PATH, "r") as file:
             service_config = yaml.safe_load(file)
-        self.user = service_config.get("user", "")
         self.command = service_config.get("command", "")
 
         # add links in kubeflow-dashboard sidebar
@@ -226,7 +225,6 @@ class KfpUiOperator(CharmBase):
                     ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation.component.get_data()[
                         "service-port"
                     ],
-                    USER=self.user,
                     COMMAND=self.command,
                 ),
             ),

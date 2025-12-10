@@ -1,3 +1,2 @@
-user: _daemon_
 command: >
     node /server/dist/server.js /client/ 3000

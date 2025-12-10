@@ -24,7 +24,6 @@ class MlPipelineUiInputs:
     MINIO_SSL: str
     ML_PIPELINE_SERVICE_HOST: str
     ML_PIPELINE_SERVICE_PORT: str
-    USER: str
     COMMAND: str
 
 
@@ -111,11 +110,6 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
             #     }
             # },
         }
-        # Change the value of user in `service-config.yaml`:
-        # - upstream: Leave string empty
-        # - rock: _daemon_
-        if inputs.USER:
-            layer_dict["services"][self.service_name]["user"] = inputs.USER
 
         layer = Layer(layer_dict)
 

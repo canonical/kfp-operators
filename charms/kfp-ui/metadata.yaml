@@ -7,6 +7,13 @@ docs: https://discourse.charmhub.io/t/8228
 containers:
   ml-pipeline-ui:
     resource: ml-pipeline-ui
+    uid: 584792
+    gid: 584792
+    mounts:
+      - storage: config
+        location: /config
+      - storage: viewer-config
+        location: /etc/config
 resources:
   ml-pipeline-ui:
     type: oci-image
@@ -121,3 +128,11 @@ provides:
           - service-port
     versions: [v1]
     __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
+storage:
+  config:
+    type: filesystem
+    minimum-size: 1M
+  viewer-config:
+    type: filesystem
+    minimum-size: 1M
+charm-user: non-root
