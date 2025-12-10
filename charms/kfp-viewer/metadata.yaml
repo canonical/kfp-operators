@@ -8,6 +8,8 @@ source: https://github.com/canonical/kfp-operators
 containers:
   kfp-viewer:
     resource: kfp-viewer-image
+    uid: 584792
+    gid: 584792
 resources:
   kfp-viewer-image:
     type: oci-image
@@ -18,3 +20,4 @@ requires:
   logging:
     interface: loki_push_api
     optional: true
+charm-user: non-root
