@@ -125,7 +125,6 @@ def pytest_addoption(parser: Parser):
         action="store",
         help="Juju model to use; if not provided, a new model "
         "will be created for each test which requires one",
-        default="kubeflow",
     )
     parser.addoption(
         "--bundle",
