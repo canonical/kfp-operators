@@ -13,8 +13,7 @@
 # limitations under the License.
 import os
 
-from kfp import compiler
-from kfp import dsl
+from kfp import compiler, dsl
 
 
 @dsl.container_component

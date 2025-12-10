@@ -6,18 +6,22 @@ import logging
 import time
 from pathlib import Path
 
+import jubilant
+import kfp
+import pytest
+import requests
 from charmed_kubeflow_chisme.testing import generate_context_from_charm_spec_list
 from charms_dependencies import (
     ARGO_CONTROLLER,
     ENVOY,
+    ISTIO_GATEWAY,
+    ISTIO_PILOT,
     KUBEFLOW_PROFILES,
     KUBEFLOW_ROLES,
     METACONTROLLER_OPERATOR,
     MINIO,
     MLMD,
     MYSQL_K8S,
-    ISTIO_GATEWAY,
-    ISTIO_PILOT,
 )
 from helpers.bundle_mgmt import render_bundle
 from helpers.k8s_resources import apply_manifests
@@ -30,12 +34,8 @@ from kfp_globals import (
     SAMPLE_PIPELINE_NAME,
     SAMPLE_VIEWER,
 )
-
-import kfp
-import jubilant
-import pytest
-import requests
 from lightkube.generic_resource import create_namespaced_resource
+
 charms_dependencies_list = [
     ARGO_CONTROLLER,
     ENVOY,
@@ -46,7 +46,7 @@ charms_dependencies_list = [
     MLMD,
     MYSQL_K8S,
     ISTIO_GATEWAY,
-    ISTIO_PILOT
+    ISTIO_PILOT,
 ]
 log = logging.getLogger(__name__)
 
@@ -110,9 +110,7 @@ def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
     charms_dict_context = generate_context_from_charm_spec_list(charms_dependencies_list)
     context.update(charms_dict_context)
     # Render kfp-operators bundle file with locally built charms and their resources
-    rendered_bundle = render_bundle(
-        bundle_path=bundlefile_path, context=context
-    )
+    rendered_bundle = render_bundle(bundle_path=bundlefile_path, context=context)
 
     # Deploy the kfp-operators bundle from the rendered bundle file
     juju.deploy(rendered_bundle, trust=True)
@@ -124,6 +122,7 @@ def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
     # https://github.com/juju/juju/issues/18625
     log.info("Waiting on model applications to be active")
     juju.wait(jubilant.all_active, error=jubilant.any_error)
+
 
 # ---- KFP API Server focused test cases
 def test_upload_pipeline(kfp_client):
@@ -201,8 +200,9 @@ def test_create_and_monitor_recurring_run(
     # Wait for the recurring job to schedule some runs
     time.sleep(20)
 
-    first_run = kfp_client.list_runs(experiment_id=experiment_response.experiment_id,
-                                          namespace=KUBEFLOW_PROFILE_NAMESPACE).runs[0]
+    first_run = kfp_client.list_runs(
+        experiment_id=experiment_response.experiment_id, namespace=KUBEFLOW_PROFILE_NAMESPACE
+    ).runs[0]
 
     # Assert that a run has been created from the recurring job
     assert first_run.recurring_run_id == recurring_job.recurring_run_id

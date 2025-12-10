@@ -2,11 +2,11 @@
 # See LICENSE file for licensing details.
 
 import asyncio
-import jinja2
 import logging
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
+import jinja2
 
 logger = logging.getLogger(__name__)
 
@@ -37,4 +37,3 @@ def render_bundle(bundle_path: Path, context: dict) -> Path:
     rendered_bundle_path.write_text(rendered)
     logger.debug(f"Rendered bundle saved in {rendered_bundle_path}")
     return rendered_bundle_path
-    

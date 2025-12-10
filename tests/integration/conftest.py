@@ -6,19 +6,17 @@ import subprocess
 import time
 from pathlib import Path
 
-from helpers.k8s_resources import apply_manifests
-from kfp_globals import *
-
 import jubilant
 import kfp
 import kfp_server_api
 import lightkube
 import pytest
 import yaml
+from _pytest.config.argparsing import Parser
+from helpers.k8s_resources import apply_manifests
+from kfp_globals import *
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource
-
-from _pytest.config.argparsing import Parser
 
 basedir = Path("./").absolute()
 
@@ -58,6 +56,7 @@ def juju(request: pytest.FixtureRequest):
                 yield juju_instance
             finally:
                 print_debug_log(juju_instance)
+
 
 @pytest.fixture(scope="session")
 def forward_kfp_ui():
