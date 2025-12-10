@@ -225,7 +225,7 @@ jobs:
           # Pass the path where the charm artefact is downloaded to the tox command
           # FIXME: Right now the complete path is half hardcoded to <charm name>_ubuntu@24.04-amd64.charm
           # We need to find a better way to dynamically get this value
-          tox -e ${{ matrix.charm }}-integration -- --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm --model kubeflow
+          tox -e ${{ matrix.charm }}-integration -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
@@ -273,7 +273,7 @@ jobs:
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          tox -e bundle-integration -- --model kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=./tests/integration/bundles/bundle.yaml.j2
+          tox -e bundle-integration -- --charms-path=${{ github.workspace }}/charms/ --bundle=./tests/integration/bundles/bundle.yaml.j2 --model kubeflow
 
       - name: Get all
         run: kubectl get all -A
