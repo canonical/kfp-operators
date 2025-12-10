@@ -32,7 +32,7 @@ def lightkube_client() -> Client:
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy_with_relations(ops_test: OpsTest, request):
+async def test_build_and_deploy_with_relations(ops_test: OpsTest, request: pytest.FixtureRequest):
     image_path = METADATA["resources"]["kfp-viewer-image"]["upstream-source"]
     resources = {"kfp-viewer-image": image_path}
     # Keep the option to run the integration tests locally
@@ -64,7 +64,7 @@ async def test_build_and_deploy_with_relations(ops_test: OpsTest, request):
     )
 
 
-async def test_logging(ops_test):
+async def test_logging(ops_test: OpsTest):
     """Test logging is defined in relation data bag."""
     app = ops_test.model.applications[GRAFANA_AGENT_APP]
     await assert_logging(app)
