@@ -9,6 +9,7 @@ from pathlib import Path
 from helpers.k8s_resources import apply_manifests
 from kfp_globals import *
 
+import jubilant
 import kfp
 import kfp_server_api
 import lightkube
@@ -29,6 +30,34 @@ PROFILE_FILE_PATH = f"{basedir}/tests/integration/profile/profile.yaml"
 PROFILE_FILE = yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
 KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 
+WAIT_TIMEOUT = 20 * 60
+
+
+@pytest.fixture(scope="module")
+def juju(request: pytest.FixtureRequest):
+    keep_models = bool(request.config.getoption("--keep-models"))
+    model_name = "kubeflow"
+
+    def print_debug_log(juju_instance: jubilant.Juju):
+        if request.session.testsfailed:
+            print(f"[DEBUG] Fetching debug log for model: {juju_instance.model}")
+            log = juju_instance.debug_log(limit=1000)
+            print(log, end="")
+
+    if model_name:
+        juju_instance = jubilant.Juju(model=model_name)
+        juju_instance.wait_timeout = WAIT_TIMEOUT
+        try:
+            yield juju_instance
+        finally:
+            print_debug_log(juju_instance)
+    else:
+        with jubilant.temp_model(keep=keep_models) as juju_instance:
+            juju_instance.wait_timeout = WAIT_TIMEOUT
+            try:
+                yield juju_instance
+            finally:
+                print_debug_log(juju_instance)
 
 @pytest.fixture(scope="session")
 def forward_kfp_ui():
@@ -90,6 +119,12 @@ def lightkube_client() -> lightkube.Client:
 
 
 def pytest_addoption(parser: Parser):
+    parser.addoption(
+        "--keep-models",
+        action="store_true",
+        default=False,
+        help="keep temporarily-created models",
+    )
     parser.addoption(
         "--bundle",
         default="./tests/integration/bundles/bundle.yaml.j2",

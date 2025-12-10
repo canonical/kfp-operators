@@ -19,7 +19,7 @@ from charms_dependencies import (
     ISTIO_GATEWAY,
     ISTIO_PILOT,
 )
-from helpers.bundle_mgmt import render_bundle, deploy_bundle
+from helpers.bundle_mgmt import render_bundle
 from helpers.k8s_resources import apply_manifests, fetch_response
 from helpers.localize_bundle import update_charm_context
 from helpers.charmcraft import charmcraft_clean
@@ -34,6 +34,7 @@ from kfp_globals import (
 
 import json
 import kfp
+import jubilant
 import lightkube
 import pytest
 import sh
@@ -92,12 +93,12 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
+async def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
     """Build and deploy kfp-operators charms."""
     charmcraft_clean_flag = True if request.config.getoption("--charmcraft-clean") else False
 
     # Immediately raise an error if the model name is not kubeflow
-    if ops_test.model_name != "kubeflow":
+    if juju.model != "kubeflow":
         raise ValueError("kfp must be deployed to namespace kubeflow")
 
     # Get/load template bundle from command line args
@@ -107,28 +108,12 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     context = {}
 
     # Find charms in the expected path if `--charms-path` is passed
-    if charms_path := request.config.getoption("--charms-path"):
-        for charm in KFP_CHARMS:
-            # NOTE: The full path for the charm is hardcoded here. It relies on the downloaded
-            # artifacts having the format below and existing in the exact path under `charms_path`.
-            cached_charm = f"{charms_path}/{charm}/{charm}_ubuntu@24.04-amd64.charm"
-            update_charm_context(context, charm, cached_charm)
-    # Otherwise build the charms with ops_test
-    else:
-        charms_to_build = {
-            charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
-            for charm in KFP_CHARMS
-        }
-        log.info(f"Building charms for: {charms_to_build}")
-        
-        # Build charms sequentially
-        for charm_name, charm_path in charms_to_build.items():
-            log.info(f" Building charm {charm_name}")
-            built_charm = await ops_test.build_charm(charm_path)
-            update_charm_context(context, charm_name, built_charm)
-
-        if charmcraft_clean_flag == True:
-            charmcraft_clean(charms_to_build)
+    charms_path = request.config.getoption("--charms-path")
+    for charm in KFP_CHARMS:
+        # NOTE: The full path for the charm is hardcoded here. It relies on the downloaded
+        # artifacts having the format below and existing in the exact path under `charms_path`.
+        cached_charm = f"{charms_path}/{charm}/{charm}_ubuntu@24.04-amd64.charm"
+        update_charm_context(context, charm, cached_charm)
 
     charms_dict_context = generate_context_from_charm_spec_list(charms_dependencies_list)
     context.update(charms_dict_context)
@@ -138,7 +123,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     )
 
     # Deploy the kfp-operators bundle from the rendered bundle file
-    await deploy_bundle(ops_test, bundle_path=rendered_bundle, trust=True)
+    juju.deploy(rendered_bundle, trust=True)
 
     # Use `juju wait-for` instead of `wait_for_idle()`
     # due to https://github.com/canonical/kfp-operators/issues/601
@@ -146,7 +131,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
     # Also check status of the unit instead of application due to
     # https://github.com/juju/juju/issues/18625
     log.info("Waiting on model applications to be active")
-    sh.juju("wait-for","model","kubeflow", query="forEach(units, unit => unit.workload-status == 'active')", timeout="30m")
+    juju.wait(jubilant.all_active, error=jubilant.any_error)
 
 # ---- KFP API Server focused test cases
 async def test_upload_pipeline(kfp_client):
