@@ -47,7 +47,8 @@ logger = logging.getLogger(__name__)
 DecoratorController = create_global_resource(
     "metacontroller.k8s.io", "v1alpha1", "DecoratorController", "decoratorcontrollers"
 )
-CONTROLLER_PORT = 80
+CONTROLLER_PORT = 1025
+K8S_SVC_CONTROLLER_PORT = 80
 DISABLE_ISTIO_SIDECAR = "false"
 K8S_RESOURCE_FILES = [
     "src/templates/crd_manifests.yaml.j2",
@@ -113,7 +114,7 @@ class KfpProfileControllerOperator(CharmBase):
         self.default_pipeline_root = self.model.config["default_pipeline_root"]
 
         # expose controller's port
-        http_port = ServicePort(CONTROLLER_PORT, name="http")
+        http_port = ServicePort(K8S_SVC_CONTROLLER_PORT, name="http", targetPort=CONTROLLER_PORT)
         self.service_patcher = KubernetesServicePatch(
             self, [http_port], service_name=f"{self.model.app.name}"
         )
