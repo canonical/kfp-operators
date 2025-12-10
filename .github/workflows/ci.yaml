@@ -40,6 +40,14 @@ jobs:
     with:
         charm-path: ./charms/${{ matrix.charm }}
 
+  lint-bundle:
+    name: Lint Bundle Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - run: pipx install tox
+      - run: tox -e lint
+
   lint:
     name: Lint
     runs-on: ubuntu-24.04
