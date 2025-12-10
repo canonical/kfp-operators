@@ -20,7 +20,7 @@ from charms_dependencies import (
     ISTIO_PILOT,
 )
 from helpers.bundle_mgmt import render_bundle
-from helpers.k8s_resources import apply_manifests, fetch_response
+from helpers.k8s_resources import apply_manifests
 from helpers.localize_bundle import update_charm_context
 from kfp_globals import (
     CHARM_PATH_TEMPLATE,
@@ -31,16 +31,11 @@ from kfp_globals import (
     SAMPLE_VIEWER,
 )
 
-import json
 import kfp
 import jubilant
-import lightkube
 import pytest
-import sh
-import tenacity
-from lightkube import codecs
+import requests
 from lightkube.generic_resource import create_namespaced_resource
-from lightkube.resources.apps_v1 import Deployment
 charms_dependencies_list = [
     ARGO_CONTROLLER,
     ENVOY,
@@ -131,7 +126,7 @@ def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
     juju.wait(jubilant.all_active, error=jubilant.any_error)
 
 # ---- KFP API Server focused test cases
-async def test_upload_pipeline(kfp_client):
+def test_upload_pipeline(kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
     # Upload a pipeline and get the server response
     pipeline_name = f"test-pipeline"
@@ -147,7 +142,7 @@ async def test_upload_pipeline(kfp_client):
     assert uploaded_pipeline_id == server_pipeline_id
 
 
-async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
+def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
     """Create a run and monitor it to completion."""
     # Create a run, save response in variable for easy manipulation
     # Create an experiment for this run
@@ -171,7 +166,7 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2
 
 
 # ---- ScheduledWorfklows and Argo focused test case
-async def test_create_and_monitor_recurring_run(
+def test_create_and_monitor_recurring_run(
     kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
 ):
     """Create a recurring run and monitor it to completion."""
@@ -230,7 +225,7 @@ async def test_create_and_monitor_recurring_run(
 
 
 # ---- KFP Viewer and Visualization focused test cases
-async def test_apply_sample_viewer(lightkube_client):
+def test_apply_sample_viewer(lightkube_client):
     """Test a Viewer can be applied and its presence is verified."""
     # Create a Viewer namespaced resource
     viewer_class_resource = create_namespaced_resource(
@@ -248,12 +243,11 @@ async def test_apply_sample_viewer(lightkube_client):
     assert viewer is not None
 
 
-async def test_viz_server_healthcheck(juju: jubilant.Juju):
+def test_viz_server_healthcheck(juju: jubilant.Juju):
     """Run a healthcheck on the server endpoint."""
-    kfp_viz_unit = juju.status().apps["kfp-viz"]["units"]["kfp-viz/0"]
-    url = kfp_viz_unit["address"]
+    url = juju.status().apps["kfp-viz"].units["kfp-viz/0"].address
 
     headers = {"kubeflow-userid": "user"}
-    result_status, result_text = await fetch_response(url=f"http://{url}:8888", headers=headers)
+    response = requests.get(url=f"http://{url}:8888", headers=headers)
 
-    assert result_status == 200
+    assert response.status_code == 200

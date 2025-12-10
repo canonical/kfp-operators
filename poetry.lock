@@ -2500,18 +2500,6 @@ pyyaml = "*"
 requests = "*"
 
 [[package]]
-name = "sh"
-version = "2.2.2"
-description = "Python subprocess replacement"
-optional = false
-python-versions = "<4.0,>=3.8.1"
-groups = ["integration"]
-files = [
-    {file = "sh-2.2.2-py3-none-any.whl", hash = "sha256:e0b15b4ae8ffcd399bc8ffddcbd770a43c7a70a24b16773fbb34c001ad5d52af"},
-    {file = "sh-2.2.2.tar.gz", hash = "sha256:653227a7c41a284ec5302173fbc044ee817c7bad5e6e4d8d55741b9aeb9eb65b"},
-]
-
-[[package]]
 name = "six"
 version = "1.17.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -2888,4 +2876,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "e4143fff3a1adece8c5e763988d4d7e7f42fa654ce6ada4cbc3d880092f12b0c"
+content-hash = "6b38b53dd3322e00446108c939d1c52e527b44ec6a55e2b1d2c5fd74eb3eeaa8"
