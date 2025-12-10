@@ -14,7 +14,6 @@ class PesistenceAgentServiceConfig:
     """Defines configuration for PersistenceAgent Service."""
 
     KFP_API_SERVICE_NAME: str
-    USER: str
 
 
 class PersistenceAgentPebbleService(PebbleServiceComponent):
@@ -78,12 +77,6 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
                 }
             },
         }
-
-        # Change the value of user in `service-config.yaml`:
-        # - upstream: Leave string empty
-        # - rock: _daemon_
-        if service_config.USER:
-            layer_dict["services"][self.service_name]["user"] = service_config.USER
 
         return Layer(layer_dict)
 
