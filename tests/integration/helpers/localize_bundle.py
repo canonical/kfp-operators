@@ -38,8 +38,8 @@ def get_resources_from_charm_dir(charm_dir: Path) -> Dict[str, str]:
 
 def get_resources_from_charm_file(charm_file: str) -> Dict[str, str]:
     """Extracts the resources of a charm from a .charm (zipped) file."""
-    with ZipFile(charm_file, "r") as zip:
-        metadata_file = zip.open("metadata.yaml")
+    with ZipFile(charm_file, "r") as zip_file:
+        metadata_file = zip_file.open("metadata.yaml")
         metadata = yaml.safe_load(metadata_file)
         resources = metadata["resources"]
         return {k: v["upstream-source"] for k, v in resources.items()}

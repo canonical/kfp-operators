@@ -13,7 +13,6 @@ import pytest
 import yaml
 from _pytest.config.argparsing import Parser
 from helpers.k8s_resources import apply_manifests
-from kfp_globals import *
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource
 
@@ -77,9 +76,7 @@ def forward_kfp_ui():
 def apply_profile(lightkube_client):
     """Apply a Profile simulating a user."""
     # Create a Viewer namespaced resource
-    create_global_resource(
-        group="kubeflow.org", version="v1", kind="Profile", plural="profiles"
-    )
+    create_global_resource(group="kubeflow.org", version="v1", kind="Profile", plural="profiles")
 
     # Apply Profile first
     apply_manifests(lightkube_client, PROFILE_FILE_PATH)
