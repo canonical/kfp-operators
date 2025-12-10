@@ -19,7 +19,7 @@ on:
         value: ${{ jobs.get-charm-paths-track.outputs.charm-paths }}
       track:
         description: Charmhub track determined from branch name
-        value: ${{ jobs.get-charm-paths-track.outputs.charm-channel }}
+        value: ${{ jobs.get-charm-paths-track.outputs.track }}
 
 jobs:
   lib-check:
