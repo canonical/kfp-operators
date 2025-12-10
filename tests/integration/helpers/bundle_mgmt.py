@@ -1,7 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import asyncio
 import logging
 import tempfile
 from pathlib import Path
@@ -23,8 +22,6 @@ def render_bundle(bundle_path: Path, context: dict) -> Path:
 
     tmp_dir = tempfile.mkdtemp()
     tmp_path = Path(tmp_dir)
-    bundle_dst_dir = tmp_path / "bundles"
-    bundle_dst_dir.mkdir(exist_ok=True)
     logger.debug(f"Saving in {tmp_dir}")
 
     # Render the bundle
@@ -33,7 +30,7 @@ def render_bundle(bundle_path: Path, context: dict) -> Path:
     bundle_name = bundle_path.stem
     rendered = jinja2.Template(bundle_text).render(**context)
 
-    rendered_bundle_path = bundle_dst_dir / bundle_name
+    rendered_bundle_path = tmp_path / bundle_name
     rendered_bundle_path.write_text(rendered)
     logger.debug(f"Rendered bundle saved in {rendered_bundle_path}")
     return rendered_bundle_path

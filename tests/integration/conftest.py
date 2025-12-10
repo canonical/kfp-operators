@@ -8,7 +8,6 @@ from pathlib import Path
 
 import jubilant
 import kfp
-import kfp_server_api
 import lightkube
 import pytest
 import yaml
@@ -78,7 +77,7 @@ def forward_kfp_ui():
 def apply_profile(lightkube_client):
     """Apply a Profile simulating a user."""
     # Create a Viewer namespaced resource
-    profile_class_resource = create_global_resource(
+    create_global_resource(
         group="kubeflow.org", version="v1", kind="Profile", plural="profiles"
     )
 

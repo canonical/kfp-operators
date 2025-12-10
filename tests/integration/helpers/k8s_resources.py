@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 """Helpers for handling K8s resources."""
 from pathlib import Path
-from typing import Tuple
 
 import lightkube
 from lightkube import codecs

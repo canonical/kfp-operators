@@ -27,7 +27,6 @@ from helpers.bundle_mgmt import render_bundle
 from helpers.k8s_resources import apply_manifests
 from helpers.localize_bundle import update_charm_context
 from kfp_globals import (
-    CHARM_PATH_TEMPLATE,
     KFP_CHARMS,
     KUBEFLOW_PROFILE_NAMESPACE,
     SAMPLE_PIPELINE,
@@ -95,7 +94,6 @@ def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
 
     # Get/load template bundle from command line args
     bundlefile_path = Path(request.config.getoption("bundle"))
-    basedir = Path("./").absolute()
 
     context = {}
 
@@ -128,7 +126,7 @@ def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
 def test_upload_pipeline(kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
     # Upload a pipeline and get the server response
-    pipeline_name = f"test-pipeline"
+    pipeline_name = "test-pipeline"
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
         uploadfile=SAMPLE_PIPELINE,
         name=pipeline_name,
@@ -152,7 +150,7 @@ def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
     create_run_response = kfp_client.create_run_from_pipeline_package(
         pipeline_file=SAMPLE_PIPELINE,
         arguments={},
-        run_name=f"test-run",
+        run_name="test-run",
         experiment_name=experiment_response.display_name,
         namespace=KUBEFLOW_PROFILE_NAMESPACE,
     )
@@ -176,12 +174,13 @@ def test_create_and_monitor_recurring_run(
     # Create an experiment for this run
     experiment_response = create_and_clean_experiment_v2
 
-    # Create a recurring run from a pipeline (upload_pipeline_from_file) and an experiment (create_experiment)
+    # Create a recurring run from a pipeline (upload_pipeline_from_file) and an experiment
+    # (create_experiment)
     # This call uses the 'default' kubeflow service account to be able to edit ScheduledWorkflows
     # This ScheduledWorkflow (Recurring Run) will run once every two seconds
     create_recurring_run_response = kfp_client.create_recurring_run(
         experiment_id=experiment_response.experiment_id,
-        job_name=f"recurring-job",
+        job_name="recurring-job",
         pipeline_id=pipeline_response.pipeline_id,
         version_id=pipeline_version_id,
         enabled=True,

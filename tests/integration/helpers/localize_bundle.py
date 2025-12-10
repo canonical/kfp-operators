@@ -43,7 +43,6 @@ def get_resources_from_charm_file(charm_file: str) -> Dict[str, str]:
         metadata = yaml.safe_load(metadata_file)
         resources = metadata["resources"]
         return {k: v["upstream-source"] for k, v in resources.items()}
-    open_charm_file = charm_file
 
 
 def update_charm_context(context, charm_name, charm_path):
