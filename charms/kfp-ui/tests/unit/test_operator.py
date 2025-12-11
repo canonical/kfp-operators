@@ -27,7 +27,7 @@ def test_log_forwarding(harness: Harness, mocked_kubernetes_service_patch):
         mock_logging.assert_called_once_with(charm=harness.charm)
 
 
-def test_not_leader(harness, mocked_kubernetes_service_patch):
+def test_not_leader(harness: Harness, mocked_kubernetes_service_patch):
     """Test when we are not the leader."""
     harness.begin_with_initial_hooks()
     # Assert that we are not Active, and that the leadership-gate is the cause.
@@ -35,7 +35,7 @@ def test_not_leader(harness, mocked_kubernetes_service_patch):
     assert harness.charm.model.unit.status.message.startswith("[leadership-gate]")
 
 
-def test_object_storage_relation_with_data(harness, mocked_kubernetes_service_patch):
+def test_object_storage_relation_with_data(harness: Harness, mocked_kubernetes_service_patch):
     """Test that if Leadership is Active, the object storage relation operates as expected."""
     # Arrange
     harness.begin()
@@ -51,7 +51,7 @@ def test_object_storage_relation_with_data(harness, mocked_kubernetes_service_pa
     assert isinstance(harness.charm.object_storage_relation.status, ActiveStatus)
 
 
-def test_object_storage_relation_without_data(harness, mocked_kubernetes_service_patch):
+def test_object_storage_relation_without_data(harness: Harness, mocked_kubernetes_service_patch):
     """Test that the object storage relation goes Blocked if no data is available."""
     # Arrange
     harness.begin()
@@ -67,7 +67,9 @@ def test_object_storage_relation_without_data(harness, mocked_kubernetes_service
     assert isinstance(harness.charm.object_storage_relation.status, BlockedStatus)
 
 
-def test_object_storage_relation_without_relation(harness, mocked_kubernetes_service_patch):
+def test_object_storage_relation_without_relation(
+    harness: Harness, mocked_kubernetes_service_patch
+):
     """Test that the object storage relation goes Blocked if no relation is established."""
     # Arrange
     harness.begin()
@@ -83,7 +85,7 @@ def test_object_storage_relation_without_relation(harness, mocked_kubernetes_ser
     assert isinstance(harness.charm.object_storage_relation.status, BlockedStatus)
 
 
-def test_kfp_api_relation_with_data(harness, mocked_kubernetes_service_patch):
+def test_kfp_api_relation_with_data(harness: Harness, mocked_kubernetes_service_patch):
     """Test that if Leadership is Active, the kfp-api relation operates as expected."""
     # Arrange
     harness.begin()
@@ -99,7 +101,7 @@ def test_kfp_api_relation_with_data(harness, mocked_kubernetes_service_patch):
     assert isinstance(harness.charm.kfp_api_relation.status, ActiveStatus)
 
 
-def test_kfp_api_relation_without_data(harness, mocked_kubernetes_service_patch):
+def test_kfp_api_relation_without_data(harness: Harness, mocked_kubernetes_service_patch):
     """Test that the kfp-api relation goes Blocked if no data is available."""
     # Arrange
     harness.begin()
@@ -115,7 +117,7 @@ def test_kfp_api_relation_without_data(harness, mocked_kubernetes_service_patch)
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
-def test_kfp_api_relation_without_relation(harness, mocked_kubernetes_service_patch):
+def test_kfp_api_relation_without_relation(harness: Harness, mocked_kubernetes_service_patch):
     """Test that the kfp-api relation goes Blocked if no relation is established."""
     # Arrange
     harness.begin()
@@ -131,7 +133,7 @@ def test_kfp_api_relation_without_relation(harness, mocked_kubernetes_service_pa
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
-def test_ingress_relation_with_related_app(harness, mocked_kubernetes_service_patch):
+def test_ingress_relation_with_related_app(harness: Harness, mocked_kubernetes_service_patch):
     """Test that the kfp-api relation sends data to related apps and goes Active."""
     # Arrange
     harness.set_leader(True)  # needed to write to an SDI relation
@@ -159,7 +161,7 @@ def test_ingress_relation_with_related_app(harness, mocked_kubernetes_service_pa
     assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
 
 
-def test_kfp_ui_relation_with_related_app(harness, mocked_kubernetes_service_patch):
+def test_kfp_ui_relation_with_related_app(harness: Harness, mocked_kubernetes_service_patch):
     """Test that the kfp-ui relation sends data to related apps and goes Active."""
     # Arrange
     harness.set_leader(True)  # needed to write to an SDI relation
@@ -191,7 +193,9 @@ def test_kfp_ui_relation_with_related_app(harness, mocked_kubernetes_service_pat
     assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
 
 
-def assert_relation_data_send_as_expected(harness, expected_relation_data, rel_ids_to_assert):
+def assert_relation_data_send_as_expected(
+    harness: Harness, expected_relation_data: dict, rel_ids_to_assert: list
+):
     """Asserts that we have sent the expected data to the given relations."""
     # Assert on the data we sent out to the other app for each relation.
     for rel_id in rel_ids_to_assert:
@@ -203,7 +207,7 @@ def assert_relation_data_send_as_expected(harness, expected_relation_data, rel_i
         assert yaml.safe_load(relation_data["data"]) == expected_relation_data["data"]
 
 
-def test_pebble_services_running(harness, mocked_kubernetes_service_patch):
+def test_pebble_services_running(harness: Harness, mocked_kubernetes_service_patch):
     """Test that the pebble services successfully start."""
     # Arrange
     harness.begin()
@@ -256,7 +260,7 @@ def mocked_kubernetes_service_patch(mocker):
     yield mocked_kubernetes_service_patch
 
 
-def render_ingress_data(service, port) -> dict:
+def render_ingress_data(service: str, port: str) -> dict:
     """Returns typical data for the ingress relation."""
     return {
         "prefix": "/pipeline",
@@ -266,7 +270,7 @@ def render_ingress_data(service, port) -> dict:
     }
 
 
-def render_kfp_ui_data(app_name, model_name, port) -> dict:
+def render_kfp_ui_data(app_name: str, model_name: str, port: int) -> dict:
     """Returns typical data for the kfp-ui relation."""
     return {
         "service-name": f"{app_name}.{model_name}",

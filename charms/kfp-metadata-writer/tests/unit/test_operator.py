@@ -18,7 +18,7 @@ def test_log_forwarding(harness: Harness):
         mock_logging.assert_called_once_with(charm=harness.charm, relation_name="logging")
 
 
-def test_not_leader(harness):
+def test_not_leader(harness: Harness):
     """Test that charm waits for leadership."""
     harness.begin_with_initial_hooks()
     assert harness.charm.model.unit.status == WaitingStatus(
@@ -26,7 +26,7 @@ def test_not_leader(harness):
     )
 
 
-def test_grpc_relation_with_data(harness):
+def test_grpc_relation_with_data(harness: Harness):
     """Test that if Leadership is Active, the grpc relation operates as expected."""
     # Arrange
     harness.begin()
@@ -45,7 +45,7 @@ def test_grpc_relation_with_data(harness):
     assert harness.charm.grpc_relation.component.get_service_info().port == MOCK_GRPC_DATA["port"]
 
 
-def test_grpc_relation_with_empty_data(harness):
+def test_grpc_relation_with_empty_data(harness: Harness):
     """Test the grpc relation component returns WaitingStatus when data is missing."""
     # Arrange
     harness.begin()
@@ -62,7 +62,7 @@ def test_grpc_relation_with_empty_data(harness):
     assert isinstance(harness.charm.grpc_relation.get_status(), WaitingStatus)
 
 
-def test_grpc_relation_with_missing_data(harness):
+def test_grpc_relation_with_missing_data(harness: Harness):
     """Test the grpc relation component returns WaitingStatus when data is incomplete."""
     # Arrange
     harness.begin()
@@ -81,7 +81,7 @@ def test_grpc_relation_with_missing_data(harness):
     assert isinstance(harness.charm.grpc_relation.component.get_status(), WaitingStatus)
 
 
-def test_grpc_relation_without_relation(harness):
+def test_grpc_relation_without_relation(harness: Harness):
     """Test that the grpc relation goes Blocked if no relation is established."""
     # Arrange
     harness.begin()
@@ -101,7 +101,7 @@ def test_grpc_relation_without_relation(harness):
     )
 
 
-def test_pebble_service_container_running(harness):
+def test_pebble_service_container_running(harness: Harness):
     """Test that the pebble service of the charm's kfp-metadata-writer container is running."""
     harness.set_leader(True)
     harness.begin()
@@ -132,7 +132,7 @@ def test_pebble_service_container_running(harness):
     )
 
 
-def test_install_before_pebble_service_container(harness):
+def test_install_before_pebble_service_container(harness: Harness):
     """Test that charm waits when install event happens before pebble-service-container is ready."""
     harness.set_leader(True)
     harness.begin()

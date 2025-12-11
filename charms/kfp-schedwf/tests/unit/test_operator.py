@@ -20,7 +20,7 @@ def test_log_forwarding(harness: Harness, mocked_lightkube_client):
 
 
 def test_not_leader(
-    harness,
+    harness: Harness,
     mocked_lightkube_client,
 ):
     """Test that charm waits for leadership."""
@@ -30,7 +30,7 @@ def test_not_leader(
     )
 
 
-def test_kubernetes_component_created(harness, mocked_lightkube_client):
+def test_kubernetes_component_created(harness: Harness, mocked_lightkube_client):
     """Test that Kubernetes component is created when we have leadership."""
     # Needed because the kubernetes component will only apply to k8s if we are the leader
     harness.set_leader(True)
@@ -51,7 +51,9 @@ def test_kubernetes_component_created(harness, mocked_lightkube_client):
 
 
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/non-existent-file")
-def test_no_sa_token_file(harness, mocked_sa_component_kubernetes_client, mocked_lightkube_client):
+def test_no_sa_token_file(
+    harness: Harness, mocked_sa_component_kubernetes_client, mocked_lightkube_client
+):
     """Test the unit status when the SA token file is missing."""
     harness.begin()
     harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
@@ -83,7 +85,7 @@ def test_no_sa_token_file(harness, mocked_sa_component_kubernetes_client, mocked
 
 
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")
-def test_pebble_service_container_running(harness, mocked_lightkube_client):
+def test_pebble_service_container_running(harness: Harness, mocked_lightkube_client):
     """Test that the pebble service of the charm's kfp-schedwf container is running."""
     harness.set_leader(True)
     harness.begin()
@@ -106,7 +108,7 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
 
 
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")
-def test_pebble_service_is_replanned_on_config_changed(harness, mocked_lightkube_client):
+def test_pebble_service_is_replanned_on_config_changed(harness: Harness, mocked_lightkube_client):
     """Test that the pebble service of the charm's kfp-schedwf container is running."""
     harness.set_leader(True)
     harness.begin()
@@ -130,7 +132,7 @@ def test_pebble_service_is_replanned_on_config_changed(harness, mocked_lightkube
 
 
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")
-def test_install_before_pebble_service_container(harness, mocked_lightkube_client):
+def test_install_before_pebble_service_container(harness: Harness, mocked_lightkube_client):
     """Test that charm waits when install event happens before pebble-service-container is ready."""
     harness.set_leader(True)
     harness.begin()

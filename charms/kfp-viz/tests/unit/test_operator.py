@@ -20,7 +20,7 @@ def test_log_forwarding(harness: Harness, mocked_kubernetes_service_patch):
         mock_logging.assert_called_once_with(charm=harness.charm)
 
 
-def test_not_leader(harness, mocked_kubernetes_service_patch):
+def test_not_leader(harness: Harness, mocked_kubernetes_service_patch):
     """Test when we are not the leader."""
     harness.begin_with_initial_hooks()
     # Assert that we are not Active, and that the leadership-gate is the cause.
@@ -28,7 +28,7 @@ def test_not_leader(harness, mocked_kubernetes_service_patch):
     assert harness.charm.model.unit.status.message.startswith("[leadership-gate]")
 
 
-def test_pebble_service_container_running(harness, mocked_kubernetes_service_patch):
+def test_pebble_service_container_running(harness: Harness, mocked_kubernetes_service_patch):
     """Test that the pebble service of the charm's kfp-visualization
     container is running on install."""
     # Arrange
@@ -51,7 +51,9 @@ def test_pebble_service_container_running(harness, mocked_kubernetes_service_pat
     assert container.get_service("vis-server").is_running()
 
 
-def test_pebble_service_is_replanned_on_config_changed(harness, mocked_kubernetes_service_patch):
+def test_pebble_service_is_replanned_on_config_changed(
+    harness: Harness, mocked_kubernetes_service_patch
+):
     """Test that the pebble service of the charm's kfp-visualization
     container is running on config_changed."""
     # Arrange
@@ -73,7 +75,7 @@ def test_pebble_service_is_replanned_on_config_changed(harness, mocked_kubernete
     assert container.get_service("vis-server").is_running()
 
 
-def test_kfp_viz_relation_with_related_app(harness, mocked_kubernetes_service_patch):
+def test_kfp_viz_relation_with_related_app(harness: Harness, mocked_kubernetes_service_patch):
     """Test that the kfp-viz relation sends data to related apps and goes Active."""
     # Arrange
     harness.set_leader(True)  # needed to write to an SDI relation
@@ -147,7 +149,7 @@ def render_kfp_viz_data(app_name, model_name, port) -> dict:
 
 
 def assert_relation_data_send_as_expected(
-    harness_object, expected_relation_data, rel_ids_to_assert
+    harness_object: Harness, expected_relation_data: dict, rel_ids_to_assert: list
 ):
     """Asserts that we have sent the expected data to the given relations."""
     # Assert on the data we sent out to the other app for each relation.

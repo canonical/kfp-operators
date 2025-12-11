@@ -39,7 +39,7 @@ def test_log_forwarding(harness: Harness):
         mock_logging.assert_called_once_with(charm=harness.charm)
 
 
-def test_not_leader(harness):
+def test_not_leader(harness: Harness):
     """Test not a leader scenario."""
     harness.begin_with_initial_hooks()
     assert harness.charm.model.unit.status == WaitingStatus(
@@ -47,7 +47,7 @@ def test_not_leader(harness):
     )
 
 
-def test_kfp_api_relation_with_data(harness):
+def test_kfp_api_relation_with_data(harness: Harness):
     """Test that if Leadership is Active, the kfp-api relation operates as expected."""
     # Arrange
     harness.begin()
@@ -63,7 +63,7 @@ def test_kfp_api_relation_with_data(harness):
     assert isinstance(harness.charm.kfp_api_relation.status, ActiveStatus)
 
 
-def test_kfp_api_relation_without_data(harness):
+def test_kfp_api_relation_without_data(harness: Harness):
     """Test that the kfp-api relation goes Blocked if no data is available."""
     # Arrange
     harness.begin()
@@ -79,7 +79,7 @@ def test_kfp_api_relation_without_data(harness):
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
-def test_kfp_api_relation_without_relation(harness):
+def test_kfp_api_relation_without_relation(harness: Harness):
     """Test that the kfp-api relation goes Blocked if no relation is established."""
     # Arrange
     harness.begin()
@@ -95,7 +95,7 @@ def test_kfp_api_relation_without_relation(harness):
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
-def test_no_sa_token_file(harness, mocked_kubernetes_client):
+def test_no_sa_token_file(harness: Harness, mocked_kubernetes_client):
     """Test the unit status when the SA token file is missing."""
     harness.begin()
     harness.set_can_connect("persistenceagent", True)
@@ -122,7 +122,7 @@ def test_no_sa_token_file(harness, mocked_kubernetes_client):
 
 
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/persistenceagent-sa-token")
-def test_pebble_services_running(harness):
+def test_pebble_services_running(harness: Harness):
     """Test that the pebble services successfully start."""
     # Arrange
     harness.begin()
