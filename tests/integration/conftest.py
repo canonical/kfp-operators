@@ -140,8 +140,12 @@ def pytest_addoption(parser: Parser):
         help="Juju model to use; if not provided, a new model "
         "will be created for each test which requires one",
     )
-    parser.addoption("--no-deploy", action="store_true", default=False,
-                     help="Don't deploy any charms before testing")
+    parser.addoption(
+        "--no-deploy",
+        action="store_true",
+        default=False,
+        help="Don't deploy any charms before testing",
+    )
     parser.addoption(
         "--bundle",
         default="./tests/integration/bundles/bundle.yaml.j2",
