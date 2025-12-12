@@ -84,6 +84,7 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
     kfp_client.delete_experiment(experiment_id=experiment_response.experiment_id)
 
 
+@pytest.mark.deploy
 @pytest.mark.abort_on_fail
 def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
     """Build and deploy kfp-operators charms."""

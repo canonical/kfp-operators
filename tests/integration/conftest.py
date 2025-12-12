@@ -29,6 +29,20 @@ KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 WAIT_TIMEOUT = 20 * 60
 
 
+def pytest_configure(config):
+    # Register the 'deploy' marker
+    config.addinivalue_line("markers", "deploy: mark test as a deployment test")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--no-deploy"):
+        skip_deploy = pytest.mark.skip(reason="skipped because --no-deploy was passed")
+        for item in items:
+            # If the test has the @pytest.mark.deploy marker, skip it
+            if "deploy" in item.keywords:
+                item.add_marker(skip_deploy)
+
+
 @pytest.fixture(scope="module")
 def juju(request: pytest.FixtureRequest):
     keep_models = bool(request.config.getoption("--keep-models"))
@@ -126,6 +140,8 @@ def pytest_addoption(parser: Parser):
         help="Juju model to use; if not provided, a new model "
         "will be created for each test which requires one",
     )
+    parser.addoption("--no-deploy", action="store_true", default=False,
+                     help="Don't deploy any charms before testing")
     parser.addoption(
         "--bundle",
         default="./tests/integration/bundles/bundle.yaml.j2",
