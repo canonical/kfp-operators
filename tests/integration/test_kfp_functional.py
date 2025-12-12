@@ -113,12 +113,7 @@ def test_build_and_deploy(juju: jubilant.Juju, request, lightkube_client):
     # Deploy the kfp-operators bundle from the rendered bundle file
     juju.deploy(rendered_bundle, trust=True)
 
-    # Use `juju wait-for` instead of `wait_for_idle()`
-    # due to https://github.com/canonical/kfp-operators/issues/601
-    # and https://github.com/juju/python-libjuju/issues/1204
-    # Also check status of the unit instead of application due to
-    # https://github.com/juju/juju/issues/18625
-    log.info("Waiting on model applications to be active")
+    log.info("Waiting on model applications and units to be active and idle")
     juju.wait(jubilant.all_active, error=jubilant.any_error)
 
 
