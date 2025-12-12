@@ -90,3 +90,8 @@ After you have packed all charms, run the bundle integration tests by passing th
 # Make sure you pass the full path
 tox -e bundle-integration -- --charms-path=<full-path-to-charms-subdirectory>
 ```
+
+If you have already deployed the bundle and want to rerun the bundle tests only, you can pass the `--no-deploy` flag to skip the deploying:
+```shell
+tox -e bundle-integration -- --model=kubeflow --no-deploy
+```
