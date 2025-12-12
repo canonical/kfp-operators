@@ -123,6 +123,7 @@ def test_upload_pipeline(kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
     # Upload a pipeline and get the server response
     pipeline_name = "test-pipeline"
+
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
         uploadfile=SAMPLE_PIPELINE,
         name=pipeline_name,
@@ -133,6 +134,17 @@ def test_upload_pipeline(kfp_client):
     # Get pipeline id by name, default='sample-pipeline'
     server_pipeline_id = kfp_client.get_pipeline_id(name=pipeline_name)
     assert uploaded_pipeline_id == server_pipeline_id
+
+    # Delete pipeline after
+    pipeline_version_id = (
+        kfp_client.list_pipeline_versions(pipeline_upload_response.pipeline_id)
+        .pipeline_versions[0]
+        .pipeline_version_id
+    )
+    kfp_client.delete_pipeline_version(pipeline_upload_response.pipeline_id, pipeline_version_id)
+    kfp_client.delete_pipeline(pipeline_upload_response.pipeline_id)
+
+    kfp_client.delete_pipeline(server_pipeline_id)
 
 
 def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):

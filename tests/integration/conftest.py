@@ -2,6 +2,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 """Conftest for integration tests."""
+import logging
 import subprocess
 import time
 from pathlib import Path
@@ -28,10 +29,15 @@ KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 
 WAIT_TIMEOUT = 20 * 60
 
+log = logging.getLogger(__name__)
+
 
 def pytest_configure(config):
-    # Register the 'deploy' marker
+    # Custom markers
     config.addinivalue_line("markers", "deploy: mark test as a deployment test")
+    config.addinivalue_line(
+        "markers", "abort_on_fail: abort the entire test session if this test fails"
+    )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -41,6 +47,21 @@ def pytest_collection_modifyitems(config, items):
             # If the test has the @pytest.mark.deploy marker, skip it
             if "deploy" in item.keywords:
                 item.add_marker(skip_deploy)
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # Yield control to allow the test to run and generate a report
+    outcome = yield
+    report = outcome.get_result()
+
+    # If the test failed during execution
+    if report.when == "call" and report.failed:
+        # Check if the test function had the custom marker
+        if item.get_closest_marker("abort_on_fail"):
+            log.warning(f"\n[ABORT] Test '{item.name}' failed. Aborting session.")
+            # Gracefully stop the session
+            item.session.shouldstop = True
 
 
 @pytest.fixture(scope="module")
