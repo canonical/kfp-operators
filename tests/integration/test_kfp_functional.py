@@ -144,8 +144,6 @@ def test_upload_pipeline(kfp_client):
     kfp_client.delete_pipeline_version(pipeline_upload_response.pipeline_id, pipeline_version_id)
     kfp_client.delete_pipeline(pipeline_upload_response.pipeline_id)
 
-    kfp_client.delete_pipeline(server_pipeline_id)
-
 
 def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
     """Create a run and monitor it to completion."""
