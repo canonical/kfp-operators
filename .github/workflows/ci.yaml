@@ -40,6 +40,14 @@ jobs:
     with:
         charm-path: ./charms/${{ matrix.charm }}
 
+  lint-bundle:
+    name: Lint Bundle Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - run: pipx install tox
+      - run: tox -e lint
+
   lint:
     name: Lint
     runs-on: ubuntu-24.04
@@ -265,7 +273,7 @@ jobs:
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          tox -e bundle-integration -- --model kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=./tests/integration/bundles/bundle.yaml.j2
+          tox -e bundle-integration -- --model=kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=./tests/integration/bundles/bundle.yaml.j2
 
       - name: Get all
         run: kubectl get all -A

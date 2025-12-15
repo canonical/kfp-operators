@@ -72,3 +72,26 @@ To run Python commands locally for debugging/development from any environments b
 1. ensure you have `poetry` installed
 2. install any required dependency groups: `poetry install --only <your-group-a>,<your-group-b>` (or all groups, if you prefer: `poetry install --all-groups`)
 3. run Python commands via poetry: `poetry run python3 <your-command>`
+
+
+## Running tests
+Each charm directory has both unit and integration tests that can be executed with `tox -e unit` or `tox -e integration` respectively. This repository also includes bundle integration tests that can be executed with `tox -e bundle-integration` in the root directory of the project. The bundle integration tests expect that all `kfp` charms have been built in their respective charm directories. You can either do this by running `charmcraft pack` in the directory of each charm, or use [charmcraftcache](https://github.com/canonical/charmcraftcache#charmcraftcache) which will download cached charms to speed up the process:
+
+```shell
+# Use charmcraft pack
+for dir in charms/*/; do (cd "$dir" && charmcraft pack); done
+
+# Use charmcraftcache
+for dir in charms/*/; do (cd "$dir" && ccc pack); done
+```
+
+After you have packed all charms, run the bundle integration tests by passing the `--charms-path` option with the path to the `charms` directory of the project:
+```shell
+# Make sure you pass the full path
+tox -e bundle-integration -- --charms-path=<full-path-to-charms-subdirectory>
+```
+
+If you have already deployed the bundle and want to rerun the bundle tests only, you can pass the `--no-deploy` flag to skip the deploying:
+```shell
+tox -e bundle-integration -- --model=kubeflow --no-deploy
+```
