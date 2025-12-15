@@ -6,42 +6,35 @@ import logging
 import time
 from pathlib import Path
 
+import jubilant
+import kfp
+import pytest
+import requests
 from charmed_kubeflow_chisme.testing import generate_context_from_charm_spec_list
 from charms_dependencies import (
     ARGO_CONTROLLER,
     ENVOY,
+    ISTIO_GATEWAY,
+    ISTIO_PILOT,
     KUBEFLOW_PROFILES,
     KUBEFLOW_ROLES,
     METACONTROLLER_OPERATOR,
     MINIO,
     MLMD,
     MYSQL_K8S,
-    ISTIO_GATEWAY,
-    ISTIO_PILOT,
 )
-from helpers.bundle_mgmt import render_bundle, deploy_bundle
-from helpers.k8s_resources import apply_manifests, fetch_response
+from helpers.bundle_mgmt import render_bundle
+from helpers.k8s_resources import apply_manifests
 from helpers.localize_bundle import update_charm_context
-from helpers.charmcraft import charmcraft_clean
 from kfp_globals import (
-    CHARM_PATH_TEMPLATE,
     KFP_CHARMS,
     KUBEFLOW_PROFILE_NAMESPACE,
     SAMPLE_PIPELINE,
     SAMPLE_PIPELINE_NAME,
     SAMPLE_VIEWER,
 )
-
-import json
-import kfp
-import lightkube
-import pytest
-import sh
-import tenacity
-from lightkube import codecs
 from lightkube.generic_resource import create_namespaced_resource
-from lightkube.resources.apps_v1 import Deployment
-from pytest_operator.plugin import OpsTest
+
 charms_dependencies_list = [
     ARGO_CONTROLLER,
     ENVOY,
@@ -52,7 +45,7 @@ charms_dependencies_list = [
     MLMD,
     MYSQL_K8S,
     ISTIO_GATEWAY,
-    ISTIO_PILOT
+    ISTIO_PILOT,
 ]
 log = logging.getLogger(__name__)
 
@@ -91,68 +84,47 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
     kfp_client.delete_experiment(experiment_id=experiment_response.experiment_id)
 
 
+@pytest.mark.deploy
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, request, lightkube_client):
-    """Build and deploy kfp-operators charms."""
-    charmcraft_clean_flag = True if request.config.getoption("--charmcraft-clean") else False
+def test_deploy(juju: jubilant.Juju, request, lightkube_client):
+    """Deploy kfp-operators charms."""
 
     # Immediately raise an error if the model name is not kubeflow
-    if ops_test.model_name != "kubeflow":
+    if juju.model != "kubeflow":
         raise ValueError("kfp must be deployed to namespace kubeflow")
 
     # Get/load template bundle from command line args
     bundlefile_path = Path(request.config.getoption("bundle"))
-    basedir = Path("./").absolute()
 
     context = {}
 
     # Find charms in the expected path if `--charms-path` is passed
-    if charms_path := request.config.getoption("--charms-path"):
-        for charm in KFP_CHARMS:
-            # NOTE: The full path for the charm is hardcoded here. It relies on the downloaded
-            # artifacts having the format below and existing in the exact path under `charms_path`.
-            cached_charm = f"{charms_path}/{charm}/{charm}_ubuntu@24.04-amd64.charm"
-            update_charm_context(context, charm, cached_charm)
-    # Otherwise build the charms with ops_test
-    else:
-        charms_to_build = {
-            charm: Path(CHARM_PATH_TEMPLATE.format(basedir=str(basedir), charm=charm))
-            for charm in KFP_CHARMS
-        }
-        log.info(f"Building charms for: {charms_to_build}")
-        
-        # Build charms sequentially
-        for charm_name, charm_path in charms_to_build.items():
-            log.info(f" Building charm {charm_name}")
-            built_charm = await ops_test.build_charm(charm_path)
-            update_charm_context(context, charm_name, built_charm)
-
-        if charmcraft_clean_flag == True:
-            charmcraft_clean(charms_to_build)
+    charms_path = request.config.getoption("--charms-path")
+    for charm in KFP_CHARMS:
+        # NOTE: The full path for the charm is hardcoded here. It relies on the downloaded
+        # artifacts having the format below and existing in the exact path under `charms_path`.
+        cached_charm = f"{charms_path}/{charm}/{charm}_ubuntu@24.04-amd64.charm"
+        update_charm_context(context, charm, cached_charm)
 
     charms_dict_context = generate_context_from_charm_spec_list(charms_dependencies_list)
     context.update(charms_dict_context)
     # Render kfp-operators bundle file with locally built charms and their resources
-    rendered_bundle = render_bundle(
-        ops_test, bundle_path=bundlefile_path, context=context
-    )
+    rendered_bundle = render_bundle(bundle_path=bundlefile_path, context=context)
 
     # Deploy the kfp-operators bundle from the rendered bundle file
-    await deploy_bundle(ops_test, bundle_path=rendered_bundle, trust=True)
+    juju.deploy(rendered_bundle, trust=True)
 
-    # Use `juju wait-for` instead of `wait_for_idle()`
-    # due to https://github.com/canonical/kfp-operators/issues/601
-    # and https://github.com/juju/python-libjuju/issues/1204
-    # Also check status of the unit instead of application due to
-    # https://github.com/juju/juju/issues/18625
-    log.info("Waiting on model applications to be active")
-    sh.juju("wait-for","model","kubeflow", query="forEach(units, unit => unit.workload-status == 'active')", timeout="30m")
+    log.info("Waiting on model applications and units to be active and idle")
+    juju.wait(jubilant.all_agents_idle, delay=5.0)
+    juju.wait(jubilant.all_active)
+
 
 # ---- KFP API Server focused test cases
-async def test_upload_pipeline(kfp_client):
+def test_upload_pipeline(kfp_client):
     """Upload a pipeline from a YAML file and assert its presence."""
     # Upload a pipeline and get the server response
-    pipeline_name = f"test-pipeline"
+    pipeline_name = "test-pipeline"
+
     pipeline_upload_response = kfp_client.pipeline_uploads.upload_pipeline(
         uploadfile=SAMPLE_PIPELINE,
         name=pipeline_name,
@@ -164,8 +136,17 @@ async def test_upload_pipeline(kfp_client):
     server_pipeline_id = kfp_client.get_pipeline_id(name=pipeline_name)
     assert uploaded_pipeline_id == server_pipeline_id
 
+    # Delete pipeline after
+    pipeline_version_id = (
+        kfp_client.list_pipeline_versions(pipeline_upload_response.pipeline_id)
+        .pipeline_versions[0]
+        .pipeline_version_id
+    )
+    kfp_client.delete_pipeline_version(pipeline_upload_response.pipeline_id, pipeline_version_id)
+    kfp_client.delete_pipeline(pipeline_upload_response.pipeline_id)
 
-async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
+
+def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
     """Create a run and monitor it to completion."""
     # Create a run, save response in variable for easy manipulation
     # Create an experiment for this run
@@ -176,7 +157,7 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2
     create_run_response = kfp_client.create_run_from_pipeline_package(
         pipeline_file=SAMPLE_PIPELINE,
         arguments={},
-        run_name=f"test-run",
+        run_name="test-run",
         experiment_name=experiment_response.display_name,
         namespace=KUBEFLOW_PROFILE_NAMESPACE,
     )
@@ -189,7 +170,7 @@ async def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2
 
 
 # ---- ScheduledWorfklows and Argo focused test case
-async def test_create_and_monitor_recurring_run(
+def test_create_and_monitor_recurring_run(
     kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
 ):
     """Create a recurring run and monitor it to completion."""
@@ -200,12 +181,13 @@ async def test_create_and_monitor_recurring_run(
     # Create an experiment for this run
     experiment_response = create_and_clean_experiment_v2
 
-    # Create a recurring run from a pipeline (upload_pipeline_from_file) and an experiment (create_experiment)
+    # Create a recurring run from a pipeline (upload_pipeline_from_file) and an experiment
+    # (create_experiment)
     # This call uses the 'default' kubeflow service account to be able to edit ScheduledWorkflows
     # This ScheduledWorkflow (Recurring Run) will run once every two seconds
     create_recurring_run_response = kfp_client.create_recurring_run(
         experiment_id=experiment_response.experiment_id,
-        job_name=f"recurring-job",
+        job_name="recurring-job",
         pipeline_id=pipeline_response.pipeline_id,
         version_id=pipeline_version_id,
         enabled=True,
@@ -224,8 +206,9 @@ async def test_create_and_monitor_recurring_run(
     # Wait for the recurring job to schedule some runs
     time.sleep(20)
 
-    first_run = kfp_client.list_runs(experiment_id=experiment_response.experiment_id,
-                                          namespace=KUBEFLOW_PROFILE_NAMESPACE).runs[0]
+    first_run = kfp_client.list_runs(
+        experiment_id=experiment_response.experiment_id, namespace=KUBEFLOW_PROFILE_NAMESPACE
+    ).runs[0]
 
     # Assert that a run has been created from the recurring job
     assert first_run.recurring_run_id == recurring_job.recurring_run_id
@@ -248,7 +231,7 @@ async def test_create_and_monitor_recurring_run(
 
 
 # ---- KFP Viewer and Visualization focused test cases
-async def test_apply_sample_viewer(lightkube_client):
+def test_apply_sample_viewer(lightkube_client):
     """Test a Viewer can be applied and its presence is verified."""
     # Create a Viewer namespaced resource
     viewer_class_resource = create_namespaced_resource(
@@ -266,16 +249,11 @@ async def test_apply_sample_viewer(lightkube_client):
     assert viewer is not None
 
 
-async def test_viz_server_healthcheck(ops_test: OpsTest):
+def test_viz_server_healthcheck(juju: jubilant.Juju):
     """Run a healthcheck on the server endpoint."""
-    # This is a workaround for canonical/kfp-operators#549
-    # Leave model=kubeflow as this test case
-    # should always be executed on that model
-    juju_status = sh.juju.status(format="json", no_color=True, model="kubeflow")
-    kfp_viz_unit = json.loads(juju_status)["applications"]["kfp-viz"]["units"]["kfp-viz/0"]
-    url = kfp_viz_unit["address"]
+    url = juju.status().apps["kfp-viz"].units["kfp-viz/0"].address
 
     headers = {"kubeflow-userid": "user"}
-    result_status, result_text = await fetch_response(url=f"http://{url}:8888", headers=headers)
+    response = requests.get(url=f"http://{url}:8888", headers=headers)
 
-    assert result_status == 200
+    assert response.status_code == 200

@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 """Global variables for functional tests."""
 from pathlib import Path
+
 import yaml
 
 basedir = Path("./").absolute()
