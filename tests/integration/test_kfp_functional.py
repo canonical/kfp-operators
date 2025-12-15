@@ -115,6 +115,7 @@ def test_deploy(juju: jubilant.Juju, request, lightkube_client):
     juju.deploy(rendered_bundle, trust=True)
 
     log.info("Waiting on model applications and units to be active and idle")
+    juju.wait(jubilant.all_agents_idle, delay=5.0)
     juju.wait(jubilant.all_active)
 
 
