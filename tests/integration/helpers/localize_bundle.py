@@ -3,9 +3,9 @@
 import copy
 from pathlib import Path
 from typing import Dict, Optional, Union
-import yaml
 from zipfile import ZipFile
 
+import yaml
 
 # TODO: Move this somewhere more general
 
@@ -38,18 +38,19 @@ def get_resources_from_charm_dir(charm_dir: Path) -> Dict[str, str]:
 
 def get_resources_from_charm_file(charm_file: str) -> Dict[str, str]:
     """Extracts the resources of a charm from a .charm (zipped) file."""
-    with ZipFile(charm_file, "r") as zip:
-        metadata_file = zip.open("metadata.yaml")
+    with ZipFile(charm_file, "r") as zip_file:
+        metadata_file = zip_file.open("metadata.yaml")
         metadata = yaml.safe_load(metadata_file)
         resources = metadata["resources"]
         return {k: v["upstream-source"] for k, v in resources.items()}
-    open_charm_file = charm_file
+
 
 def update_charm_context(context, charm_name, charm_path):
     """Updates the context dict with the charm resources and charm artifact path"""
     charm_resources = get_resources_from_charm_file(charm_path)
     context.update([(f"{charm_name.replace('-', '_')}_resources", charm_resources)])
     context.update([(f"{charm_name.replace('-', '_')}", charm_path)])
+
 
 def localize_bundle_application(
     bundle: dict,
