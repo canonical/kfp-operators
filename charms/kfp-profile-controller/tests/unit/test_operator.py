@@ -91,7 +91,7 @@ def test_log_forwarding(
         mock_logging.assert_called_once_with(charm=harness.charm)
 
 
-def test_not_leader(harness, mocked_lightkube_client, mocked_kubernetes_service_patch):
+def test_not_leader(harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch):
     """Test when we are not the leader."""
     harness.begin_with_initial_hooks()
     # Assert that we are not Active, and that the leadership-gate is the cause.
@@ -100,7 +100,7 @@ def test_not_leader(harness, mocked_lightkube_client, mocked_kubernetes_service_
 
 
 def test_object_storage_relation_with_data(
-    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+    harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
 ):
     """Test that if Leadership is Active, the object storage relation operates as expected.
 
@@ -122,7 +122,7 @@ def test_object_storage_relation_with_data(
 
 
 def test_object_storage_relation_without_data(
-    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+    harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
 ):
     """Test that the object storage relation goes Blocked if no data is available."""
     # Arrange
@@ -140,7 +140,7 @@ def test_object_storage_relation_without_data(
 
 
 def test_object_storage_relation_without_relation(
-    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+    harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
 ):
     """Test that the object storage relation goes Blocked if no relation is established."""
     # Arrange
@@ -158,7 +158,7 @@ def test_object_storage_relation_without_relation(
 
 
 def test_kubernetes_created_method(
-    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+    harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
 ):
     """Test whether we try to create Kubernetes resources when we have leadership."""
     # Arrange
@@ -188,8 +188,8 @@ def test_kubernetes_created_method(
 
 @pytest.mark.parametrize("do_update_config_for_default_pipeline_root", (False, True))
 def test_pebble_services_running(
-    do_update_config_for_default_pipeline_root,
-    harness,
+    do_update_config_for_default_pipeline_root: bool,
+    harness: Harness,
     mocked_lightkube_client,
     mocked_kubernetes_service_patch,
 ):
@@ -228,7 +228,7 @@ def test_pebble_services_running(
 
 
 def test_custom_images_config_with_incorrect_config(
-    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+    harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
 ):
     """Asserts that the unit goes to blocked on corrupted config input."""
     harness.update_config({CONFIG_NAME_FOR_CUSTOM_IMAGES: "{"})
@@ -239,7 +239,7 @@ def test_custom_images_config_with_incorrect_config(
 
 
 def test_custom_images_config_with_incorrect_images_names(
-    harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+    harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
 ):
     """Asserts that the unit goes to blocked on incorrect images names in the config input."""
     harness.update_config(

@@ -11,7 +11,6 @@ import logging
 from pathlib import Path
 
 import lightkube
-import yaml
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
@@ -23,17 +22,15 @@ from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from ops import main
 from ops.charm import CharmBase
 
-from components.pebble_component import KfpSchedwfInputs, KfpSchedwfPebbleService
+from components.pebble_component import KfpSchedwfPebbleService
 
 logger = logging.getLogger(__name__)
 
-SERVICE_CONFIG_PATH = Path("src/service-config.yaml")
 K8S_RESOURCE_FILES = ["src/templates/crds.yaml"]
 SA_NAME = "kfp-schedwf"
 SA_TOKEN_PATH = "src/"
 SA_TOKEN_FILENAME = "scheduledworkflow-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
-SA_TOKEN_DESTINATION_PATH = f"/var/run/secrets/kubeflow/tokens/{SA_TOKEN_FILENAME}"
 
 
 class KfpSchedwf(CharmBase):
@@ -41,11 +38,11 @@ class KfpSchedwf(CharmBase):
         """Charm for the Kubeflow Pipelines Viewer CRD controller."""
         super().__init__(*args)
 
-        # Load user from service config file
-        with open(SERVICE_CONFIG_PATH, "r") as file:
-            service_config = yaml.safe_load(file)
-        self.user = service_config.get("user", "")
-
+        # Storage
+        self._container_name = next(iter(self.meta.containers))
+        _container_meta = self.meta.containers[self._container_name]
+        _storage_name = next(iter(_container_meta.mounts))
+        self._secrets_storage_path = Path(_container_meta.mounts[_storage_name].location)
         self.charm_reconciler = CharmReconciler(self)
 
         self.leadership_gate = self.charm_reconciler.add(
@@ -97,17 +94,14 @@ class KfpSchedwf(CharmBase):
             component=KfpSchedwfPebbleService(
                 charm=self,
                 name="kfp-schedwf-pebble-service",
-                container_name="ml-pipeline-scheduledworkflow",
+                container_name=self._container_name,
                 service_name="controller",
                 files_to_push=[
                     ContainerFileTemplate(
                         source_template_path=SA_TOKEN_FULL_PATH,
-                        destination_path=SA_TOKEN_DESTINATION_PATH,
+                        destination_path=self._secrets_storage_path / SA_TOKEN_FILENAME,
                     )
                 ],
-                inputs_getter=lambda: KfpSchedwfInputs(
-                    USER=self.user,
-                ),
                 timezone=self.model.config["timezone"],
                 log_level=self.model.config["log-level"],
             ),

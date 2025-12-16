@@ -7,6 +7,11 @@ docs: https://discourse.charmhub.io/t/11187
 containers:
   ml-pipeline-scheduledworkflow:
     resource: oci-image
+    uid: 584792
+    gid: 584792
+    mounts:
+      - storage: kubeflow-secrets
+        location: /var/run/secrets/kubeflow/tokens
 resources:
   oci-image:
     type: oci-image
@@ -17,3 +22,8 @@ requires:
   logging:
     interface: loki_push_api
     optional: true
+storage:
+  kubeflow-secrets:
+    type: filesystem
+    minimum-size: 1M
+charm-user: non-root

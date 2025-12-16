@@ -11,6 +11,8 @@ issues: https://github.com/canonical/kfp-operators/issues
 containers:
   apiserver:
     resource: oci-image
+    uid: 584792
+    gid: 584792
 resources:
   oci-image:
     type: oci-image
@@ -93,3 +95,4 @@ provides:
     interface: prometheus_scrape
   grafana-dashboard:
     interface: grafana_dashboard
+charm-user: non-root

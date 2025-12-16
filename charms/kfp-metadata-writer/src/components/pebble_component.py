@@ -15,7 +15,6 @@ class KfpMetadataWriterInputs:
 
     METADATA_GRPC_SERVICE_SERVICE_HOST: str
     METADATA_GRPC_SERVICE_SERVICE_PORT: str
-    USER: str
 
 
 class KfpMetadataWriterPebbleService(PebbleServiceComponent):
@@ -66,11 +65,5 @@ class KfpMetadataWriterPebbleService(PebbleServiceComponent):
                 }
             },
         }
-
-        # Change the value of user in `service-config.yaml`:
-        # - upstream: Leave string empty
-        # - rock: _daemon_
-        if inputs.USER:
-            layer_dict["services"][self.service_name]["user"] = inputs.USER
 
         return Layer(layer_dict)

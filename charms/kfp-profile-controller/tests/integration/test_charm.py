@@ -13,7 +13,10 @@ import yaml
 from charmed_kubeflow_chisme.testing import (
     GRAFANA_AGENT_APP,
     assert_logging,
+    assert_security_context,
     deploy_and_assert_grafana_agent,
+    generate_container_securitycontext_map,
+    get_pod_names,
 )
 from charms_dependencies import (
     ADMISSION_WEBHOOK,
@@ -33,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_NAME = METADATA["name"]
+CONTAINERS_SECURITY_CONTEXT_MAP = generate_container_securitycontext_map(METADATA)
 CONFIG_NAME_FOR_CUSTOM_IMAGES = "custom_images"
 CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = "default_pipeline_root"
 CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
@@ -70,7 +74,7 @@ def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> C
 
 
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, request):
+async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureRequest):
     # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
     await ops_test.model.deploy(
         entity_url=ADMISSION_WEBHOOK.charm,
@@ -139,7 +143,7 @@ async def test_build_and_deploy(ops_test: OpsTest, request):
 
 
 @pytest.mark.abort_on_fail
-async def test_profile_and_resources_creation(lightkube_client, profile):
+async def test_profile_and_resources_creation(lightkube_client: lightkube.Client, profile: str):
     """Create a profile and validate that corresponding resources were created."""
     profile_name = profile
     validate_profile_resources(lightkube_client, profile_name)
@@ -162,7 +166,7 @@ def _safe_load_file_to_text(filename: str):
 
 
 @pytest.fixture(scope="session")
-def profile(lightkube_client):
+def profile(lightkube_client: lightkube.Client):
     """Creates a Profile object in cluster, cleaning it up after tests."""
     profile_file = "./tests/integration/profile.yaml"
     yaml_text = _safe_load_file_to_text(profile_file)
@@ -269,7 +273,7 @@ async def test_model_resources(ops_test: OpsTest):
     )
 
 
-async def assert_minio_secret(access_key, secret_key, ops_test):
+async def assert_minio_secret(access_key: str, secret_key: str, ops_test: OpsTest):
     lightkube_client = lightkube.Client()
     secret = lightkube_client.get(
         Secret, f"{CHARM_NAME}-minio-credentials", namespace=ops_test.model_name
@@ -394,7 +398,28 @@ async def test_change_custom_images(
     )
 
 
-async def test_logging(ops_test):
+async def test_logging(ops_test: OpsTest):
     """Test logging is defined in relation data bag."""
     app = ops_test.model.applications[GRAFANA_AGENT_APP]
     await assert_logging(app)
+
+
+@pytest.mark.parametrize("container_name", list(CONTAINERS_SECURITY_CONTEXT_MAP.keys()))
+async def test_container_security_context(
+    ops_test: OpsTest,
+    lightkube_client: lightkube.Client,
+    container_name: str,
+):
+    """Test container security context is correctly set.
+
+    Verify that container spec defines the security context with correct
+    user ID and group ID.
+    """
+    pod_name = get_pod_names(ops_test.model.name, CHARM_NAME)[0]
+    assert_security_context(
+        lightkube_client,
+        pod_name,
+        container_name,
+        CONTAINERS_SECURITY_CONTEXT_MAP,
+        ops_test.model.name,
+    )

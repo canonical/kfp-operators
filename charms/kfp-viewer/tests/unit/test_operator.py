@@ -20,7 +20,7 @@ def test_log_forwarding(harness: Harness, mocked_lightkube_client):
 
 
 def test_not_leader(
-    harness,
+    harness: Harness,
     mocked_lightkube_client,
 ):
     """Test that charm waits for leadership."""
@@ -30,7 +30,7 @@ def test_not_leader(
     )
 
 
-def test_wrong_model(harness, mocked_lightkube_client):
+def test_wrong_model(harness: Harness, mocked_lightkube_client):
     """Test that charm blocks when it is not deployed to a model named `kubeflow`."""
     harness.set_leader(True)
     harness.set_model_name("wrong-name")
@@ -40,7 +40,7 @@ def test_wrong_model(harness, mocked_lightkube_client):
     )
 
 
-def test_kubernetes_component_created(harness, mocked_lightkube_client):
+def test_kubernetes_component_created(harness: Harness, mocked_lightkube_client):
     """Test that Kubernetes component is created when we have leadership."""
     harness.set_leader(True)
     harness.set_model_name("kubeflow")
@@ -58,7 +58,7 @@ def test_kubernetes_component_created(harness, mocked_lightkube_client):
     assert mocked_lightkube_client.apply.call_count == 1
 
 
-def test_pebble_service_container_running(harness, mocked_lightkube_client):
+def test_pebble_service_container_running(harness: Harness, mocked_lightkube_client):
     """Test that the pebble service of the charm's kfp-viewer container is running."""
     harness.set_leader(True)
     harness.set_model_name("kubeflow")
@@ -81,7 +81,7 @@ def test_pebble_service_container_running(harness, mocked_lightkube_client):
     assert environment["NAMESPACE"] == ""
 
 
-def test_install_before_pebble_service_container(harness, mocked_lightkube_client):
+def test_install_before_pebble_service_container(harness: Harness, mocked_lightkube_client):
     """Test that charm waits when install event happens before pebble-service-container is ready."""
     harness.set_leader(True)
     harness.set_model_name("kubeflow")

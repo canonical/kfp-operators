@@ -35,9 +35,7 @@ TEMPLATES_PATH = Path("src/templates")
 SERVICE_CONFIG_PATH = Path("src/service-config.yaml")
 
 CONFIG_JSON_TEMPLATE_FILE = TEMPLATES_PATH / "config.json"
-CONFIG_JSON_DESTINATION_PATH = "/config/config.json"
 VIEWER_POD_TEMPLATE_FILE = TEMPLATES_PATH / "viewer-pod-template.json"
-VIEWER_JSON_DESTINATION_PATH = "/etc/config/viewer-pod-template.json"
 
 DASHBOARD_LINKS = [
     DashboardLink(
@@ -115,8 +113,17 @@ class KfpUiOperator(CharmBase):
         # Load user and command from service config file
         with open(SERVICE_CONFIG_PATH, "r") as file:
             service_config = yaml.safe_load(file)
-        self.user = service_config.get("user", "")
         self.command = service_config.get("command", "")
+
+        # Storage
+        self._container_name = next(iter(self.meta.containers))
+        _container_meta = self.meta.containers[self._container_name]
+        _config_storage_name = "config"
+        _viewer_config_storage_name = "viewer-config"
+        self._config_storage_path = Path(_container_meta.mounts[_config_storage_name].location)
+        self._viewer_config_storage_name = Path(
+            _container_meta.mounts[_viewer_config_storage_name].location
+        )
 
         # add links in kubeflow-dashboard sidebar
         self.kubeflow_dashboard_sidebar = KubeflowDashboardLinksRequirer(
@@ -191,17 +198,20 @@ class KfpUiOperator(CharmBase):
         self.ml_pipeline_ui_container = self.charm_reconciler.add(
             component=MlPipelineUiPebbleService(
                 charm=self,
-                name="container:ml-pipeline-ui",  # This feels a bit redundant, but will read
-                container_name="ml-pipeline-ui",  # well in the statuses.  Thoughts?
+                # This feels a bit redundant, but will read
+                # well in the statuses.  Thoughts?
+                name=f"container:{self._container_name}",
+                container_name=self._container_name,
                 service_name="ml-pipeline-ui",
                 files_to_push=[
                     ContainerFileTemplate(
                         source_template_path=CONFIG_JSON_TEMPLATE_FILE,
-                        destination_path=CONFIG_JSON_DESTINATION_PATH,
+                        destination_path=self._config_storage_path / "config.json",
                     ),
                     ContainerFileTemplate(
                         source_template_path=VIEWER_POD_TEMPLATE_FILE,
-                        destination_path=VIEWER_JSON_DESTINATION_PATH,
+                        destination_path=self._viewer_config_storage_name
+                        / "viewer-pod-template.json",
                     ),
                 ],
                 inputs_getter=lambda: MlPipelineUiInputs(
@@ -226,7 +236,6 @@ class KfpUiOperator(CharmBase):
                     ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation.component.get_data()[
                         "service-port"
                     ],
-                    USER=self.user,
                     COMMAND=self.command,
                 ),
             ),

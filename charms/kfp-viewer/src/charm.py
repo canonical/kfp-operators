@@ -8,10 +8,8 @@ https://github.com/canonical/kfp-operators
 """
 
 import logging
-from pathlib import Path
 
 import lightkube
-import yaml
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
 from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesComponent
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
@@ -24,23 +22,17 @@ from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBi
 from ops import main
 from ops.charm import CharmBase
 
-from components.pebble_component import KfpViewerInputs, KfpViewerPebbleService
+from components.pebble_component import KfpViewerPebbleService
 
 logger = logging.getLogger(__name__)
 
 K8S_RESOURCE_FILES = ["src/templates/crds.yaml.j2"]
-SERVICE_CONFIG_PATH = Path("src/service-config.yaml")
 
 
 class KfpViewer(CharmBase):
     def __init__(self, *args):
         """Charm for the Kubeflow Pipelines Viewer CRD controller."""
         super().__init__(*args)
-
-        # Load user from service config file
-        with open(SERVICE_CONFIG_PATH, "r") as file:
-            service_config = yaml.safe_load(file)
-        self.user = service_config.get("user", "")
 
         self.charm_reconciler = CharmReconciler(self)
         self._namespace = self.model.name
@@ -86,9 +78,6 @@ class KfpViewer(CharmBase):
                 name="kfp-viewer-pebble-service",
                 container_name="kfp-viewer",
                 service_name="controller",
-                inputs_getter=lambda: KfpViewerInputs(
-                    USER=self.user,
-                ),
                 max_num_viewers=str(self.model.config["max-num-viewers"]),
             ),
             depends_on=[self.kubernetes_resources],
