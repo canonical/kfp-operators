@@ -31,7 +31,6 @@ SA_NAME = "kfp-schedwf"
 SA_TOKEN_PATH = "src/"
 SA_TOKEN_FILENAME = "scheduledworkflow-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
-SA_TOKEN_DESTINATION_PATH = f"/var/run/secrets/kubeflow/tokens/{SA_TOKEN_FILENAME}"
 
 
 class KfpSchedwf(CharmBase):
@@ -39,6 +38,11 @@ class KfpSchedwf(CharmBase):
         """Charm for the Kubeflow Pipelines Viewer CRD controller."""
         super().__init__(*args)
 
+        # Storage
+        self._container_name = next(iter(self.meta.containers))
+        _container_meta = self.meta.containers[self._container_name]
+        _storage_name = next(iter(_container_meta.mounts))
+        self._secrets_storage_path = Path(_container_meta.mounts[_storage_name].location)
         self.charm_reconciler = CharmReconciler(self)
 
         self.leadership_gate = self.charm_reconciler.add(
@@ -90,12 +94,12 @@ class KfpSchedwf(CharmBase):
             component=KfpSchedwfPebbleService(
                 charm=self,
                 name="kfp-schedwf-pebble-service",
-                container_name="ml-pipeline-scheduledworkflow",
+                container_name=self._container_name,
                 service_name="controller",
                 files_to_push=[
                     ContainerFileTemplate(
                         source_template_path=SA_TOKEN_FULL_PATH,
-                        destination_path=SA_TOKEN_DESTINATION_PATH,
+                        destination_path=self._secrets_storage_path / SA_TOKEN_FILENAME,
                     )
                 ],
                 timezone=self.model.config["timezone"],

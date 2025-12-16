@@ -11,7 +11,7 @@ containers:
     gid: 584792
     mounts:
       - storage: kubeflow-secrets
-        location: /var/run/secrets/kubeflow
+        location: /var/run/secrets/kubeflow/tokens
 resources:
   oci-image:
     type: oci-image

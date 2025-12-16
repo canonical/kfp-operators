@@ -62,7 +62,6 @@ METADATA_GRPC_SERVICE_HOST = "metadata-grpc-service.kubeflow"
 METADATA_GRPC_SERVICE_PORT = "8080"
 NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"
 SYNC_CODE_FILE = Path("files/upstream/sync.py")
-SYNC_CODE_DESTINATION_PATH = "/hooks/sync.py"
 
 
 def parse_images_config(config: str) -> Dict:
@@ -112,6 +111,12 @@ class KfpProfileControllerOperator(CharmBase):
             self.unit.status = e.status
             return
         self.default_pipeline_root = self.model.config["default_pipeline_root"]
+
+        # Storage
+        self._container_name = next(iter(self.meta.containers))
+        _container_meta = self.meta.containers[self._container_name]
+        _storage_name = next(iter(_container_meta.mounts))
+        self._hooks_storage_path = Path(_container_meta.mounts[_storage_name].location)
 
         # expose controller's port
         http_port = ServicePort(K8S_SVC_CONTROLLER_PORT, name="http", targetPort=CONTROLLER_PORT)
@@ -176,13 +181,13 @@ class KfpProfileControllerOperator(CharmBase):
         self.profile_controller_container = self.charm_reconciler.add(
             component=KfpProfileControllerPebbleService(
                 charm=self,
-                name="container:kfp-profile-controller",
-                container_name="kfp-profile-controller",
+                name=f"container:{self._container_name}",
+                container_name=self._container_name,
                 service_name="kfp-profile-controller",
                 files_to_push=[
                     ContainerFileTemplate(
                         source_template_path=SYNC_CODE_FILE,
-                        destination_path=SYNC_CODE_DESTINATION_PATH,
+                        destination_path=self._hooks_storage_path / "sync.py",
                     )
                 ],
                 inputs_getter=lambda: KfpProfileControllerInputs(

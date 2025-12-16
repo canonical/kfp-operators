@@ -31,7 +31,6 @@ SA_NAME = "kfp-persistence"
 SA_TOKEN_PATH = "src/"
 SA_TOKEN_FILENAME = "persistenceagent-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
-SA_TOKEN_DESTINATION_PATH = f"/var/run/secrets/kubeflow/tokens/{SA_TOKEN_FILENAME}"
 
 
 class KfpPersistenceOperator(CharmBase):
@@ -41,6 +40,11 @@ class KfpPersistenceOperator(CharmBase):
         """Initialize charm and setup the container."""
         super().__init__(*args, **kwargs)
 
+        # Storage
+        self._container_name = next(iter(self.meta.containers))
+        _container_meta = self.meta.containers[self._container_name]
+        _storage_name = next(iter(_container_meta.mounts))
+        self._secrets_storage_path = Path(_container_meta.mounts[_storage_name].location)
         # Charm logic
         self.charm_reconciler = CharmReconciler(self)
 
@@ -60,7 +64,7 @@ class KfpPersistenceOperator(CharmBase):
         self.sa_token = self.charm_reconciler.add(
             component=SATokenComponent(
                 charm=self,
-                name="sa-token:persistenceagent",
+                name=f"sa-token:{self._container_name}",
                 audiences=["pipelines.kubeflow.org"],
                 sa_name=SA_NAME,
                 sa_namespace=self.model.name,
@@ -73,13 +77,13 @@ class KfpPersistenceOperator(CharmBase):
         self.persistenceagent_container = self.charm_reconciler.add(
             component=PersistenceAgentPebbleService(
                 charm=self,
-                name="container:persistenceagent",
-                container_name="persistenceagent",
+                name=f"container:{self._container_name}",
+                container_name=self._container_name,
                 service_name="persistenceagent",
                 files_to_push=[
                     ContainerFileTemplate(
                         source_template_path=SA_TOKEN_FULL_PATH,
-                        destination_path=SA_TOKEN_DESTINATION_PATH,
+                        destination_path=self._secrets_storage_path / SA_TOKEN_FILENAME,
                     )
                 ],
                 environment={
