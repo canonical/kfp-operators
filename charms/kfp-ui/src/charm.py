@@ -198,8 +198,10 @@ class KfpUiOperator(CharmBase):
         self.ml_pipeline_ui_container = self.charm_reconciler.add(
             component=MlPipelineUiPebbleService(
                 charm=self,
-                name=f"container:{self._container_name}",  # This feels a bit redundant, but will read
-                container_name=self._container_name,  # well in the statuses.  Thoughts?
+                # This feels a bit redundant, but will read
+                # well in the statuses.  Thoughts?
+                name=f"container:{self._container_name}",
+                container_name=self._container_name,
                 service_name="ml-pipeline-ui",
                 files_to_push=[
                     ContainerFileTemplate(
