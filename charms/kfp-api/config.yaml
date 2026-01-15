@@ -27,7 +27,7 @@ options:
       when uploading a new version of a pipeline
   cache-image:
     type: string
-    default: "registry.k8s.io/busybox"
+    default: "ghcr.io/containerd/busybox"
     description: Which image to list as the backing image for a pipeline run step pulled from cache
   cache-enabled:
     type: boolean
