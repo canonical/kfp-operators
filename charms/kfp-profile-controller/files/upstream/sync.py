@@ -1,4 +1,4 @@
-# Source: manifests/applications/pipeline/upstream/base/installs/multi-user/pipelines-profile-controller/sync.py
+# Source: manifests/apps/pipeline/upstream/base/installs/multi-user/pipelines-profile-controller/sync.py
 # Note for Charmed Kubeflow developers: Because this file is a lightly modified version of an
 #   upstream file, we only make changes to it that are functionally required.  As much as possible,
 #   we keep the file comparable to upstream so it can easily be diffed.  In particular, keep the
