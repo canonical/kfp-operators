@@ -23,6 +23,7 @@ from charm import (
 
 CONFIG_NAME_FOR_CUSTOM_IMAGES = "custom_images"
 CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = "default_pipeline_root"
+CONFIG_NAME_FOR_KFP_API_PRINCIPAL = "kfp-api-principal"
 
 # Load the custom images from the JSON
 CUSTOM_IMAGES_PATH = Path("./src/default-custom-images.json")
@@ -57,6 +58,9 @@ EXPECTED_ENVIRONMENT_BY_DEFAULT = {
     "FRONTEND_TAG": custom_images["frontend"].split(":")[1],
     "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
     "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
+    # ambient
+    "AMBIENT_ENABLED": False,
+    "KFP_API_PRINCIPAL": "cluster.local/ns/kubeflow/sa/kfp-api",
 }
 
 
@@ -71,6 +75,7 @@ def mocked_lightkube_client(mocker):
     """Mocks the Lightkube Client in charm.py, returning a mock instead."""
     mocked_lightkube_client = MagicMock()
     mocker.patch("charm.lightkube.Client", return_value=mocked_lightkube_client)
+    mocker.patch("components.service_mesh_component.Client", return_value=mocked_lightkube_client)
     yield mocked_lightkube_client
 
 
@@ -186,9 +191,14 @@ def test_kubernetes_created_method(
     assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
 
 
-@pytest.mark.parametrize("do_update_config_for_default_pipeline_root", (False, True))
+@pytest.mark.parametrize(
+    "do_update_config_for_default_pipeline_root,mesh_relation,kfp_api_principal",
+    [(False, False, "principal1"), (True, True, "principal2")],
+)
 def test_pebble_services_running(
     do_update_config_for_default_pipeline_root: bool,
+    mesh_relation: bool,
+    kfp_api_principal: str,
     harness: Harness,
     mocked_lightkube_client,
     mocked_kubernetes_service_patch,
@@ -204,6 +214,15 @@ def test_pebble_services_running(
         expected_environment["KFP_DEFAULT_PIPELINE_ROOT"] = updated_default_pipeline_root
     harness.begin()
     harness.set_can_connect("kfp-profile-controller", True)
+
+    if mesh_relation:
+        relation_id = harness.add_relation("service-mesh", "istio-beacon-k8s")
+        harness.add_relation_unit(relation_id, "istio-beacon-k8s/0")
+        expected_environment["AMBIENT_ENABLED"] = mesh_relation
+
+    # principal should have changed
+    harness.update_config({CONFIG_NAME_FOR_KFP_API_PRINCIPAL: kfp_api_principal})
+    expected_environment["KFP_API_PRINCIPAL"] = kfp_api_principal
 
     # Mock:
     # * leadership_gate to have get_status=>Active
@@ -249,3 +268,32 @@ def test_custom_images_config_with_incorrect_images_names(
 
     assert isinstance(harness.model.unit.status, BlockedStatus)
     assert harness.charm.model.unit.status.message.startswith("Incorrect image name")
+
+
+@pytest.mark.parametrize(
+    "has_relation,expected_ambient",
+    [
+        (False, False),  # sidecar mode
+        (True, True),  # ambient mode
+    ],
+)
+def test_policy_reconciliation_on_gateway_metadata_relation(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+    has_relation: bool,
+    expected_ambient: bool,
+):
+    # Arrange
+    harness.set_leader(True)
+    harness.begin()
+
+    # Mock components to be active
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+
+    if has_relation:
+        relation_id = harness.add_relation("service-mesh", "istio-beacon-k8s")
+        harness.add_relation_unit(relation_id, "istio-beacon-k8s/0")
+
+    assert harness.charm.service_mesh_component.component.ambient_mesh_enabled == expected_ambient

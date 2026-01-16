@@ -127,20 +127,20 @@ jobs:
         shell: python
         run: |
           import os
-          
+
           if "${{ github.event_name }}" == "pull_request":
               ref = "${{ github.base_ref }}"
           else:
               ref = "${{ github.ref_name }}"
-          
+
           if ref.startswith("track/"):
               track = ref.removeprefix("track/")
           else:
               track = "latest"
-          
+
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"track={track}\n")
-          
+
           print(f"Track: {track}")
 
   build:
@@ -189,6 +189,24 @@ jobs:
           - kfp-ui
           - kfp-metadata-writer
           - kfp-viz
+        test-type:
+          - integration
+          - integration-ambient
+        exclude:
+          - charm: kfp-persistence
+            test-type: integration-ambient
+          - charm: kfp-api
+            test-type: integration-ambient
+          - charm: kfp-schedwf
+            test-type: integration-ambient
+          - charm: kfp-viewer
+            test-type: integration-ambient
+          - charm: kfp-ui
+            test-type: integration-ambient
+          - charm: kfp-metadata-writer
+            test-type: integration-ambient
+          - charm: kfp-viz
+            test-type: integration-ambient
     steps:
       # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,
@@ -225,7 +243,7 @@ jobs:
           # Pass the path where the charm artefact is downloaded to the tox command
           # FIXME: Right now the complete path is half hardcoded to <charm name>_ubuntu@24.04-amd64.charm
           # We need to find a better way to dynamically get this value
-          tox -e ${{ matrix.charm }}-integration -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
+          tox -e ${{ matrix.charm }}-${{ matrix.test-type }} -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
