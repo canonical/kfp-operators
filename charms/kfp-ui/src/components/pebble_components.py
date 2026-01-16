@@ -56,10 +56,11 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                         "ARGO_ARCHIVE_LOGS": inputs.ARGO_ARCHIVE_LOGS,
                         # Must have the same value as the `keyFormat` specified in the
                         # `argo-workflow-controller-configmap` ConfigMap owned by
-                        # the `argo-controller` charm.
+                        # the `argo-controller` charm, and defined in:
+                        # https://github.com/canonical/argo-operators/blob/main/charms/argo-controller/src/components/pebble_component.py
                         "ARGO_KEYFORMAT": (
-                            "artifacts/{{workflow.name}}/"
-                            "{{workflow.creationTimestamp.Y}}/"
+                            "private-artifacts/{{workflow.namespace}}/"
+                            "{{workflow.name}}/{{workflow.creationTimestamp.Y}}/"
                             "{{workflow.creationTimestamp.m}}/"
                             "{{workflow.creationTimestamp.d}}/"
                             "{{pod.name}}"
