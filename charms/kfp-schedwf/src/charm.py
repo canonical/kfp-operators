@@ -16,7 +16,11 @@ from charmed_kubeflow_chisme.components.kubernetes_component import KubernetesCo
 from charmed_kubeflow_chisme.components.leadership_gate_component import LeadershipGateComponent
 from charmed_kubeflow_chisme.components.pebble_component import ContainerFileTemplate
 from charmed_kubeflow_chisme.components.sa_token_component import SATokenComponent
+from charmed_kubeflow_chisme.components.serialised_data_interface_components import (
+    SdiRelationDataReceiverComponent,
+)
 from charmed_kubeflow_chisme.kubernetes import create_charm_default_labels
+from charms.istio_beacon_k8s.v0.service_mesh import ServiceMeshConsumer
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from ops import main
@@ -72,6 +76,19 @@ class KfpSchedwf(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
+        # need the relation for ambient, to get an authorization policy created
+        self.mesh = ServiceMeshConsumer(self)
+        self.kfp_api_relation = self.charm_reconciler.add(
+            component=SdiRelationDataReceiverComponent(
+                charm=self,
+                name="relation:kfp-api",
+                relation_name="kfp-api",
+                minimum_related_applications=0,
+                maximum_related_applications=1,
+            ),
+            depends_on=[self.leadership_gate],
+        )
+
         # creating a serviceAccountToken injected via a mounted projected volume:
         self.sa_token = self.charm_reconciler.add(
             component=SATokenComponent(
@@ -107,6 +124,7 @@ class KfpSchedwf(CharmBase):
             ),
             depends_on=[
                 self.kubernetes_resources,
+                self.kfp_api_relation,
                 self.sa_token,
             ],
         )

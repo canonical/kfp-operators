@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from charmed_kubeflow_chisme.exceptions import GenericCharmRuntimeError
+from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
@@ -146,6 +147,43 @@ def test_install_before_pebble_service_container(harness: Harness, mocked_lightk
     assert harness.charm.model.unit.status == WaitingStatus(
         "[kfp-schedwf-pebble-service] Waiting for Pebble to be ready."
     )
+
+
+@patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")
+def test_kfp_api_relation_updates_pebble_service(harness: Harness, mocked_lightkube_client):
+    """Test that kfp-api relation updates the pebble service command with custom service-name."""
+    # Setup harness
+    harness.set_leader(True)
+    harness.begin()
+    harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
+
+    # Mock components to return ActiveStatus
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.sa_token.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Emit install event
+    harness.charm.on.install.emit()
+
+    # Test 1: Verify charm status is active
+    assert isinstance(harness.charm.unit.status, ActiveStatus)
+
+    # Test 2: Verify pebble service is running
+    container = harness.charm.unit.get_container("ml-pipeline-scheduledworkflow")
+    assert container.get_service("controller").is_running()
+
+    # Test 3: Verify default command parameter
+    plan = container.get_plan()
+    command = plan.services["controller"].command
+    assert "--mlPipelineAPIServerName=ml-pipeline" in command
+
+    # Test 4: Add SDI relation for kfp-api with custom service-name
+    custom_kfp_api_data = {"service-name": "custom-ml-pipeline", "service-port": "8888"}
+    add_sdi_relation_to_harness(harness, "kfp-api", data=custom_kfp_api_data)
+
+    # Test 5: Verify updated command parameter
+    updated_plan = container.get_plan()
+    updated_command = updated_plan.services["controller"].command
+    assert "--mlPipelineAPIServerName=custom-ml-pipeline" in updated_command
 
 
 @pytest.fixture

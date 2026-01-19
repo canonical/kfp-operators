@@ -32,6 +32,13 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         """
         logger.info("PebbleServiceComponent.get_layer executing")
 
+        # Construct the KFP API url based on the existence of the sdi relation
+        kfp_api_service = "ml-pipeline"
+
+        kfp_api_data = self._charm.kfp_api_relation.component.get_data()
+        if kfp_api_data:
+            kfp_api_service = kfp_api_data[0]["service-name"]
+
         # NOTE: to check exactly how we are supposed to reuse rocks' predefined
         # pebble services, this could work, but I have to check if there are no
         # other edge cases were the layer is defined somewhere else and it is
@@ -45,9 +52,10 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
                     "override": "replace",
                     "summary": "scheduled workflow controller service",
                     "startup": "enabled",
-                    "command": "/bin/controller --logtostderr=true"
-                    ' --namespace=""'
-                    f" --logLevel={self.log_level}",
+                    "command": "/bin/controller --logtostderr=true "
+                    '--namespace="" '
+                    f"--logLevel={self.log_level} "
+                    f"--mlPipelineAPIServerName={kfp_api_service}",
                     "environment": self.environment,
                 }
             },
