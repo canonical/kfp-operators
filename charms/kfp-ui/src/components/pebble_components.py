@@ -59,8 +59,8 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                         # the `argo-controller` charm, and defined in:
                         # https://github.com/canonical/argo-operators/blob/main/charms/argo-controller/src/components/pebble_component.py
                         "ARGO_KEYFORMAT": (
-                            "private-artifacts/{{workflow.namespace}}/"
-                            "{{workflow.name}}/{{workflow.creationTimestamp.Y}}/"
+                            "artifacts/{{workflow.name}}/"
+                            "{{workflow.creationTimestamp.Y}}/"
                             "{{workflow.creationTimestamp.m}}/"
                             "{{workflow.creationTimestamp.d}}/"
                             "{{pod.name}}"
@@ -69,7 +69,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                         #  It is the name/port of the user-specific artifact accessor
                         "ARTIFACTS_SERVICE_PROXY_NAME": "ml-pipeline-ui-artifact",
                         "ARTIFACTS_SERVICE_PROXY_PORT": "80",
-                        "ARTIFACTS_SERVICE_PROXY_ENABLED": "true",
+                        "ARTIFACTS_SERVICE_PROXY_ENABLED": "false",
                         "AWS_ACCESS_KEY_ID": "",
                         "AWS_SECRET_ACCESS_KEY": "",
                         "DISABLE_GKE_METADATA": inputs.DISABLE_GKE_METADATA,
