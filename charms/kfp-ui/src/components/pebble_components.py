@@ -69,7 +69,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                         #  It is the name/port of the user-specific artifact accessor
                         "ARTIFACTS_SERVICE_PROXY_NAME": "ml-pipeline-ui-artifact",
                         "ARTIFACTS_SERVICE_PROXY_PORT": "80",
-                        "ARTIFACTS_SERVICE_PROXY_ENABLED": "false",
+                        "ARTIFACTS_SERVICE_PROXY_ENABLED": "true",
                         "AWS_ACCESS_KEY_ID": "",
                         "AWS_SECRET_ACCESS_KEY": "",
                         "DISABLE_GKE_METADATA": inputs.DISABLE_GKE_METADATA,
