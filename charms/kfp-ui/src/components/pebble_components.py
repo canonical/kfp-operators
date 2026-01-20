@@ -57,7 +57,8 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                         # Must have the same value as the `keyFormat` specified in the
                         # `argo-workflow-controller-configmap` ConfigMap owned by
                         # the `argo-controller` charm, and defined in:
-                        # https://github.com/canonical/argo-operators/blob/main/charms/argo-controller/src/components/pebble_component.py
+                        # https://github.com/canonical/argo-operators/blob/main/charms/argo-controller/src/components/pebble_component.py                     # TODO: Update the environment variables below after working on:
+                        # https://github.com/canonical/kfp-operators/issues/822
                         "ARGO_KEYFORMAT": (
                             "artifacts/{{workflow.name}}/"
                             "{{workflow.creationTimestamp.Y}}/"
