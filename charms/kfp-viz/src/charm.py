@@ -21,6 +21,7 @@ from ops import main
 from ops.charm import CharmBase
 
 from components.pebble_components import KfpVizPebbleService
+from components.service_mesh_component import ServiceMeshComponent
 
 logger = logging.getLogger()
 
@@ -59,6 +60,14 @@ class KfpVizOperator(CharmBase):
                     "service-name": f"{self.model.app.name}.{self.model.name}",
                     "service-port": self.model.config["http-port"],
                 },
+            ),
+            depends_on=[self.leadership_gate],
+        )
+
+        self.service_mesh = self.charm_reconciler.add(
+            component=ServiceMeshComponent(
+                charm=self,
+                name="service-mesh-component",
             ),
             depends_on=[self.leadership_gate],
         )
