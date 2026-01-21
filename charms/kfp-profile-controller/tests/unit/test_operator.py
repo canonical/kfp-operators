@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
+from charms.istio_beacon_k8s.v0.service_mesh import MeshType
 from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
@@ -86,6 +87,17 @@ def mocked_kubernetes_service_patch(mocker):
         "charm.KubernetesServicePatch", lambda x, y, service_name: None
     )
     yield mocked_kubernetes_service_patch
+
+
+@pytest.fixture()
+def mocked_policy_resource_manager(mocker):
+    """Mocks the PolicyResourceManager for the ServiceMeshComponent."""
+    mocked_policy_resource_manager = MagicMock()
+    mocker.patch(
+        "components.service_mesh_component.PolicyResourceManager",
+        return_value=mocked_policy_resource_manager,
+    )
+    yield mocked_policy_resource_manager
 
 
 def test_log_forwarding(
@@ -284,8 +296,8 @@ def test_policy_reconciliation_on_gateway_metadata_relation(
     has_relation: bool,
     expected_ambient: bool,
 ):
+    """Test that the policy is reconciled when the gateway metadata relation is added."""
     # Arrange
-    harness.set_leader(True)
     harness.begin()
 
     # Mock components to be active
@@ -297,3 +309,21 @@ def test_policy_reconciliation_on_gateway_metadata_relation(
         harness.add_relation_unit(relation_id, "istio-beacon-k8s/0")
 
     assert harness.charm.service_mesh_component.component.ambient_mesh_enabled == expected_ambient
+
+
+def test_policy_resource_manager_cleans_up_policies(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+    mocked_policy_resource_manager,
+):
+    """Test that the prm will be called with empty raw_policies, when the charm is deleted."""
+    # Arrange
+    harness.begin()
+
+    # Remove without the mesh relation
+    harness.charm.on.remove.emit()
+
+    # test that the reconcile of prm was called with empty policies
+    prm = harness.charm.service_mesh_component.component._policy_resource_manager
+    prm.reconcile.assert_called_once_with(policies=[], mesh_type=MeshType.istio, raw_policies=[])
