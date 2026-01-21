@@ -10,16 +10,16 @@ containers:
     uid: 584792
     gid: 584792
     mounts:
-      - storage: config
-        location: /config
-      - storage: viewer-config
-        location: /etc/config
+    - storage: config
+      location: /config
+    - storage: viewer-config
+      location: /etc/config
 resources:
   ml-pipeline-ui:
     type: oci-image
     description: OCI image for ml-pipeline-ui
     # The container's command and `user` need to be updated when switching from upstream image to rock
-    upstream-source: ghcr.io/kubeflow/kfp-frontend:2.15.0
+    upstream-source: docker.io/charmedkubeflow/frontend:2.15.0-890e0cc
 requires:
   object-storage:
     interface: object-storage
