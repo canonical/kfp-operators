@@ -14,7 +14,6 @@ from charm import KfpPersistenceOperator
 MOCK_KFP_API_DATA = {"service-name": "service-name", "service-port": "1234"}
 OTHER_APP_NAME = "kfp-api-provider"
 RELATION_NAME = "kfp-api"
-SERVICE_ACCOUNT_NAME = "kfp-persistence"
 
 
 @pytest.fixture
@@ -107,9 +106,10 @@ def test_no_sa_token_file(harness: Harness, mocked_kubernetes_client):
     with pytest.raises(GenericCharmRuntimeError) as err:
         harness.charm.sa_token.get_status()
 
+    service_account_name = harness.charm.model.app.name
     assert (
         err.value.msg
-        == f"Token file for {SERVICE_ACCOUNT_NAME} ServiceAccount not present in charm."
+        == f"Token file for {service_account_name} ServiceAccount not present in charm."
     )
     # The base charm arbitrarily sets the unit status to BlockedStatus
     # We should fix this in charmed-kubeflow-chisme as it doesn't really

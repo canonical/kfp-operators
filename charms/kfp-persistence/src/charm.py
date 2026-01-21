@@ -27,7 +27,6 @@ from components.pebble_components import (
 
 log = logging.getLogger()
 
-SA_NAME = "kfp-persistence"
 SA_TOKEN_PATH = "src/"
 SA_TOKEN_FILENAME = "persistenceagent-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
@@ -66,7 +65,7 @@ class KfpPersistenceOperator(CharmBase):
                 charm=self,
                 name=f"sa-token:{self._container_name}",
                 audiences=["pipelines.kubeflow.org"],
-                sa_name=SA_NAME,
+                sa_name=self.model.app.name,
                 sa_namespace=self.model.name,
                 filename=SA_TOKEN_FILENAME,
                 path=SA_TOKEN_PATH,

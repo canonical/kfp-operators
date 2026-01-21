@@ -54,7 +54,7 @@ K8S_RESOURCE_FILES = [
     "src/templates/crd_manifests.yaml.j2",
     "src/templates/secrets.yaml.j2",
 ]
-KFP_IMAGES_VERSION = "2.5.0"  # Remember to change this version also in default-custom-images.json
+KFP_IMAGES_VERSION = "2.15.0"  # Remember to change this version also in default-custom-images.json
 # This service name must be the Service from the mlmd-operator
 # FIXME: leaving it hardcoded now, but we should share this
 # host and port through relation data
