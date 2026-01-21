@@ -167,6 +167,7 @@ async def test_profile_and_resources_creation(lightkube_client: lightkube.Client
     validate_profile_resources(lightkube_client, profile_name)
 
 
+# Targeted for ambient integration
 @pytest.mark.abort_on_fail
 async def test_ambient_authorization_policy_created(
     lightkube_client: lightkube.Client, profile: str
@@ -181,6 +182,7 @@ async def test_ambient_authorization_policy_created(
     assert policy is not None
 
 
+# Targeted for ambient integration
 @pytest.mark.abort_on_fail
 async def test_insecure_authorization_policy_is_missing(
     lightkube_client: lightkube.Client, profile: str
@@ -203,6 +205,7 @@ async def test_insecure_authorization_policy_is_missing(
     assert excinfo.value.response.status_code == 404
 
 
+# Targeted for ambient integration
 @pytest.mark.abort_on_fail
 async def test_kfp_api_principal_changed(
     ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
