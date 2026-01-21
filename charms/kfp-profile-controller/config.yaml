@@ -25,3 +25,6 @@ options:
   kfp-api-principal:
     type: string
     default: "cluster.local/ns/kubeflow/sa/kfp-api"
+    description: >
+      The principal for the KFP API service account.
+      This is used in the AuthorizationPolicy that gets created in the sync.py script.

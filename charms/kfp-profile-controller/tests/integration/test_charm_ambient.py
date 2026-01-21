@@ -144,7 +144,6 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
     )
 
     # The profile controller needs AuthorizationPolicies to create Profiles
-    # Deploy istio-pilot to provide the k8s cluster with this CRD
     # Wait for everything to deploy
     await deploy_and_integrate_service_mesh_charms(
         CHARM_NAME,

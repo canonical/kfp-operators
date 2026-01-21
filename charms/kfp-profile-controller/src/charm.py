@@ -145,7 +145,8 @@ class KfpProfileControllerOperator(CharmBase):
         )
 
         self.service_mesh_component = self.charm_reconciler.add(
-            component=ServiceMeshComponent(charm=self, name="service-mesh-component")
+            component=ServiceMeshComponent(charm=self, name="service-mesh-component"),
+            depends_on=[self.leadership_gate],
         )
 
         self.kubernetes_resources = self.charm_reconciler.add(
