@@ -135,12 +135,16 @@ def get_settings_from_env(controller_port=None,
         metadata_grpc_service_port or \
         os.environ.get("METADATA_GRPC_SERVICE_PORT", "8080")
 
+    # - - - - - - - - - - - - - - - - - -
+    # CUSTOM CODE BY CANONICAL
+    # - - - - - - - - - - - - - - - - - -
     # Ambient
     settings["kfp_api_principal"] = os.environ.get(
         "KFP_API_PRINCIPAL", "cluster.local/ns/kubeflow/sa/kfp-api"
     )
 
     settings["ambient_mesh_enabled"] = os.environ.get("AMBIENT_ENABLED", "false") == "true"
+    # - - - - - - - - - - - - - - - - - -
 
     return settings
 
@@ -359,6 +363,9 @@ def server_factory(visualization_server_image,
                         }
                     }
                 },
+                # - - - - - - - - - - - - - - - - - -
+                # CUSTOM CODE BY CANONICAL
+                # - - - - - - - - - - - - - - - - - -
                 # Added from https://github.com/kubeflow/pipelines/pull/6629 to fix
                 # https://github.com/canonical/bundle-kubeflow/issues/423.  This was not yet in
                 # upstream and if they go with something different we should consider syncing with
@@ -409,6 +416,7 @@ def server_factory(visualization_server_image,
                         ]
                     }
                 },
+                # - - - - - - - - - - - - - - - - - -
                 {
                     "apiVersion": "v1",
                     "kind": "Service",
@@ -434,6 +442,9 @@ def server_factory(visualization_server_image,
                 },
             ]
 
+            # - - - - - - - - - - - - - - - - - -
+            # CUSTOM CODE BY CANONICAL
+            # - - - - - - - - - - - - - - - - - -
             # dynamically handle ambient / sidecar authorization policies
             if ambient_mesh_enabled:
                 desired_resources.append(
@@ -504,6 +515,7 @@ def server_factory(visualization_server_image,
                         },
                     }
                 )
+            # - - - - - - - - - - - - - - - - - -
 
             print('Received request:\n', json.dumps(parent, indent=2, sort_keys=True))
             print('Desired resources except secrets:\n', json.dumps(desired_resources, indent=2, sort_keys=True))
