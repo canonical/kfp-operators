@@ -1,7 +1,7 @@
 # Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 from charmed_kubeflow_chisme.components import Component
-from charms.istio_beacon_k8s.v0.service_mesh import ServiceMeshConsumer, UnitPolicy
+from charms.istio_beacon_k8s.v0.service_mesh import AppPolicy, ServiceMeshConsumer
 from ops import ActiveStatus, StatusBase
 
 
@@ -21,7 +21,7 @@ class ServiceMeshComponent(Component):
         self._provided_relation_name = provided_relation_name
 
         self._mesh = ServiceMeshConsumer(
-            self._charm, policies=[UnitPolicy(relation=self._provided_relation_name)]
+            self._charm, policies=[AppPolicy(relation=self._provided_relation_name, endpoints=[])]
         )
 
     def get_status(self) -> StatusBase:
