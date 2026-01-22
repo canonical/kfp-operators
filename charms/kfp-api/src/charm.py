@@ -18,6 +18,7 @@ from charmed_kubeflow_chisme.kubernetes import (
 from charmed_kubeflow_chisme.pebble import update_layer
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
+from charms.istio_beacon_k8s.v0.service_mesh import AppPolicy, ServiceMeshConsumer, UnitPolicy
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
@@ -52,6 +53,8 @@ K8S_RESOURCE_FILES = [
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
 KFP_API_SERVICE_NAME = "apiserver"
+
+METRICS_ENDPOINT_RELATION_NAME = "metrics-endpoint"
 
 
 class KfpApiOperator(CharmBase):
@@ -133,7 +136,7 @@ class KfpApiOperator(CharmBase):
 
         self.prometheus_provider = MetricsEndpointProvider(
             charm=self,
-            relation_name="metrics-endpoint",
+            relation_name=METRICS_ENDPOINT_RELATION_NAME,
             jobs=[
                 {
                     "metrics_path": METRICS_PATH,
@@ -145,6 +148,14 @@ class KfpApiOperator(CharmBase):
         self.dashboard_provider = GrafanaDashboardProvider(self)
 
         self._logging = LogForwarder(charm=self)
+
+        self._mesh = ServiceMeshConsumer(
+            self,
+            policies=[
+                AppPolicy(relation="kfp-api", endpoints=[]),
+                UnitPolicy(relation=METRICS_ENDPOINT_RELATION_NAME),
+            ],
+        )
 
     @property
     def _charm_default_kubernetes_labels(self):

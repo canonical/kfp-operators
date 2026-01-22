@@ -46,7 +46,7 @@ package-mode = false
 optional = true
 
 [tool.poetry.group.charm.dependencies]
-charmed-kubeflow-chisme = ">=0.4.12"
+charmed-kubeflow-chisme = "^0.4.24"
 cosl = ">=0.0.48"
 lightkube = "^0.15.6"
 oci-image = "^1.0.0"
@@ -89,7 +89,7 @@ optional = true
 
 [tool.poetry.group.integration.dependencies]
 juju = "<4.0"
-charmed-kubeflow-chisme = ">=0.4.14"
+charmed-kubeflow-chisme = "^0.4.24"
 lightkube = "^0.15.6"
 pytest-operator = "^0.38.0"
 selenium = "^4.27.1"
