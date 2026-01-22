@@ -61,6 +61,7 @@ class KfpVizOperator(CharmBase):
                     "service-port": self.model.config["http-port"],
                 },
             ),
+            # TODO: add dependency on service mesh component when sidecar support is dropped
             depends_on=[self.leadership_gate],
         )
 
