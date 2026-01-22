@@ -11,13 +11,11 @@ class ServiceMeshComponent(Component):
     def __init__(
         self,
         *args,
-        service_mesh_relation_name: str = "service-mesh",
         provided_relation_name: str = "kfp-viz",
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
-        self._service_mesh_relation_name = service_mesh_relation_name
         self._provided_relation_name = provided_relation_name
 
         self._mesh = ServiceMeshConsumer(
