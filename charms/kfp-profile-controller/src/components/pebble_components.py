@@ -27,6 +27,8 @@ class KfpProfileControllerInputs:
     VISUALIZATION_SERVER_TAG: str
     FRONTEND_IMAGE: str
     FRONTEND_TAG: str
+    KFP_API_PRINCIPAL: str
+    AMBIENT_ENABLED: str
 
 
 class KfpProfileControllerPebbleService(PebbleServiceComponent):
@@ -77,6 +79,8 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                             "VISUALIZATION_SERVER_TAG": inputs.VISUALIZATION_SERVER_TAG,
                             "FRONTEND_IMAGE": inputs.FRONTEND_IMAGE,
                             "FRONTEND_TAG": inputs.FRONTEND_TAG,
+                            "AMBIENT_ENABLED": inputs.AMBIENT_ENABLED,
+                            "KFP_API_PRINCIPAL": inputs.KFP_API_PRINCIPAL,
                         },
                     }
                 }

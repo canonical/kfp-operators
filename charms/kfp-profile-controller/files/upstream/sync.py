@@ -135,6 +135,17 @@ def get_settings_from_env(controller_port=None,
         metadata_grpc_service_port or \
         os.environ.get("METADATA_GRPC_SERVICE_PORT", "8080")
 
+    # - - - - - - - - - - - - - - - - - -
+    # CUSTOM CODE BY CANONICAL
+    # - - - - - - - - - - - - - - - - - -
+    # Ambient
+    settings["kfp_api_principal"] = os.environ.get(
+        "KFP_API_PRINCIPAL", "cluster.local/ns/kubeflow/sa/kfp-api"
+    )
+
+    settings["ambient_mesh_enabled"] = os.environ.get("AMBIENT_ENABLED", "false") == "true"
+    # - - - - - - - - - - - - - - - - - -
+
     return settings
 
 
@@ -143,6 +154,7 @@ def server_factory(visualization_server_image,
                    disable_istio_sidecar, minio_access_key,
                    minio_secret_key, minio_host, minio_namespace, minio_port,
                    metadata_grpc_service_host, metadata_grpc_service_port,
+                   kfp_api_principal, ambient_mesh_enabled,
                    kfp_default_pipeline_root=None, url="", controller_port=8080):
     """
     Returns an HTTPServer populated with Handler with customized settings
@@ -185,9 +197,7 @@ def server_factory(visualization_server_image,
                     len(attachments["ConfigMap.v1"]) == desired_configmap_count and
                     len(attachments["Deployment.apps/v1"]) == 2 and
                     len(attachments["Service.v1"]) == 2 and
-                    # TODO CANONICAL: This only works if istio is available.  Disabled for now
-                    # len(attachments["DestinationRule.networking.istio.io/v1alpha3"]) == 1 and
-                    # len(attachments["AuthorizationPolicy.security.istio.io/v1beta1"]) == 1 and
+                    len(attachments["AuthorizationPolicy.security.istio.io/v1beta1"]) == 1 and
                     "True" or "False"
             }
 
@@ -258,45 +268,6 @@ def server_factory(visualization_server_image,
                         },
                     },
                 },
-                # TODO CANONICAL: This only works if istio is available.  Disabled for now
-                # {
-                #     "apiVersion": "networking.istio.io/v1alpha3",
-                #     "kind": "DestinationRule",
-                #     "metadata": {
-                #         "name": "ml-pipeline-visualizationserver",
-                #         "namespace": namespace,
-                #     },
-                #     "spec": {
-                #         "host": "ml-pipeline-visualizationserver",
-                #         "trafficPolicy": {
-                #             "tls": {
-                #                 "mode": "ISTIO_MUTUAL"
-                #             }
-                #         }
-                #     }
-                # },
-                # {
-                #     "apiVersion": "security.istio.io/v1beta1",
-                #     "kind": "AuthorizationPolicy",
-                #     "metadata": {
-                #         "name": "ml-pipeline-visualizationserver",
-                #         "namespace": namespace,
-                #     },
-                #     "spec": {
-                #         "selector": {
-                #             "matchLabels": {
-                #                 "app": "ml-pipeline-visualizationserver"
-                #             }
-                #         },
-                #         "rules": [{
-                #             "from": [{
-                #                 "source": {
-                #                     "principals": ["cluster.local/ns/kubeflow/sa/ml-pipeline"]
-                #                 }
-                #             }]
-                #         }]
-                #     }
-                # },
                 {
                     "apiVersion": "v1",
                     "kind": "Service",
@@ -392,6 +363,9 @@ def server_factory(visualization_server_image,
                         }
                     }
                 },
+                # - - - - - - - - - - - - - - - - - -
+                # CUSTOM CODE BY CANONICAL
+                # - - - - - - - - - - - - - - - - - -
                 # Added from https://github.com/kubeflow/pipelines/pull/6629 to fix
                 # https://github.com/canonical/bundle-kubeflow/issues/423.  This was not yet in
                 # upstream and if they go with something different we should consider syncing with
@@ -442,6 +416,7 @@ def server_factory(visualization_server_image,
                         ]
                     }
                 },
+                # - - - - - - - - - - - - - - - - - -
                 {
                     "apiVersion": "v1",
                     "kind": "Service",
@@ -465,30 +440,83 @@ def server_factory(visualization_server_image,
                         }
                     }
                 },
-                # This AuthorizationPolicy was added from https://github.com/canonical/kfp-operators/pull/356
-                # to fix https://github.com/canonical/notebook-operators/issues/311
-                # and https://github.com/canonical/kfp-operators/issues/355.
-                # Remove when istio sidecars are implemented.
-                {
-                    "apiVersion": "security.istio.io/v1beta1",
-                    "kind": "AuthorizationPolicy",
-                    "metadata": {"name": "ns-owner-access-istio-charmed", "namespace": namespace},
-                    "spec": {
-                        "rules": [
-                            {
-                                "when": [
-                                    {"key": "request.headers[kubeflow-userid]", "values": ["*"]}
-                                ]
-                            },
-                            {
-                                "to": [
-                                    {"operation": {"methods": ["GET"], "paths": ["*/api/kernels"]}}
-                                ]
-                            },
-                        ]
-                    },
-                },
             ]
+
+            # - - - - - - - - - - - - - - - - - -
+            # CUSTOM CODE BY CANONICAL
+            # - - - - - - - - - - - - - - - - - -
+            # dynamically handle ambient / sidecar authorization policies
+            if ambient_mesh_enabled:
+                desired_resources.append(
+                    {
+                        "apiVersion": "security.istio.io/v1beta1",
+                        "kind": "AuthorizationPolicy",
+                        "metadata": {
+                            "name": "ml-pipeline-visualizationserver",
+                            "namespace": namespace,
+                        },
+                        "spec": {
+                            "selector": {
+                                "matchLabels": {
+                                    "app": "ml-pipeline-visualizationserver"
+                                }
+                            },
+                            "rules": [
+                                {
+                                    "from": [
+                                        {
+                                            "source": {
+                                                "principals": [
+                                                    kfp_api_principal,
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                        },
+                    }
+                )
+
+            # if no ambient mesh, then create the allow-all AuthorizationPolicy in user namespaces
+            # This AuthorizationPolicy was added from https://github.com/canonical/kfp-operators/pull/356
+            # to fix https://github.com/canonical/notebook-operators/issues/311
+            # and https://github.com/canonical/kfp-operators/issues/355.
+            if not ambient_mesh_enabled:
+                desired_resources.append(
+                    {
+                        "apiVersion": "security.istio.io/v1beta1",
+                        "kind": "AuthorizationPolicy",
+                        "metadata": {
+                            "name": "ns-owner-access-istio-charmed",
+                            "namespace": namespace,
+                        },
+                        "spec": {
+                            "rules": [
+                                {
+                                    "when": [
+                                        {
+                                            "key": "request.headers[kubeflow-userid]",
+                                            "values": ["*"],
+                                        }
+                                    ]
+                                },
+                                {
+                                    "to": [
+                                        {
+                                            "operation": {
+                                                "methods": ["GET"],
+                                                "paths": ["*/api/kernels"],
+                                            }
+                                        }
+                                    ]
+                                },
+                            ]
+                        },
+                    }
+                )
+            # - - - - - - - - - - - - - - - - - -
+
             print('Received request:\n', json.dumps(parent, indent=2, sort_keys=True))
             print('Desired resources except secrets:\n', json.dumps(desired_resources, indent=2, sort_keys=True))
             # Moved after the print argument because this is sensitive data.

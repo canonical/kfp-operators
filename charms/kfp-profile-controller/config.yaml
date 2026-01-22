@@ -22,3 +22,9 @@ options:
 
       Note that manual deletion of old ConfigMaps is required after updating this, refer to:
       https://github.com/kubeflow/manifests/blob/v1.11.0/applications/pipeline/upstream/base/installs/generic/pipeline-install-config.yaml#L40-L42
+  kfp-api-principal:
+    type: string
+    default: "cluster.local/ns/kubeflow/sa/kfp-api"
+    description: >
+      The principal for the KFP API service account.
+      This is used in the AuthorizationPolicy that gets created in the sync.py script.
