@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
+from charms.istio_beacon_k8s.v0.service_mesh import MeshType
 from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
@@ -23,6 +24,7 @@ from charm import (
 
 CONFIG_NAME_FOR_CUSTOM_IMAGES = "custom_images"
 CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = "default_pipeline_root"
+CONFIG_NAME_FOR_KFP_API_PRINCIPAL = "kfp-api-principal"
 
 # Load the custom images from the JSON
 CUSTOM_IMAGES_PATH = Path("./src/default-custom-images.json")
@@ -57,6 +59,9 @@ EXPECTED_ENVIRONMENT_BY_DEFAULT = {
     "FRONTEND_TAG": custom_images["frontend"].split(":")[1],
     "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
     "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
+    # ambient
+    "AMBIENT_ENABLED": False,
+    "KFP_API_PRINCIPAL": "cluster.local/ns/kubeflow/sa/kfp-api",
 }
 
 
@@ -71,6 +76,7 @@ def mocked_lightkube_client(mocker):
     """Mocks the Lightkube Client in charm.py, returning a mock instead."""
     mocked_lightkube_client = MagicMock()
     mocker.patch("charm.lightkube.Client", return_value=mocked_lightkube_client)
+    mocker.patch("components.service_mesh_component.Client", return_value=mocked_lightkube_client)
     yield mocked_lightkube_client
 
 
@@ -81,6 +87,17 @@ def mocked_kubernetes_service_patch(mocker):
         "charm.KubernetesServicePatch", lambda x, y, service_name: None
     )
     yield mocked_kubernetes_service_patch
+
+
+@pytest.fixture()
+def mocked_policy_resource_manager(mocker):
+    """Mocks the PolicyResourceManager for the ServiceMeshComponent."""
+    mocked_policy_resource_manager = MagicMock()
+    mocker.patch(
+        "components.service_mesh_component.PolicyResourceManager",
+        return_value=mocked_policy_resource_manager,
+    )
+    yield mocked_policy_resource_manager
 
 
 def test_log_forwarding(
@@ -186,9 +203,14 @@ def test_kubernetes_created_method(
     assert isinstance(harness.charm.kubernetes_resources.status, ActiveStatus)
 
 
-@pytest.mark.parametrize("do_update_config_for_default_pipeline_root", (False, True))
+@pytest.mark.parametrize(
+    "do_update_config_for_default_pipeline_root,mesh_relation,kfp_api_principal",
+    [(False, False, "principal1"), (True, True, "principal2")],
+)
 def test_pebble_services_running(
     do_update_config_for_default_pipeline_root: bool,
+    mesh_relation: bool,
+    kfp_api_principal: str,
     harness: Harness,
     mocked_lightkube_client,
     mocked_kubernetes_service_patch,
@@ -204,6 +226,15 @@ def test_pebble_services_running(
         expected_environment["KFP_DEFAULT_PIPELINE_ROOT"] = updated_default_pipeline_root
     harness.begin()
     harness.set_can_connect("kfp-profile-controller", True)
+
+    if mesh_relation:
+        relation_id = harness.add_relation("service-mesh", "istio-beacon-k8s")
+        harness.add_relation_unit(relation_id, "istio-beacon-k8s/0")
+        expected_environment["AMBIENT_ENABLED"] = mesh_relation
+
+    # principal should have changed
+    harness.update_config({CONFIG_NAME_FOR_KFP_API_PRINCIPAL: kfp_api_principal})
+    expected_environment["KFP_API_PRINCIPAL"] = kfp_api_principal
 
     # Mock:
     # * leadership_gate to have get_status=>Active
@@ -249,3 +280,50 @@ def test_custom_images_config_with_incorrect_images_names(
 
     assert isinstance(harness.model.unit.status, BlockedStatus)
     assert harness.charm.model.unit.status.message.startswith("Incorrect image name")
+
+
+@pytest.mark.parametrize(
+    "has_relation,expected_ambient",
+    [
+        (False, False),  # sidecar mode
+        (True, True),  # ambient mode
+    ],
+)
+def test_policy_reconciliation_on_gateway_metadata_relation(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+    has_relation: bool,
+    expected_ambient: bool,
+):
+    """Test that the policy is reconciled when the gateway metadata relation is added."""
+    # Arrange
+    harness.begin()
+
+    # Mock components to be active
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+
+    if has_relation:
+        relation_id = harness.add_relation("service-mesh", "istio-beacon-k8s")
+        harness.add_relation_unit(relation_id, "istio-beacon-k8s/0")
+
+    assert harness.charm.service_mesh_component.component.ambient_mesh_enabled == expected_ambient
+
+
+def test_policy_resource_manager_cleans_up_policies(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+    mocked_policy_resource_manager,
+):
+    """Test that the prm will be called with empty raw_policies, when the charm is deleted."""
+    # Arrange
+    harness.begin()
+
+    # Remove without the mesh relation
+    harness.charm.on.remove.emit()
+
+    # test that the reconcile of prm was called with empty policies
+    prm = harness.charm.service_mesh_component.component._policy_resource_manager
+    prm.reconcile.assert_called_once_with(policies=[], mesh_type=MeshType.istio, raw_policies=[])
