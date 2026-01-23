@@ -127,20 +127,20 @@ jobs:
         shell: python
         run: |
           import os
-          
+
           if "${{ github.event_name }}" == "pull_request":
               ref = "${{ github.base_ref }}"
           else:
               ref = "${{ github.ref_name }}"
-          
+
           if ref.startswith("track/"):
               track = ref.removeprefix("track/")
           else:
               track = "latest"
-          
+
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"track={track}\n")
-          
+
           print(f"Track: {track}")
 
   build:
@@ -204,8 +204,6 @@ jobs:
           - charm: kfp-ui
             test-type: integration-ambient
           - charm: kfp-metadata-writer
-            test-type: integration-ambient
-          - charm: kfp-profile-controller
             test-type: integration-ambient
     steps:
       # Ideally we'd use self-hosted runners, but this effort is still not stable
