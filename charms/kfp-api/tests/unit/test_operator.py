@@ -455,8 +455,10 @@ class TestCharm:
         ),
     )
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.Client")
     def test_relations_that_provide_data(
         self,
+        mock_client: MagicMock,
         relation_name,
         relation_data,
         expected_returned_data,
@@ -486,10 +488,12 @@ class TestCharm:
             assert partial_relation_data.value.status == expected_status
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.Client")
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_install_with_all_inputs_and_pebble(
         self,
         k8s_resource_handler: MagicMock,
+        mock_client: MagicMock,
         harness: Harness,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
@@ -595,10 +599,12 @@ class TestCharm:
         assert model_name == test_env["POD_NAMESPACE"]
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.Client")
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_launcher_driver_images_config(
         self,
         k8s_resource_handler: MagicMock,
+        mock_client: MagicMock,
         harness: Harness,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
@@ -626,6 +632,7 @@ class TestCharm:
         assert model_name == test_env["POD_NAMESPACE"]
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.Client")
     @patch("charm.KfpApiOperator._apply_k8s_resources")
     @patch("charm.KfpApiOperator._check_status")
     @patch("charm.KfpApiOperator._generate_environment")
@@ -634,6 +641,7 @@ class TestCharm:
         _apply_k8s_resources: MagicMock,
         _check_status: MagicMock,
         _generate_environment: MagicMock,
+        mock_client: MagicMock,
         harness: Harness,
     ):
         """Test update status handler."""
@@ -754,8 +762,10 @@ class TestCharm:
                 "db_port": "1234",
             }
 
+    @patch("charm.Client")
     def test_relational_db_relation_broken(
         self,
+        mock_client: MagicMock,
         mocked_resource_handler,
         mocked_kubernetes_service_patcher,
         harness: Harness,
