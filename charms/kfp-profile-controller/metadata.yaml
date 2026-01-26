@@ -19,6 +19,9 @@ resources:
     upstream-source: docker.io/alpine/k8s:1.32.3
     # NOTE: If bumping KFP version, see also KFP_IMAGES_VERSION and the images in default-custom-images.json
     # in charm.py. Those must also be updated.
+provides:
+  provide-cmr-mesh:
+    interface: cross_model_mesh
 requires:
   object-storage:
     interface: object-storage
@@ -52,6 +55,11 @@ requires:
   logging:
     interface: loki_push_api
     optional: true
+  service-mesh:
+    limit: 1
+    interface: service_mesh
+  require-cmr-mesh:
+    interface: cross_model_mesh
 storage:
   hooks:
     type: filesystem

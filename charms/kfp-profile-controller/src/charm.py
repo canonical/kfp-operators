@@ -37,6 +37,7 @@ from components.pebble_components import (
     KfpProfileControllerInputs,
     KfpProfileControllerPebbleService,
 )
+from components.service_mesh_component import ServiceMeshComponent
 
 DEFAULT_IMAGES_FILE = "src/default-custom-images.json"
 with open(DEFAULT_IMAGES_FILE, "r") as json_file:
@@ -143,6 +144,11 @@ class KfpProfileControllerOperator(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
+        self.service_mesh_component = self.charm_reconciler.add(
+            component=ServiceMeshComponent(charm=self, name="service-mesh-component"),
+            depends_on=[self.leadership_gate],
+        )
+
         self.kubernetes_resources = self.charm_reconciler.add(
             component=KubernetesComponent(
                 charm=self,
@@ -213,12 +219,15 @@ class KfpProfileControllerOperator(CharmBase):
                     VISUALIZATION_SERVER_TAG=self.images["visualization_server__version"],
                     FRONTEND_IMAGE=self.images["frontend__image"],
                     FRONTEND_TAG=self.images["frontend__version"],
+                    KFP_API_PRINCIPAL=str(self.model.config["kfp-api-principal"]),
+                    AMBIENT_ENABLED=self.service_mesh_component.component.ambient_mesh_enabled,
                 ),
             ),
             depends_on=[
                 self.leadership_gate,
                 self.kubernetes_resources,
                 self.object_storage_relation,
+                self.service_mesh_component,
             ],
         )
 
