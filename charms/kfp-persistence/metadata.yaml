@@ -10,14 +10,14 @@ containers:
     uid: 584792
     gid: 584792
     mounts:
-      - storage: kubeflow-secrets
-        location: /var/run/secrets/kubeflow/tokens
+    - storage: kubeflow-secrets
+      location: /var/run/secrets/kubeflow/tokens
 resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
     # The container's `user` needs to be updated when switching from upstream image to rock
-    upstream-source: ghcr.io/kubeflow/kfp-persistence-agent:2.15.0
+    upstream-source: docker.io/charmedkubeflow/persistenceagent:2.15.0-9614a20
 requires:
   kfp-api:
     interface: k8s-service
