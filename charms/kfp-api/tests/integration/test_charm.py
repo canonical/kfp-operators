@@ -17,7 +17,7 @@ from charmed_kubeflow_chisme.testing import (
     get_alert_rules,
     get_pod_names,
 )
-from charms_dependencies import KFP_DB, KFP_VIZ, MINIO, MYSQL
+from charms_dependencies import KFP_DB, KFP_VIZ, MINIO
 from lightkube import Client
 from pytest_operator.plugin import OpsTest
 
@@ -95,116 +95,6 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
     await deploy_and_assert_grafana_agent(
         ops_test.model, APP_NAME, metrics=True, dashboard=True, logging=True
     )
-
-
-# FIXME: this test case belongs in unit tests as it is asserting the status of the
-# unit under a certain condition, we don't actually need the presence of any deployed
-# charm to test this.
-@pytest.mark.abort_on_fail
-async def test_relational_db_relation_with_mysql_relation(ops_test: OpsTest):
-    """Test failure of addition of relational-db relation with mysql relation present."""
-    # deploy mysql-k8s charm
-    await ops_test.model.deploy(
-        MYSQL.charm,
-        channel=MYSQL.channel,
-        config=MYSQL.config,
-        trust=MYSQL.trust,
-    )
-    await ops_test.model.wait_for_idle(
-        apps=[MYSQL.charm],
-        status="active",
-        raise_on_blocked=True,
-        timeout=90 * 30,
-        idle_period=20,
-    )
-
-    # add relational-db relation which should put charm into blocked state,
-    # because at this point mysql relation is already established
-    await ops_test.model.integrate(f"{APP_NAME}:relational-db", f"{MYSQL.charm}:database")
-
-    # verify that charm goes into blocked state
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="blocked",
-        raise_on_blocked=False,
-        raise_on_error=True,
-        timeout=60 * 10,
-        idle_period=10,
-    )
-    assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
-
-    # remove just added relational-db relation
-    await ops_test.juju("remove-relation", f"{APP_NAME}:relational-db", f"{MYSQL.charm}:database")
-
-
-# FIXME: this test case belongs in unit tests as it is asserting the status of the
-# unit under a certain condition, we don't actually need the presence of any deployed
-# charm to test this.
-@pytest.mark.abort_on_fail
-async def test_relational_db_relation_with_mysql_k8s(ops_test: OpsTest):
-    """Test no relation and relation with mysql-k8s charm."""
-
-    # verify that charm is active state
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        raise_on_blocked=False,
-        raise_on_error=True,
-        timeout=60 * 10,
-    )
-    assert ops_test.model.applications[APP_NAME].units[0].workload_status == "active"
-
-    # remove existing mysql relation which should put charm into blocked state,
-    # because there will be no database relations
-    await ops_test.juju("remove-relation", f"{APP_NAME}:mysql", f"{KFP_DB_APPLICATION_NAME}:mysql")
-
-    # verify that charm goes into blocked state
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="blocked",
-        raise_on_blocked=False,
-        raise_on_error=True,
-        timeout=60 * 10,
-    )
-    assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
-
-    # add relational-db relation which should put charm into active state
-    await ops_test.model.integrate(f"{APP_NAME}:relational-db", f"{MYSQL.charm}:database")
-
-    # verify that charm goes into active state
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="active",
-        raise_on_blocked=False,
-        raise_on_error=True,
-        timeout=60 * 10,
-    )
-    assert ops_test.model.applications[APP_NAME].units[0].workload_status == "active"
-
-
-# FIXME: this test case belongs in unit tests as it is asserting the status of the
-# unit under a certain condition, we don't actually need the presence of any deployed
-# charm to test this.
-@pytest.mark.abort_on_fail
-async def test_msql_relation_with_relational_db_relation(ops_test: OpsTest):
-    """Test failure of addition of mysql relation with relation-db relation present."""
-
-    # add mysql relation which should put charm into blocked state,
-    # because at this point relational-db relation is already established
-    await ops_test.model.integrate(f"{APP_NAME}:mysql", f"{KFP_DB_APPLICATION_NAME}:mysql")
-
-    # verify that charm goes into blocked state
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME],
-        status="blocked",
-        raise_on_blocked=False,
-        raise_on_error=True,
-        timeout=60 * 10,
-    )
-    assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
-
-    # remove redundant relation
-    await ops_test.juju("remove-relation", f"{APP_NAME}:mysql", f"{KFP_DB}:mysql")
 
 
 async def test_alert_rules(ops_test: OpsTest):

@@ -16,18 +16,33 @@ from charmed_kubeflow_chisme.kubernetes import (
     create_charm_default_labels,
 )
 from charmed_kubeflow_chisme.pebble import update_layer
+from charmed_service_mesh_helpers.models import (
+    Action,
+    AuthorizationPolicySpec,
+    Condition,
+    PolicyTargetReference,
+    Rule,
+)
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
-from charms.istio_beacon_k8s.v0.service_mesh import AppPolicy, ServiceMeshConsumer, UnitPolicy
+from charms.istio_beacon_k8s.v0.service_mesh import (
+    AppPolicy,
+    MeshType,
+    PolicyResourceManager,
+    ServiceMeshConsumer,
+    UnitPolicy,
+)
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from jsonschema import ValidationError
-from lightkube import ApiError
-from lightkube.generic_resource import load_in_cluster_generic_resources
+from lightkube import ApiError, Client
+from lightkube.generic_resource import GenericNamespacedResource, load_in_cluster_generic_resources
 from lightkube.models.core_v1 import ServicePort
+from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.core_v1 import Service, ServiceAccount
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
+from lightkube_extensions.types import AuthorizationPolicy
 from ops import main
 from ops.charm import CharmBase
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, ModelError, WaitingStatus
@@ -245,6 +260,69 @@ class KfpApiOperator(CharmBase):
         }
 
         return Layer(layer_config)
+
+    @property
+    def _policy_resource_manager(self) -> PolicyResourceManager:
+        """Create and return PolicyResourceManager, used to manage authorization policies."""
+        return PolicyResourceManager(
+            charm=self,
+            lightkube_client=Client(field_manager=f"{self.app.name}-{self.model.name}"),
+            labels={
+                "app.kubernetes.io/instance": f"{self.app.name}-{self.model.name}",
+                "kubernetes-resource-handler-scope": (
+                    f"{self.app.name}-allow-without-kubeflow-header"
+                ),
+            },
+            logger=self.logger,
+        )
+
+    @property
+    def _allow_without_kubeflow_header_policy(self) -> GenericNamespacedResource:
+        """AuthorizationPolicy allowing requests without kubeflow-userid header."""
+        return AuthorizationPolicy(
+            metadata=ObjectMeta(
+                name=f"{self._name}-allow-without-kubeflow-header",
+                namespace=self._namespace,
+            ),
+            spec=AuthorizationPolicySpec(
+                targetRefs=[
+                    PolicyTargetReference(
+                        group="",
+                        kind="Service",
+                        name="ml-pipeline",
+                    ),
+                    PolicyTargetReference(
+                        group="",
+                        kind="Service",
+                        name=self.app.name,
+                    ),
+                ],
+                action=Action.allow,
+                rules=[
+                    Rule(
+                        when=[
+                            Condition(
+                                key="request.headers[kubeflow-userid]",
+                                notValues=["*"],
+                            )
+                        ]
+                    )
+                ],
+            ).model_dump(by_alias=True, exclude_unset=True, exclude_none=True),
+        )
+
+    def _reconcile_authorization_policies(self):
+        """Reconcile authorization policies required by the charm."""
+        policies = []
+
+        if self._mesh._relation:
+            policies.append(self._allow_without_kubeflow_header_policy)
+
+        self._policy_resource_manager.reconcile(
+            policies=[],
+            mesh_type=MeshType.istio,
+            raw_policies=policies,
+        )
 
     def _generate_environment(self) -> dict:
         """Generate environment based on supplied data.
@@ -633,6 +711,7 @@ class KfpApiOperator(CharmBase):
         )
         load_in_cluster_generic_resources(k8s_resource_handler.lightkube_client)
         k8s_resource_handler.delete()
+        self._policy_resource_manager.reconcile([], MeshType.istio, [])
 
         self.unit.status = MaintenanceStatus("K8S resources removed")
 
@@ -717,6 +796,7 @@ class KfpApiOperator(CharmBase):
             self._check_model_name()
             self._check_leader()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
+            self._reconcile_authorization_policies()
             update_layer(self._container_name, self._container, self._kfp_api_layer, self.logger)
             self._send_info(self._get_interfaces())
         except ErrorWithStatus as err:

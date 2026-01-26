@@ -53,6 +53,7 @@ oci-image = "^1.0.0"
 ops = "^2.17.1"
 serialized-data-interface = "^0.7.0"
 tenacity = "^9.0.0"
+charmed-service-mesh-helpers = "^0.4.0"
 
 [tool.poetry.group.fmt]
 optional = true
