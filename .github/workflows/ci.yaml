@@ -195,8 +195,6 @@ jobs:
         exclude:
           - charm: kfp-persistence
             test-type: integration-ambient
-          - charm: kfp-api
-            test-type: integration-ambient
           - charm: kfp-schedwf
             test-type: integration-ambient
           - charm: kfp-viewer
