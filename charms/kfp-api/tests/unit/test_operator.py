@@ -509,21 +509,35 @@ class TestCharm:
             objectstorage_data,
             kfp_viz_data,
             kfpapi_rel_id,
+            kfpapi_grpc_rel_id,
         ) = self.setup_required_relations(harness)
 
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
         this_app_name = harness.charm.model.app.name
 
-        # Test that we sent data to anyone subscribing to us
+        # Test that we sent data to anyone subscribing to us (kfp-api)
         kfpapi_expected_versions = ["v1"]
         kfpapi_expected_data = {
             "service-name": f"{this_app_name}.{model_name}",
             "service-port": service_port,
         }
-        kfpapi_sent_data = harness.get_relation_data(kfpapi_rel_id, "kfp-api")
+        kfpapi_sent_data = harness.get_relation_data(kfpapi_rel_id, this_app_name)
         assert yaml.safe_load(kfpapi_sent_data["_supported_versions"]) == kfpapi_expected_versions
         assert yaml.safe_load(kfpapi_sent_data["data"]) == kfpapi_expected_data
+
+        # Test that we sent data to anyone subscribing to us (kfp-api-grpc)
+        kfpapi_grpc_expected_versions = ["v1"]
+        kfpapi_grpc_expected_data = {
+            "service-name": f"{this_app_name}.{model_name}",
+            "service-port": harness.charm.model.config["grpc-port"],
+        }
+        kfpapi_grpc_sent_data = harness.get_relation_data(kfpapi_grpc_rel_id, this_app_name)
+        assert (
+            yaml.safe_load(kfpapi_grpc_sent_data["_supported_versions"])
+            == kfpapi_grpc_expected_versions
+        )
+        assert yaml.safe_load(kfpapi_grpc_sent_data["data"]) == kfpapi_grpc_expected_data
 
         # confirm that we can serialize the pod spec and that the unit is active
         assert harness.charm.model.unit.status == ActiveStatus()
@@ -941,6 +955,7 @@ class TestCharm:
 
     def setup_required_relations(self, harness: Harness):
         kfpapi_relation_name = "kfp-api"
+        kfpapi_grpc_relation_name = "kfp-api-grpc"
 
         # mysql relation
         mysql_data = {
@@ -990,4 +1005,16 @@ class TestCharm:
         harness.add_relation_unit(kfpapi_rel_id, "kfp-api-subscriber/0")
         harness.update_relation_data(kfpapi_rel_id, "kfp-api-subscriber", kfpapi_data)
 
-        return mysql_data, objectstorage_data, kfp_viz_data, kfpapi_rel_id
+        # example kfp-api-grpc provider relation
+        kfpapi_grpc_data = {
+            "_supported_versions": "- v1",
+        }
+        kfpapi_grpc_rel_id = harness.add_relation(
+            kfpapi_grpc_relation_name, "kfp-api-grpc-subscriber"
+        )
+        harness.add_relation_unit(kfpapi_grpc_rel_id, "kfp-api-grpc-subscriber/0")
+        harness.update_relation_data(
+            kfpapi_grpc_rel_id, "kfp-api-grpc-subscriber", kfpapi_grpc_data
+        )
+
+        return mysql_data, objectstorage_data, kfp_viz_data, kfpapi_rel_id, kfpapi_grpc_rel_id

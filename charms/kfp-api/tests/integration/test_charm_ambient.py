@@ -17,8 +17,9 @@ from charmed_kubeflow_chisme.testing import (
     generate_container_securitycontext_map,
     get_alert_rules,
     get_pod_names,
+    integrate_with_service_mesh,
 )
-from charms_dependencies import KFP_VIZ, MINIO, MYSQL
+from charms_dependencies import KFP_SCHEDWF, KFP_VIZ, MINIO, MYSQL
 from lightkube import Client
 from pytest_operator.plugin import OpsTest
 
@@ -76,6 +77,10 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
         entity_url=KFP_VIZ.charm, channel=KFP_VIZ.channel, trust=KFP_VIZ.trust
     )
 
+    await ops_test.model.deploy(
+        entity_url=KFP_SCHEDWF.charm, channel=KFP_SCHEDWF.channel, trust=KFP_SCHEDWF.trust
+    )
+
     await ops_test.model.add_relation(
         f"{APP_NAME}:relational-db", f"{KFP_DB_APPLICATION_NAME}:database"
     )
@@ -84,8 +89,19 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
     )
     await ops_test.model.add_relation(f"{APP_NAME}:kfp-viz", f"{KFP_VIZ.charm}:kfp-viz")
 
+    await ops_test.model.add_relation(
+        f"{APP_NAME}:kfp-api-grpc", f"{KFP_SCHEDWF.charm}:kfp-api-grpc"
+    )
+
+    await integrate_with_service_mesh(
+        KFP_VIZ.charm, ops_test.model, relate_to_ingress_route_endpoint=False
+    )
+
+    await integrate_with_service_mesh(
+        KFP_SCHEDWF.charm, ops_test.model, relate_to_ingress_route_endpoint=False
+    )
+
     await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, KFP_VIZ.charm, KFP_DB_APPLICATION_NAME, MINIO.charm],
         status="active",
         raise_on_blocked=False,
         raise_on_error=False,
@@ -97,12 +113,8 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
         ops_test.model, APP_NAME, metrics=True, dashboard=True, logging=True
     )
 
-    # await integrate_with_service_mesh(
-    #     KFP_VIZ.charm, ops_test.model, relate_to_ingress_route_endpoint=False
-    # )
-
     await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, KFP_VIZ.charm],
+        apps=[APP_NAME],
         status="active",
         raise_on_blocked=False,
         raise_on_error=False,
