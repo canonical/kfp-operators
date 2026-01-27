@@ -79,7 +79,6 @@ class KfpSchedwf(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
-        # need the relation for ambient, to get an authorization policy created
         self.mesh = ServiceMeshConsumer(self)
         self.kfp_api_relation = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
