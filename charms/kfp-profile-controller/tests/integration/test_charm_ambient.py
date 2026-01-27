@@ -188,17 +188,16 @@ async def test_insecure_authorization_policy_is_missing(
     lightkube_client: lightkube.Client, profile: str
 ):
     """Test if the previous sidecar AuthorizationPolicy is not present in Profile."""
-    policy_name = ""
     logger.info(
         'Checking  if AuthorizationPolicy "%s" is not present in Profile "%s"',
-        policy_name,
+        SIDECAR_AP_NAME,
         profile,
     )
 
     with pytest.raises(ApiError) as excinfo:
         lightkube_client.get(
             AuthorizationPolicy,
-            name=policy_name,
+            name=SIDECAR_AP_NAME,
             namespace=profile,
         )
 
