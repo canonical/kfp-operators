@@ -116,6 +116,7 @@ class KfpApiOperator(CharmBase):
             self.on["object-storage"].relation_changed,
             self.on["kfp-viz"].relation_changed,
             self.on["kfp-api"].relation_changed,
+            self.on["kfp-api-grpc"].relation_changed,
         ]
         for event in change_events:
             self.framework.observe(event, self._on_event)
@@ -168,6 +169,7 @@ class KfpApiOperator(CharmBase):
             self,
             policies=[
                 AppPolicy(relation="kfp-api", endpoints=[]),
+                AppPolicy(relation="kfp-api-grpc", endpoints=[]),
                 UnitPolicy(relation=METRICS_ENDPOINT_RELATION_NAME),
             ],
         )
@@ -431,6 +433,13 @@ class KfpApiOperator(CharmBase):
                 {
                     "service-name": f"{self.model.app.name}.{self.model.name}",
                     "service-port": self.model.config["http-port"],
+                }
+            )
+        if interfaces["kfp-api-grpc"]:
+            interfaces["kfp-api-grpc"].send_data(
+                {
+                    "service-name": f"{self.model.app.name}.{self.model.name}",
+                    "service-port": self.model.config["grpc-port"],
                 }
             )
 
