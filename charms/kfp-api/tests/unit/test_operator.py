@@ -93,17 +93,29 @@ class TestCharm:
         assert spec["rules"][0]["when"][0]["key"] == "request.headers[kubeflow-userid]"
         assert spec["rules"][0]["when"][0]["notValues"] == ["*"]
 
+    @pytest.mark.parametrize(
+        "mesh_relation_exists,expected_raw_policies_count",
+        [
+            (True, 1),  # With mesh relation
+            (False, 0),  # Without mesh relation
+        ],
+    )
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     @patch("charm.Client")
-    def test_reconcile_authorization_policies_with_mesh(
-        self, mock_client: MagicMock, k8s_resource_handler: MagicMock, harness: Harness
+    def test_reconcile_authorization_policies(
+        self,
+        mock_client: MagicMock,
+        k8s_resource_handler: MagicMock,
+        harness: Harness,
+        mesh_relation_exists: bool,
+        expected_raw_policies_count: int,
     ):
-        """Test _reconcile_authorization_policies calls policy manager when mesh exists."""
+        """Test _reconcile_authorization_policies with and without mesh relation."""
         harness.begin()
 
-        # Mock the mesh relation to exist
-        harness.charm._mesh._relation = MagicMock()
+        # Mock the mesh relation based on parameter
+        harness.charm._mesh._relation = MagicMock() if mesh_relation_exists else None
 
         # Mock the policy resource manager's reconcile method
         with patch("charm.PolicyResourceManager") as mock_prm_class:
@@ -112,37 +124,15 @@ class TestCharm:
 
             harness.charm._reconcile_authorization_policies()
 
-            # Verify reconcile was called with the policy
+            # Verify reconcile was called
             mock_policy_manager.reconcile.assert_called_once()
             call_args = mock_policy_manager.reconcile.call_args
             assert call_args.kwargs["policies"] == []
-            assert len(call_args.kwargs["raw_policies"]) == 1
-            assert isinstance(call_args.kwargs["raw_policies"][0], AuthorizationPolicy)
+            assert len(call_args.kwargs["raw_policies"]) == expected_raw_policies_count
 
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    @patch("charm.KfpApiOperator.k8s_resource_handler")
-    @patch("charm.Client")
-    def test_reconcile_authorization_policies_without_mesh(
-        self, mock_client: MagicMock, k8s_resource_handler: MagicMock, harness: Harness
-    ):
-        """Test _reconcile_authorization_policies with empty list when no mesh relation."""
-        harness.begin()
-
-        # Mock the mesh relation to not exist
-        harness.charm._mesh._relation = None
-
-        # Mock the policy resource manager's reconcile method
-        with patch("charm.PolicyResourceManager") as mock_prm_class:
-            mock_policy_manager = MagicMock()
-            mock_prm_class.return_value = mock_policy_manager
-
-            harness.charm._reconcile_authorization_policies()
-
-            # Verify reconcile was called with empty policies
-            mock_policy_manager.reconcile.assert_called_once()
-            call_args = mock_policy_manager.reconcile.call_args
-            assert call_args.kwargs["policies"] == []
-            assert call_args.kwargs["raw_policies"] == []
+            # If mesh exists, verify the policy is an AuthorizationPolicy
+            if mesh_relation_exists:
+                assert isinstance(call_args.kwargs["raw_policies"][0], AuthorizationPolicy)
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator._reconcile_authorization_policies")
