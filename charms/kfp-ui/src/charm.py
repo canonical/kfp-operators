@@ -27,6 +27,8 @@ from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServ
 from lightkube.models.core_v1 import ServicePort
 from ops import CharmBase, main
 
+from components.istio_ambient_requirer_component import AmbientIngressRequirerComponent
+from components.istio_relations_conflict_detector import IstioRelationsConflictDetectorComponent
 from components.pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleService
 
 logger = logging.getLogger(__name__)
@@ -149,10 +151,32 @@ class KfpUiOperator(CharmBase):
             depends_on=[],
         )
 
-        self.ingress_relation = self.charm_reconciler.add(
+        self.istio_relations_conflict_detector = self.charm_reconciler.add(
+            component=IstioRelationsConflictDetectorComponent(
+                charm=self,
+                name="istio-relations-conflict-detector",
+                sidecar_relation_name="ingress",
+                ambient_relation_name="istio-ingress-route",
+            ),
+            depends_on=[self.leadership_gate],
+        )
+
+        self.ambient_ingress_relation = self.charm_reconciler.add(
+            component=AmbientIngressRequirerComponent(
+                charm=self,
+                name="ambient_relation:istio-ingress-route",
+                service_name=self.model.app.name,
+                port=int(self.model.config["http-port"]),
+                path_prefix="/pipeline",
+                url_rewrite="/pipeline",
+            ),
+            depends_on=[self.leadership_gate, self.istio_relations_conflict_detector],
+        )
+
+        self.sidecar_ingress_relation = self.charm_reconciler.add(
             SdiRelationBroadcasterComponent(
                 charm=self,
-                name="relation:ingress",
+                name="sidecar_relation:ingress",
                 relation_name="ingress",
                 data_to_send={
                     "prefix": "/pipeline",
@@ -161,7 +185,7 @@ class KfpUiOperator(CharmBase):
                     "port": int(self.model.config["http-port"]),
                 },
             ),
-            depends_on=[self.leadership_gate],
+            depends_on=[self.leadership_gate, self.istio_relations_conflict_detector],
         )
 
         self.kfp_ui_relation = self.charm_reconciler.add(

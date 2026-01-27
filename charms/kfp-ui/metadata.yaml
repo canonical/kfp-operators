@@ -121,7 +121,7 @@ requires:
     description: |
       Allow a cross-model application access to catalogue via the service mesh.
       This relation provides additional data required by the service mesh to enforce cross-model authorization policies.
-  ingress:
+  istio-ingress-route:
     interface: istio_ingress_route
 provides:
   kfp-ui:
