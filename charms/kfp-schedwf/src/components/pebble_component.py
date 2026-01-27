@@ -1,11 +1,20 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
+import dataclasses
 import logging
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
 from ops.pebble import Layer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class KfpSchedwfPebbleServiceComponentInputs:
+    """Defines the required inputs for the Pebble Component."""
+
+    KFP_API_SERVICE: str
+    KFP_API_GRPC_PORT: int
 
 
 class KfpSchedwfPebbleService(PebbleServiceComponent):
@@ -32,12 +41,10 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         """
         logger.info("PebbleServiceComponent.get_layer executing")
 
-        # Construct the KFP API url based on the existence of the sdi relation
-        kfp_api_service = "ml-pipeline"
-
-        kfp_api_data = self._charm.kfp_api_relation.component.get_data()
-        if kfp_api_data:
-            kfp_api_service = kfp_api_data[0]["service-name"]
+        try:
+            inputs: KfpSchedwfPebbleServiceComponentInputs = self._inputs_getter()
+        except Exception as err:
+            raise ValueError(f"{self.name}: inputs are not correctly provided") from err
 
         # NOTE: to check exactly how we are supposed to reuse rocks' predefined
         # pebble services, this could work, but I have to check if there are no
@@ -55,7 +62,8 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
                     "command": "/bin/controller --logtostderr=true "
                     '--namespace="" '
                     f"--logLevel={self.log_level} "
-                    f"--mlPipelineAPIServerName={kfp_api_service}",
+                    f"--mlPipelineAPIServerName={inputs.KFP_API_SERVICE} "
+                    f"--mlPipelineServiceGRPCPort={inputs.KFP_API_GRPC_PORT}",
                     "environment": self.environment,
                 }
             },

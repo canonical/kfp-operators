@@ -26,7 +26,10 @@ from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from ops import main
 from ops.charm import CharmBase
 
-from components.pebble_component import KfpSchedwfPebbleService
+from components.pebble_component import (
+    KfpSchedwfPebbleService,
+    KfpSchedwfPebbleServiceComponentInputs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -81,8 +84,8 @@ class KfpSchedwf(CharmBase):
         self.kfp_api_relation = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
                 charm=self,
-                name="relation:kfp-api",
-                relation_name="kfp-api",
+                name="relation:kfp-api-grpc",
+                relation_name="kfp-api-grpc",
                 minimum_related_applications=0,
                 maximum_related_applications=1,
             ),
@@ -113,6 +116,10 @@ class KfpSchedwf(CharmBase):
                 name="kfp-schedwf-pebble-service",
                 container_name=self._container_name,
                 service_name="controller",
+                inputs_getter=lambda: KfpSchedwfPebbleServiceComponentInputs(
+                    KFP_API_SERVICE=self.kfp_api_service_name,
+                    KFP_API_GRPC_PORT=self.kfp_api_service_port,
+                ),
                 files_to_push=[
                     ContainerFileTemplate(
                         source_template_path=SA_TOKEN_FULL_PATH,
@@ -131,6 +138,34 @@ class KfpSchedwf(CharmBase):
 
         self.charm_reconciler.install_default_event_handlers()
         self._logging = LogForwarder(charm=self)
+
+    @property
+    def kfp_api_service_name(self) -> str:
+        """
+        Return the KFP API service name.
+
+        Will first try to load data from the (sdi) kfp-api-grpc relation, of k8s_service interface.
+        If it's not established then it will use the hardcoded value "ml-pipeline".
+        """
+        kfp_api_data = self.kfp_api_relation.component.get_data()
+        if kfp_api_data:
+            return kfp_api_data[0]["service-name"]
+
+        return "ml-pipeline"
+
+    @property
+    def kfp_api_service_port(self) -> int:
+        """
+        Return the KFP API service port.
+
+        Will first try to load data from the (sdi) kfp-api-grpc relation, of k8s_service interface.
+        If it's not established then it will use the hardcoded value 8887.
+        """
+        kfp_api_data = self.kfp_api_relation.component.get_data()
+        if kfp_api_data:
+            return int(kfp_api_data[0]["service-port"])
+
+        return 8887
 
 
 if __name__ == "__main__":

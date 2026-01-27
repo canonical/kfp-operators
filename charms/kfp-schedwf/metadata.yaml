@@ -22,7 +22,7 @@ requires:
   logging:
     interface: loki_push_api
     optional: true
-  kfp-api:
+  kfp-api-grpc:
     interface: k8s-service
     optional: true
     schema:

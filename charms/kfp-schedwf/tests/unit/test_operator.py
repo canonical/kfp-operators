@@ -175,15 +175,17 @@ def test_kfp_api_relation_updates_pebble_service(harness: Harness, mocked_lightk
     plan = container.get_plan()
     command = plan.services["controller"].command
     assert "--mlPipelineAPIServerName=ml-pipeline" in command
+    assert "--mlPipelineServiceGRPCPort=8887" in command
 
-    # Test 4: Add SDI relation for kfp-api with custom service-name
-    custom_kfp_api_data = {"service-name": "custom-ml-pipeline", "service-port": "8888"}
-    add_sdi_relation_to_harness(harness, "kfp-api", data=custom_kfp_api_data)
+    # Test 4: Add SDI relation for kfp-api-grpc with custom service-name
+    custom_kfp_api_data = {"service-name": "custom-ml-pipeline", "service-port": "1234"}
+    add_sdi_relation_to_harness(harness, "kfp-api-grpc", data=custom_kfp_api_data)
 
     # Test 5: Verify updated command parameter
     updated_plan = container.get_plan()
     updated_command = updated_plan.services["controller"].command
     assert "--mlPipelineAPIServerName=custom-ml-pipeline" in updated_command
+    assert "--mlPipelineServiceGRPCPort=1234" in updated_command
 
 
 @pytest.fixture
