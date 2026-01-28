@@ -22,6 +22,37 @@ requires:
   logging:
     interface: loki_push_api
     optional: true
+  kfp-api-grpc:
+    interface: k8s-service
+    optional: true
+    schema:
+      v1:
+        provides:
+          type: object
+          properties:
+            service-name:
+              type: string
+            service-port:
+              type: string
+          required:
+          - service-name
+          - service-port
+    versions: [v1]
+    __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
+  service-mesh:
+    limit: 1
+    interface: service_mesh
+    description: |
+      Integrate this charm into a service mesh
+  require-cmr-mesh:
+    interface: cross_model_mesh
+    description: |
+      If this app relates to other applications on a charmed service mesh cross-model, use this relation to send that related app additional data needed to automatically generate traffic authorization policies.  This is required because Juju does not natively provide all information required to build these policies when related cross-model.
+provides:
+  provide-cmr-mesh:
+    interface: cross_model_mesh
+    description: |
+      If this app is generating polciies to provide access to related applications that are cross-model, relate that app to this additional relation to retrieve additional data required for these policies.  This is required because Juju does not natively provide all information required to build these policies when related cross-model.
 storage:
   kubeflow-secrets:
     type: filesystem

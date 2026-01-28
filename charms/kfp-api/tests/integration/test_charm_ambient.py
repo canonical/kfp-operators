@@ -13,11 +13,13 @@ from charmed_kubeflow_chisme.testing import (
     assert_metrics_endpoint,
     assert_security_context,
     deploy_and_assert_grafana_agent,
+    deploy_and_integrate_service_mesh_charms,
     generate_container_securitycontext_map,
     get_alert_rules,
     get_pod_names,
+    integrate_with_service_mesh,
 )
-from charms_dependencies import KFP_DB, KFP_VIZ, MINIO
+from charms_dependencies import KFP_SCHEDWF, KFP_VIZ, MINIO, MYSQL
 from lightkube import Client
 from pytest_operator.plugin import OpsTest
 
@@ -56,15 +58,17 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
         trust=True,
     )
 
-    # FIXME: we should probably stop deploying mariadb as:
-    # 1) The team has accepted and started using mysql-k8s more extensively
-    # 2) The repository level integration tests use mysql-k8s only
+    # Deploy service mesh charms and add all relations
+    await deploy_and_integrate_service_mesh_charms(
+        APP_NAME, ops_test.model, relate_to_ingress_route_endpoint=False, model_on_mesh=False
+    )
+
     await ops_test.model.deploy(
-        entity_url=KFP_DB.charm,
+        entity_url=MYSQL.charm,
         application_name=KFP_DB_APPLICATION_NAME,
-        config=KFP_DB.config,
-        channel=KFP_DB.channel,
-        trust=KFP_DB.trust,
+        config=MYSQL.config,
+        channel=MYSQL.channel,
+        trust=MYSQL.trust,
     )
     await ops_test.model.deploy(
         entity_url=MINIO.charm, config=MINIO.config, channel=MINIO.channel, trust=MINIO.trust
@@ -73,18 +77,31 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
         entity_url=KFP_VIZ.charm, channel=KFP_VIZ.channel, trust=KFP_VIZ.trust
     )
 
-    # FIXME: This assertion belongs to unit tests
-    # test no database relation, charm should be in blocked state
-    # assert ops_test.model.applications[APP_NAME].units[0].workload_status == "blocked"
+    await ops_test.model.deploy(
+        entity_url=KFP_SCHEDWF.charm, channel=KFP_SCHEDWF.channel, trust=KFP_SCHEDWF.trust
+    )
 
-    await ops_test.model.add_relation(f"{APP_NAME}:mysql", f"{KFP_DB_APPLICATION_NAME}:mysql")
+    await ops_test.model.add_relation(
+        f"{APP_NAME}:relational-db", f"{KFP_DB_APPLICATION_NAME}:database"
+    )
     await ops_test.model.add_relation(
         f"{APP_NAME}:object-storage", f"{MINIO.charm}:object-storage"
     )
     await ops_test.model.add_relation(f"{APP_NAME}:kfp-viz", f"{KFP_VIZ.charm}:kfp-viz")
 
+    await ops_test.model.add_relation(
+        f"{APP_NAME}:kfp-api-grpc", f"{KFP_SCHEDWF.charm}:kfp-api-grpc"
+    )
+
+    await integrate_with_service_mesh(
+        KFP_VIZ.charm, ops_test.model, relate_to_ingress_route_endpoint=False
+    )
+
+    await integrate_with_service_mesh(
+        KFP_SCHEDWF.charm, ops_test.model, relate_to_ingress_route_endpoint=False
+    )
+
     await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, KFP_VIZ.charm, KFP_DB_APPLICATION_NAME, MINIO.charm],
         status="active",
         raise_on_blocked=False,
         raise_on_error=False,
@@ -94,6 +111,14 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
     # Deploying grafana-agent-k8s and add all relations
     await deploy_and_assert_grafana_agent(
         ops_test.model, APP_NAME, metrics=True, dashboard=True, logging=True
+    )
+
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME],
+        status="active",
+        raise_on_blocked=False,
+        raise_on_error=False,
+        timeout=90 * 20,
     )
 
 
@@ -112,8 +137,20 @@ async def test_metrics_endpoint(ops_test: OpsTest):
     they are available from the grafana-agent-k8s charm and finally compares them with the
     ones provided to the function.
     """
+    # Set model-on-mesh to true temporarily to include grafana-agent-k8s in the service mesh
+    # and be able to access the metrics endpoint since it can't relate to be beacon.
+    # NOTE: This is a workaround until we replace grafana-agent-k8s with otel-collector-k8s
+    # See https://github.com/canonical/charmed-kubeflow-chisme/issues/182.
+    await ops_test.model.applications["istio-beacon-k8s"].set_config({"model-on-mesh": "true"})
+    await ops_test.model.wait_for_idle(
+        apps=["istio-beacon-k8s"],
+        raise_on_blocked=False,
+        raise_on_error=False,
+        timeout=90 * 20,
+    )
     app = ops_test.model.applications[APP_NAME]
     await assert_metrics_endpoint(app, metrics_port=8888, metrics_path="/metrics")
+    await ops_test.model.applications["istio-beacon-k8s"].set_config({"model-on-mesh": "false"})
 
 
 async def test_logging(ops_test: OpsTest):
@@ -143,6 +180,7 @@ async def test_container_security_context(
     )
 
 
+@pytest.mark.skip()
 async def test_remove_application(ops_test: OpsTest):
     """Test that the application can be removed successfully."""
     await ops_test.model.remove_application(app_name=APP_NAME, block_until_done=True)

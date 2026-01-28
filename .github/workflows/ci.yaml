@@ -195,8 +195,6 @@ jobs:
         exclude:
           - charm: kfp-persistence
             test-type: integration-ambient
-          - charm: kfp-api
-            test-type: integration-ambient
           - charm: kfp-schedwf
             test-type: integration-ambient
           - charm: kfp-viewer
@@ -204,8 +202,6 @@ jobs:
           - charm: kfp-ui
             test-type: integration-ambient
           - charm: kfp-metadata-writer
-            test-type: integration-ambient
-          - charm: kfp-viz
             test-type: integration-ambient
     steps:
       # Ideally we'd use self-hosted runners, but this effort is still not stable
