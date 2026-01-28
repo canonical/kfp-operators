@@ -16,6 +16,7 @@ from charmed_kubeflow_chisme.testing import (
     generate_container_securitycontext_map,
     generate_context_from_charm_spec_list,
     get_pod_names,
+    integrate_with_service_mesh,
 )
 from charms_dependencies import KFP_API, KFP_VIZ, MINIO, MYSQL_K8S
 from lightkube import Client
@@ -25,9 +26,6 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_ROOT = "."
 BUNDLE_PATH = Path(__file__).parent / "bundle.yaml.j2"
 APP_NAME = METADATA["name"]
-HEADERS = {
-    "kubeflow-userid": "",
-}
 HTTP_PATH = "/pipeline"
 CONTAINERS_SECURITY_CONTEXT_MAP = generate_container_securitycontext_map(METADATA)
 charms_dependencies_list = [KFP_API, KFP_VIZ, MINIO, MYSQL_K8S]
@@ -68,6 +66,14 @@ async def test_build_and_deploy_with_relations(ops_test: OpsTest, request: pytes
     await ops_test.model.deploy(rendered_bundle, trust=True)
     await ops_test.model.integrate(f"{APP_NAME}:kfp-api", "kfp-api:kfp-api")
     await ops_test.model.integrate(f"{APP_NAME}:object-storage", "minio:object-storage")
+
+    # Integrate dependency charms with the service mesh
+    await integrate_with_service_mesh(
+        KFP_VIZ.charm, ops_test.model, relate_to_ingress_route_endpoint=False
+    )
+    await integrate_with_service_mesh(
+        KFP_API.charm, ops_test.model, relate_to_ingress_route_endpoint=False
+    )
 
     await ops_test.model.wait_for_idle(
         status="active",
@@ -115,5 +121,6 @@ async def test_ui_is_accessible(ops_test: OpsTest):
     await assert_path_reachable_through_ingress(
         http_path=HTTP_PATH,
         namespace=ops_test.model.name,
-        headers=HEADERS,
+        expected_content_type="text/html",
+        expected_response_text="Kubeflow Pipelines",
     )
