@@ -35,9 +35,42 @@ requires:
           - service-port
     versions: [v1]
     __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
+  kfp-api-grpc:
+    interface: k8s-service
+    optional: true
+    schema:
+      v1:
+        provides:
+          type: object
+          properties:
+            service-name:
+              type: string
+            service-port:
+              type: string
+          required:
+          - service-name
+          - service-port
+    versions: [v1]
+    __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
   logging:
     interface: loki_push_api
     optional: true
+  service-mesh:
+    limit: 1
+    interface: service_mesh
+    description: |
+      Subscribe this charm into a service mesh to enforce authorization policies.
+  require-cmr-mesh:
+    interface: cross_model_mesh
+    description: |
+      Allow a cross-model application access to catalogue via the service mesh.
+      This relation provides additional data required by the service mesh to enforce cross-model authorization policies.
+provides:
+  provide-cmr-mesh:
+    interface: cross_model_mesh
+    description: |
+      Access a cross-model application from catalogue via the service mesh.
+      This relation provides additional data required by the service mesh to enforce cross-model authorization policies.
 storage:
   kubeflow-secrets:
     type: filesystem
