@@ -24,6 +24,7 @@ from components.pebble_components import (
     PersistenceAgentPebbleService,
     PesistenceAgentServiceConfig,
 )
+from components.service_mesh_component import ServiceMeshComponent
 
 log = logging.getLogger()
 
@@ -52,9 +53,28 @@ class KfpPersistenceOperator(CharmBase):
             component=LeadershipGateComponent(charm=self, name="leadership-gate"), depends_on=[]
         )
 
-        self.kfp_api_relation = self.charm_reconciler.add(
+        self.service_mesh = self.charm_reconciler.add(
+            component=ServiceMeshComponent(
+                charm=self,
+                name="service-mesh",
+            ),
+            depends_on=[self.leadership_gate],
+        )
+
+        self.kfp_api_http_relation = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
                 charm=self, name="relation:kfp-api", relation_name="kfp-api"
+            ),
+            depends_on=[self.leadership_gate],
+        )
+
+        self.kfp_api_grpc_relation = self.charm_reconciler.add(
+            component=SdiRelationDataReceiverComponent(
+                charm=self,
+                name="relation:kfp-api-grpc",
+                relation_name="kfp-api-grpc",
+                minimum_related_applications=0,
+                maximum_related_applications=1,
             ),
             depends_on=[self.leadership_gate],
         )
@@ -99,16 +119,46 @@ class KfpPersistenceOperator(CharmBase):
                 # provide function to pebble with which it can get service configuration from
                 # relation
                 inputs_getter=lambda: PesistenceAgentServiceConfig(
-                    KFP_API_SERVICE_NAME=self.kfp_api_relation.component.get_data()[
+                    KFP_API_SERVICE_NAME=self.kfp_api_http_relation.component.get_data()[
                         "service-name"
                     ],
+                    KFP_API_HTTP_PORT=self.kfp_api_http_port,
+                    KFP_API_GRPC_PORT=self.kfp_api_grpc_port,
                 ),
             ),
-            depends_on=[self.leadership_gate, self.kfp_api_relation, self.sa_token],
+            depends_on=[self.leadership_gate, self.kfp_api_http_relation, self.sa_token],
         )
 
         self.charm_reconciler.install_default_event_handlers()
         self._logging = LogForwarder(charm=self)
+
+    @property
+    def kfp_api_http_port(self) -> int:
+        """
+        Return the KFP API service HTTP port.
+
+        Will first try to load data from the (sdi) kfp-api relation, of k8s_service interface.
+        If it's not established then it will use the hardcoded value 8888.
+        """
+        kfp_api_data = self.kfp_api_http_relation.component.get_data()
+        if kfp_api_data:
+            return int(kfp_api_data["service-port"])
+
+        return 8888
+
+    @property
+    def kfp_api_grpc_port(self) -> int:
+        """
+        Return the KFP API service GRPC port.
+
+        Will first try to load data from the (sdi) kfp-api-grpc relation, of k8s_service interface.
+        If it's not established then it will use the hardcoded value 8887.
+        """
+        kfp_api_data = self.kfp_api_grpc_relation.component.get_data()
+        if kfp_api_data:
+            return int(kfp_api_data[0]["service-port"])
+
+        return 8887
 
 
 class CheckFailedError(Exception):
