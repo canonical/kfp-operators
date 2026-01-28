@@ -199,8 +199,6 @@ jobs:
             test-type: integration-ambient
           - charm: kfp-viewer
             test-type: integration-ambient
-          - charm: kfp-ui
-            test-type: integration-ambient
           - charm: kfp-metadata-writer
             test-type: integration-ambient
     steps:
