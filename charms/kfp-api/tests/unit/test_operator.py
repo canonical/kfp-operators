@@ -7,6 +7,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
+from charmed_service_mesh_helpers.models import Action
+from lightkube_extensions.types import AuthorizationPolicy
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from ops.testing import Harness
 
@@ -59,6 +61,129 @@ class TestCharm:
         with patch("charm.LogForwarder") as mock_logging:
             harness.begin()
             mock_logging.assert_called_once_with(charm=harness.charm)
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    def test_allow_without_kubeflow_header_policy(
+        self, k8s_resource_handler: MagicMock, harness: Harness
+    ):
+        """Test _allow_without_kubeflow_header_policy creates correct AuthorizationPolicy."""
+        harness.begin()
+
+        policy = harness.charm._allow_without_kubeflow_header_policy
+
+        # Verify it's an AuthorizationPolicy
+        assert isinstance(policy, AuthorizationPolicy)
+
+        # Verify metadata
+        assert policy.metadata.name == f"{harness.charm._name}-allow-without-kubeflow-header"
+        assert policy.metadata.namespace == harness.charm._namespace
+
+        # Verify spec
+        spec = policy.spec
+        assert spec["action"] == Action.allow.value
+        assert len(spec["targetRefs"]) == 2
+        assert spec["targetRefs"][0]["kind"] == "Service"
+        assert spec["targetRefs"][0]["name"] == "ml-pipeline"
+        assert spec["targetRefs"][1]["kind"] == "Service"
+        assert spec["targetRefs"][1]["name"] == harness.charm.app.name
+
+        # Verify rules
+        assert len(spec["rules"]) == 1
+        assert spec["rules"][0]["when"][0]["key"] == "request.headers[kubeflow-userid]"
+        assert spec["rules"][0]["when"][0]["notValues"] == ["*"]
+
+    @pytest.mark.parametrize(
+        "mesh_relation_exists,expected_raw_policies_count",
+        [
+            (True, 1),  # With mesh relation
+            (False, 0),  # Without mesh relation
+        ],
+    )
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    @patch("charm.Client")
+    def test_reconcile_authorization_policies(
+        self,
+        mock_client: MagicMock,
+        k8s_resource_handler: MagicMock,
+        harness: Harness,
+        mesh_relation_exists: bool,
+        expected_raw_policies_count: int,
+    ):
+        """Test _reconcile_authorization_policies with and without mesh relation."""
+        harness.begin()
+
+        # Mock the mesh relation based on parameter
+        harness.charm._mesh._relation = MagicMock() if mesh_relation_exists else None
+
+        # Mock the policy resource manager's reconcile method
+        with patch("charm.PolicyResourceManager") as mock_prm_class:
+            mock_policy_manager = MagicMock()
+            mock_prm_class.return_value = mock_policy_manager
+
+            harness.charm._reconcile_authorization_policies()
+
+            # Verify reconcile was called
+            mock_policy_manager.reconcile.assert_called_once()
+            call_args = mock_policy_manager.reconcile.call_args
+            assert call_args.kwargs["policies"] == []
+            assert len(call_args.kwargs["raw_policies"]) == expected_raw_policies_count
+
+            # If mesh exists, verify the policy is an AuthorizationPolicy
+            if mesh_relation_exists:
+                assert isinstance(call_args.kwargs["raw_policies"][0], AuthorizationPolicy)
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KfpApiOperator._reconcile_authorization_policies")
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    def test_on_event_calls_reconcile_policies(
+        self,
+        k8s_resource_handler: MagicMock,
+        mock_reconcile: MagicMock,
+        harness: Harness,
+    ):
+        """Test that _on_event calls _reconcile_authorization_policies."""
+        harness.set_leader(True)
+        harness.begin()
+        harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
+
+        # Setup required relations to prevent errors
+        self.setup_required_relations(harness)
+
+        # Trigger an event
+        harness.charm.on.config_changed.emit()
+
+        # Verify reconcile was called
+        mock_reconcile.assert_called()
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.Client")
+    @patch("charm.KubernetesResourceHandler")
+    def test_on_remove_cleans_up_policies(
+        self,
+        mock_krh: MagicMock,
+        mock_client: MagicMock,
+        harness: Harness,
+    ):
+        """Test that _on_remove calls policy resource manager to clean up policies."""
+        harness.set_leader(True)
+        harness.begin()
+
+        # Mock the policy resource manager's reconcile method
+        with patch("charm.PolicyResourceManager") as mock_prm_class:
+            mock_policy_manager = MagicMock()
+            mock_prm_class.return_value = mock_policy_manager
+
+            harness.charm.on.remove.emit()
+
+            # Verify reconcile was called with empty lists to clean up
+            mock_policy_manager.reconcile.assert_called_once()
+            call_args = mock_policy_manager.reconcile.call_args
+            # Check positional args
+            assert call_args.args[0] == []  # policies
+            # The second arg is MeshType.istio
+            assert call_args.args[2] == []  # raw_policies
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
@@ -320,8 +445,10 @@ class TestCharm:
         ),
     )
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.Client")
     def test_relations_that_provide_data(
         self,
+        mock_client: MagicMock,
         relation_name,
         relation_data,
         expected_returned_data,
@@ -351,10 +478,12 @@ class TestCharm:
             assert partial_relation_data.value.status == expected_status
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.Client")
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_install_with_all_inputs_and_pebble(
         self,
         k8s_resource_handler: MagicMock,
+        mock_client: MagicMock,
         harness: Harness,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
@@ -370,21 +499,35 @@ class TestCharm:
             objectstorage_data,
             kfp_viz_data,
             kfpapi_rel_id,
+            kfpapi_grpc_rel_id,
         ) = self.setup_required_relations(harness)
 
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
         this_app_name = harness.charm.model.app.name
 
-        # Test that we sent data to anyone subscribing to us
+        # Test that we sent data to anyone subscribing to us (kfp-api)
         kfpapi_expected_versions = ["v1"]
         kfpapi_expected_data = {
             "service-name": f"{this_app_name}.{model_name}",
             "service-port": service_port,
         }
-        kfpapi_sent_data = harness.get_relation_data(kfpapi_rel_id, "kfp-api")
+        kfpapi_sent_data = harness.get_relation_data(kfpapi_rel_id, this_app_name)
         assert yaml.safe_load(kfpapi_sent_data["_supported_versions"]) == kfpapi_expected_versions
         assert yaml.safe_load(kfpapi_sent_data["data"]) == kfpapi_expected_data
+
+        # Test that we sent data to anyone subscribing to us (kfp-api-grpc)
+        kfpapi_grpc_expected_versions = ["v1"]
+        kfpapi_grpc_expected_data = {
+            "service-name": f"{this_app_name}.{model_name}",
+            "service-port": harness.charm.model.config["grpc-port"],
+        }
+        kfpapi_grpc_sent_data = harness.get_relation_data(kfpapi_grpc_rel_id, this_app_name)
+        assert (
+            yaml.safe_load(kfpapi_grpc_sent_data["_supported_versions"])
+            == kfpapi_grpc_expected_versions
+        )
+        assert yaml.safe_load(kfpapi_grpc_sent_data["data"]) == kfpapi_grpc_expected_data
 
         # confirm that we can serialize the pod spec and that the unit is active
         assert harness.charm.model.unit.status == ActiveStatus()
@@ -460,10 +603,12 @@ class TestCharm:
         assert model_name == test_env["POD_NAMESPACE"]
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.Client")
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_launcher_driver_images_config(
         self,
         k8s_resource_handler: MagicMock,
+        mock_client: MagicMock,
         harness: Harness,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
@@ -491,6 +636,7 @@ class TestCharm:
         assert model_name == test_env["POD_NAMESPACE"]
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.Client")
     @patch("charm.KfpApiOperator._apply_k8s_resources")
     @patch("charm.KfpApiOperator._check_status")
     @patch("charm.KfpApiOperator._generate_environment")
@@ -499,6 +645,7 @@ class TestCharm:
         _apply_k8s_resources: MagicMock,
         _check_status: MagicMock,
         _generate_environment: MagicMock,
+        mock_client: MagicMock,
         harness: Harness,
     ):
         """Test update status handler."""
@@ -619,8 +766,10 @@ class TestCharm:
                 "db_port": "1234",
             }
 
+    @patch("charm.Client")
     def test_relational_db_relation_broken(
         self,
+        mock_client: MagicMock,
         mocked_resource_handler,
         mocked_kubernetes_service_patcher,
         harness: Harness,
@@ -669,6 +818,70 @@ class TestCharm:
 
         harness.charm.on.remove.emit()
         assert harness.model.unit.status == MaintenanceStatus("K8S resources removed")
+
+    def test_mysql_and_relational_db_both_present(
+        self,
+        mocked_resource_handler,
+        mocked_kubernetes_service_patcher,
+        harness: Harness,
+    ):
+        """Test that charm blocks when both mysql and relational-db relations are added."""
+        harness.set_leader(True)
+        harness.begin()
+
+        # Add mysql relation first
+        mysql_data = {
+            "database": "database",
+            "host": "host",
+            "root_password": "root_password",
+            "port": "port",
+        }
+        mysql_rel_id = harness.add_relation("mysql", "mysql-provider")
+        harness.add_relation_unit(mysql_rel_id, "mysql-provider/0")
+        harness.update_relation_data(mysql_rel_id, "mysql-provider/0", mysql_data)
+
+        # Mock the database library
+        database = MagicMock()
+        fetch_relation_data = MagicMock()
+        fetch_relation_data.return_value = {
+            "relational-db-data": {
+                "endpoints": "host:1234",
+                "username": "username",
+                "password": "password",
+            }
+        }
+        database.fetch_relation_data = fetch_relation_data
+        harness.charm.database = database
+
+        # Add relational-db relation - this should cause the charm status to be blocked
+        # due to the event handler detecting conflicting relations
+        relational_db_rel_id = harness.add_relation("relational-db", "relational-db-provider")
+        harness.add_relation_unit(relational_db_rel_id, "relational-db-provider/0")
+
+        # Verify charm is blocked due to conflicting database relations
+        # The blocking happens at the event handler level
+        assert isinstance(harness.charm.model.unit.status, BlockedStatus)
+        assert (
+            "remove deprecated mysql relation to unblock"
+            in harness.charm.model.unit.status.message.lower()
+        )
+
+    def test_no_database_relation(
+        self,
+        mocked_resource_handler,
+        mocked_kubernetes_service_patcher,
+        harness: Harness,
+    ):
+        """Test that charm blocks when no database relation is present."""
+        harness.set_leader(True)
+        harness.begin()
+        harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
+
+        # Verify charm is blocked due to missing database relation
+        with pytest.raises(ErrorWithStatus) as err:
+            harness.charm._get_db_data()
+        assert err.value.status_type(BlockedStatus)
+        assert "required database relation" in str(err).lower()
 
     def test_minio_service_rendered_as_expected(
         self,
@@ -732,6 +945,7 @@ class TestCharm:
 
     def setup_required_relations(self, harness: Harness):
         kfpapi_relation_name = "kfp-api"
+        kfpapi_grpc_relation_name = "kfp-api-grpc"
 
         # mysql relation
         mysql_data = {
@@ -781,4 +995,16 @@ class TestCharm:
         harness.add_relation_unit(kfpapi_rel_id, "kfp-api-subscriber/0")
         harness.update_relation_data(kfpapi_rel_id, "kfp-api-subscriber", kfpapi_data)
 
-        return mysql_data, objectstorage_data, kfp_viz_data, kfpapi_rel_id
+        # example kfp-api-grpc provider relation
+        kfpapi_grpc_data = {
+            "_supported_versions": "- v1",
+        }
+        kfpapi_grpc_rel_id = harness.add_relation(
+            kfpapi_grpc_relation_name, "kfp-api-grpc-subscriber"
+        )
+        harness.add_relation_unit(kfpapi_grpc_rel_id, "kfp-api-grpc-subscriber/0")
+        harness.update_relation_data(
+            kfpapi_grpc_rel_id, "kfp-api-grpc-subscriber", kfpapi_grpc_data
+        )
+
+        return mysql_data, objectstorage_data, kfp_viz_data, kfpapi_rel_id, kfpapi_grpc_rel_id
