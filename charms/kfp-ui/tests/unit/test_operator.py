@@ -180,14 +180,19 @@ def test_ambient_ingress_configure_app_leader_success(
     # Arrange
     harness.begin()
 
-    # Mock ingress.is_ready() to return True
-    mocked_istio_ingress_requirer.return_value.is_ready.return_value = True
+    # Add the relation first
+    harness.add_relation("istio-ingress-route", "istio-ingress")
 
-    # Act
-    harness.charm.ambient_ingress_relation.component._configure_app_leader(None)
+    # Mock methods on the actual ingress instance
+    ingress = harness.charm.ambient_ingress_relation.component.ingress
+    ingress.is_ready = MagicMock(return_value=True)
+    ingress.submit_config = MagicMock()
+
+    # Act - Trigger install event which calls the component through the charm reconciler
+    harness.charm.on.install.emit()
 
     # Assert
-    mocked_istio_ingress_requirer.return_value.submit_config.assert_called_once()
+    ingress.submit_config.assert_called_once()
 
 
 def test_ambient_ingress_configure_app_leader_not_ready(
@@ -199,14 +204,19 @@ def test_ambient_ingress_configure_app_leader_not_ready(
     # Arrange
     harness.begin()
 
-    # Mock ingress.is_ready() to return False
-    mocked_istio_ingress_requirer.return_value.is_ready.return_value = False
+    # Add the relation first
+    harness.add_relation("istio-ingress-route", "istio-ingress")
 
-    # Act
-    harness.charm.ambient_ingress_relation.component._configure_app_leader(None)
+    # Mock methods on the actual ingress instance
+    ingress = harness.charm.ambient_ingress_relation.component.ingress
+    ingress.is_ready = MagicMock(return_value=False)
+    ingress.submit_config = MagicMock()
+
+    # Act - Trigger install event which calls the component through the charm reconciler
+    harness.charm.on.install.emit()
 
     # Assert
-    mocked_istio_ingress_requirer.return_value.submit_config.assert_not_called()
+    ingress.submit_config.assert_not_called()
 
 
 def test_ambient_ingress_configure_app_leader_generic_error(
@@ -220,11 +230,12 @@ def test_ambient_ingress_configure_app_leader_generic_error(
     # Arrange
     harness.begin()
 
-    # Mock ingress.is_ready() to return True and submit_config to raise a generic exception
-    mocked_istio_ingress_requirer.return_value.is_ready.return_value = True
-    mocked_istio_ingress_requirer.return_value.submit_config.side_effect = Exception("Test error")
+    # Mock methods on the actual ingress instance
+    ingress = harness.charm.ambient_ingress_relation.component.ingress
+    ingress.is_ready = MagicMock(return_value=True)
+    ingress.submit_config = MagicMock(side_effect=Exception("Test error"))
 
-    # Act & Assert
+    # Act & Assert - Call the method directly to test exception handling
     with pytest.raises(GenericCharmRuntimeError) as exc_info:
         harness.charm.ambient_ingress_relation.component._configure_app_leader(None)
 
@@ -421,11 +432,10 @@ def mocked_kubernetes_service_patch(mocker):
 
 @pytest.fixture()
 def mocked_istio_ingress_requirer(mocker):
-    """Mocks the IstioIngressRouteRequirer to avoid UnauthorizedError during tests."""
-    mocked_requirer = mocker.patch(
-        "components.istio_ambient_requirer_component.IstioIngressRouteRequirer"
-    )
-    yield mocked_requirer
+    """Fixture placeholder for IstioIngressRouteRequirer, tests mock methods directly."""
+    # Don't mock the class itself to allow proper event handling
+    # Tests should mock specific methods on the component.ingress instance as needed
+    yield None
 
 
 def render_ingress_data(service: str, port: str) -> dict:
