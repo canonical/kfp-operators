@@ -14,6 +14,8 @@ class PesistenceAgentServiceConfig:
     """Defines configuration for PersistenceAgent Service."""
 
     KFP_API_SERVICE_NAME: str
+    KFP_API_HTTP_PORT: int
+    KFP_API_GRPC_PORT: int
 
 
 class PersistenceAgentPebbleService(PebbleServiceComponent):
@@ -54,6 +56,8 @@ class PersistenceAgentPebbleService(PebbleServiceComponent):
             f" --ttlSecondsAfterWorkflowFinish={self._environment['TTL_SECONDS_AFTER_WORKFLOW_FINISH']}",  # noqa: 501
             f" --numWorker={self._environment['NUM_WORKERS']}",
             f" --mlPipelineAPIServerName={service_config.KFP_API_SERVICE_NAME}",
+            f" --mlPipelineServiceHttpPort={service_config.KFP_API_HTTP_PORT}",
+            f" --mlPipelineServiceGRPCPort={service_config.KFP_API_GRPC_PORT}",
             f" --executionType {self._environment['EXECUTIONTYPE']}",
             f" --logLevel={self._environment['LOG_LEVEL']}",
         )
