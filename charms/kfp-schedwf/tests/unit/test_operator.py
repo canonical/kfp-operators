@@ -84,6 +84,32 @@ def test_no_sa_token_file(
     )
 
 
+def test_custom_app_name_uses_correct_service_account(mocked_lightkube_client):
+    """Test that charm uses the correct service account name when deployed with a custom app name."""
+    custom_harness = Harness(KfpSchedwf, meta="""
+name: target
+containers:
+  ml-pipeline-scheduledworkflow:
+    resource: oci-image
+    mounts:
+      - storage: kubeflow-secrets
+        location: /var/run/secrets/kubeflow/tokens
+requires:
+  kfp-api-grpc:
+    interface: k8s-service
+""")
+    
+    with patch("charm.LogForwarder"), \
+         patch("charm.ServiceMeshConsumer"):
+        custom_harness.begin()
+        
+        # Assert that the charm's sa_name attribute matches the custom app name
+        assert custom_harness.charm.sa_name == "target"
+        
+        # Assert that the SATokenComponent was initialized with the correct sa_name
+        assert custom_harness.charm.sa_token.component._sa_name == "target"
+
+
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")
 def test_pebble_service_container_running(harness: Harness, mocked_lightkube_client):
     """Test that the pebble service of the charm's kfp-schedwf container is running."""
