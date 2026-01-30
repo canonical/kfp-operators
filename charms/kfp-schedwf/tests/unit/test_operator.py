@@ -11,8 +11,6 @@ from ops.testing import Harness
 
 from charm import KfpSchedwf
 
-SERVICE_ACCOUNT_NAME = "kfp-schedwf"
-
 
 def test_log_forwarding(harness: Harness, mocked_lightkube_client):
     with patch("charm.LogForwarder") as mock_logging:
@@ -71,9 +69,10 @@ def test_no_sa_token_file(
     with pytest.raises(GenericCharmRuntimeError) as err:
         harness.charm.sa_token.get_status()
 
+    service_account_name = harness.charm.model.app.name
     assert (
         err.value.msg
-        == f"Token file for {SERVICE_ACCOUNT_NAME} ServiceAccount not present in charm."
+        == f"Token file for {service_account_name} ServiceAccount not present in charm."
     )
     # The base charm arbitrarily sets the unit status to BlockedStatus
     # We should fix this in charmed-kubeflow-chisme as it doesn't really
@@ -83,6 +82,34 @@ def test_no_sa_token_file(
         harness.charm.unit.status.message
         == "[sa-token:scheduledworkflow] Failed to compute status.  See logs for details."
     )
+
+
+def test_custom_app_name_uses_correct_service_account(mocked_lightkube_client):
+    """Test charm uses correct service account name with custom app name."""
+    custom_harness = Harness(
+        KfpSchedwf,
+        meta="""
+name: target
+containers:
+  ml-pipeline-scheduledworkflow:
+    resource: oci-image
+    mounts:
+      - storage: kubeflow-secrets
+        location: /var/run/secrets/kubeflow/tokens
+requires:
+  kfp-api-grpc:
+    interface: k8s-service
+""",
+    )
+
+    with patch("charm.LogForwarder"), patch("charm.ServiceMeshConsumer"):
+        custom_harness.begin()
+
+        # Assert that the charm's sa_name attribute matches the custom app name
+        assert custom_harness.charm.sa_name == "target"
+
+        # Assert that SATokenComponent was initialized with correct sa_name
+        assert custom_harness.charm.sa_token.component._sa_name == "target"
 
 
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")
