@@ -85,8 +85,10 @@ def test_no_sa_token_file(
 
 
 def test_custom_app_name_uses_correct_service_account(mocked_lightkube_client):
-    """Test that charm uses the correct service account name when deployed with a custom app name."""
-    custom_harness = Harness(KfpSchedwf, meta="""
+    """Test charm uses correct service account name with custom app name."""
+    custom_harness = Harness(
+        KfpSchedwf,
+        meta="""
 name: target
 containers:
   ml-pipeline-scheduledworkflow:
@@ -97,16 +99,16 @@ containers:
 requires:
   kfp-api-grpc:
     interface: k8s-service
-""")
-    
-    with patch("charm.LogForwarder"), \
-         patch("charm.ServiceMeshConsumer"):
+""",
+    )
+
+    with patch("charm.LogForwarder"), patch("charm.ServiceMeshConsumer"):
         custom_harness.begin()
-        
+
         # Assert that the charm's sa_name attribute matches the custom app name
         assert custom_harness.charm.sa_name == "target"
-        
-        # Assert that the SATokenComponent was initialized with the correct sa_name
+
+        # Assert that SATokenComponent was initialized with correct sa_name
         assert custom_harness.charm.sa_token.component._sa_name == "target"
 
 
