@@ -1008,3 +1008,49 @@ class TestCharm:
         )
 
         return mysql_data, objectstorage_data, kfp_viz_data, kfpapi_rel_id, kfpapi_grpc_rel_id
+
+    @pytest.mark.parametrize(
+        "add_mesh_relation",
+        [False, True],
+    )
+    def test_ml_pipeline_service_ambient_labels(
+        self,
+        mocked_kubernetes_service_patcher,
+        mocked_resource_handler,
+        harness: Harness,
+        add_mesh_relation: bool,
+    ):
+        """Test ml-pipeline service renders ambient labels based on mesh relation status."""
+        self.setup_required_relations(harness)
+        if add_mesh_relation:
+            harness.add_relation_unit(
+                harness.add_relation("service-mesh", "mesh-provider"), "mesh-provider/0"
+            )
+
+        harness.set_leader(True)
+        harness.set_model_name("kubeflow")
+        harness.begin()
+
+        manifests = harness.charm.k8s_resource_handler.render_manifests()
+        ml_pipeline_service = next(
+            (m for m in manifests if m.kind == "Service" and m.metadata.name == "ml-pipeline"),
+            None,
+        )
+
+        assert ml_pipeline_service is not None
+        assert ml_pipeline_service.metadata.namespace == "kubeflow"
+
+        labels = ml_pipeline_service.metadata.labels or {}
+        ambient_keys = {
+            "istio.io/dataplane-mode",
+            "istio.io/use-waypoint",
+            "istio.io/use-waypoint-namespace",
+        }
+        actual_ambient = {k: v for k, v in labels.items() if k in ambient_keys}
+
+        if add_mesh_relation:
+            assert actual_ambient.get("istio.io/dataplane-mode") == "ambient"
+            assert actual_ambient.get("istio.io/use-waypoint-namespace") == "kubeflow"
+            assert "istio.io/use-waypoint" in actual_ambient
+        else:
+            assert actual_ambient == {}

@@ -63,3 +63,7 @@ options:
     type: string
     default: "info"
     description: Log level of api server
+  waypoint-name:
+    type: string
+    default: "istio-beacon-k8s-waypoint"
+    description: Name of the Istio Waypoint to use for Ambient Mesh integration, without the namespace prefix.
