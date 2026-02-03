@@ -68,6 +68,11 @@ K8S_RESOURCE_FILES = [
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
 KFP_API_SERVICE_NAME = "apiserver"
+# The waypoint name format should match the format set by istio-beacon-k8s
+# See how the label is generated:
+# https://github.com/canonical/istio-beacon-k8s-operator/blob/rev60/src/charm.py#L111-L118
+# TODO: Replace with relation data from service-mesh when supported
+WAYPOINT_NAME = "istio-beacon-k8s-waypoint"
 
 METRICS_ENDPOINT_RELATION_NAME = "metrics-endpoint"
 
@@ -210,7 +215,7 @@ class KfpApiOperator(CharmBase):
             # The waypoint name format should match the format set by istio-beacon-k8s
             # See how the label is generated:
             # https://github.com/canonical/istio-beacon-k8s-operator/blob/rev60/src/charm.py#L111-L118
-            "waypoint_name": f"{self._namespace}-{self.config['waypoint-name']}",
+            "waypoint_name": f"{self._namespace}-{WAYPOINT_NAME}",
         }
         return context
 
