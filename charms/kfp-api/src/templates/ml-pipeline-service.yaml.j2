@@ -3,6 +3,12 @@ kind: Service
 metadata:
   name: ml-pipeline
   namespace: '{{ namespace }}'
+{% if ambient_enabled %}
+  labels:
+    istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: {{ waypoint_name }}
+    istio.io/use-waypoint-namespace: {{ namespace }}
+{% endif %}
 spec:
   ports:
   - name: grpc 
