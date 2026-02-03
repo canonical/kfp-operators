@@ -14,9 +14,9 @@ from charmed_kubeflow_chisme.testing import generate_context_from_charm_spec_lis
 from charms_dependencies import (
     ARGO_CONTROLLER,
     ENVOY,
-    ISTIO_K8S,
-    ISTIO_INGRESS_K8S,
     ISTIO_BEACON_K8S,
+    ISTIO_INGRESS_K8S,
+    ISTIO_K8S,
     KUBEFLOW_PROFILES,
     KUBEFLOW_ROLES,
     METACONTROLLER_OPERATOR,
@@ -83,7 +83,7 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
 
     yield experiment_response
 
-    #kfp_client.delete_experiment(experiment_id=experiment_response.experiment_id)
+    kfp_client.delete_experiment(experiment_id=experiment_response.experiment_id)
 
 
 @pytest.mark.deploy

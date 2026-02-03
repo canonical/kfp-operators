@@ -30,6 +30,9 @@ applications:
     charm: {{ kubeflow_profiles_charm }}
     channel: {{ kubeflow_profiles_channel }}
     scale: 1
+    options:
+      istio-gateway-principal: cluster.local/ns/kubeflow/sa/istio-ingress-k8s-istio
+      service-mesh-mode: istio-ambient
     trust: {{ kubeflow_profiles_trust }}
   istio-k8s:
     charm: {{ istio_k8s_charm }}

@@ -119,17 +119,17 @@ def apply_profile(lightkube_client):
     yield
 
     # Remove profile
-    # read_yaml = Path(PROFILE_FILE_PATH).read_text()
-    # yaml_loaded = codecs.load_all_yaml(read_yaml)
-    # for obj in yaml_loaded:
-    #     try:
-    #         lightkube_client.delete(
-    #             res=type(obj),
-    #             name=obj.metadata.name,
-    #             namespace=obj.metadata.namespace,
-    #         )
-    #     except lightkube.core.exceptions.ApiError as api_error:
-    #         raise api_error
+    read_yaml = Path(PROFILE_FILE_PATH).read_text()
+    yaml_loaded = codecs.load_all_yaml(read_yaml)
+    for obj in yaml_loaded:
+        try:
+            lightkube_client.delete(
+                res=type(obj),
+                name=obj.metadata.name,
+                namespace=obj.metadata.namespace,
+            )
+        except lightkube.core.exceptions.ApiError as api_error:
+            raise api_error
 
 
 @pytest.fixture(scope="session")

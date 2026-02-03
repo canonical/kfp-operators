@@ -23,10 +23,9 @@ ISTIO_PILOT = CharmSpec(
     config={"default-gateway": "kubeflow-gateway"},
     trust=True,
 )
-ISTIO_K8S = CharmSpec(charm="istio-k8s", channel="2/edge", trust=True)
-ISTIO_INGRESS_K8S = CharmSpec(
-    charm="istio-ingress-k8s", channel="2/edge", trust=True
-)
-ISTIO_BEACON_K8S = CharmSpec(
-    charm="istio-beacon-k8s", channel="2/edge", trust=True
-)
+# For Charmed Istio to work together with Cilium,
+# the `platform` configuration of the istio-k8s charm must be unset
+# because by default the platform is set to "microk8s".
+ISTIO_K8S = CharmSpec(charm="istio-k8s", channel="2/edge", config={"platform": ""}, trust=True)
+ISTIO_INGRESS_K8S = CharmSpec(charm="istio-ingress-k8s", channel="2/edge", trust=True)
+ISTIO_BEACON_K8S = CharmSpec(charm="istio-beacon-k8s", channel="2/edge", trust=True)
