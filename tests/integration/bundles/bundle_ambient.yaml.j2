@@ -1,0 +1,145 @@
+bundle: kubernetes
+name: kubeflow-pipelines
+applications:
+  argo-controller:
+    charm: {{ argo_controller_charm }}
+    channel: {{ argo_controller_channel }}
+    scale: 1
+    trust: {{ argo_controller_trust }}
+  metacontroller-operator:
+    charm: {{ metacontroller_operator_charm }}
+    channel: {{ metacontroller_operator_channel }}
+    scale: 1
+    trust: {{ metacontroller_operator_trust }}
+  minio:
+    charm: {{ minio_charm }}
+    channel: {{ minio_channel }}
+    scale: 1
+    trust: {{ minio_trust }}
+  mlmd:
+    charm: {{ mlmd_charm }}
+    channel: {{ mlmd_channel }}
+    scale: 1
+    trust: {{ mlmd_trust }}
+  envoy:
+    charm: {{ envoy_charm }}
+    channel: {{ envoy_channel }}
+    scale: 1
+    trust: {{ envoy_trust }}
+  kubeflow-profiles:
+    charm: {{ kubeflow_profiles_charm }}
+    channel: {{ kubeflow_profiles_channel }}
+    scale: 1
+    trust: {{ kubeflow_profiles_trust }}
+  istio-k8s:
+    charm: {{ istio_k8s_charm }}
+    channel: {{ istio_k8s_channel }}
+    scale: 1
+    {% if istio_k8s_config %}
+    options:
+      {% for key, val in istio_k8s_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ istio_k8s_trust }}
+  istio-ingress-k8s:
+    charm: {{ istio_ingress_k8s_charm }}
+    channel: {{ istio_ingress_k8s_channel }}
+    scale: 1
+    {% if istio_ingress_k8s_config %}
+    options:
+      {% for key, val in istio_ingress_k8s_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ istio_ingress_k8s_trust }}
+  istio-beacon-k8s:
+    charm: {{ istio_beacon_k8s_charm }}
+    channel: {{ istio_beacon_k8s_channel }}
+    scale: 1
+    {% if istio_beacon_k8s_config %}
+    options:
+      {% for key, val in istio_beacon_k8s_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ istio_beacon_k8s_trust }}
+  kfp-db:
+    charm: {{ mysql_k8s_charm }}
+    channel: {{ mysql_k8s_channel }}
+    scale: 1
+    {% if mysql_k8s_config %}
+    options:
+      {% for key, val in mysql_k8s_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ mysql_k8s_trust }}
+  kubeflow-roles:
+    charm: {{ kubeflow_roles_charm }}
+    channel: {{ kubeflow_roles_channel }}
+    scale: 1
+    trust: {{ kubeflow_roles_trust }}
+  kfp-api:
+    charm: {{ kfp_api }}
+    resources: {{ kfp_api_resources }}
+    scale: 1
+    trust: true
+  kfp-metadata-writer:
+    charm: {{ kfp_metadata_writer }}
+    resources: {{ kfp_metadata_writer_resources }}
+    scale: 1
+    trust: true
+  kfp-persistence:
+    charm: {{ kfp_persistence }}
+    resources: {{ kfp_persistence_resources }}
+    scale: 1
+    trust: true
+  kfp-profile-controller:
+    charm: {{ kfp_profile_controller }}
+    resources: {{ kfp_profile_controller_resources }}
+    scale: 1
+    trust: true
+  kfp-schedwf:
+    charm: {{ kfp_schedwf }}
+    resources: {{ kfp_schedwf_resources }}
+    scale: 1
+    trust: true
+  kfp-ui:
+    charm: {{ kfp_ui }}
+    resources: {{ kfp_ui_resources }}
+    scale: 1
+    trust: true
+  kfp-viewer:
+    charm: {{ kfp_viewer }}
+    resources: {{ kfp_viewer_resources }}
+    scale: 1
+    trust: true
+  kfp-viz:
+    charm: {{ kfp_viz }}
+    resources: {{ kfp_viz_resources }}
+    scale: 1
+    trust: true
+relations:
+- [argo-controller:object-storage, minio:object-storage]
+- [kfp-api:relational-db, kfp-db:database]
+- [kfp-api:kfp-api, kfp-persistence:kfp-api]
+- [kfp-api:kfp-api, kfp-ui:kfp-api]
+- [kfp-api:kfp-viz, kfp-viz:kfp-viz]
+- [kfp-api:object-storage, minio:object-storage]
+- [kfp-profile-controller:object-storage, minio:object-storage]
+- [kfp-ui:object-storage, minio:object-storage]
+- [mlmd:grpc, envoy:grpc]
+- [kfp-metadata-writer:grpc, mlmd:grpc]
+- [kfp-api:kfp-api-grpc, kfp-persistence:kfp-api-grpc]
+- [kfp-api:kfp-api-grpc, kfp-schedwf:kfp-api-grpc]
+- [envoy:service-mesh, istio-beacon-k8s:service-mesh]
+- [envoy:istio-ingress-route, istio-ingress-k8s:istio-ingress-route]
+- [kfp-api:service-mesh, istio-beacon-k8s:service-mesh]
+- [kfp-persistence:service-mesh, istio-beacon-k8s:service-mesh]
+- [kfp-profile-controller:service-mesh, istio-beacon-k8s:service-mesh]
+- [kfp-schedwf:service-mesh, istio-beacon-k8s:service-mesh]
+- [kfp-ui:service-mesh, istio-beacon-k8s:service-mesh]
+- [kfp-viz:service-mesh, istio-beacon-k8s:service-mesh]
+- [kubeflow-profiles:service-mesh, istio-beacon-k8s:service-mesh]
+- [kfp-ui:istio-ingress-route, istio-ingress-k8s:istio-ingress-route]
