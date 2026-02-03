@@ -68,6 +68,11 @@ K8S_RESOURCE_FILES = [
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
 KFP_API_SERVICE_NAME = "apiserver"
+# The waypoint name format should match the format set by istio-beacon-k8s
+# See how the label is generated:
+# https://github.com/canonical/istio-beacon-k8s-operator/blob/rev60/src/charm.py#L111-L118
+# TODO: Replace with relation data from service-mesh when supported
+WAYPOINT_NAME = "istio-beacon-k8s-waypoint"
 
 METRICS_ENDPOINT_RELATION_NAME = "metrics-endpoint"
 
@@ -117,6 +122,7 @@ class KfpApiOperator(CharmBase):
             self.on["kfp-viz"].relation_changed,
             self.on["kfp-api"].relation_changed,
             self.on["kfp-api-grpc"].relation_changed,
+            self.on["service-mesh"].relation_changed,
         ]
         for event in change_events:
             self.framework.observe(event, self._on_event)
@@ -205,6 +211,11 @@ class KfpApiOperator(CharmBase):
             # Must include .svc.cluster.local for DNS resolution
             "minio_url": minio_url,
             "minio_port": str(object_storage["port"]),
+            "ambient_enabled": self.is_ambient_mesh_enabled,
+            # The waypoint name format should match the format set by istio-beacon-k8s
+            # See how the label is generated:
+            # https://github.com/canonical/istio-beacon-k8s-operator/blob/rev60/src/charm.py#L111-L118
+            "waypoint_name": f"{self._namespace}-{WAYPOINT_NAME}",
         }
         return context
 
@@ -262,6 +273,11 @@ class KfpApiOperator(CharmBase):
         }
 
         return Layer(layer_config)
+
+    @property
+    def is_ambient_mesh_enabled(self) -> bool:
+        """Check if ambient mesh is enabled based on the presence of service mesh relation."""
+        return self._mesh._relation is not None
 
     @property
     def _policy_resource_manager(self) -> PolicyResourceManager:
