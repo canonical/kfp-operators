@@ -21,6 +21,7 @@ from charmed_kubeflow_chisme.testing import (
 )
 from charms_dependencies import KFP_SCHEDWF, KFP_VIZ, MINIO, MYSQL
 from lightkube import Client
+from lightkube_extensions.types import AuthorizationPolicy
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
@@ -180,7 +181,31 @@ async def test_container_security_context(
     )
 
 
-@pytest.mark.skip()
+async def test_authorization_policy_waypoint_accepted(ops_test: OpsTest, lightkube_client: Client):
+    """Test that the authorization policy has WaypointAccepted status and reason condition."""
+    namespace = ops_test.model.name
+    policy_name = f"{APP_NAME}-allow-without-kubeflow-header"
+
+    # Retrieve the authorization policy
+    policy = lightkube_client.get(AuthorizationPolicy, name=policy_name, namespace=namespace)
+
+    # Verify the policy has the expected status conditions
+    assert policy.status is not None, "Authorization policy status is missing"
+    conditions = policy.status.get("conditions", [])
+    assert len(conditions) > 0, "No status conditions found"
+
+    # Find the WaypointAccepted condition
+    waypoint_condition = None
+    for condition in conditions:
+        if condition.get("type") == "WaypointAccepted":
+            waypoint_condition = condition
+            break
+
+    assert waypoint_condition is not None, "WaypointAccepted condition not found"
+    assert waypoint_condition.get("status") == "True", "WaypointAccepted status is not True"
+    assert waypoint_condition.get("reason") == "Accepted", "Reason is not 'Accepted'"
+
+
 async def test_remove_application(ops_test: OpsTest):
     """Test that the application can be removed successfully."""
     await ops_test.model.remove_application(app_name=APP_NAME, block_until_done=True)
