@@ -42,9 +42,7 @@ class KfpPersistenceOperator(CharmBase):
 
         # Storage
         self._container_name = next(iter(self.meta.containers))
-        _container_meta = self.meta.containers[self._container_name]
-        _storage_name = next(iter(_container_meta.mounts))
-        self._secrets_storage_path = Path(_container_meta.mounts[_storage_name].location)
+        self._secrets_storage_path = Path("/var/run/secrets/kubeflow/tokens")
         # Charm logic
         self.charm_reconciler = CharmReconciler(self)
 
