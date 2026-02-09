@@ -119,13 +119,8 @@ class KfpUiOperator(CharmBase):
 
         # Storage
         self._container_name = next(iter(self.meta.containers))
-        _container_meta = self.meta.containers[self._container_name]
-        _config_storage_name = "config"
-        _viewer_config_storage_name = "viewer-config"
-        self._config_storage_path = Path(_container_meta.mounts[_config_storage_name].location)
-        self._viewer_config_storage_name = Path(
-            _container_meta.mounts[_viewer_config_storage_name].location
-        )
+        self._config_storage_path = Path("/config")
+        self._viewer_config_storage_name = Path("/etc/config")
 
         # add links in kubeflow-dashboard sidebar
         self.kubeflow_dashboard_sidebar = KubeflowDashboardLinksRequirer(
