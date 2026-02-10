@@ -31,7 +31,7 @@ log = logging.getLogger()
 SA_TOKEN_PATH = "src/"
 SA_TOKEN_FILENAME = "persistenceagent-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
-
+SECRETS_PATH = Path("/var/run/secrets/kubeflow/tokens")
 
 class KfpPersistenceOperator(CharmBase):
     """Charm for the data persistence application of Kubeflow Pipelines."""
@@ -40,9 +40,8 @@ class KfpPersistenceOperator(CharmBase):
         """Initialize charm and setup the container."""
         super().__init__(*args, **kwargs)
 
-        # Storage
         self._container_name = next(iter(self.meta.containers))
-        self._secrets_storage_path = Path("/var/run/secrets/kubeflow/tokens")
+
         # Charm logic
         self.charm_reconciler = CharmReconciler(self)
 
@@ -100,7 +99,7 @@ class KfpPersistenceOperator(CharmBase):
                 files_to_push=[
                     ContainerFileTemplate(
                         source_template_path=SA_TOKEN_FULL_PATH,
-                        destination_path=self._secrets_storage_path / SA_TOKEN_FILENAME,
+                        destination_path=SECRETS_PATH / SA_TOKEN_FILENAME,
                     )
                 ],
                 environment={
