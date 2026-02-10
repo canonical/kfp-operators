@@ -227,6 +227,14 @@ jobs:
           pattern: ${{ needs.build.outputs.artifact-prefix }}-*
           merge-multiple: true
 
+      - name: Configure Cilium for Canonical K8s
+        if: matrix.test-type == 'integration-ambient'
+        run: |
+          # Configure Cilium for Canonical K8s to work with Charmed Istio (Ambient mode)
+          # See https://canonical-service-mesh-documentation.readthedocs-hosted.com/en/latest/how-to/use-charmed-istio-with-canonical-kubernetes/
+          kubectl -n kube-system patch configmap cilium-config --type merge --patch '{"data":{"bpf-lb-sock-hostns-only":"true"}}'
+          kubectl -n kube-system rollout restart daemonset cilium
+
       - name: Integration tests
         run: |
           # Requires the model to be called kubeflow due to
