@@ -39,8 +39,8 @@ SERVICE_CONFIG_PATH = Path("src/service-config.yaml")
 CONFIG_JSON_TEMPLATE_FILE = TEMPLATES_PATH / "config.json"
 VIEWER_POD_TEMPLATE_FILE = TEMPLATES_PATH / "viewer-pod-template.json"
 
-CONFIG_PATH=Path("/config")
-VIEWER_CONFIG_PATH=Path("/etc/config")
+CONFIG_PATH = Path("/config")
+VIEWER_CONFIG_PATH = Path("/etc/config")
 
 DASHBOARD_LINKS = [
     DashboardLink(
