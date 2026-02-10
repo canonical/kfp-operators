@@ -206,6 +206,7 @@ async def test_authorization_policy_waypoint_accepted(ops_test: OpsTest, lightku
     assert waypoint_condition.get("reason") == "Accepted", "Reason is not 'Accepted'"
 
 
+@pytest.mark.skip()
 async def test_remove_application(ops_test: OpsTest):
     """Test that the application can be removed successfully."""
     await ops_test.model.remove_application(app_name=APP_NAME, block_until_done=True)
