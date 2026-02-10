@@ -40,6 +40,7 @@ SA_TOKEN_FILENAME = "scheduledworkflow-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
 SECRETS_PATH = Path("/var/run/secrets/kubeflow/tokens")
 
+
 class KfpSchedwf(CharmBase):
     def __init__(self, *args):
         """Charm for the Kubeflow Pipelines Viewer CRD controller."""
