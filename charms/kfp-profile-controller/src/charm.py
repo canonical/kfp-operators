@@ -115,6 +115,8 @@ class KfpProfileControllerOperator(CharmBase):
             return
         self.default_pipeline_root = self.model.config["default_pipeline_root"]
 
+        self._container_name = next(iter(self.meta.containers))
+
         # expose controller's port
         http_port = ServicePort(K8S_SVC_CONTROLLER_PORT, name="http", targetPort=CONTROLLER_PORT)
         self.service_patcher = KubernetesServicePatch(

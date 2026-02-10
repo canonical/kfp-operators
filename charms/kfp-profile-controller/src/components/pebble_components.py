@@ -60,7 +60,7 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                     self.service_name: {
                         "override": "replace",
                         "summary": "entry point for kfp-profile-controller",
-                        "command": f"python3 {str(inputs.HOOKS_PATH / 'sync.py')}",  # Must be a string
+                        "command": f"python3 {str(inputs.HOOKS_PATH / 'sync.py')}",
                         "startup": "enabled",
                         "environment": {
                             # TODO: Update environment variables after working on:
