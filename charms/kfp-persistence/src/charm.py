@@ -33,6 +33,7 @@ SA_TOKEN_FILENAME = "persistenceagent-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
 SECRETS_PATH = Path("/var/run/secrets/kubeflow/tokens")
 
+
 class KfpPersistenceOperator(CharmBase):
     """Charm for the data persistence application of Kubeflow Pipelines."""
 
