@@ -49,7 +49,8 @@ class KfpSchedwf(CharmBase):
 
         self.charm_reconciler = CharmReconciler(self)
 
-        self.sa_name = self.app.name
+        self.app_name = self.app.name
+        self.sa_name = self.app_name
 
         self.leadership_gate = self.charm_reconciler.add(
             component=LeadershipGateComponent(
@@ -66,10 +67,10 @@ class KfpSchedwf(CharmBase):
                 resource_templates=K8S_RESOURCE_FILES,
                 krh_resource_types={CustomResourceDefinition},
                 krh_labels=create_charm_default_labels(
-                    self.app.name, self.model.name, scope="crds"
+                    self.app_name, self.model.name, scope="crds"
                 ),
                 context_callable=lambda: {
-                    "app_name": self.app.name,
+                    "app_name": self.app_name,
                     "namespace": self.model.name,
                     "sa_name": self.sa_name,
                 },
