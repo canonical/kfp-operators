@@ -14,7 +14,7 @@ resources:
     type: oci-image
     description: OCI image for ml-pipeline-ui
     # The container's command and `user` need to be updated when switching from upstream image to rock
-    upstream-source: docker.io/edeusebio/frontend:2.15.0-a123491
+    upstream-source: docker.io/charmedkubeflow/frontend:2.15.0-6b3223a
 requires:
   object-storage:
     interface: object-storage
