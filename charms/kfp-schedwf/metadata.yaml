@@ -14,7 +14,7 @@ resources:
     type: oci-image
     description: Backing OCI image
     # The container's `user` needs to be updated when switching from upstream image to rock
-    upstream-source: docker.io/edeusebio/scheduledworkflow:2.15.0-397647e
+    upstream-source: docker.io/charmedkubeflow/scheduledworkflow:2.15.0-2d3038c
 requires:
   logging:
     interface: loki_push_api
