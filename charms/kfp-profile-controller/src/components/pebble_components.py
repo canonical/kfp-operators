@@ -1,7 +1,7 @@
 import dataclasses
 import logging
-
 from pathlib import Path
+
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
 from ops.pebble import Layer
 
