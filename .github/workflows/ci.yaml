@@ -257,6 +257,12 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
+      matrix:
+        include:
+          - test-type: integration
+            bundle: ./tests/integration/bundles/bundle.yaml.j2
+          - test-type: integration-ambient
+            bundle: ./tests/integration/bundles/bundle_ambient.yaml.j2
     steps:
       # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
       # Ideally we'd use self-hosted runners, but this effort is still not stable
@@ -279,6 +285,14 @@ jobs:
           sudo snap install concierge --classic
           sudo concierge prepare --trace
 
+      - name: Configure Cilium for Canonical K8s
+        if: matrix.test-type == 'integration-ambient'
+        run: |
+          # Configure Cilium for Canonical K8s to work with Charmed Istio (Ambient mode)
+          # See https://canonical-service-mesh-documentation.readthedocs-hosted.com/en/latest/how-to/use-charmed-istio-with-canonical-kubernetes/
+          kubectl -n kube-system patch configmap cilium-config --type merge --patch '{"data":{"bpf-lb-sock-hostns-only":"true"}}'
+          kubectl -n kube-system rollout restart daemonset cilium
+
       - name: Download packed charm(s)
         id: download-charms
         timeout-minutes: 5
@@ -291,7 +305,7 @@ jobs:
         run: |
           # Requires the model to be called kubeflow due to kfp-viewer
           juju add-model kubeflow
-          tox -e bundle-integration -- --model=kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=./tests/integration/bundles/bundle.yaml.j2
+          tox -e bundle-${{ matrix.test-type }} -- --model=kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=${{ matrix.bundle }}
 
       - name: Get all
         run: kubectl get all -A
