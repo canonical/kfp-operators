@@ -1,6 +1,7 @@
 import dataclasses
 import logging
 
+from pathlib import Path
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
 from ops.pebble import Layer
 
@@ -29,7 +30,7 @@ class KfpProfileControllerInputs:
     FRONTEND_TAG: str
     KFP_API_PRINCIPAL: str
     AMBIENT_ENABLED: str
-    HOOKS_PATH: str
+    HOOKS_PATH: Path
 
 
 class KfpProfileControllerPebbleService(PebbleServiceComponent):

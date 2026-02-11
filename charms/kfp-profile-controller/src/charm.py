@@ -64,7 +64,7 @@ METADATA_GRPC_SERVICE_PORT = "8080"
 NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"
 SYNC_CODE_FILE = Path("files/upstream/sync.py")
 
-HOOKS_PATH = Path("/run")
+HOOKS_PATH = Path("/var/lib/pebble/default")
 
 
 def parse_images_config(config: str) -> Dict:
