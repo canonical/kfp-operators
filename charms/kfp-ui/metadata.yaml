@@ -9,17 +9,12 @@ containers:
     resource: ml-pipeline-ui
     uid: 584792
     gid: 584792
-    mounts:
-    - storage: config
-      location: /config
-    - storage: viewer-config
-      location: /etc/config
 resources:
   ml-pipeline-ui:
     type: oci-image
     description: OCI image for ml-pipeline-ui
     # The container's command and `user` need to be updated when switching from upstream image to rock
-    upstream-source: docker.io/charmedkubeflow/frontend:2.15.0-890e0cc
+    upstream-source: docker.io/charmedkubeflow/frontend:2.15.0-6b3223a
 requires:
   object-storage:
     interface: object-storage
@@ -145,11 +140,4 @@ provides:
     description: |
       Access a cross-model application from catalogue via the service mesh.
       This relation provides additional data required by the service mesh to enforce cross-model authorization policies.
-storage:
-  config:
-    type: filesystem
-    minimum-size: 1M
-  viewer-config:
-    type: filesystem
-    minimum-size: 1M
 charm-user: non-root
