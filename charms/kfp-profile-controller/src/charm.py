@@ -63,6 +63,8 @@ METADATA_GRPC_SERVICE_PORT = "8080"
 NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"
 SYNC_CODE_FILE = Path("files/upstream/sync.py")
 
+HOOKS_PATH = Path("/var/lib/pebble/default")
+
 
 def parse_images_config(config: str) -> Dict:
     """
@@ -112,11 +114,7 @@ class KfpProfileControllerOperator(CharmBase):
             return
         self.default_pipeline_root = self.model.config["default_pipeline_root"]
 
-        # Storage
         self._container_name = next(iter(self.meta.containers))
-        _container_meta = self.meta.containers[self._container_name]
-        _storage_name = next(iter(_container_meta.mounts))
-        self._hooks_storage_path = Path(_container_meta.mounts[_storage_name].location)
 
         # expose controller's port
         http_port = ServicePort(K8S_SVC_CONTROLLER_PORT, name="http", targetPort=CONTROLLER_PORT)
@@ -187,7 +185,7 @@ class KfpProfileControllerOperator(CharmBase):
                 files_to_push=[
                     ContainerFileTemplate(
                         source_template_path=SYNC_CODE_FILE,
-                        destination_path=self._hooks_storage_path / "sync.py",
+                        destination_path=HOOKS_PATH / "sync.py",
                     )
                 ],
                 inputs_getter=lambda: KfpProfileControllerInputs(
@@ -213,6 +211,7 @@ class KfpProfileControllerOperator(CharmBase):
                     VISUALIZATION_SERVER_TAG=self.images["visualization_server__version"],
                     FRONTEND_IMAGE=self.images["frontend__image"],
                     FRONTEND_TAG=self.images["frontend__version"],
+                    HOOKS_PATH=HOOKS_PATH,
                 ),
             ),
             depends_on=[
