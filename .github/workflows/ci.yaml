@@ -108,12 +108,13 @@ jobs:
         run: |
           import os
 
+          risk = "edge"
+
           if "${{ github.event_name }}" == "pull_request":
               ref = "${{ github.base_ref }}"
-              risk = "pr-${{ github.event.pull_request.number }}"
+              risk = f"{risk}/pr-${{ github.event.pull_request.number }}"
           else:
               ref = "${{ github.ref_name }}"
-              risk = "edge"
 
           if ref.startswith("track/"):
               track = ref.removeprefix("track/")
