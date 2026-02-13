@@ -94,6 +94,7 @@ jobs:
     outputs:
       charm-paths: ${{ steps.get-charm-paths.outputs.charm-paths }}
       track: ${{ steps.determine-track.outputs.track }}
+      channel: ${{ steps.determine-track.outputs.channel }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -119,11 +120,14 @@ jobs:
           else:
               track = "latest"
 
+          channel = f"{track}/{risk}"
+
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"track={track}\n")          
-              f.write(f"channel={track}/{risk}\n")
+              f.write(f"track={track}\n")
+              f.write(f"channel={channel}\n")
           
           print(f"Track: {track}")
+          print(f"Channel: {channel}")
 
   build:
     strategy:
