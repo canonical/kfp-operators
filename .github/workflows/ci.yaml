@@ -109,8 +109,10 @@ jobs:
 
           if "${{ github.event_name }}" == "pull_request":
               ref = "${{ github.base_ref }}"
+              risk = "pr-${{ github.event.pull_request.number }}"
           else:
               ref = "${{ github.ref_name }}"
+              risk = "edge"
 
           if ref.startswith("track/"):
               track = ref.removeprefix("track/")
@@ -118,8 +120,9 @@ jobs:
               track = "latest"
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"track={track}\n")
-
+              f.write(f"track={track}\n")          
+              f.write(f"channel={track}/{risk}\n")
+          
           print(f"Track: {track}")
 
   build:
@@ -175,8 +178,7 @@ jobs:
       # So the model's name must be kubeflow
       # See: https://github.com/kubeflow/kubeflow/issues/6136
       model: kubeflow
-      channel: ${{ needs.get-charm-paths-track.outputs.track }}/edge
-
+      channel: ${{ needs.get-charm-paths-track.outputs.channel }}
 
   integration:
     name: Integration tests
