@@ -175,7 +175,7 @@ jobs:
       # So the model's name must be kubeflow
       # See: https://github.com/kubeflow/kubeflow/issues/6136
       model: kubeflow
-      channel: ${{ needs.get-charm-paths-track.outputs.track }}
+      channel: ${{ needs.get-charm-paths-track.outputs.track }}/edge
 
 
   integration:
