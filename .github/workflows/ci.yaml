@@ -163,6 +163,7 @@ jobs:
   terraform-checks:
     name: Terraform
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
+    if: ${{ github.event_name == 'pull_request' }}
     needs:
       - get-charm-paths-track
       - release
