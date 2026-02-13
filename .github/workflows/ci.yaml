@@ -156,6 +156,7 @@ jobs:
     name: Terraform
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
     needs:
+      - get-charm-paths-track
       - release
     strategy:
       matrix:
