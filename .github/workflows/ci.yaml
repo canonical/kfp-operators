@@ -88,27 +88,6 @@ jobs:
       - run: pipx install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
-  terraform-checks:
-    name: Terraform
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
-    strategy:
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-metadata-writer
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    with:
-      charm-path: ./charms/${{ matrix.charm }}
-      # The namespace is hardcoded in the upstream project
-      # So the model's name must be kubeflow
-      # See: https://github.com/kubeflow/kubeflow/issues/6136
-      model: kubeflow
-
   get-charm-paths-track:
     name: Get charm paths and track
     runs-on: ubuntu-latest
@@ -171,6 +150,32 @@ jobs:
       path-to-charm-directory: ${{ matrix.charm }}
     secrets:
       charmhub-token: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
+
+
+  terraform-checks:
+    name: Terraform
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
+    needs:
+      - release
+    strategy:
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-metadata-writer
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
+    with:
+      charm-path: ./charms/${{ matrix.charm }}
+      # The namespace is hardcoded in the upstream project
+      # So the model's name must be kubeflow
+      # See: https://github.com/kubeflow/kubeflow/issues/6136
+      model: kubeflow
+      channel: ${{ needs.get-charm-paths-track.outputs.track }}
+
 
   integration:
     name: Integration tests
