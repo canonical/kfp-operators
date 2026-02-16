@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+from pathlib import Path
 
 from charmed_kubeflow_chisme.components.pebble_component import PebbleServiceComponent
 from ops.pebble import Layer
@@ -27,6 +28,7 @@ class KfpProfileControllerInputs:
     VISUALIZATION_SERVER_TAG: str
     FRONTEND_IMAGE: str
     FRONTEND_TAG: str
+    HOOKS_PATH: Path
 
 
 class KfpProfileControllerPebbleService(PebbleServiceComponent):
@@ -57,7 +59,7 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                     self.service_name: {
                         "override": "replace",
                         "summary": "entry point for kfp-profile-controller",
-                        "command": "python3 /hooks/sync.py",  # Must be a string
+                        "command": f"python3 {str(inputs.HOOKS_PATH / 'sync.py')}",
                         "startup": "enabled",
                         "environment": {
                             # TODO: Update environment variables after working on:
