@@ -88,33 +88,13 @@ jobs:
       - run: pipx install tox
       - run: tox -e ${{ matrix.charm }}-unit
 
-  terraform-checks:
-    name: Terraform
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
-    strategy:
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-metadata-writer
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    with:
-      charm-path: ./charms/${{ matrix.charm }}
-      # The namespace is hardcoded in the upstream project
-      # So the model's name must be kubeflow
-      # See: https://github.com/kubeflow/kubeflow/issues/6136
-      model: kubeflow
-
   get-charm-paths-track:
     name: Get charm paths and track
     runs-on: ubuntu-latest
     outputs:
       charm-paths: ${{ steps.get-charm-paths.outputs.charm-paths }}
       track: ${{ steps.determine-track.outputs.track }}
+      channel: ${{ steps.determine-track.outputs.channel }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -128,8 +108,11 @@ jobs:
         run: |
           import os
 
+          risk = "edge"
+
           if "${{ github.event_name }}" == "pull_request":
               ref = "${{ github.base_ref }}"
+              risk = f"{risk}/pr-${{ github.event.pull_request.number }}"
           else:
               ref = "${{ github.ref_name }}"
 
@@ -138,10 +121,14 @@ jobs:
           else:
               track = "latest"
 
+          channel = f"{track}/{risk}"
+
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"track={track}\n")
-
+              f.write(f"channel={channel}\n")
+          
           print(f"Track: {track}")
+          print(f"Channel: {channel}")
 
   build:
     strategy:
@@ -171,6 +158,33 @@ jobs:
       path-to-charm-directory: ${{ matrix.charm }}
     secrets:
       charmhub-token: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
+
+
+  terraform-checks:
+    name: Terraform
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/terraform-checks.yaml@main
+    if: ${{ github.event_name == 'pull_request' }}
+    needs:
+      - get-charm-paths-track
+      - release
+    strategy:
+      matrix:
+        charm:
+          - kfp-api
+          - kfp-metadata-writer
+          - kfp-persistence
+          - kfp-profile-controller
+          - kfp-schedwf
+          - kfp-ui
+          - kfp-viewer
+          - kfp-viz
+    with:
+      charm-path: ./charms/${{ matrix.charm }}
+      # The namespace is hardcoded in the upstream project
+      # So the model's name must be kubeflow
+      # See: https://github.com/kubeflow/kubeflow/issues/6136
+      model: kubeflow
+      channel: ${{ needs.get-charm-paths-track.outputs.channel }}
 
   integration:
     name: Integration tests
