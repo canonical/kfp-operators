@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import ops
 import pytest
-from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
+from ops.model import ActiveStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import KfpViewer
