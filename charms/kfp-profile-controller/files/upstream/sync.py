@@ -173,11 +173,9 @@ def server_factory(visualization_server_image,
                 logger.info(f"Namespace not in scope, no action taken (metadata.labels.pipelines.kubeflow.org/enabled = {pipeline_enabled}, must be 'true')")
                 return {"status": {}, "attachments": []}
 
-            desired_configmap_count = 1
-            desired_resources = []
-            if kfp_default_pipeline_root:
-                desired_configmap_count = 2
-                desired_resources += [{
+            desired_configmap_count = 2
+            desired_resources = [
+                {
                     "apiVersion": "v1",
                     "kind": "ConfigMap",
                     "metadata": {
@@ -185,9 +183,29 @@ def server_factory(visualization_server_image,
                         "namespace": namespace,
                     },
                     "data": {
-                        "defaultPipelineRoot": kfp_default_pipeline_root,
-                    },
-                }]
+                        "providers": {
+                            "minio": {
+                                "default": {
+                                    "endpoint": f"{minio_host}:{minio_port}.{minio_namespace}",
+                                    "credentials": {
+                                        "fromEnv": False,  # bool
+                                        "secretRef": {
+                                            "secretName": "",
+                                            "accessKeyKey": minio_access_key,  # "AWS_ACCESS_KEY_ID"
+                                            "secretKeyKey": minio_secret_key,  # "AWS_SECRET_ACCESS_KEY"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+
+            if kfp_default_pipeline_root:
+                desired_resources[0]["data"].update({
+                    "defaultPipelineRoot": kfp_default_pipeline_root,
+                })
 
 
             # Compute status based on observed state.

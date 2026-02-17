@@ -46,9 +46,6 @@ def harness() -> Harness:
     # setup container networking simulation
     harness.set_can_connect(KFP_API_CONTAINER_NAME, True)
 
-    # Set required model name
-    harness.set_model_name("kubeflow")
-
     return harness
 
 
@@ -191,15 +188,6 @@ class TestCharm:
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
         assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
-
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    @patch("charm.KfpApiOperator.k8s_resource_handler")
-    def test_check_model_name_failure(self, k8s_resource_handler: MagicMock, harness: Harness):
-        """Tests that the charm blocks if model name is not 'kubeflow'."""
-        harness.set_model_name("not-kubeflow")
-        harness.begin_with_initial_hooks()
-        assert isinstance(harness.charm.model.unit.status, BlockedStatus)
-        assert harness.charm.model.unit.status.message.startswith("kfp-api must be deployed to")
 
     @pytest.mark.parametrize(
         "relation_data,expected_returned_data,expected_raises,expected_status",
@@ -488,7 +476,7 @@ class TestCharm:
     ):
         """Test complete installation with all required relations and verify pebble layer."""
         harness.set_leader(True)
-        model_name = "kubeflow"
+        model_name = "kubeflow-any"
         service_port = "8888"
         harness.set_model_name(model_name)
         harness.update_config({"http-port": service_port})
@@ -613,7 +601,7 @@ class TestCharm:
     ):
         """Test complete installation with all required relations and verify pebble layer."""
         harness.set_leader(True)
-        model_name = "kubeflow"
+        model_name = "kubeflow-any"
         service_port = "8888"
         harness.set_model_name(model_name)
         harness.update_config({"http-port": service_port})
@@ -911,7 +899,7 @@ class TestCharm:
         )
 
         harness.set_leader(True)
-        model_name = "kubeflow"
+        model_name = "kubeflow-any"
         harness.set_model_name(model_name)
         harness.begin()
 
@@ -1028,7 +1016,7 @@ class TestCharm:
             )
 
         harness.set_leader(True)
-        harness.set_model_name("kubeflow")
+        harness.set_model_name("kubeflow-any")
         harness.begin()
 
         manifests = harness.charm.k8s_resource_handler.render_manifests()
@@ -1038,7 +1026,7 @@ class TestCharm:
         )
 
         assert ml_pipeline_service is not None
-        assert ml_pipeline_service.metadata.namespace == "kubeflow"
+        assert ml_pipeline_service.metadata.namespace == "kubeflow-any"
 
         labels = ml_pipeline_service.metadata.labels or {}
         ambient_keys = {
@@ -1050,7 +1038,7 @@ class TestCharm:
 
         if add_mesh_relation:
             assert actual_ambient.get("istio.io/dataplane-mode") == "ambient"
-            assert actual_ambient.get("istio.io/use-waypoint-namespace") == "kubeflow"
+            assert actual_ambient.get("istio.io/use-waypoint-namespace") == "kubeflow-any"
             assert "istio.io/use-waypoint" in actual_ambient
         else:
             assert actual_ambient == {}

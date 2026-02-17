@@ -91,10 +91,6 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
 def test_deploy(juju: jubilant.Juju, request, lightkube_client):
     """Deploy kfp-operators charms."""
 
-    # Immediately raise an error if the model name is not kubeflow
-    if juju.model != "kubeflow":
-        raise ValueError("kfp must be deployed to namespace kubeflow")
-
     # Get/load template bundle from command line args
     bundlefile_path = Path(request.config.getoption("bundle"))
 

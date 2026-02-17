@@ -45,13 +45,6 @@ class KfpViewer(CharmBase):
             depends_on=[],
         )
 
-        self.model_name_gate = self.charm_reconciler.add(
-            component=ModelNameGateComponent(
-                charm=self, name="model-name-gate", model_name="kubeflow"
-            ),
-            depends_on=[self.leadership_gate],
-        )
-
         self.kubernetes_resources = self.charm_reconciler.add(
             component=KubernetesComponent(
                 charm=self,

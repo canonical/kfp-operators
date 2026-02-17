@@ -30,20 +30,9 @@ def test_not_leader(
     )
 
 
-def test_wrong_model(harness: Harness, mocked_lightkube_client):
-    """Test that charm blocks when it is not deployed to a model named `kubeflow`."""
-    harness.set_leader(True)
-    harness.set_model_name("wrong-name")
-    harness.begin_with_initial_hooks()
-    assert harness.charm.model.unit.status == BlockedStatus(
-        "[model-name-gate] Charm must be deployed to model named kubeflow"
-    )
-
-
 def test_kubernetes_component_created(harness: Harness, mocked_lightkube_client):
     """Test that Kubernetes component is created when we have leadership."""
     harness.set_leader(True)
-    harness.set_model_name("kubeflow")
     harness.begin()
 
     # Mock get_missing_kubernetes_resources to always return an empty list.
@@ -61,7 +50,6 @@ def test_kubernetes_component_created(harness: Harness, mocked_lightkube_client)
 def test_pebble_service_container_running(harness: Harness, mocked_lightkube_client):
     """Test that the pebble service of the charm's kfp-viewer container is running."""
     harness.set_leader(True)
-    harness.set_model_name("kubeflow")
     harness.begin()
     harness.set_can_connect("kfp-viewer", True)
 
@@ -84,7 +72,6 @@ def test_pebble_service_container_running(harness: Harness, mocked_lightkube_cli
 def test_install_before_pebble_service_container(harness: Harness, mocked_lightkube_client):
     """Test that charm waits when install event happens before pebble-service-container is ready."""
     harness.set_leader(True)
-    harness.set_model_name("kubeflow")
     harness.begin()
 
     harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
