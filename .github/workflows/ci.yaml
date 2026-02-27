@@ -250,7 +250,7 @@ jobs:
           # Pass the path where the charm artefact is downloaded to the tox command
           # FIXME: Right now the complete path is half hardcoded to <charm name>_ubuntu@24.04-amd64.charm
           # We need to find a better way to dynamically get this value
-          tox -e ${{ matrix.charm }}-${{ matrix.test-type }} -- --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
+          tox -e ${{ matrix.charm }}-${{ matrix.test-type }} -- --model testing --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
 
       - name: Collect charm debug artifacts
         uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
@@ -310,7 +310,7 @@ jobs:
 
       - name: Run test
         run: |
-          tox -e bundle-${{ matrix.test-type }} -- --charms-path=${{ github.workspace }}/charms/ --bundle=${{ matrix.bundle }}
+          tox -e bundle-${{ matrix.test-type }} -- --model testing--charms-path=${{ github.workspace }}/charms/ --bundle=${{ matrix.bundle }}
 
       - name: Get all
         run: kubectl get all -A

@@ -95,7 +95,7 @@ def juju(request: pytest.FixtureRequest):
 def forward_kfp_ui():
     """Port forward the kfp-ui service."""
     kfp_ui_process = subprocess.Popen(
-        ["kubectl", "port-forward", "-n", "kubeflow", "svc/kfp-ui", "8080:3000"]
+        ["kubectl", "port-forward", "-n", "testing", "svc/kfp-ui", "8080:3000"]
     )
 
     # FIXME: find a better way to do this
@@ -136,7 +136,7 @@ def apply_profile(lightkube_client):
 def kfp_client(apply_profile, forward_kfp_ui) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Instantiate the KFP Client
-    client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=KUBEFLOW_PROFILE_NAMESPACE)
+    client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace="testing")
     client.runs.api_client.default_headers.update({"kubeflow-userid": KUBEFLOW_USER_NAME})
     return client
 
