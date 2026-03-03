@@ -183,21 +183,20 @@ def server_factory(visualization_server_image,
                         "namespace": namespace,
                     },
                     "data": {
-                        "providers": {
-                            "minio": {
-                                "default": {
-                                    "endpoint": f"{minio_host}:{minio_port}.{minio_namespace}",
-                                    "credentials": {
-                                        "fromEnv": False,  # bool
-                                        "secretRef": {
-                                            "secretName": "",
-                                            "accessKeyKey": minio_access_key,  # "AWS_ACCESS_KEY_ID"
-                                            "secretKeyKey": minio_secret_key,  # "AWS_SECRET_ACCESS_KEY"
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        "providers":
+"""
+minio:
+  default:
+    endpoint: {minio_host}.{minio_namespace}:{minio_port}
+    region: minio
+    disableSSL: true
+    credentials:
+      fromEnv: false
+      secretRef:
+        secretName: mlpipeline-minio-artifact
+        accessKeyKey: accesskey
+        secretKeyKey: secretkey
+""".format(**{"minio_host": minio_host, "minio_namespace": minio_namespace, "minio_port": minio_port})
                     }
                 }
             ]

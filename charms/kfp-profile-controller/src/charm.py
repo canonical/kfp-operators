@@ -59,7 +59,6 @@ KFP_IMAGES_VERSION = "2.15.0"  # Remember to change this version also in default
 # This service name must be the Service from the mlmd-operator
 # FIXME: leaving it hardcoded now, but we should share this
 # host and port through relation data
-METADATA_GRPC_SERVICE_HOST = "metadata-grpc-service.kubeflow"
 METADATA_GRPC_SERVICE_PORT = "8080"
 NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"
 SYNC_CODE_FILE = Path("files/upstream/sync.py")
@@ -116,6 +115,7 @@ class KfpProfileControllerOperator(CharmBase):
         self.default_pipeline_root = self.model.config["default_pipeline_root"]
 
         self._container_name = next(iter(self.meta.containers))
+        self.metadata_grpc_service_host = f"metadata-grpc-service.{self.model.name}"
 
         # expose controller's port
         http_port = ServicePort(K8S_SVC_CONTROLLER_PORT, name="http", targetPort=CONTROLLER_PORT)
@@ -211,7 +211,7 @@ class KfpProfileControllerOperator(CharmBase):
                     KFP_DEFAULT_PIPELINE_ROOT=self.default_pipeline_root,
                     DISABLE_ISTIO_SIDECAR=DISABLE_ISTIO_SIDECAR,
                     CONTROLLER_PORT=CONTROLLER_PORT,
-                    METADATA_GRPC_SERVICE_HOST=METADATA_GRPC_SERVICE_HOST,
+                    METADATA_GRPC_SERVICE_HOST=self.metadata_grpc_service_host,
                     METADATA_GRPC_SERVICE_PORT=METADATA_GRPC_SERVICE_PORT,
                     VISUALIZATION_SERVER_IMAGE=self.images["visualization_server__image"],
                     VISUALIZATION_SERVER_TAG=self.images["visualization_server__version"],
