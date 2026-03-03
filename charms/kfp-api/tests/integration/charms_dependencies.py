@@ -8,8 +8,8 @@ KFP_DB = CharmSpec(
     config={"database": "mlpipeline"},
     trust=True,
 )
-KFP_VIZ = CharmSpec(charm="kfp-viz", channel="latest/edge", trust=True)
-KFP_SCHEDWF = CharmSpec(charm="kfp-schedwf", channel="latest/edge", trust=True)
+KFP_VIZ = CharmSpec(charm="kfp-viz", channel="latest/edge/pr-865", trust=True)
+KFP_SCHEDWF = CharmSpec(charm="kfp-schedwf", channel="latest/edge/pr-865", trust=True)
 MINIO = CharmSpec(
     charm="minio",
     channel="latest/edge",
