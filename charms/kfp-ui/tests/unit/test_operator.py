@@ -385,6 +385,9 @@ def harness() -> Harness:
     """Returns a Harness for the KfpUiOperator charm."""
     harness = Harness(KfpUiOperator)
 
+    # set model name to avoid validation errors
+    harness.set_model_name("a-model")
+
     # set leader by default
     harness.set_leader(True)
 

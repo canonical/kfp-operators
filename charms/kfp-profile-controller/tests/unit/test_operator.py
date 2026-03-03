@@ -17,7 +17,6 @@ from charm import (
     CONTROLLER_PORT,
     DISABLE_ISTIO_SIDECAR,
     KFP_IMAGES_VERSION,
-    METADATA_GRPC_SERVICE_HOST,
     METADATA_GRPC_SERVICE_PORT,
     KfpProfileControllerOperator,
 )
@@ -42,12 +41,13 @@ MOCK_OBJECT_STORAGE_DATA = {
     "secure": True,
 }
 
-EXPECTED_ENVIRONMENT_BY_DEFAULT = {
+def generate_expected_environment(model_name: str) -> dict:
+    return {
     "CONTROLLER_PORT": CONTROLLER_PORT,
     "DISABLE_ISTIO_SIDECAR": DISABLE_ISTIO_SIDECAR,
     "KFP_DEFAULT_PIPELINE_ROOT": KFP_DEFAULT_PIPELINE_ROOT,
     "KFP_VERSION": KFP_IMAGES_VERSION,
-    "METADATA_GRPC_SERVICE_HOST": METADATA_GRPC_SERVICE_HOST,
+    "METADATA_GRPC_SERVICE_HOST": f"metadata-grpc-service.{model_name}",
     "METADATA_GRPC_SERVICE_PORT": METADATA_GRPC_SERVICE_PORT,
     "MINIO_ACCESS_KEY": MOCK_OBJECT_STORAGE_DATA["access-key"],
     "MINIO_HOST": MOCK_OBJECT_STORAGE_DATA["service"],
@@ -217,7 +217,7 @@ def test_pebble_services_running(
 ):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
-    expected_environment = deepcopy(EXPECTED_ENVIRONMENT_BY_DEFAULT)
+    expected_environment = generate_expected_environment(harness.model.name)
     if do_update_config_for_default_pipeline_root:
         updated_default_pipeline_root = "s3://whatever-s3-bucket/whatever/s3/path"
         harness.update_config(
