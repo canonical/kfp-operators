@@ -1,2 +1,3 @@
 automatic_backport_tracks:
   -   track/2.15
+  -   track/2.5
