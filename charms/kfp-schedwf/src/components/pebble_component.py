@@ -33,7 +33,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
             "NAMESPACE:": "",
             "CLIENT_QPS": "10",
             "RESYNCT_INTERVAL_SECONDS": "30",
-            "CLIENT_BURST": "20"
+            "CLIENT_BURST": "20",
         }
         self.log_level = log_level
 
