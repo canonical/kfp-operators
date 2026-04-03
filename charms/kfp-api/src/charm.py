@@ -411,7 +411,7 @@ class KfpApiOperator(CharmBase):
             "OBJECTSTORECONFIG_REGION": "",
             "DEFAULT_SECURITY_CONTEXT_RUN_AS_USER": "",
             "DEFAULT_SECURITY_CONTEXT_RUN_AS_GROUP": "",
-            "DEFAULT_SECURITY_CONTEXT_RUN_AS_NON_ROOT": ""
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_NON_ROOT": "",
         }
 
         return env_vars

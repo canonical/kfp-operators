@@ -598,7 +598,7 @@ class TestCharm:
             "OBJECTSTORECONFIG_REGION": "",
             "DEFAULT_SECURITY_CONTEXT_RUN_AS_USER": "",
             "DEFAULT_SECURITY_CONTEXT_RUN_AS_GROUP": "",
-            "DEFAULT_SECURITY_CONTEXT_RUN_AS_NON_ROOT": ""
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_NON_ROOT": "",
         }
         test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
 
