@@ -31,6 +31,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
             "CRON_SCHEDULE_TIMEZONE": timezone,
             "LOG_LEVEL": log_level,
             "NAMESPACE:": "",
+            "METRICS_PORT": "9090",
             "CLIENT_QPS": "10",
             "RESYNCT_INTERVAL_SECONDS": "30",
             "CLIENT_BURST": "20",
