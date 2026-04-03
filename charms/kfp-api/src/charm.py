@@ -409,6 +409,9 @@ class KfpApiOperator(CharmBase):
             "OBJECTSTORECONFIG_HOST": f"{object_storage['service']}.{object_storage['namespace']}",
             "OBJECTSTORECONFIG_PORT": str(object_storage["port"]),
             "OBJECTSTORECONFIG_REGION": "",
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_USER": "",
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_GROUP": "",
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_NON_ROOT": ""
         }
 
         return env_vars
