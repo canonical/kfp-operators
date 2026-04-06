@@ -7,8 +7,9 @@ docs: https://discourse.charmhub.io/t/11185
 containers:
   persistenceagent:
     resource: oci-image
-    uid: 584792
-    gid: 584792
+    # Set these to 584792 when using the rock
+    uid: 0
+    gid: 0
 resources:
   oci-image:
     type: oci-image
