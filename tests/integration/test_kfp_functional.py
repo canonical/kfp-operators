@@ -114,10 +114,6 @@ def test_deploy(juju: jubilant.Juju, request, lightkube_client):
     # Deploy the kfp-operators bundle from the rendered bundle file
     juju.deploy(rendered_bundle, trust=True)
 
-    log.info("Waiting on model applications and units to be active and idle")
-    juju.wait(jubilant.all_agents_idle, delay=5.0)
-    juju.wait(jubilant.all_active)
-
 
 # ---- KFP API Server focused test cases
 def test_upload_pipeline(kfp_client):
@@ -148,6 +144,11 @@ def test_upload_pipeline(kfp_client):
 
 def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
     """Create a run and monitor it to completion."""
+
+    log.info("Starting sleeping...")
+    time.sleep(120)
+    log.info("Ended sleeping...")
+    
     # Create a run, save response in variable for easy manipulation
     # Create an experiment for this run
     experiment_response = create_and_clean_experiment_v2

@@ -175,19 +175,38 @@ def server_factory(visualization_server_image,
 
             desired_configmap_count = 1
             desired_resources = []
+            providers_yaml = (
+                "s3:\n"
+                "  default:\n"
+                "    endpoint: minio-service.kubeflow:9000\n"
+                "    disableSSL: true\n"
+                "    region: us-east-1\n"
+                "    forcePathStyle: true\n"
+                "    credentials:\n"
+                "      fromEnv: false\n"
+                "      secretRef:\n"
+                "        secretName: mlpipeline-minio-artifact\n"
+                "        accessKeyKey: accesskey\n"
+                "        secretKeyKey: secretkey"
+            )
+
+            configmap_data = {
+                "providers": providers_yaml,
+            }
+            
             if kfp_default_pipeline_root:
-                desired_configmap_count = 2
-                desired_resources += [{
-                    "apiVersion": "v1",
-                    "kind": "ConfigMap",
-                    "metadata": {
-                        "name": "kfp-launcher",
-                        "namespace": namespace,
-                    },
-                    "data": {
-                        "defaultPipelineRoot": kfp_default_pipeline_root,
-                    },
-                }]
+                configmap_data["defaultPipelineRoot"] = kfp_default_pipeline_root
+
+            desired_configmap_count = 2
+            desired_resources += [{
+                "apiVersion": "v1",
+                "kind": "ConfigMap",
+                "metadata": {
+                    "name": "kfp-launcher",
+                    "namespace": namespace,
+                },
+                "data": configmap_data,
+            }]
 
 
             # Compute status based on observed state.
