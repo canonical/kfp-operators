@@ -176,9 +176,9 @@ def server_factory(visualization_server_image,
             desired_configmap_count = 1
             desired_resources = []
             providers_yaml = (
-                "s3:\n"
+                "minio:\n"
                 "  default:\n"
-                "    endpoint: minio-service.kubeflow:9000\n"
+                "    endpoint: minio.kubeflow:9000\n"
                 "    disableSSL: true\n"
                 "    region: us-east-1\n"
                 "    forcePathStyle: true\n"
