@@ -16,6 +16,7 @@ from _pytest.config.argparsing import Parser
 from helpers.k8s_resources import apply_manifests
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource
+from lightkube.resources.core_v1 import ConfigMap
 
 basedir = Path("./").absolute()
 
@@ -115,6 +116,25 @@ def apply_profile(lightkube_client):
 
     # Apply Profile first
     apply_manifests(lightkube_client, PROFILE_FILE_PATH)
+
+    # Wait for profile-controller to reconcile and create kfp-launcher ConfigMap
+    # This prevents race conditions where pipelines run before the ConfigMap exists
+    max_wait = 60  # seconds
+    wait_interval = 2  # seconds
+    for _ in range(max_wait // wait_interval):
+        try:
+            lightkube_client.get(
+                ConfigMap, name="kfp-launcher", namespace=KUBEFLOW_PROFILE_NAMESPACE
+            )
+            print(f"kfp-launcher ConfigMap found in {KUBEFLOW_PROFILE_NAMESPACE}")
+            break
+        except lightkube.core.exceptions.ApiError:
+            time.sleep(wait_interval)
+    else:
+        raise TimeoutError(
+            f"kfp-launcher ConfigMap not created in {KUBEFLOW_PROFILE_NAMESPACE} "
+            f"after {max_wait} seconds"
+        )
 
     yield
 
