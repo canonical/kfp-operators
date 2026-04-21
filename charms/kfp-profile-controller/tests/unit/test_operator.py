@@ -33,7 +33,9 @@ with CUSTOM_IMAGES_PATH.open() as f:
 
 with open("config.yaml", "r") as file:
     config_data = yaml.safe_load(file)
-KFP_DEFAULT_PIPELINE_ROOT = config_data["options"][CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT]["default"]
+KFP_DEFAULT_PIPELINE_ROOT = config_data["options"][CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT][
+    "default"
+]
 
 MOCK_OBJECT_STORAGE_DATA = {
     "access-key": "access-key",
