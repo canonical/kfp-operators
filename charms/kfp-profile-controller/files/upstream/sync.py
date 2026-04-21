@@ -177,7 +177,7 @@ def server_factory(visualization_server_image,
             desired_resources = []
 
             providers_yaml = (
-                "minio:\n"
+                "s3:\n"
                 "  default:\n"
                 f"    endpoint: {minio_host}.{minio_namespace}:9000\n"
                 "    disableSSL: true\n"
