@@ -8,6 +8,7 @@ from pathlib import Path
 
 import jubilant
 import kfp
+import lightkube
 import pytest
 import requests
 from charmed_kubeflow_chisme.testing import generate_context_from_charm_spec_list
@@ -35,6 +36,8 @@ from kfp_globals import (
     SAMPLE_VIEWER,
 )
 from lightkube.generic_resource import create_namespaced_resource
+from lightkube.resources.core_v1 import ConfigMap
+from tenacity import Retrying, stop_after_delay, wait_fixed
 
 charms_dependencies_list = [
     ARGO_CONTROLLER,
@@ -50,6 +53,8 @@ charms_dependencies_list = [
     MYSQL_K8S,
 ]
 log = logging.getLogger(__name__)
+
+KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
 
 
 # ---- KFP SDK V2 fixtures
@@ -84,6 +89,21 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
     yield experiment_response
 
     kfp_client.delete_experiment(experiment_id=experiment_response.experiment_id)
+
+
+RETRY_FOR_ONE_MINUTE = Retrying(
+    stop=stop_after_delay(60 * 1),
+    wait=wait_fixed(5),
+    reraise=True,
+)
+
+
+def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> ConfigMap:
+    """Waits until a specified configmap is available, to a maximum of 1 minute"""
+    for attempt in RETRY_FOR_ONE_MINUTE:
+        with attempt:
+            return client.get(res=ConfigMap, name=name, namespace=namespace)
+    raise TimeoutError(f"ConfigMap {name} in namespace {namespace} not present.")
 
 
 @pytest.mark.deploy
@@ -148,8 +168,11 @@ def test_upload_pipeline(kfp_client):
     kfp_client.delete_pipeline(pipeline_upload_response.pipeline_id)
 
 
-def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
+def test_create_and_monitor_run(lightkube_client, kfp_client, create_and_clean_experiment_v2):
     """Create a run and monitor it to completion."""
+    # Ensure "kfp-launcher" configmap has been created on the profile namespace
+    wait_for_configmap(lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, KUBEFLOW_PROFILE_NAMESPACE)
+
     # Create a run, save response in variable for easy manipulation
     # Create an experiment for this run
     experiment_response = create_and_clean_experiment_v2
@@ -173,9 +196,11 @@ def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
 
 # ---- ScheduledWorfklows and Argo focused test case
 def test_create_and_monitor_recurring_run(
-    kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
+    lightkube_client, kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
 ):
     """Create a recurring run and monitor it to completion."""
+    # Ensure "kfp-launcher" configmap has been created on the profile namespace
+    wait_for_configmap(lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, KUBEFLOW_PROFILE_NAMESPACE)
 
     # Upload a pipeline from file
     pipeline_response, pipeline_version_id = upload_and_clean_pipeline_v2

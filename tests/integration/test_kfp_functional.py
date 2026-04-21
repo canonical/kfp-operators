@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 """Functional tests for kfp-operators with the KFP SDK v2."""
 import logging
-import shutil
 import time
 from pathlib import Path
 
@@ -51,7 +50,7 @@ charms_dependencies_list = [
     ISTIO_GATEWAY,
     ISTIO_PILOT,
 ]
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
 
@@ -132,14 +131,10 @@ def test_deploy(juju: jubilant.Juju, request, lightkube_client):
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(bundle_path=bundlefile_path, context=context)
 
-    # Copy
-    destination_path = "/home/ubuntu/can/charms/kfp-operators/new-bundle.yaml"
-    shutil.copy(rendered_bundle, destination_path)
-
     # Deploy the kfp-operators bundle from the rendered bundle file
     juju.deploy(rendered_bundle, trust=True)
 
-    logger.info("Waiting on model applications and units to be active and idle")
+    log.info("Waiting on model applications and units to be active and idle")
     juju.wait(jubilant.all_agents_idle, delay=5.0)
     juju.wait(jubilant.all_active)
 
@@ -178,7 +173,6 @@ def test_create_and_monitor_run(lightkube_client, kfp_client, create_and_clean_e
 
     # Create a run, save response in variable for easy manipulation
     # Create an experiment for this run
-
     experiment_response = create_and_clean_experiment_v2
 
     # Create a run from a pipeline file (SAMPLE_PIPELINE) and an experiment (create_experiment).
@@ -194,8 +188,6 @@ def test_create_and_monitor_run(lightkube_client, kfp_client, create_and_clean_e
     # Monitor the run to completion, the pipeline should not be executed in
     # more than 300 seconds as it is a very simple operation
     monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=600)
-
-    time.sleep(30)
 
     assert monitor_response.state == "SUCCEEDED"
 
