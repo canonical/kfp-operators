@@ -340,6 +340,13 @@ async def test_first_change_to_config_for_deafult_pipeline_root(
         apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
     )
 
+    # NOTE: simulating the necessary manual deletion of the old ConfigMap by the user:
+    # https://github.com/kubeflow/manifests/blob/v1.11.0/applications/pipeline/upstream/base/installs/generic/pipeline-install-config.yaml#L40-L42  # noqa: E501 # fmt: skip
+    lightkube_client.delete(res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile)
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
+    )
+
     kfp_launcher_configmap = wait_for_configmap(
         lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, profile
     )
