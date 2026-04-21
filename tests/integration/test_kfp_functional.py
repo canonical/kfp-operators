@@ -25,7 +25,7 @@ from charms_dependencies import (
 )
 from helpers.bundle_mgmt import render_bundle
 from helpers.k8s_resources import apply_manifests
-from helpers.localize_bundle import localize_bundle_application, update_charm_context
+from helpers.localize_bundle import update_charm_context
 from kfp_globals import (
     KFP_CHARMS,
     KUBEFLOW_PROFILE_NAMESPACE,
@@ -110,23 +110,6 @@ def test_deploy(juju: jubilant.Juju, request, lightkube_client):
     context.update(charms_dict_context)
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(bundle_path=bundlefile_path, context=context)
-
-    # Replace MinIO with local charm if it exists
-    local_minio_charm = Path(
-        "/home/michal.hucko@canonical.com/Documents/code/minio-operator/minio_ubuntu@24.04-amd64.charm"
-    )
-    if local_minio_charm.exists():
-        log.info(f"Using local MinIO charm from {local_minio_charm}")
-        # Load the rendered bundle, localize it, and save it back
-        import yaml
-
-        bundle_dict = yaml.safe_load(Path(rendered_bundle).read_text())
-        bundle_dict = localize_bundle_application(
-            bundle_dict, "minio", charm_file=local_minio_charm
-        )
-        # Write the modified bundle back to the same file
-        with open(rendered_bundle, "w") as f:
-            yaml.dump(bundle_dict, f)
 
     # Deploy the kfp-operators bundle from the rendered bundle file
     juju.deploy(rendered_bundle, trust=True)
