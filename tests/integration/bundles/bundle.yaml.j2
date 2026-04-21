@@ -14,6 +14,8 @@ applications:
   minio:
     charm: {{ minio_charm }}
     channel: {{ minio_channel }}
+    # TODO: Remove
+    base: ubuntu@24.04
     scale: 1
     trust: {{ minio_trust }}
   mlmd:
