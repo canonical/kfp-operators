@@ -8,8 +8,8 @@ containers:
   ml-pipeline-ui:
     resource: ml-pipeline-ui
     # Set these to 584792 when using the rock
-    uid: 584792
-    gid: 584792
+    uid: 0
+    gid: 0
 resources:
   ml-pipeline-ui:
     type: oci-image
