@@ -400,15 +400,25 @@ async def test_default_config_for_deafult_pipeline_root(
     lightkube_client: lightkube.Client, profile: str
 ):
     """Test that the default config for the default pipeline root is applied as intended."""
-    with pytest.raises(lightkube.ApiError):
-        lightkube_client.get(res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile)
+    with open("config.yaml", "r") as file:
+        config_data = yaml.safe_load(file)
+        kfp_default_pipeline_root = config_data["options"][CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT][
+            "default"
+        ]
+    kfp_launcher_configmap = wait_for_configmap(
+        lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, profile
+    )
+    assert (
+        kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
+        == kfp_default_pipeline_root
+    )
 
 
 async def test_first_change_to_config_for_deafult_pipeline_root(
     ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
 ):
     """Test that a first config change for the default pipeline root results in a ConfigMap."""
-    updated_deafult_pipeline_root = "minio://whatever-minio-bucket/whatever/minio/path"
+    updated_deafult_pipeline_root = "s3://whatever-minio-bucket/whatever/minio/path"
 
     await ops_test.model.applications[CHARM_NAME].set_config(
         {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_deafult_pipeline_root}
