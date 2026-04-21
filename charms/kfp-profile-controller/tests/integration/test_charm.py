@@ -313,8 +313,18 @@ async def test_default_config_for_deafult_pipeline_root(
     lightkube_client: lightkube.Client, profile: str
 ):
     """Test that the default config for the default pipeline root is applied as intended."""
-    with pytest.raises(lightkube.ApiError):
-        lightkube_client.get(res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile)
+    with open("config.yaml", "r") as file:
+        config_data = yaml.safe_load(file)
+        KFP_DEFAULT_PIPELINE_ROOT = config_data["options"][CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT][
+            "default"
+        ]
+    kfp_launcher_configmap = wait_for_configmap(
+        lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, profile
+    )
+    assert (
+        kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
+        == KFP_DEFAULT_PIPELINE_ROOT
+    )
 
 
 async def test_first_change_to_config_for_deafult_pipeline_root(
