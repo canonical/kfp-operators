@@ -25,7 +25,7 @@ from charms_dependencies import (
 )
 from helpers.bundle_mgmt import render_bundle
 from helpers.k8s_resources import apply_manifests
-from helpers.localize_bundle import update_charm_context, localize_bundle_application
+from helpers.localize_bundle import localize_bundle_application, update_charm_context
 from kfp_globals import (
     KFP_CHARMS,
     KUBEFLOW_PROFILE_NAMESPACE,

@@ -31,7 +31,7 @@ CUSTOM_IMAGES_PATH = Path("./src/default-custom-images.json")
 with CUSTOM_IMAGES_PATH.open() as f:
     custom_images = json.load(f)
 
-KFP_DEFAULT_PIPELINE_ROOT = ""
+KFP_DEFAULT_PIPELINE_ROOT = "s3://mlpipeline/v2/artifacts"
 
 MOCK_OBJECT_STORAGE_DATA = {
     "access-key": "access-key",
