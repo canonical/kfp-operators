@@ -3,11 +3,13 @@
 # See LICENSE file for licensing details.
 """Functional tests for kfp-operators with the KFP SDK v2."""
 import logging
+import shutil
 import time
 from pathlib import Path
 
 import jubilant
 import kfp
+import lightkube
 import pytest
 import requests
 from charmed_kubeflow_chisme.testing import generate_context_from_charm_spec_list
@@ -34,6 +36,8 @@ from kfp_globals import (
     SAMPLE_VIEWER,
 )
 from lightkube.generic_resource import create_namespaced_resource
+from lightkube.resources.core_v1 import ConfigMap
+from tenacity import Retrying, stop_after_delay, wait_fixed
 
 charms_dependencies_list = [
     ARGO_CONTROLLER,
@@ -47,7 +51,9 @@ charms_dependencies_list = [
     ISTIO_GATEWAY,
     ISTIO_PILOT,
 ]
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+
+KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
 
 
 # ---- KFP SDK V2 fixtures
@@ -84,6 +90,21 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
     kfp_client.delete_experiment(experiment_id=experiment_response.experiment_id)
 
 
+RETRY_FOR_ONE_MINUTE = Retrying(
+    stop=stop_after_delay(60 * 1),
+    wait=wait_fixed(5),
+    reraise=True,
+)
+
+
+def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> ConfigMap:
+    """Waits until a specified configmap is available, to a maximum of 1 minute"""
+    for attempt in RETRY_FOR_ONE_MINUTE:
+        with attempt:
+            return client.get(res=ConfigMap, name=name, namespace=namespace)
+    raise TimeoutError(f"ConfigMap {name} in namespace {namespace} not present.")
+
+
 @pytest.mark.deploy
 @pytest.mark.abort_on_fail
 def test_deploy(juju: jubilant.Juju, request, lightkube_client):
@@ -111,10 +132,14 @@ def test_deploy(juju: jubilant.Juju, request, lightkube_client):
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(bundle_path=bundlefile_path, context=context)
 
+    # Copy
+    destination_path = "/home/ubuntu/can/charms/kfp-operators/new-bundle.yaml"
+    shutil.copy(rendered_bundle, destination_path)
+
     # Deploy the kfp-operators bundle from the rendered bundle file
     juju.deploy(rendered_bundle, trust=True)
 
-    log.info("Waiting on model applications and units to be active and idle")
+    logger.info("Waiting on model applications and units to be active and idle")
     juju.wait(jubilant.all_agents_idle, delay=5.0)
     juju.wait(jubilant.all_active)
 
@@ -146,10 +171,14 @@ def test_upload_pipeline(kfp_client):
     kfp_client.delete_pipeline(pipeline_upload_response.pipeline_id)
 
 
-def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
+def test_create_and_monitor_run(lightkube_client, kfp_client, create_and_clean_experiment_v2):
     """Create a run and monitor it to completion."""
+    # Ensure "kfp-launcher" configmap has been created on the profile namespace
+    wait_for_configmap(lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, KUBEFLOW_PROFILE_NAMESPACE)
+
     # Create a run, save response in variable for easy manipulation
     # Create an experiment for this run
+
     experiment_response = create_and_clean_experiment_v2
 
     # Create a run from a pipeline file (SAMPLE_PIPELINE) and an experiment (create_experiment).
@@ -166,14 +195,18 @@ def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
     # more than 300 seconds as it is a very simple operation
     monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=600)
 
+    time.sleep(30)
+
     assert monitor_response.state == "SUCCEEDED"
 
 
 # ---- ScheduledWorfklows and Argo focused test case
 def test_create_and_monitor_recurring_run(
-    kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
+    lightkube_client, kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
 ):
     """Create a recurring run and monitor it to completion."""
+    # Ensure "kfp-launcher" configmap has been created on the profile namespace
+    wait_for_configmap(lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, KUBEFLOW_PROFILE_NAMESPACE)
 
     # Upload a pipeline from file
     pipeline_response, pipeline_version_id = upload_and_clean_pipeline_v2
