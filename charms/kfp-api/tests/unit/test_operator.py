@@ -480,6 +480,7 @@ class TestCharm:
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.Client")
     @patch("charm.KfpApiOperator.k8s_resource_handler")
+    @patch("charm.KfpApiOperator._check_object_storage_reachable", return_value=None)
     def test_install_with_all_inputs_and_pebble(
         self,
         k8s_resource_handler: MagicMock,
@@ -608,6 +609,7 @@ class TestCharm:
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.Client")
     @patch("charm.KfpApiOperator.k8s_resource_handler")
+    @patch("charm.KfpApiOperator._check_object_storage_reachable", return_value=None)
     def test_launcher_driver_images_config(
         self,
         k8s_resource_handler: MagicMock,
@@ -643,6 +645,7 @@ class TestCharm:
     @patch("charm.KfpApiOperator._apply_k8s_resources")
     @patch("charm.KfpApiOperator._check_status")
     @patch("charm.KfpApiOperator._generate_environment")
+    @patch("charm.KfpApiOperator._check_object_storage_reachable", return_value=None)
     def test_update_status(
         self,
         _apply_k8s_resources: MagicMock,

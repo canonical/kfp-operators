@@ -837,7 +837,7 @@ class KfpApiOperator(CharmBase):
         self.model.unit.status = ActiveStatus()
 
     def _check_object_storage_reachable(self) -> None:
-        """Ensure object storage is reachable using boto3 client."""
+        """Ensure object storage is reachable using a boto3 client."""
         try:
             interfaces = self._get_interfaces()
             obj = self._get_object_storage(interfaces)
@@ -856,11 +856,19 @@ class KfpApiOperator(CharmBase):
                 aws_secret_access_key=secret_key,
             )
 
-            # Ideally we want to check for bucket creation
-            client.list_buckets()
+            # Try creating a bucket to verify connectivity
+            bucket_name = "kfp-api-healthcheck"
+            try:
+                client.create_bucket(Bucket=bucket_name)
+            except Exception as create_err:
+                err_str = str(create_err)
+                # Don't raise on these 2 errors
+                if "BucketAlreadyOwnedByYou" in err_str or "BucketAlreadyExists" in err_str:
+                    return
+                raise
 
         except Exception as e:
-            msg = "Waiting for object storage to be accessible."
+            msg = "Waiting for object storage to be accessible"
             self.logger.info(f"{msg}: {e}")
             raise ErrorWithStatus(msg, WaitingStatus)
 
