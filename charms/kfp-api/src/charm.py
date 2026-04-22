@@ -859,17 +859,24 @@ class KfpApiOperator(CharmBase):
             # Try creating a bucket to verify connectivity
             bucket_name = "kfp-api-healthcheck"
             try:
-                client.create_bucket(Bucket=bucket_name)
-            except Exception as create_err:
-                err_str = str(create_err)
-                # Don't raise on these 2 errors
-                if "BucketAlreadyOwnedByYou" in err_str or "BucketAlreadyExists" in err_str:
-                    return
-                raise
+                try:
+                    client.create_bucket(Bucket=bucket_name)
+                except Exception as create_err:
+                    err_str = str(create_err)
+                    # Don't raise on these 2 errors
+                    if "BucketAlreadyOwnedByYou" in err_str or "BucketAlreadyExists" in err_str:
+                        return
+                    raise
+            finally:
+                # Explicitly close underlying HTTP connections to avoid leaks in tests
+                try:
+                    client.close()
+                except Exception:
+                    pass
 
         except Exception as e:
             msg = "Waiting for object storage to be accessible"
-            self.logger.info(f"{msg}: {e}")
+            self.logger.warning(f"{msg}: {e}")
             raise ErrorWithStatus(msg, WaitingStatus)
 
 

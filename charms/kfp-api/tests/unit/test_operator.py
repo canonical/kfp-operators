@@ -55,6 +55,14 @@ def harness() -> Harness:
 class TestCharm:
     """Test class for KfamApiOperator."""
 
+    @pytest.fixture
+    def mock_s3_client(self, mocker):
+        mock_boto = mocker.patch("boto3.client")
+        mock_s3 = mocker.MagicMock()
+        mock_s3.create_bucket.return_value = {}
+        mock_boto.return_value = mock_s3
+        return mock_s3
+
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_log_forwarding(self, k8s_resource_handler: MagicMock, harness: Harness):
@@ -189,6 +197,7 @@ class TestCharm:
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_not_leader(self, k8s_resource_handler: MagicMock, harness: Harness):
         harness.begin_with_initial_hooks()
+
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
         assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
 
@@ -477,17 +486,19 @@ class TestCharm:
         else:
             assert partial_relation_data.value.status == expected_status
 
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.Client")
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
-    @patch("charm.KfpApiOperator._check_object_storage_reachable", return_value=None)
     def test_install_with_all_inputs_and_pebble(
         self,
         k8s_resource_handler: MagicMock,
         mock_client: MagicMock,
         harness: Harness,
+        mock_s3_client,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
+        # S3 client is mocked via fixture
+
         harness.set_leader(True)
         model_name = "kubeflow"
         service_port = "8888"
@@ -606,17 +617,22 @@ class TestCharm:
         assert test_env == expected_env
         assert model_name == test_env["POD_NAMESPACE"]
 
+    @patch("boto3.client")
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.Client")
     @patch("charm.KfpApiOperator.k8s_resource_handler")
-    @patch("charm.KfpApiOperator._check_object_storage_reachable", return_value=None)
     def test_launcher_driver_images_config(
         self,
         k8s_resource_handler: MagicMock,
         mock_client: MagicMock,
+        mock_boto_client: MagicMock,
         harness: Harness,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
+        mock_s3 = MagicMock()
+        mock_s3.create_bucket.return_value = {}
+        mock_boto_client.return_value = mock_s3
+
         harness.set_leader(True)
         model_name = "kubeflow"
         service_port = "8888"
@@ -645,7 +661,6 @@ class TestCharm:
     @patch("charm.KfpApiOperator._apply_k8s_resources")
     @patch("charm.KfpApiOperator._check_status")
     @patch("charm.KfpApiOperator._generate_environment")
-    @patch("charm.KfpApiOperator._check_object_storage_reachable", return_value=None)
     def test_update_status(
         self,
         _apply_k8s_resources: MagicMock,
@@ -653,6 +668,7 @@ class TestCharm:
         _generate_environment: MagicMock,
         mock_client: MagicMock,
         harness: Harness,
+        mock_s3_client,
     ):
         """Test update status handler."""
         harness.set_leader(True)
@@ -779,6 +795,7 @@ class TestCharm:
         mocked_resource_handler,
         mocked_kubernetes_service_patcher,
         harness: Harness,
+        mock_s3_client,
     ):
         """Test that a relation broken event is properly handled."""
         # Arrange
