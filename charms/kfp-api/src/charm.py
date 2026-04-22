@@ -10,6 +10,7 @@ https://github.com/canonical/kfp-operators/
 import logging
 from pathlib import Path
 
+import boto3
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRuntimeError
 from charmed_kubeflow_chisme.kubernetes import (
     KubernetesResourceHandler,
@@ -825,6 +826,7 @@ class KfpApiOperator(CharmBase):
             self._check_leader()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             self._reconcile_authorization_policies()
+            self._check_object_storage_reachable()
             update_layer(self._container_name, self._container, self._kfp_api_layer, self.logger)
             self._send_info(self._get_interfaces())
         except ErrorWithStatus as err:
@@ -833,6 +835,34 @@ class KfpApiOperator(CharmBase):
             return
 
         self.model.unit.status = ActiveStatus()
+
+    def _check_object_storage_reachable(self) -> None:
+        """Ensure object storage is reachable using boto3 client."""
+        try:
+            interfaces = self._get_interfaces()
+            obj = self._get_object_storage(interfaces)
+
+            endpoint = f"http://{obj['service']}.{obj['namespace']}.svc.cluster.local:{obj['port']}"
+
+            # Credentials may not always be present depending on relation state
+            access_key = obj.get("access-key")
+            secret_key = obj.get("secret-key")
+
+            client = boto3.client(
+                "s3",
+                endpoint_url=endpoint,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+            )
+
+            # Lightweight call to verify connectivity
+            client.list_buckets()
+
+        except Exception as e:
+            msg = "Waiting for object storage (MinIO) via boto3"
+            self.logger.debug(f"{msg}: {e}")
+            # ErrorWithStatus expects a Status *class*, not an instance
+            raise ErrorWithStatus(msg, WaitingStatus)
 
 
 if __name__ == "__main__":

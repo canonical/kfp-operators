@@ -125,4 +125,4 @@ provides:
     description: |
       Access a cross-model application from catalogue via the service mesh.
       This relation provides additional data required by the service mesh to enforce cross-model authorization policies.
-charm-user: non-root
+charm-user: root
