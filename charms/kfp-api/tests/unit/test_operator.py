@@ -617,7 +617,6 @@ class TestCharm:
         assert test_env == expected_env
         assert model_name == test_env["POD_NAMESPACE"]
 
-    @patch("boto3.client")
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.Client")
     @patch("charm.KfpApiOperator.k8s_resource_handler")
@@ -625,14 +624,10 @@ class TestCharm:
         self,
         k8s_resource_handler: MagicMock,
         mock_client: MagicMock,
-        mock_boto_client: MagicMock,
+        mock_s3_client,
         harness: Harness,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
-        mock_s3 = MagicMock()
-        mock_s3.create_bucket.return_value = {}
-        mock_boto_client.return_value = mock_s3
-
         harness.set_leader(True)
         model_name = "kubeflow"
         service_port = "8888"
@@ -663,15 +658,17 @@ class TestCharm:
     @patch("charm.KfpApiOperator._generate_environment")
     def test_update_status(
         self,
-        _apply_k8s_resources: MagicMock,
-        _check_status: MagicMock,
         _generate_environment: MagicMock,
+        _check_status: MagicMock,
+        _apply_k8s_resources: MagicMock,
         mock_client: MagicMock,
         harness: Harness,
         mock_s3_client,
     ):
         """Test update status handler."""
         harness.set_leader(True)
+        # Set up required relations
+        self.setup_required_relations(harness)
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
 
