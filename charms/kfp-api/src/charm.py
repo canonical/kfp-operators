@@ -842,9 +842,10 @@ class KfpApiOperator(CharmBase):
             interfaces = self._get_interfaces()
             obj = self._get_object_storage(interfaces)
 
-            endpoint = f"http://{obj['service']}.{obj['namespace']}.svc.cluster.local:{obj['port']}"
+            endpoint = (
+                f"http://{obj['service']}.{obj['namespace']}.svc.cluster.local:{obj['port']}"
+            )
 
-            # Credentials may not always be present depending on relation state
             access_key = obj.get("access-key")
             secret_key = obj.get("secret-key")
 
@@ -855,13 +856,12 @@ class KfpApiOperator(CharmBase):
                 aws_secret_access_key=secret_key,
             )
 
-            # Lightweight call to verify connectivity
+            # Ideally we want to check for bucket creation
             client.list_buckets()
 
         except Exception as e:
-            msg = "Waiting for object storage (MinIO) via boto3"
-            self.logger.debug(f"{msg}: {e}")
-            # ErrorWithStatus expects a Status *class*, not an instance
+            msg = "Waiting for object storage to be accessible."
+            self.logger.info(f"{msg}: {e}")
             raise ErrorWithStatus(msg, WaitingStatus)
 
 
