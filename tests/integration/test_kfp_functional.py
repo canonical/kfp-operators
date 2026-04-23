@@ -174,7 +174,7 @@ def test_create_and_monitor_recurring_run(
     kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
 ):
     """Create a recurring run and monitor it to completion."""
-    
+
     # Upload a pipeline from file
     pipeline_response, pipeline_version_id = upload_and_clean_pipeline_v2
 
