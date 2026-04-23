@@ -149,6 +149,7 @@ class TestCharm:
         self,
         k8s_resource_handler: MagicMock,
         mock_reconcile: MagicMock,
+        mock_s3_client,
         harness: Harness,
     ):
         """Test that _on_event calls _reconcile_authorization_policies."""
@@ -464,6 +465,7 @@ class TestCharm:
         expected_status,
         harness: Harness,
         mocked_resource_handler,
+        mock_s3_client,
     ):
         harness.set_leader(True)
         harness.begin()
@@ -621,8 +623,8 @@ class TestCharm:
         self,
         k8s_resource_handler: MagicMock,
         mock_client: MagicMock,
-        mock_s3_client,
         harness: Harness,
+        mock_s3_client,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
         harness.set_leader(True)
