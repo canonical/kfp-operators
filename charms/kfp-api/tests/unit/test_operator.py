@@ -197,7 +197,6 @@ class TestCharm:
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_not_leader(self, k8s_resource_handler: MagicMock, harness: Harness):
         harness.begin_with_initial_hooks()
-
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
         assert harness.charm.model.unit.status == WaitingStatus("Waiting for leadership")
 
@@ -497,8 +496,6 @@ class TestCharm:
         mock_s3_client,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
-        # S3 client is mocked via fixture
-
         harness.set_leader(True)
         model_name = "kubeflow"
         service_port = "8888"
