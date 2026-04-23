@@ -182,7 +182,7 @@ def server_factory(visualization_server_image,
                 "  default:\n"
                 f"    endpoint: {minio_host}.{minio_namespace}:9000\n"
                 "    disableSSL: true\n"
-                "    region: ''\n"
+                "    region: us-east-1\n"
                 "    forcePathStyle: true\n"
                 "    credentials:\n"
                 "      fromEnv: false\n"
