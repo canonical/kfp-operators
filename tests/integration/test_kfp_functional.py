@@ -8,7 +8,6 @@ from pathlib import Path
 
 import jubilant
 import kfp
-import lightkube
 import pytest
 import requests
 from charmed_kubeflow_chisme.testing import generate_context_from_charm_spec_list
@@ -26,7 +25,7 @@ from charms_dependencies import (
 )
 from helpers.bundle_mgmt import render_bundle
 from helpers.k8s_resources import apply_manifests
-from helpers.localize_bundle import update_charm_context
+from helpers.localize_bundle import localize_bundle_application, update_charm_context
 from kfp_globals import (
     KFP_CHARMS,
     KUBEFLOW_PROFILE_NAMESPACE,
@@ -35,8 +34,6 @@ from kfp_globals import (
     SAMPLE_VIEWER,
 )
 from lightkube.generic_resource import create_namespaced_resource
-from lightkube.resources.core_v1 import ConfigMap
-from tenacity import Retrying, stop_after_delay, wait_fixed
 
 charms_dependencies_list = [
     ARGO_CONTROLLER,
@@ -51,8 +48,6 @@ charms_dependencies_list = [
     ISTIO_PILOT,
 ]
 log = logging.getLogger(__name__)
-
-KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
 
 
 # ---- KFP SDK V2 fixtures
@@ -89,21 +84,6 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
     kfp_client.delete_experiment(experiment_id=experiment_response.experiment_id)
 
 
-RETRY_FOR_ONE_MINUTE = Retrying(
-    stop=stop_after_delay(60 * 1),
-    wait=wait_fixed(5),
-    reraise=True,
-)
-
-
-def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> ConfigMap:
-    """Waits until a specified configmap is available, to a maximum of 1 minute"""
-    for attempt in RETRY_FOR_ONE_MINUTE:
-        with attempt:
-            return client.get(res=ConfigMap, name=name, namespace=namespace)
-    raise TimeoutError(f"ConfigMap {name} in namespace {namespace} not present.")
-
-
 @pytest.mark.deploy
 @pytest.mark.abort_on_fail
 def test_deploy(juju: jubilant.Juju, request, lightkube_client):
@@ -130,6 +110,23 @@ def test_deploy(juju: jubilant.Juju, request, lightkube_client):
     context.update(charms_dict_context)
     # Render kfp-operators bundle file with locally built charms and their resources
     rendered_bundle = render_bundle(bundle_path=bundlefile_path, context=context)
+
+    # Replace MinIO with local charm if it exists
+    local_minio_charm = Path(
+        "/home/ubuntu/can/charms/minio-operator/minio_ubuntu@24.04-amd64.charm"
+    )
+    if local_minio_charm.exists():
+        log.info(f"Using local MinIO charm from {local_minio_charm}")
+        # Load the rendered bundle, localize it, and save it back
+        import yaml
+
+        bundle_dict = yaml.safe_load(Path(rendered_bundle).read_text())
+        bundle_dict = localize_bundle_application(
+            bundle_dict, "minio", charm_file=local_minio_charm
+        )
+        # Write the modified bundle back to the same file
+        with open(rendered_bundle, "w") as f:
+            yaml.dump(bundle_dict, f)
 
     # Deploy the kfp-operators bundle from the rendered bundle file
     juju.deploy(rendered_bundle, trust=True)
@@ -166,11 +163,8 @@ def test_upload_pipeline(kfp_client):
     kfp_client.delete_pipeline(pipeline_upload_response.pipeline_id)
 
 
-def test_create_and_monitor_run(lightkube_client, kfp_client, create_and_clean_experiment_v2):
+def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
     """Create a run and monitor it to completion."""
-    # Ensure "kfp-launcher" configmap has been created on the profile namespace
-    wait_for_configmap(lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, KUBEFLOW_PROFILE_NAMESPACE)
-
     # Create a run, save response in variable for easy manipulation
     # Create an experiment for this run
     experiment_response = create_and_clean_experiment_v2
@@ -194,12 +188,9 @@ def test_create_and_monitor_run(lightkube_client, kfp_client, create_and_clean_e
 
 # ---- ScheduledWorfklows and Argo focused test case
 def test_create_and_monitor_recurring_run(
-    lightkube_client, kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
+    kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
 ):
     """Create a recurring run and monitor it to completion."""
-    # Ensure "kfp-launcher" configmap has been created on the profile namespace
-    wait_for_configmap(lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, KUBEFLOW_PROFILE_NAMESPACE)
-
     # Upload a pipeline from file
     pipeline_response, pipeline_version_id = upload_and_clean_pipeline_v2
 
