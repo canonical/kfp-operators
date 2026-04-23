@@ -10,7 +10,7 @@ https://github.com/canonical/kfp-operators/
 import logging
 from pathlib import Path
 
-import boto3
+import botocore.exceptions
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRuntimeError
 from charmed_kubeflow_chisme.kubernetes import (
     KubernetesResourceHandler,
@@ -55,6 +55,8 @@ from serialized_data_interface import (
     get_interfaces,
 )
 from serialized_data_interface.errors import RelationDataError
+
+from services.s3 import S3BucketWrapper
 
 CONFIG_DIR = Path("/config")
 SAMPLE_CONFIG = CONFIG_DIR / "sample_config.json"
@@ -838,42 +840,28 @@ class KfpApiOperator(CharmBase):
 
     def _check_object_storage_reachable(self) -> None:
         """Ensure object storage is reachable using a boto3 client."""
+        interfaces = self._get_interfaces()
+        obj = self._get_object_storage(interfaces)
+
+        s3_wrapper = S3BucketWrapper(
+            access_key=obj.get("access-key"),
+            secret_access_key=obj.get("secret-key"),
+            s3_service=f"{obj['service']}.{obj['namespace']}",
+            s3_port=obj["port"],
+        )
+
+        # Try creating a bucket to verify connectivity
+        bucket_name = "kfp-api-healthcheck"
         try:
-            interfaces = self._get_interfaces()
-            obj = self._get_object_storage(interfaces)
+            s3_wrapper.create_bucket(bucket_name)
+            # Remove it afterwards
+            s3_wrapper.delete_bucket(bucket_name)
 
-            endpoint = (
-                f"http://{obj['service']}.{obj['namespace']}.svc.cluster.local:{obj['port']}"
-            )
-
-            access_key = obj.get("access-key")
-            secret_key = obj.get("secret-key")
-
-            client = boto3.client(
-                "s3",
-                endpoint_url=endpoint,
-                aws_access_key_id=access_key,
-                aws_secret_access_key=secret_key,
-            )
-
-            # Try creating a bucket to verify connectivity
-            bucket_name = "kfp-api-healthcheck"
-            try:
-                try:
-                    client.create_bucket(Bucket=bucket_name)
-                except Exception as create_err:
-                    err_str = str(create_err)
-                    # Don't raise on these 2 errors which are expected
-                    if "BucketAlreadyOwnedByYou" in err_str or "BucketAlreadyExists" in err_str:
-                        return
-                    raise
-            finally:
-                try:
-                    client.close()
-                except Exception:
-                    pass
-
-        except Exception as e:
+        except botocore.exceptions.ClientError as e:
+            # Don't raise on these 2 errors which are expected
+            error_code = e.response["Error"]["Code"]
+            if error_code in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
+                return
             msg = "Waiting for object storage to be accessible"
             self.logger.warning(f"{msg}: {e}")
             raise ErrorWithStatus(msg, WaitingStatus)
