@@ -863,12 +863,11 @@ class KfpApiOperator(CharmBase):
                     client.create_bucket(Bucket=bucket_name)
                 except Exception as create_err:
                     err_str = str(create_err)
-                    # Don't raise on these 2 errors
+                    # Don't raise on these 2 errors which are expected
                     if "BucketAlreadyOwnedByYou" in err_str or "BucketAlreadyExists" in err_str:
                         return
                     raise
             finally:
-                # Explicitly close underlying HTTP connections to avoid leaks in tests
                 try:
                     client.close()
                 except Exception:
