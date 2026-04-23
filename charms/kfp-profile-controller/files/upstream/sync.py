@@ -173,7 +173,8 @@ def server_factory(visualization_server_image,
                 logger.info(f"Namespace not in scope, no action taken (metadata.labels.pipelines.kubeflow.org/enabled = {pipeline_enabled}, must be 'true')")
                 return {"status": {}, "attachments": []}
 
-            desired_configmap_count = 1
+            # metadata-grpc-configmap and kfp-launcher are always created
+            desired_configmap_count = 2
             desired_resources = []
 
             providers_yaml = (
@@ -198,7 +199,6 @@ def server_factory(visualization_server_image,
             if kfp_default_pipeline_root:
                 configmap_data["defaultPipelineRoot"] = kfp_default_pipeline_root
 
-            desired_configmap_count = 2
             desired_resources += [{
                 "apiVersion": "v1",
                 "kind": "ConfigMap",
