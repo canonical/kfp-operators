@@ -9,6 +9,7 @@ from botocore.config import Config
 CONNECT_TIMEOUT = 10
 READ_TIMEOUT = 10
 
+
 class S3BucketWrapper:
     """Wrapper for accessing and creating S3 Buckets."""
 
