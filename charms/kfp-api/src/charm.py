@@ -853,7 +853,6 @@ class KfpApiOperator(CharmBase):
             s3_port=obj["port"],
         )
 
-
         # Try creating a bucket to ensure connectivity
         bucket_name = HEALTH_CHECK_BUCKET_NAME
         try:
