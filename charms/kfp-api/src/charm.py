@@ -79,6 +79,9 @@ WAYPOINT_NAME = "istio-beacon-k8s-waypoint"
 
 METRICS_ENDPOINT_RELATION_NAME = "metrics-endpoint"
 
+# Name of the bucket to create in order to ensure connectivity with object storage
+HEALTH_CHECK_BUCKET_NAME = "kfp-api-healthcheck"
+
 
 class KfpApiOperator(CharmBase):
     """Charm the Kubeflow Pipelines API."""
@@ -850,18 +853,19 @@ class KfpApiOperator(CharmBase):
             s3_port=obj["port"],
         )
 
-        # Try creating a bucket to verify connectivity
-        bucket_name = "kfp-api-healthcheck"
+
+        # Try creating a bucket to ensure connectivity
+        bucket_name = HEALTH_CHECK_BUCKET_NAME
         try:
+            # Check if bucket already exists
+            if s3_wrapper.bucket_exists(bucket_name):
+                return
+
+            # Create the bucket if missing
             s3_wrapper.create_bucket(bucket_name)
-            # Remove it afterwards
-            s3_wrapper.delete_bucket(bucket_name)
+            return
 
         except botocore.exceptions.ClientError as e:
-            # Don't raise on these 2 errors which are expected
-            error_code = e.response["Error"]["Code"]
-            if error_code in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
-                return
             msg = "Waiting for object storage to be accessible"
             self.logger.warning(f"{msg}: {e}")
             raise ErrorWithStatus(msg, WaitingStatus)
