@@ -9,6 +9,7 @@ KFP_DB = CharmSpec(
     trust=True,
 )
 KFP_VIZ = CharmSpec(charm="kfp-viz", channel="latest/edge", trust=True)
+KFP_SCHEDWF = CharmSpec(charm="kfp-schedwf", channel="latest/edge", trust=True)
 MINIO = CharmSpec(
     charm="minio",
     channel="latest/edge",
