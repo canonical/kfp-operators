@@ -1077,12 +1077,12 @@ class TestCharm:
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
+    @patch("charm.Client")
     def test_object_storage_timeout(
         self,
+        mock_client,
         k8s_resource_handler,
         harness: Harness,
-        mocked_kubernetes_service_patcher,
-        mocked_resource_handler,
         mocker,
     ):
         """Ensure timeout errors from S3 are handled as WaitingStatus."""
