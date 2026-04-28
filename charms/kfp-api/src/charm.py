@@ -401,6 +401,7 @@ class KfpApiOperator(CharmBase):
             # Configurations charmed-kubeflow adds to those of upstream
             "ARCHIVE_CONFIG_LOG_FILE_NAME": self.model.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": self.model.config["log-archive-prefix"],
+            "CLUSTER_DOMAIN": "cluster.local",
             # OBJECTSTORECONFIG_HOST and _PORT set the object storage configurations,
             # taking precedence over configuration in the config.json or
             # MINIO_SERVICE_SERVICE_* environment variables.
