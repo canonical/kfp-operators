@@ -851,7 +851,7 @@ class KfpApiOperator(CharmBase):
         )
 
         # Try creating the bucket we need for object storage
-        bucket_name = obj.get("object-store-bucket-name")
+        bucket_name = self.model.config["object-store-bucket-name"]
         try:
             self.unit.status = MaintenanceStatus(f"Checking if bucket {bucket_name} exists.")
             # Check if bucket already exists
