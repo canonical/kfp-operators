@@ -828,12 +828,7 @@ class KfpApiOperator(CharmBase):
             self._check_leader()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             self._reconcile_authorization_policies()
-            try:
-                self._ensure_bucket_exists()
-            except ErrorWithStatus:
-                # Defer event to retry once object storage becomes available
-                event.defer()
-                raise
+            self._ensure_bucket_exists()
             update_layer(self._container_name, self._container, self._kfp_api_layer, self.logger)
             self._send_info(self._get_interfaces())
         except ErrorWithStatus as err:
