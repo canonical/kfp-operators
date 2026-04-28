@@ -79,9 +79,6 @@ WAYPOINT_NAME = "istio-beacon-k8s-waypoint"
 
 METRICS_ENDPOINT_RELATION_NAME = "metrics-endpoint"
 
-# Name of the bucket to create in order to ensure connectivity with object storage
-HEALTH_CHECK_BUCKET_NAME = "kfp-api-healthcheck"
-
 
 class KfpApiOperator(CharmBase):
     """Charm the Kubeflow Pipelines API."""
@@ -831,7 +828,7 @@ class KfpApiOperator(CharmBase):
             self._check_leader()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             self._reconcile_authorization_policies()
-            self._check_object_storage_reachable()
+            self._ensure_bucket_exists()
             update_layer(self._container_name, self._container, self._kfp_api_layer, self.logger)
             self._send_info(self._get_interfaces())
         except ErrorWithStatus as err:
@@ -841,8 +838,8 @@ class KfpApiOperator(CharmBase):
 
         self.model.unit.status = ActiveStatus()
 
-    def _check_object_storage_reachable(self) -> None:
-        """Ensure object storage is reachable using a boto3 client."""
+    def _ensure_bucket_exists(self) -> None:
+        """Ensure bucket on object storage exists by using a boto3 client."""
         interfaces = self._get_interfaces()
         obj = self._get_object_storage(interfaces)
 
@@ -853,19 +850,26 @@ class KfpApiOperator(CharmBase):
             s3_port=obj["port"],
         )
 
-        # Try creating a bucket to ensure connectivity
-        bucket_name = HEALTH_CHECK_BUCKET_NAME
+        # Try creating the bucket we need for object storage
+        bucket_name = obj.get("object-store-bucket-name")
         try:
+            self.unit.status = MaintenanceStatus(f"Checking if bucket {bucket_name} exists.")
             # Check if bucket already exists
             if s3_wrapper.bucket_exists(bucket_name):
                 return
 
             # Create the bucket if missing
+            self.unit.status = MaintenanceStatus(f"Creating bucket {bucket_name}.")
             s3_wrapper.create_bucket(bucket_name)
             return
 
-        except botocore.exceptions.ClientError as e:
-            msg = "Waiting for object storage to be accessible"
+        except (
+            botocore.exceptions.ClientError,
+            botocore.exceptions.ConnectTimeoutError,
+            botocore.exceptions.ReadTimeoutError,
+            botocore.exceptions.EndpointConnectionError,
+        ) as e:
+            msg = "Waiting for object storage to become accessible."
             self.logger.warning(f"{msg}: {e}")
             raise ErrorWithStatus(msg, WaitingStatus)
 

@@ -4,6 +4,7 @@
 from contextlib import nullcontext as does_not_raise
 from unittest.mock import MagicMock, patch
 
+import botocore.exceptions
 import pytest
 import yaml
 from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
@@ -1073,3 +1074,29 @@ class TestCharm:
             assert "istio.io/use-waypoint" in actual_ambient
         else:
             assert actual_ambient == {}
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    def test_object_storage_timeout(
+        self, k8s_resource_handler: MagicMock, harness: Harness, mocker
+    ):
+        """Ensure timeout errors from S3 are handled as WaitingStatus."""
+        harness.set_leader(True)
+        self.setup_required_relations(harness)
+        harness.begin()
+        # Mock S3 wrapper to raise timeout on bucket check
+        mock_wrapper = mocker.patch("charm.S3BucketWrapper")
+        instance = mock_wrapper.return_value
+        instance.bucket_exists.side_effect = botocore.exceptions.ConnectTimeoutError(
+            endpoint_url="http://fake-endpoint"
+        )
+
+        # Act
+        harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
+
+        # Assert
+        assert isinstance(harness.charm.model.unit.status, WaitingStatus)
+        assert (
+            "Waiting for object storage to become accessible."
+            in harness.charm.model.unit.status.message
+        )
