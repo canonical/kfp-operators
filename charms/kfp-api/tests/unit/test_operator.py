@@ -599,6 +599,7 @@ class TestCharm:
             "V2_LAUNCHER_IMAGE": harness.charm.config["launcher-image"],
             "ARCHIVE_CONFIG_LOG_FILE_NAME": harness.charm.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": harness.charm.config["log-archive-prefix"],
+            "CLUSTER_DOMAIN": "cluster.local",
             # OBJECTSTORECONFIG_HOST and _PORT currently have no effect due to
             # https://github.com/kubeflow/pipelines/issues/9689, described more in
             # https://github.com/canonical/minio-operator/pull/151
