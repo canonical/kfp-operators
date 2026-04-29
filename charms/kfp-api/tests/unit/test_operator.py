@@ -211,6 +211,52 @@ class TestCharm:
         assert isinstance(harness.charm.model.unit.status, BlockedStatus)
         assert harness.charm.model.unit.status.message.startswith("kfp-api must be deployed to")
 
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @pytest.mark.parametrize(
+        "config,expectation",
+        [
+            (
+                {
+                    "default-pipeline-user-id": "1000",
+                    "default-pipeline-group-id": "1000",
+                    "default-pipeline-non-root": "true",
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "default-pipeline-user-id": "abc",
+                    "default-pipeline-group-id": "1000",
+                    "default-pipeline-non-root": "true",
+                },
+                pytest.raises(ErrorWithStatus),
+            ),
+            (
+                {
+                    "default-pipeline-user-id": "1000",
+                    "default-pipeline-group-id": "xyz",
+                    "default-pipeline-non-root": "true",
+                },
+                pytest.raises(ErrorWithStatus),
+            ),
+            (
+                {
+                    "default-pipeline-user-id": "1000",
+                    "default-pipeline-group-id": "1000",
+                    "default-pipeline-non-root": "not-bool",
+                },
+                pytest.raises(ErrorWithStatus),
+            ),
+        ],
+    )
+    def test_config_validation(self, config, expectation, harness: Harness):
+        harness.set_leader(True)
+        harness.begin()
+
+        with expectation:
+            harness.update_config(config)
+            harness.charm._check_config()
+
     @pytest.mark.parametrize(
         "relation_data,expected_returned_data,expected_raises,expected_status",
         (

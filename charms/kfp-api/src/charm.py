@@ -838,6 +838,7 @@ class KfpApiOperator(CharmBase):
         try:
             self._check_model_name()
             self._check_leader()
+            self._check_config()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             self._reconcile_authorization_policies()
             self._ensure_bucket_exists()
@@ -849,6 +850,35 @@ class KfpApiOperator(CharmBase):
             return
 
         self.model.unit.status = ActiveStatus()
+
+    def _check_config(self) -> None:
+        """Validate security-related config options.
+
+        - default-pipeline-user-id: empty or integer string
+        - default-pipeline-group-id: empty or integer string
+        - default-pipeline-non-root: empty or 'true'/'false'
+        """
+        user = self.model.config.get("default-pipeline-user-id", "")
+        group = self.model.config.get("default-pipeline-group-id", "")
+        non_root = self.model.config.get("default-pipeline-non-root", "")
+
+        if not _is_int_str(user):
+            raise ErrorWithStatus(
+                "default-pipeline-user-id must be empty or an integer",
+                BlockedStatus,
+            )
+
+        if not _is_int_str(group):
+            raise ErrorWithStatus(
+                "default-pipeline-group-id must be empty or an integer",
+                BlockedStatus,
+            )
+
+        if non_root not in ("", "true", "false"):
+            raise ErrorWithStatus(
+                "default-pipeline-non-root must be '', 'true' or 'false'",
+                BlockedStatus,
+            )
 
     def _ensure_bucket_exists(self) -> None:
         """Ensure bucket on object storage exists by using a boto3 client."""
@@ -884,6 +914,16 @@ class KfpApiOperator(CharmBase):
             msg = "Waiting for object storage to become accessible."
             self.logger.warning(f"{msg}: {e}")
             raise ErrorWithStatus(msg, WaitingStatus)
+
+
+def _is_int_str(v: str) -> bool:
+    """Return True if v is empty or a non-negative integer string."""
+    if v == "":
+        return True
+    try:
+        return int(v) >= 0
+    except (TypeError, ValueError):
+        return False
 
 
 if __name__ == "__main__":
