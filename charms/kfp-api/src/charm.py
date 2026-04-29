@@ -421,8 +421,12 @@ class KfpApiOperator(CharmBase):
             # be run as root.
             # Introduced in https://github.com/kubeflow/pipelines/pull/12859
             "DEFAULT_SECURITY_CONTEXT_RUN_AS_USER": self.model.config["default-pipeline-user-id"],
-            "DEFAULT_SECURITY_CONTEXT_RUN_AS_GROUP": self.model.config["default-pipeline-group-id"],
-            "DEFAULT_SECURITY_CONTEXT_RUN_AS_NON_ROOT": self.model.config["default-pipeline-non-root"],
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_GROUP": self.model.config[
+                "default-pipeline-group-id"
+            ],
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_NON_ROOT": self.model.config[
+                "default-pipeline-non-root"
+            ],
         }
 
         return env_vars
