@@ -11,6 +11,7 @@ issues: https://github.com/canonical/kfp-operators/issues
 containers:
   apiserver:
     resource: oci-image
+    # Set these to 584792 when using the rock
     uid: 0
     gid: 0
 resources:
