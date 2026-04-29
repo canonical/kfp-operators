@@ -63,3 +63,15 @@ options:
     type: string
     default: "info"
     description: Log level of api server
+  default-pipeline-user-id:
+    type: string
+    default: ""
+    description: UID used for pipeline workloads (maps to runAsUser in the main user container)
+  default-pipeline-group-id:
+    type: string
+    default: ""
+    description: GID used for pipeline workloads (maps to runAsGroup in the main user container)
+  default-pipeline-non-root:
+    type: string
+    default: ""
+    description: Enforce pipelines to run as non-root (maps to runAsNonRoot in the main user container)
