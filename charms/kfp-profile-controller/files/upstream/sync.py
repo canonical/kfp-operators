@@ -173,7 +173,16 @@ def server_factory(visualization_server_image,
                 logger.info(f"Namespace not in scope, no action taken (metadata.labels.pipelines.kubeflow.org/enabled = {pipeline_enabled}, must be 'true')")
                 return {"status": {}, "attachments": []}
 
-            # metadata-grpc-configmap and kfp-launcher are always created
+            # - - - - - - - - - - - - - - - - - -
+            # CUSTOM CODE BY CANONICAL
+            # - - - - - - - - - - - - - - - - - -
+            # Added from https://github.com/canonical/kfp-operators/pull/870 to fix
+            # https://github.com/canonical/kfp-operators/issues/872.
+            # The default endpoint for S3 has been changed in upstream, see
+            # https://github.com/kubeflow/manifests/blob/c4d60708c619856cca8020853eeb8cc76dbf2f75/applications/pipeline/upstream/base/installs/multi-user/pipelines-profile-controller/sync.py#L28
+            # This means that we have to always update the provider to use our wanted endpoint
+            # We set this by using the `kfp-launcher` configmap, as specified in:
+            # https://www.kubeflow.org/docs/components/pipelines/operator-guides/configure-object-store/#s3-and-s3-compatible-provider
             desired_configmap_count = 2
             desired_resources = []
 
