@@ -253,7 +253,6 @@ def test_ingress_relation_with_related_app(harness: Harness, mocked_kubernetes_s
     assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
 
 
-
 def assert_relation_data_send_as_expected(
     harness: Harness, expected_relation_data: dict, rel_ids_to_assert: list
 ):
