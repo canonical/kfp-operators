@@ -183,19 +183,6 @@ class KfpUiOperator(CharmBase):
             depends_on=[self.leadership_gate, self.istio_relations_conflict_detector],
         )
 
-        self.kfp_ui_relation = self.charm_reconciler.add(
-            SdiRelationBroadcasterComponent(
-                charm=self,
-                name="relation:kfp-ui",
-                relation_name="kfp-ui",
-                data_to_send={
-                    "service-name": f"{self.model.app.name}.{self.model.name}",
-                    "service-port": self.model.config["http-port"],
-                },
-            ),
-            depends_on=[self.leadership_gate],
-        )
-
         self.object_storage_relation = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
                 charm=self,
