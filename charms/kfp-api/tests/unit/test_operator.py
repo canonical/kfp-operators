@@ -4,6 +4,7 @@
 from contextlib import nullcontext as does_not_raise
 from unittest.mock import MagicMock, patch
 
+import botocore.exceptions
 import pytest
 import yaml
 from charmed_kubeflow_chisme.kubernetes import KubernetesResourceHandler
@@ -54,6 +55,14 @@ def harness() -> Harness:
 
 class TestCharm:
     """Test class for KfamApiOperator."""
+
+    @pytest.fixture
+    def mock_s3_client(self, mocker):
+        mock_boto = mocker.patch("boto3.client")
+        mock_s3 = mocker.MagicMock()
+        mock_s3.create_bucket.return_value = {}
+        mock_boto.return_value = mock_s3
+        return mock_s3
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
@@ -141,6 +150,7 @@ class TestCharm:
         self,
         k8s_resource_handler: MagicMock,
         mock_reconcile: MagicMock,
+        mock_s3_client,
         harness: Harness,
     ):
         """Test that _on_event calls _reconcile_authorization_policies."""
@@ -200,6 +210,52 @@ class TestCharm:
         harness.begin_with_initial_hooks()
         assert isinstance(harness.charm.model.unit.status, BlockedStatus)
         assert harness.charm.model.unit.status.message.startswith("kfp-api must be deployed to")
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @pytest.mark.parametrize(
+        "config,expectation",
+        [
+            (
+                {
+                    "default-pipeline-user-id": "1000",
+                    "default-pipeline-group-id": "1000",
+                    "default-pipeline-non-root": "true",
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "default-pipeline-user-id": "abc",
+                    "default-pipeline-group-id": "1000",
+                    "default-pipeline-non-root": "true",
+                },
+                pytest.raises(ErrorWithStatus),
+            ),
+            (
+                {
+                    "default-pipeline-user-id": "1000",
+                    "default-pipeline-group-id": "xyz",
+                    "default-pipeline-non-root": "true",
+                },
+                pytest.raises(ErrorWithStatus),
+            ),
+            (
+                {
+                    "default-pipeline-user-id": "1000",
+                    "default-pipeline-group-id": "1000",
+                    "default-pipeline-non-root": "not-bool",
+                },
+                pytest.raises(ErrorWithStatus),
+            ),
+        ],
+    )
+    def test_config_validation(self, config, expectation, harness: Harness):
+        harness.set_leader(True)
+        harness.begin()
+
+        with expectation:
+            harness.update_config(config)
+            harness.charm._check_config()
 
     @pytest.mark.parametrize(
         "relation_data,expected_returned_data,expected_raises,expected_status",
@@ -456,6 +512,7 @@ class TestCharm:
         expected_status,
         harness: Harness,
         mocked_resource_handler,
+        mock_s3_client,
     ):
         harness.set_leader(True)
         harness.begin()
@@ -477,14 +534,15 @@ class TestCharm:
         else:
             assert partial_relation_data.value.status == expected_status
 
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.Client")
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.KfpApiOperator.k8s_resource_handler")
     def test_install_with_all_inputs_and_pebble(
         self,
         k8s_resource_handler: MagicMock,
         mock_client: MagicMock,
         harness: Harness,
+        mock_s3_client,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
         harness.set_leader(True)
@@ -587,6 +645,7 @@ class TestCharm:
             "V2_LAUNCHER_IMAGE": harness.charm.config["launcher-image"],
             "ARCHIVE_CONFIG_LOG_FILE_NAME": harness.charm.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": harness.charm.config["log-archive-prefix"],
+            "CLUSTER_DOMAIN": "cluster.local",
             # OBJECTSTORECONFIG_HOST and _PORT currently have no effect due to
             # https://github.com/kubeflow/pipelines/issues/9689, described more in
             # https://github.com/canonical/minio-operator/pull/151
@@ -596,6 +655,9 @@ class TestCharm:
             ),
             "OBJECTSTORECONFIG_PORT": str(objectstorage_data["port"]),
             "OBJECTSTORECONFIG_REGION": "",
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_USER": "",
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_GROUP": "",
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_NON_ROOT": "",
         }
         test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
 
@@ -610,6 +672,7 @@ class TestCharm:
         k8s_resource_handler: MagicMock,
         mock_client: MagicMock,
         harness: Harness,
+        mock_s3_client,
     ):
         """Test complete installation with all required relations and verify pebble layer."""
         harness.set_leader(True)
@@ -642,14 +705,17 @@ class TestCharm:
     @patch("charm.KfpApiOperator._generate_environment")
     def test_update_status(
         self,
-        _apply_k8s_resources: MagicMock,
-        _check_status: MagicMock,
         _generate_environment: MagicMock,
+        _check_status: MagicMock,
+        _apply_k8s_resources: MagicMock,
         mock_client: MagicMock,
         harness: Harness,
+        mock_s3_client,
     ):
         """Test update status handler."""
         harness.set_leader(True)
+        # Set up required relations
+        self.setup_required_relations(harness)
         harness.begin_with_initial_hooks()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
 
@@ -773,6 +839,7 @@ class TestCharm:
         mocked_resource_handler,
         mocked_kubernetes_service_patcher,
         harness: Harness,
+        mock_s3_client,
     ):
         """Test that a relation broken event is properly handled."""
         # Arrange
@@ -1054,3 +1121,34 @@ class TestCharm:
             assert "istio.io/use-waypoint" in actual_ambient
         else:
             assert actual_ambient == {}
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    @patch("charm.Client")
+    def test_object_storage_timeout(
+        self,
+        mock_client,
+        k8s_resource_handler,
+        harness: Harness,
+        mocker,
+    ):
+        """Ensure timeout errors from S3 are handled as WaitingStatus."""
+        harness.set_leader(True)
+        self.setup_required_relations(harness)
+        harness.begin()
+        # Mock S3 wrapper to raise timeout on bucket check
+        mock_wrapper = mocker.patch("charm.S3BucketWrapper")
+        instance = mock_wrapper.return_value
+        instance.bucket_exists.side_effect = botocore.exceptions.ConnectTimeoutError(
+            endpoint_url="http://fake-endpoint"
+        )
+
+        # Act
+        harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
+
+        # Assert
+        assert isinstance(harness.charm.model.unit.status, WaitingStatus)
+        assert (
+            "Waiting for object storage to become accessible."
+            in harness.charm.model.unit.status.message
+        )
