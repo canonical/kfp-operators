@@ -31,7 +31,11 @@ CUSTOM_IMAGES_PATH = Path("./src/default-custom-images.json")
 with CUSTOM_IMAGES_PATH.open() as f:
     custom_images = json.load(f)
 
-KFP_DEFAULT_PIPELINE_ROOT = ""
+with open("config.yaml", "r") as file:
+    config_data = yaml.safe_load(file)
+KFP_DEFAULT_PIPELINE_ROOT = config_data["options"][CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT][
+    "default"
+]
 
 MOCK_OBJECT_STORAGE_DATA = {
     "access-key": "access-key",

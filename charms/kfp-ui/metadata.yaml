@@ -7,14 +7,14 @@ docs: https://discourse.charmhub.io/t/8228
 containers:
   ml-pipeline-ui:
     resource: ml-pipeline-ui
-    uid: 584792
-    gid: 584792
+    # Set these to 584792 when using the rock
+    uid: 0
+    gid: 0
 resources:
   ml-pipeline-ui:
     type: oci-image
     description: OCI image for ml-pipeline-ui
-    # The container's command and `user` need to be updated when switching from upstream image to rock
-    upstream-source: docker.io/charmedkubeflow/frontend:2.15.0-6b3223a
+    upstream-source: ghcr.io/kubeflow/kfp-frontend:2.16.0
 requires:
   object-storage:
     interface: object-storage
