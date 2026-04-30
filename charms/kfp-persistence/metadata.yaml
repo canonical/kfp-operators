@@ -14,7 +14,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: ghcr.io/kubeflow/kfp-persistence-agent:2.16.0
+    upstream-source: docker.io/charmedkubeflow/persistenceagent:2.16.0-7d20b0c
 requires:
   kfp-api:
     interface: k8s-service
