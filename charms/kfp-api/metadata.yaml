@@ -12,8 +12,8 @@ containers:
   apiserver:
     resource: oci-image
     # Set these to 584792 when using the rock
-    uid: 0
-    gid: 0
+    uid: 584792
+    gid: 584792
 resources:
   oci-image:
     type: oci-image
