@@ -8,13 +8,13 @@ containers:
   persistenceagent:
     resource: oci-image
     # Set these to 584792 when using the rock
-    uid: 0
-    gid: 0
+    uid: 584792
+    gid: 584792
 resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: ghcr.io/kubeflow/kfp-persistence-agent:2.16.0
+    upstream-source: docker.io/charmedkubeflow/persistenceagent:2.16.0-7d20b0c
 requires:
   kfp-api:
     interface: k8s-service

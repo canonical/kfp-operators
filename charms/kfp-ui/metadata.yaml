@@ -8,13 +8,13 @@ containers:
   ml-pipeline-ui:
     resource: ml-pipeline-ui
     # Set these to 584792 when using the rock
-    uid: 0
-    gid: 0
+    uid: 584792
+    gid: 584792
 resources:
   ml-pipeline-ui:
     type: oci-image
     description: OCI image for ml-pipeline-ui
-    upstream-source: ghcr.io/kubeflow/kfp-frontend:2.16.0
+    upstream-source: docker.io/charmedkubeflow/frontend:2.16.0-c9e8334
 requires:
   object-storage:
     interface: object-storage

@@ -12,13 +12,13 @@ containers:
   apiserver:
     resource: oci-image
     # Set these to 584792 when using the rock
-    uid: 0
-    gid: 0
+    uid: 584792
+    gid: 584792
 resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: ghcr.io/kubeflow/kfp-api-server:2.16.0
+    upstream-source: docker.io/charmedkubeflow/api-server:2.16.0-4d8c239
 requires:
   mysql:
     interface: mysql

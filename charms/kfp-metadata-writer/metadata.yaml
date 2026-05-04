@@ -15,7 +15,7 @@ resources:
   oci-image:
     type: oci-image
     description: OCI image for KFP Metadata Writer
-    upstream-source: ghcr.io/kubeflow/kfp-metadata-writer:2.16.0
+    upstream-source: docker.io/charmedkubeflow/metadata-writer:2.16.0-a8d2d7d
 requires:
   grpc:
     interface: k8s-service

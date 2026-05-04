@@ -8,13 +8,13 @@ containers:
   ml-pipeline-scheduledworkflow:
     resource: oci-image
     # Set these to 584792 when using the rock
-    uid: 0
-    gid: 0
+    uid: 584792
+    gid: 584792
 resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: ghcr.io/kubeflow/kfp-scheduled-workflow-controller:2.16.0
+    upstream-source: docker.io/charmedkubeflow/scheduledworkflow:2.16.0-38af823
 requires:
   logging:
     interface: loki_push_api
