@@ -2,7 +2,6 @@
 # See LICENSE file for licensing details.
 
 import json
-from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -45,28 +44,29 @@ MOCK_OBJECT_STORAGE_DATA = {
     "secure": True,
 }
 
+
 def generate_expected_environment(model_name: str) -> dict:
     return {
-    "CONTROLLER_PORT": CONTROLLER_PORT,
-    "DISABLE_ISTIO_SIDECAR": DISABLE_ISTIO_SIDECAR,
-    "KFP_DEFAULT_PIPELINE_ROOT": KFP_DEFAULT_PIPELINE_ROOT,
-    "KFP_VERSION": KFP_IMAGES_VERSION,
-    "METADATA_GRPC_SERVICE_HOST": f"metadata-grpc-service.{model_name}",
-    "METADATA_GRPC_SERVICE_PORT": METADATA_GRPC_SERVICE_PORT,
-    "MINIO_ACCESS_KEY": MOCK_OBJECT_STORAGE_DATA["access-key"],
-    "MINIO_HOST": MOCK_OBJECT_STORAGE_DATA["service"],
-    "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
-    "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
-    "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
-    # Using custom image and tag from the JSON file
-    "FRONTEND_IMAGE": custom_images["frontend"].split(":")[0],
-    "FRONTEND_TAG": custom_images["frontend"].split(":")[1],
-    "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
-    "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
-    # ambient
-    "AMBIENT_ENABLED": False,
-    "KFP_API_PRINCIPAL": f"cluster.local/ns/{model_name}/sa/kfp-api",
-}
+        "CONTROLLER_PORT": CONTROLLER_PORT,
+        "DISABLE_ISTIO_SIDECAR": DISABLE_ISTIO_SIDECAR,
+        "KFP_DEFAULT_PIPELINE_ROOT": KFP_DEFAULT_PIPELINE_ROOT,
+        "KFP_VERSION": KFP_IMAGES_VERSION,
+        "METADATA_GRPC_SERVICE_HOST": f"metadata-grpc-service.{model_name}",
+        "METADATA_GRPC_SERVICE_PORT": METADATA_GRPC_SERVICE_PORT,
+        "MINIO_ACCESS_KEY": MOCK_OBJECT_STORAGE_DATA["access-key"],
+        "MINIO_HOST": MOCK_OBJECT_STORAGE_DATA["service"],
+        "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
+        "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
+        "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
+        # Using custom image and tag from the JSON file
+        "FRONTEND_IMAGE": custom_images["frontend"].split(":")[0],
+        "FRONTEND_TAG": custom_images["frontend"].split(":")[1],
+        "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
+        "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
+        # ambient
+        "AMBIENT_ENABLED": False,
+        "KFP_API_PRINCIPAL": f"cluster.local/ns/{model_name}/sa/kfp-api",
+    }
 
 
 @pytest.fixture
