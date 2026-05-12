@@ -65,7 +65,7 @@ def generate_expected_environment(model_name: str) -> dict:
     "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
     # ambient
     "AMBIENT_ENABLED": False,
-    "KFP_API_PRINCIPAL": "cluster.local/ns/kubeflow/sa/kfp-api",
+    "KFP_API_PRINCIPAL": f"cluster.local/ns/{model_name}/sa/kfp-api",
 }
 
 
