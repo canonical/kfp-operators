@@ -7,14 +7,14 @@ docs: https://discourse.charmhub.io/t/8228
 containers:
   ml-pipeline-ui:
     resource: ml-pipeline-ui
+    # Set these to 584792 when using the rock
     uid: 584792
     gid: 584792
 resources:
   ml-pipeline-ui:
     type: oci-image
     description: OCI image for ml-pipeline-ui
-    # The container's command and `user` need to be updated when switching from upstream image to rock
-    upstream-source: docker.io/charmedkubeflow/frontend:2.15.0-6b3223a
+    upstream-source: docker.io/charmedkubeflow/frontend:2.16.0-c9e8334
 requires:
   object-storage:
     interface: object-storage
@@ -119,22 +119,6 @@ requires:
   istio-ingress-route:
     interface: istio_ingress_route
 provides:
-  kfp-ui:
-    interface: k8s-service
-    schema:
-      v1:
-        provides:
-          type: object
-          properties:
-            service-name:
-              type: string
-            service-port:
-              type: string
-          required:
-          - service-name
-          - service-port
-    versions: [v1]
-    __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
   provide-cmr-mesh:
     interface: cross_model_mesh
     description: |

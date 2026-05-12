@@ -253,37 +253,6 @@ def test_ingress_relation_with_related_app(harness: Harness, mocked_kubernetes_s
     assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
 
 
-def test_kfp_ui_relation_with_related_app(harness: Harness, mocked_kubernetes_service_patch):
-    """Test that the kfp-ui relation sends data to related apps and goes Active."""
-    # Arrange
-    model = "model"
-    harness.set_model_name(model)
-    harness.begin()
-
-    # Mock:
-    # * leadership_gate to be active and executed
-    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
-
-    expected_relation_data = {
-        "_supported_versions": ["v1"],
-        "data": render_kfp_ui_data(
-            app_name=harness.model.app.name,
-            model_name=model,
-            port=harness.model.config["http-port"],
-        ),
-    }
-
-    # Act
-    # Add one relation with data.  This should trigger a charm reconciliation due to
-    # relation-changed.
-    relation_metadata = add_sdi_relation_to_harness(harness, "kfp-ui", other_app="o1", data={})
-    relation_ids_to_assert = [relation_metadata.rel_id]
-
-    # Assert
-    assert isinstance(harness.charm.kfp_ui_relation.status, ActiveStatus)
-    assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
-
-
 def assert_relation_data_send_as_expected(
     harness: Harness, expected_relation_data: dict, rel_ids_to_assert: list
 ):

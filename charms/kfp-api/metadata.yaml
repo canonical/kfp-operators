@@ -11,14 +11,14 @@ issues: https://github.com/canonical/kfp-operators/issues
 containers:
   apiserver:
     resource: oci-image
+    # Set these to 584792 when using the rock
     uid: 584792
     gid: 584792
 resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    # The container's `user` needs to be updated when switching from upstream image to rock
-    upstream-source: docker.io/charmedkubeflow/api-server:2.15.0-b9c2113
+    upstream-source: docker.io/charmedkubeflow/api-server:2.16.0-4d8c239
 requires:
   mysql:
     interface: mysql

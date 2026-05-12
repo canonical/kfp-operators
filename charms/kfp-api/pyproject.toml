@@ -46,7 +46,8 @@ package-mode = false
 optional = true
 
 [tool.poetry.group.charm.dependencies]
-charmed-kubeflow-chisme = "^0.4.24"
+boto3 = ">=1.42.51"
+charmed-kubeflow-chisme = "^0.4.25"
 cosl = ">=0.0.48"
 lightkube = "^0.15.6"
 oci-image = "^1.0.0"
@@ -74,6 +75,7 @@ flake8-copyright = "^0.2.4"
 isort = "^5.13.2"
 pep8-naming = "^0.14.1"
 pyproject-flake8 = "^7.0.0"
+types-boto3 = { extras = ["s3"], version = "^1.42.13" }
 
 [tool.poetry.group.unit]
 optional = true
@@ -90,7 +92,7 @@ optional = true
 
 [tool.poetry.group.integration.dependencies]
 juju = "<4.0"
-charmed-kubeflow-chisme = "^0.4.24"
+charmed-kubeflow-chisme = "^0.4.25"
 lightkube = "^0.15.6"
 pytest-operator = "^0.38.0"
 selenium = "^4.27.1"

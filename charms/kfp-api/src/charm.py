@@ -10,6 +10,7 @@ https://github.com/canonical/kfp-operators/
 import logging
 from pathlib import Path
 
+import botocore.exceptions
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRuntimeError
 from charmed_kubeflow_chisme.kubernetes import (
     KubernetesResourceHandler,
@@ -54,6 +55,8 @@ from serialized_data_interface import (
     get_interfaces,
 )
 from serialized_data_interface.errors import RelationDataError
+
+from services.s3 import S3BucketWrapper
 
 CONFIG_DIR = Path("/config")
 SAMPLE_CONFIG = CONFIG_DIR / "sample_config.json"
@@ -398,6 +401,7 @@ class KfpApiOperator(CharmBase):
             # Configurations charmed-kubeflow adds to those of upstream
             "ARCHIVE_CONFIG_LOG_FILE_NAME": self.model.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": self.model.config["log-archive-prefix"],
+            "CLUSTER_DOMAIN": "cluster.local",
             # OBJECTSTORECONFIG_HOST and _PORT set the object storage configurations,
             # taking precedence over configuration in the config.json or
             # MINIO_SERVICE_SERVICE_* environment variables.
@@ -409,6 +413,20 @@ class KfpApiOperator(CharmBase):
             "OBJECTSTORECONFIG_HOST": f"{object_storage['service']}.{object_storage['namespace']}",
             "OBJECTSTORECONFIG_PORT": str(object_storage["port"]),
             "OBJECTSTORECONFIG_REGION": "",
+            # The following 3 configuration options change the behavior for pipeline pods,
+            # overriding an SDK-specified values.
+            # DEFAULT_SECURITY_CONTEXT_RUN_AS_USER: Change user for pipeline pods
+            # DEFAULT_SECURITY_CONTEXT_RUN_AS_GROUP: Change group for pipeline pods
+            # DEFAULT_SECURITY_CONTEXT_RUN_AS_NON_ROOT: If true, enforce that pipelines cannot
+            # be run as root.
+            # Introduced in https://github.com/kubeflow/pipelines/pull/12859
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_USER": self.model.config["default-pipeline-user-id"],
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_GROUP": self.model.config[
+                "default-pipeline-group-id"
+            ],
+            "DEFAULT_SECURITY_CONTEXT_RUN_AS_NON_ROOT": self.model.config[
+                "default-pipeline-non-root"
+            ],
         }
 
         return env_vars
@@ -809,8 +827,10 @@ class KfpApiOperator(CharmBase):
         # Set up all relations/fetch required data
         try:
             self._check_leader()
+            self._check_config()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
             self._reconcile_authorization_policies()
+            self._ensure_bucket_exists()
             update_layer(self._container_name, self._container, self._kfp_api_layer, self.logger)
             self._send_info(self._get_interfaces())
         except ErrorWithStatus as err:
@@ -819,6 +839,80 @@ class KfpApiOperator(CharmBase):
             return
 
         self.model.unit.status = ActiveStatus()
+
+    def _check_config(self) -> None:
+        """Validate security-related config options.
+
+        - default-pipeline-user-id: empty or integer string
+        - default-pipeline-group-id: empty or integer string
+        - default-pipeline-non-root: empty or 'true'/'false'
+        """
+        user = self.model.config.get("default-pipeline-user-id", "")
+        group = self.model.config.get("default-pipeline-group-id", "")
+        non_root = self.model.config.get("default-pipeline-non-root", "")
+
+        if not _is_int_str(user):
+            raise ErrorWithStatus(
+                "default-pipeline-user-id must be empty or an integer",
+                BlockedStatus,
+            )
+
+        if not _is_int_str(group):
+            raise ErrorWithStatus(
+                "default-pipeline-group-id must be empty or an integer",
+                BlockedStatus,
+            )
+
+        if non_root not in ("", "true", "false"):
+            raise ErrorWithStatus(
+                "default-pipeline-non-root must be '', 'true' or 'false'",
+                BlockedStatus,
+            )
+
+    def _ensure_bucket_exists(self) -> None:
+        """Ensure bucket on object storage exists by using a boto3 client."""
+        interfaces = self._get_interfaces()
+        obj = self._get_object_storage(interfaces)
+
+        s3_wrapper = S3BucketWrapper(
+            access_key=obj.get("access-key"),
+            secret_access_key=obj.get("secret-key"),
+            s3_service=f"{obj['service']}.{obj['namespace']}",
+            s3_port=obj["port"],
+        )
+
+        # Try creating the bucket we need for object storage
+        bucket_name = self.model.config["object-store-bucket-name"]
+        try:
+            self.unit.status = MaintenanceStatus(f"Checking if bucket {bucket_name} exists.")
+            # Check if bucket already exists
+            if s3_wrapper.bucket_exists(bucket_name):
+                return
+
+            # Create the bucket if missing
+            self.unit.status = MaintenanceStatus(f"Creating bucket {bucket_name}.")
+            s3_wrapper.create_bucket(bucket_name)
+            return
+
+        except (
+            botocore.exceptions.ClientError,
+            botocore.exceptions.ConnectTimeoutError,
+            botocore.exceptions.ReadTimeoutError,
+            botocore.exceptions.EndpointConnectionError,
+        ) as e:
+            msg = "Waiting for object storage to become accessible."
+            self.logger.warning(f"{msg}: {e}")
+            raise ErrorWithStatus(msg, WaitingStatus)
+
+
+def _is_int_str(v: str) -> bool:
+    """Return True if v is empty or a non-negative integer string."""
+    if v == "":
+        return True
+    try:
+        return int(v) >= 0
+    except (TypeError, ValueError):
+        return False
 
 
 if __name__ == "__main__":

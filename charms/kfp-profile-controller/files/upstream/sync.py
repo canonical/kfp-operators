@@ -173,38 +173,50 @@ def server_factory(visualization_server_image,
                 logger.info(f"Namespace not in scope, no action taken (metadata.labels.pipelines.kubeflow.org/enabled = {pipeline_enabled}, must be 'true')")
                 return {"status": {}, "attachments": []}
 
+            # - - - - - - - - - - - - - - - - - -
+            # CUSTOM CODE BY CANONICAL
+            # - - - - - - - - - - - - - - - - - -
+            # Added from https://github.com/canonical/kfp-operators/pull/870 to fix
+            # https://github.com/canonical/kfp-operators/issues/872.
+            # The default endpoint for S3 has been changed in upstream, see
+            # https://github.com/kubeflow/manifests/blob/c4d60708c619856cca8020853eeb8cc76dbf2f75/applications/pipeline/upstream/base/installs/multi-user/pipelines-profile-controller/sync.py#L28
+            # This means that we have to always update the provider to use our wanted endpoint
+            # We set this by using the `kfp-launcher` configmap, as specified in:
+            # https://www.kubeflow.org/docs/components/pipelines/operator-guides/configure-object-store/#s3-and-s3-compatible-provider
             desired_configmap_count = 2
-            desired_resources = [
-                {
-                    "apiVersion": "v1",
-                    "kind": "ConfigMap",
-                    "metadata": {
-                        "name": "kfp-launcher",
-                        "namespace": namespace,
-                    },
-                    "data": {
-                        "providers":
-"""
-minio:
-  default:
-    endpoint: {minio_host}.{minio_namespace}:{minio_port}
-    region: minio
-    disableSSL: true
-    credentials:
-      fromEnv: false
-      secretRef:
-        secretName: mlpipeline-minio-artifact
-        accessKeyKey: accesskey
-        secretKeyKey: secretkey
-""".format(**{"minio_host": minio_host, "minio_namespace": minio_namespace, "minio_port": minio_port})
-                    }
-                }
-            ]
+            desired_resources = []
 
+            providers_yaml = (
+                "s3:\n"
+                "  default:\n"
+                f"    endpoint: {minio_host}.{minio_namespace}:{minio_port}\n"
+                "    disableSSL: true\n"
+                "    region: us-east-1\n"
+                "    forcePathStyle: true\n"
+                "    credentials:\n"
+                "      fromEnv: false\n"
+                "      secretRef:\n"
+                "        secretName: mlpipeline-minio-artifact\n"
+                "        accessKeyKey: accesskey\n"
+                "        secretKeyKey: secretkey"
+            )
+
+            configmap_data = {
+                "providers": providers_yaml,
+            }
+            
             if kfp_default_pipeline_root:
-                desired_resources[0]["data"].update({
-                    "defaultPipelineRoot": kfp_default_pipeline_root,
-                })
+                configmap_data["defaultPipelineRoot"] = kfp_default_pipeline_root
+
+            desired_resources += [{
+                "apiVersion": "v1",
+                "kind": "ConfigMap",
+                "metadata": {
+                    "name": "kfp-launcher",
+                    "namespace": namespace,
+                },
+                "data": configmap_data,
+            }]
 
 
             # Compute status based on observed state.

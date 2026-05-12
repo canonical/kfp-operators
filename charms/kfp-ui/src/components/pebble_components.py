@@ -75,6 +75,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                         "AWS_ACCESS_KEY_ID": "",
                         "AWS_SECRET_ACCESS_KEY": "",
                         "DISABLE_GKE_METADATA": inputs.DISABLE_GKE_METADATA,
+                        "CLUSTER_DOMAIN": "cluster.local",
                         "ENABLE_AUTHZ": "true",
                         "DEPLOYMENT": "KUBEFLOW",
                         "FRONTEND_SERVER_NAMESPACE": inputs.FRONTEND_SERVER_NAMESPACE,

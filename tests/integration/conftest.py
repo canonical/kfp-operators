@@ -16,6 +16,8 @@ from _pytest.config.argparsing import Parser
 from helpers.k8s_resources import apply_manifests
 from lightkube import codecs
 from lightkube.generic_resource import create_global_resource
+from lightkube.resources.core_v1 import ConfigMap
+from tenacity import Retrying, stop_after_delay, wait_fixed
 
 basedir = Path("./").absolute()
 
@@ -27,6 +29,7 @@ PROFILE_FILE_PATH = f"{basedir}/tests/integration/profile/profile.yaml"
 PROFILE_FILE = yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
 KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
 
+KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
 WAIT_TIMEOUT = 20 * 60
 
 log = logging.getLogger(__name__)
@@ -47,6 +50,21 @@ def pytest_collection_modifyitems(config, items):
             # If the test has the @pytest.mark.deploy marker, skip it
             if "deploy" in item.keywords:
                 item.add_marker(skip_deploy)
+
+
+RETRY_FOR_ONE_MINUTE = Retrying(
+    stop=stop_after_delay(60 * 1),
+    wait=wait_fixed(5),
+    reraise=True,
+)
+
+
+def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> ConfigMap:
+    """Waits until a specified configmap is available, to a maximum of 1 minute"""
+    for attempt in RETRY_FOR_ONE_MINUTE:
+        with attempt:
+            return client.get(res=ConfigMap, name=name, namespace=namespace)
+    raise TimeoutError(f"ConfigMap {name} in namespace {namespace} not present.")
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -115,6 +133,9 @@ def apply_profile(lightkube_client):
 
     # Apply Profile first
     apply_manifests(lightkube_client, PROFILE_FILE_PATH)
+
+    # Ensure "kfp-launcher" configmap has been created on the profile namespace
+    wait_for_configmap(lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, KUBEFLOW_PROFILE_NAMESPACE)
 
     yield
 
