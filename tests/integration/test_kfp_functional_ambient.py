@@ -34,6 +34,7 @@ from kfp_globals import (
     SAMPLE_PIPELINE_NAME,
     SAMPLE_VIEWER,
 )
+from lightkube import Client
 from lightkube.generic_resource import create_namespaced_resource
 
 charms_dependencies_list = [
@@ -88,12 +89,8 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
 
 @pytest.mark.deploy
 @pytest.mark.abort_on_fail
-def test_deploy(juju: jubilant.Juju, request, lightkube_client):
+def test_deploy(juju: jubilant.Juju, request: pytest.FixtureRequest, lightkube_client: Client):
     """Deploy kfp-operators charms."""
-
-    # Immediately raise an error if the model name is not kubeflow
-    if juju.model != "kubeflow":
-        raise ValueError("kfp must be deployed to namespace kubeflow")
 
     # Get/load template bundle from command line args
     bundlefile_path = Path(request.config.getoption("bundle"))
@@ -122,7 +119,7 @@ def test_deploy(juju: jubilant.Juju, request, lightkube_client):
 
 
 # ---- KFP API Server focused test cases
-def test_upload_pipeline(kfp_client):
+def test_upload_pipeline(kfp_client: kfp.Client):
     """Upload a pipeline from a YAML file and assert its presence."""
     # Upload a pipeline and get the server response
     pipeline_name = "test-pipeline"
@@ -148,7 +145,7 @@ def test_upload_pipeline(kfp_client):
     kfp_client.delete_pipeline(pipeline_upload_response.pipeline_id)
 
 
-def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
+def test_create_and_monitor_run(kfp_client: kfp.Client, create_and_clean_experiment_v2):
     """Create a run and monitor it to completion."""
     # Create a run, save response in variable for easy manipulation
     # Create an experiment for this run
@@ -173,7 +170,7 @@ def test_create_and_monitor_run(kfp_client, create_and_clean_experiment_v2):
 
 # ---- ScheduledWorfklows and Argo focused test case
 def test_create_and_monitor_recurring_run(
-    kfp_client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
+    kfp_client: kfp.Client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
 ):
     """Create a recurring run and monitor it to completion."""
 
@@ -233,7 +230,7 @@ def test_create_and_monitor_recurring_run(
 
 
 # ---- KFP Viewer and Visualization focused test cases
-def test_apply_sample_viewer(lightkube_client):
+def test_apply_sample_viewer(lightkube_client: Client):
     """Test a Viewer can be applied and its presence is verified."""
     # Create a Viewer namespaced resource
     viewer_class_resource = create_namespaced_resource(
