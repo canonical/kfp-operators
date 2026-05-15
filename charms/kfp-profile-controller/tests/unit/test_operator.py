@@ -22,7 +22,6 @@ from charm import (
 
 CONFIG_NAME_FOR_CUSTOM_IMAGES = "custom_images"
 CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = "default_pipeline_root"
-CONFIG_NAME_FOR_KFP_API_PRINCIPAL = "kfp-api-principal"
 
 # Load the custom images from the JSON
 CUSTOM_IMAGES_PATH = Path("./src/default-custom-images.json")
@@ -208,13 +207,12 @@ def test_kubernetes_created_method(
 
 
 @pytest.mark.parametrize(
-    "do_update_config_for_default_pipeline_root,mesh_relation,kfp_api_principal",
-    [(False, False, "principal1"), (True, True, "principal2")],
+    "do_update_config_for_default_pipeline_root,mesh_relation",
+    [(False, False), (True, True)],
 )
 def test_pebble_services_running(
     do_update_config_for_default_pipeline_root: bool,
     mesh_relation: bool,
-    kfp_api_principal: str,
     harness: Harness,
     mocked_lightkube_client,
     mocked_kubernetes_service_patch,
@@ -235,10 +233,6 @@ def test_pebble_services_running(
         relation_id = harness.add_relation("service-mesh", "istio-beacon-k8s")
         harness.add_relation_unit(relation_id, "istio-beacon-k8s/0")
         expected_environment["AMBIENT_ENABLED"] = mesh_relation
-
-    # principal should have changed
-    harness.update_config({CONFIG_NAME_FOR_KFP_API_PRINCIPAL: kfp_api_principal})
-    expected_environment["KFP_API_PRINCIPAL"] = kfp_api_principal
 
     # Mock:
     # * leadership_gate to have get_status=>Active
