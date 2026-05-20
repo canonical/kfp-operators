@@ -243,18 +243,29 @@ jobs:
 
       - name: Get juju status
         run: juju status -m kubeflow --relations | tee /tmp/juju-status-${{ matrix.charm }}.log
-        if: failure() || cancelled()
+        if: failure()
+
+      - name: Get operator and workload logs
+        run: |
+          POD=$(kubectl get pod -n kubeflow -l app.kubernetes.io/name=${{ matrix.charm }} -o jsonpath='{.items[0].metadata.name}')
+          CONTAINERS=($(kubectl get pod -n kubeflow ${POD} -o jsonpath='{.spec.containers[*].name}'))
+          for CONTAINER in ${CONTAINERS[@]}; do
+            kubectl logs -n kubeflow ${POD} -c ${CONTAINER} | tee /tmp/kubectl-logs-${{ matrix.charm }}-${CONTAINER}.log
+          done
+        if: failure()
 
       - name: Get juju debug-log
         run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log-${{ matrix.charm }}.log
-        if: failure() || cancelled()
+        if: failure()
 
       - name: Upload debug artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: test-run-artifacts
-          path: /tmp/juju*.log
-        if: failure() || cancelled()
+          name: test-run-artifacts-${{ matrix.charm }}
+          path: |
+            /tmp/juju*.log
+            /tmp/kubectl-logs*.log
+        if: failure()
 
   test-bundle:
     name: Test the bundle
@@ -318,15 +329,15 @@ jobs:
 
       - name: Get juju status
         run: juju status -m kubeflow --relations | tee /tmp/juju-status.log
-        if: failure() || cancelled()
+        if: failure()
 
       - name: Get juju debug-log
         run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log.log
-        if: failure() || cancelled()
+        if: failure()
 
       - name: Upload debug artifacts
         uses: actions/upload-artifact@v7
         with:
           name: test-run-artifacts
           path: /tmp/juju*.log
-        if: failure() || cancelled()
+        if: failure()
