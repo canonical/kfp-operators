@@ -27,8 +27,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
-      - run: pipx install tox
-      - run: tox -e lint
+        with:
+          persist-credentials: false
+
+      - run: |
+          pipx install tox
+          tox -e lint
 
   lint:
     name: Lint
@@ -46,9 +50,13 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v4
-      - run: pipx install tox
-      - run: tox -e ${{ matrix.charm }}-lint
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - run: |
+          pipx install tox
+          tox -e ${{ matrix.charm }}-lint
 
   unit:
     name: Unit tests
@@ -66,9 +74,13 @@ jobs:
           - kfp-viewer
           - kfp-viz
     steps:
-      - uses: actions/checkout@v4
-      - run: pipx install tox
-      - run: tox -e ${{ matrix.charm }}-unit
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - run: |
+          pipx install tox
+          tox -e ${{ matrix.charm }}-unit
 
   get-charm-paths-track:
     name: Get charm paths and track
@@ -78,12 +90,15 @@ jobs:
       track: ${{ steps.determine-track.outputs.track }}
       channel: ${{ steps.determine-track.outputs.channel }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
+
       - name: Get paths for all charms in this repo
         id: get-charm-paths
         uses: canonical/kubeflow-ci/actions/get-charm-paths@main
+
       - name: Determine track
         id: determine-track
         shell: python
@@ -204,7 +219,10 @@ jobs:
       - name: Maximise GH runner space
         uses: jlumbroso/free-disk-space@v1.3.1
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
       - name: Install dependencies
         run: pipx install tox
 
@@ -218,7 +236,7 @@ jobs:
       - name: Download packed charm(s)
         id: download-charms
         timeout-minutes: 5
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: ${{ needs.build.outputs.artifact-prefix }}-*
           merge-multiple: true
@@ -290,7 +308,10 @@ jobs:
         uses: jlumbroso/free-disk-space@v1.3.1
 
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
       - name: Install dependencies
         run: pipx install tox
 
@@ -312,7 +333,7 @@ jobs:
       - name: Download packed charm(s)
         id: download-charms
         timeout-minutes: 5
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: ${{ needs.build.outputs.artifact-prefix }}-*
           merge-multiple: true
