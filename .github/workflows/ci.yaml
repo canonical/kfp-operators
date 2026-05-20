@@ -22,24 +22,6 @@ on:
         value: ${{ jobs.get-charm-paths-track.outputs.track }}
 
 jobs:
-  lib-check:
-    name: Check libraries
-    strategy:
-      matrix:
-        charm:
-          - kfp-api
-          - kfp-metadata-writer
-          - kfp-persistence
-          - kfp-profile-controller
-          - kfp-schedwf
-          - kfp-ui
-          - kfp-viewer
-          - kfp-viz
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/_quality-checks.yaml@main
-    secrets: inherit
-    with:
-        charm-path: ./charms/${{ matrix.charm }}
-
   lint-bundle:
     name: Lint Bundle Tests
     runs-on: ubuntu-24.04
