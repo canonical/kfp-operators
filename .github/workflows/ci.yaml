@@ -242,19 +242,19 @@ jobs:
           tox -e ${{ matrix.charm }}-${{ matrix.test-type }} -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
 
       - name: Get juju status
-        run: juju status -m kubeflow --relations | tee /tmp/juju-status-${{ matrix.charm }}.txt
-        if: failure()
+        run: juju status -m kubeflow --relations | tee /tmp/juju-status-${{ matrix.charm }}.log
+        if: failure() || cancelled()
 
       - name: Get juju debug-log
-        run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log-${{ matrix.charm }}.txt
-        if: failure()
+        run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log-${{ matrix.charm }}.log
+        if: failure() || cancelled()
 
       - name: Upload debug artifacts
         uses: actions/upload-artifact@v7
         with:
           name: test-run-artifacts
-          path: /tmp/juju*
-        if: failure()
+          path: /tmp/juju*.log
+        if: failure() || cancelled()
 
   test-bundle:
     name: Test the bundle
@@ -317,16 +317,16 @@ jobs:
         if: failure()
 
       - name: Get juju status
-        run: juju status -m kubeflow --relations | tee /tmp/juju-status.txt
-        if: always()
+        run: juju status -m kubeflow --relations | tee /tmp/juju-status.log
+        if: failure() || cancelled()
 
       - name: Get juju debug-log
-        run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log.txt
-        if: failure()
+        run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log.log
+        if: failure() || cancelled()
 
       - name: Upload debug artifacts
         uses: actions/upload-artifact@v7
         with:
           name: test-run-artifacts
-          path: /tmp/juju*
-        if: always()
+          path: /tmp/juju*.log
+        if: failure() || cancelled()
