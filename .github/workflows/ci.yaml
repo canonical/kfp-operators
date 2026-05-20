@@ -241,10 +241,19 @@ jobs:
           # We need to find a better way to dynamically get this value
           tox -e ${{ matrix.charm }}-${{ matrix.test-type }} -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
 
-      - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+      - name: Get juju status
+        run: juju status -m kubeflow --relations | tee /tmp/juju-status-${{ matrix.charm }}.txt
+        if: failure()
+
+      - name: Get juju debug-log
+        run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log-${{ matrix.charm }}.txt
+        if: failure()
+
+      - name: Upload debug artifacts
+        uses: actions/upload-artifact@v7
         with:
-          artifact-prefix: ${{ matrix.charm }}
+          name: test-run-artifacts
+          path: /tmp
         if: failure()
 
   test-bundle:
@@ -308,11 +317,16 @@ jobs:
         if: failure()
 
       - name: Get juju status
-        run: juju status
+        run: juju status -m kubeflow --relations | tee /tmp/juju-status.txt
         if: failure()
 
-      # Collect debug artefacts only on failure || cancelled as the CI for this repository
-      # in particular struggles with storage limitations.
-      - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
-        if: failure() || cancelled()
+      - name: Get juju debug-log
+        run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log.txt
+        if: failure()
+
+      - name: Upload debug artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-run-artifacts
+          path: /tmp
+        if: failure()
