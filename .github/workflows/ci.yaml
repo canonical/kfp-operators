@@ -357,7 +357,7 @@ jobs:
         run: |
           CHARMS=(kfp-api kfp-metadata-writer kfp-persistence kfp-profile-controller kfp-schedwf kfp-ui kfp-viewer kfp-viz)
           for CHARM in ${CHARMS[@]}; do
-            POD=$(kubectl get pod -n kubeflow -l app.kubernetes.io/name=${CHARM} -o jsonpath='{.items[0].metadata.name}')
+            POD=$(kubectl get pod -n kubeflow -l app.kubernetes.io/name=${CHARM} -o jsonpath='{.items[0].metadata.name}') || continue
             CONTAINERS=($(kubectl get pod -n kubeflow ${POD} -o jsonpath='{.spec.containers[*].name}'))
             for CONTAINER in ${CONTAINERS[@]}; do
               kubectl logs -n kubeflow ${POD} -c ${CONTAINER} | tee /tmp/kubectl-logs-${CHARM}-${CONTAINER}.log
