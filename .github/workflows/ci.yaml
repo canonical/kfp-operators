@@ -345,12 +345,13 @@ jobs:
           tox -e bundle-${{ matrix.test-type }} -- --model=kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=${{ matrix.bundle }}
 
       - name: Get all
-        run: kubectl get all -A
-        if: failure()
+        run: |
+          kubectl get all -A | tee /tmp/kubectl-logs-all.log
+        if: failure() || cancelled()
 
       - name: Get juju status
         run: juju status -m kubeflow --relations | tee /tmp/juju-status.log
-        if: failure()
+        if: failure() || cancelled()
 
       - name: Get operator and workload logs
         run: |
@@ -362,11 +363,11 @@ jobs:
               kubectl logs -n kubeflow ${POD} -c ${CONTAINER} | tee /tmp/kubectl-logs-${CHARM}-${CONTAINER}.log
               done
           done
-        if: failure()
+        if: failure() || cancelled()
 
       - name: Get juju debug-log
         run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log.log
-        if: failure()
+        if: failure() || cancelled()
 
       - name: Upload debug artifacts
         uses: actions/upload-artifact@v7
@@ -375,4 +376,4 @@ jobs:
           path: |
             /tmp/juju*.log
             /tmp/kubectl-logs*.log
-        if: failure()
+        if: failure() || cancelled()
