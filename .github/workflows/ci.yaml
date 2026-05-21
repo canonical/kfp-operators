@@ -264,10 +264,10 @@ jobs:
         if: always()
 
       - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@chore/update-dump-charm-debug-artifacts
+        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
         with:
-          artifact-prefix: ${{ matrix.charm }}
-        if: always()
+          artifact-prefix: ${{ matrix.test-type }}-${{ matrix.charm }}
+        if: failure()
 
 
   test-bundle:
@@ -334,5 +334,7 @@ jobs:
         if: always()
 
       - name: Collect charm debug artifacts
-        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@chore/update-dump-charm-debug-artifacts
-        if: always()
+        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@main
+        with:
+          artifact-prefix: ${{ matrix.test-type }}-bundle
+        if: failure()
