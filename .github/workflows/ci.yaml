@@ -347,11 +347,11 @@ jobs:
       - name: Get all
         run: |
           kubectl get all -A | tee /tmp/kubectl-logs-all.log
-        if: always()
+        if: failure()
 
       - name: Get juju status
         run: juju status -m kubeflow --relations | tee /tmp/juju-status.log
-        if: always()
+        if: failure()
 
       - name: Get operator and workload logs
         run: |
@@ -363,11 +363,11 @@ jobs:
               kubectl logs -n kubeflow ${POD} -c ${CONTAINER} | tee /tmp/kubectl-logs-${CHARM}-${CONTAINER}.log
               done
           done
-        if: always()
+        if: failure()
 
       - name: Get juju debug-log
         run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log.log
-        if: always()
+        if: failure()
 
       - name: Upload debug artifacts
         uses: actions/upload-artifact@v7
@@ -376,4 +376,4 @@ jobs:
           path: |
             /tmp/juju*.log
             /tmp/kubectl-logs*.log
-        if: always()
+        if: failure()
