@@ -265,12 +265,15 @@ jobs:
 
       - name: Get operator and workload logs
         run: |
-          POD=$(kubectl get pod -n kubeflow -l app.kubernetes.io/name=${{ matrix.charm }} -o jsonpath='{.items[0].metadata.name}')
-          CONTAINERS=($(kubectl get pod -n kubeflow ${POD} -o jsonpath='{.spec.containers[*].name}'))
-          for CONTAINER in ${CONTAINERS[@]}; do
-            kubectl logs -n kubeflow ${POD} -c ${CONTAINER} | tee /tmp/kubectl-logs-${{ matrix.charm }}-${CONTAINER}.log
+          CHARMS=($(juju status -m kubeflow --format json | jq -r '.applications | keys | join (" ")'))
+          for CHARM in ${CHARMS[@]}; do
+            POD=$(kubectl get pod -n kubeflow -l app.kubernetes.io/name=${CHARM} -o jsonpath='{.items[0].metadata.name}') || continue
+            CONTAINERS=($(kubectl get pod -n kubeflow ${POD} -o jsonpath='{.spec.containers[*].name}'))
+            for CONTAINER in ${CONTAINERS[@]}; do
+              kubectl logs -n kubeflow ${POD} -c ${CONTAINER} | tee /tmp/kubectl-logs-${CHARM}-${CONTAINER}.log
+              done
           done
-        if: failure()
+        if: always()
 
       - name: Get juju debug-log
         run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log-${{ matrix.charm }}.log
@@ -355,7 +358,7 @@ jobs:
 
       - name: Get operator and workload logs
         run: |
-          CHARMS=(kfp-api kfp-metadata-writer kfp-persistence kfp-profile-controller kfp-schedwf kfp-ui kfp-viewer kfp-viz)
+          CHARMS=($(juju status -m kubeflow --format json | jq -r '.applications | keys | join (" ")'))
           for CHARM in ${CHARMS[@]}; do
             POD=$(kubectl get pod -n kubeflow -l app.kubernetes.io/name=${CHARM} -o jsonpath='{.items[0].metadata.name}') || continue
             CONTAINERS=($(kubectl get pod -n kubeflow ${POD} -o jsonpath='{.spec.containers[*].name}'))
@@ -363,7 +366,7 @@ jobs:
               kubectl logs -n kubeflow ${POD} -c ${CONTAINER} | tee /tmp/kubectl-logs-${CHARM}-${CONTAINER}.log
               done
           done
-        if: failure()
+        if: always()
 
       - name: Get juju debug-log
         run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log.log
@@ -376,4 +379,4 @@ jobs:
           path: |
             /tmp/juju*.log
             /tmp/kubectl-logs*.log
-        if: failure()
+        if: always()
