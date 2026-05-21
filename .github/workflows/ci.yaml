@@ -352,6 +352,18 @@ jobs:
         run: juju status -m kubeflow --relations | tee /tmp/juju-status.log
         if: failure()
 
+      - name: Get operator and workload logs
+        run: |
+          CHARMS=(kfp-api kfp-metadata-writer kfp-persistence kfp-profile-controller kfp-schedwf kfp-ui kfp-viewer kfp-viz)
+          for CHARM in ${CHARMS[@]}; do
+            POD=$(kubectl get pod -n kubeflow -l app.kubernetes.io/name=${CHARM} -o jsonpath='{.items[0].metadata.name}')
+            CONTAINERS=($(kubectl get pod -n kubeflow ${POD} -o jsonpath='{.spec.containers[*].name}'))
+            for CONTAINER in ${CONTAINERS[@]}; do
+              kubectl logs -n kubeflow ${POD} -c ${CONTAINER} | tee /tmp/kubectl-logs-${CHARM}-${CONTAINER}.log
+              done
+          done
+        if: failure()
+
       - name: Get juju debug-log
         run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log.log
         if: failure()
@@ -360,5 +372,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-run-artifacts
-          path: /tmp/juju*.log
+          path: |
+            /tmp/juju*.log
+            /tmp/kubectl-logs*.log
         if: failure()
