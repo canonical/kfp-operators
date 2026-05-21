@@ -260,33 +260,15 @@ jobs:
           tox -e ${{ matrix.charm }}-${{ matrix.test-type }} -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
 
       - name: Get juju status
-        run: juju status -m kubeflow --relations | tee /tmp/juju-status-${{ matrix.charm }}.log
+        run: juju status --relations
         if: always()
 
-      - name: Get operator and workload logs
-        run: |
-          CHARMS=($(juju status -m kubeflow --format json | jq -r '.applications | keys | join (" ")'))
-          for CHARM in ${CHARMS[@]}; do
-            POD=$(kubectl get pod -n kubeflow -l app.kubernetes.io/name=${CHARM} -o jsonpath='{.items[0].metadata.name}') || continue
-            CONTAINERS=($(kubectl get pod -n kubeflow ${POD} -o jsonpath='{.spec.containers[*].name}'))
-            for CONTAINER in ${CONTAINERS[@]}; do
-              kubectl logs -n kubeflow ${POD} -c ${CONTAINER} | tee /tmp/kubectl-logs-${CHARM}-${CONTAINER}.log
-              done
-          done
-        if: always()
-
-      - name: Get juju debug-log
-        run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log-${{ matrix.charm }}.log
-        if: failure()
-
-      - name: Upload debug artifacts
-        uses: actions/upload-artifact@v7
+      - name: Collect charm debug artifacts
+        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@chore/update-dump-charm-debug-artifacts
         with:
-          name: test-run-artifacts-${{ matrix.charm }}
-          path: |
-            /tmp/juju*.log
-            /tmp/kubectl-logs*.log
-        if: failure()
+          artifact-prefix: ${{ matrix.charm }}
+        if: always()
+
 
   test-bundle:
     name: Test the bundle
@@ -347,36 +329,10 @@ jobs:
           juju add-model kubeflow
           tox -e bundle-${{ matrix.test-type }} -- --model=kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=${{ matrix.bundle }}
 
-      - name: Get all
-        run: |
-          kubectl get all -A | tee /tmp/kubectl-logs-all.log
-        if: failure()
-
       - name: Get juju status
-        run: juju status -m kubeflow --relations | tee /tmp/juju-status.log
+        run: juju status --relations
         if: always()
 
-      - name: Get operator and workload logs
-        run: |
-          CHARMS=($(juju status -m kubeflow --format json | jq -r '.applications | keys | join (" ")'))
-          for CHARM in ${CHARMS[@]}; do
-            POD=$(kubectl get pod -n kubeflow -l app.kubernetes.io/name=${CHARM} -o jsonpath='{.items[0].metadata.name}') || continue
-            CONTAINERS=($(kubectl get pod -n kubeflow ${POD} -o jsonpath='{.spec.containers[*].name}'))
-            for CONTAINER in ${CONTAINERS[@]}; do
-              kubectl logs -n kubeflow ${POD} -c ${CONTAINER} | tee /tmp/kubectl-logs-${CHARM}-${CONTAINER}.log
-              done
-          done
-        if: always()
-
-      - name: Get juju debug-log
-        run: juju debug-log -m kubeflow --replay --no-tail | tee /tmp/juju-debug-log.log
-        if: failure()
-
-      - name: Upload debug artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-run-artifacts
-          path: |
-            /tmp/juju*.log
-            /tmp/kubectl-logs*.log
+      - name: Collect charm debug artifacts
+        uses: canonical/kubeflow-ci/actions/dump-charm-debug-artifacts@chore/update-dump-charm-debug-artifacts
         if: always()
