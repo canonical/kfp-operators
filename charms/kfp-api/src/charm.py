@@ -431,16 +431,6 @@ class KfpApiOperator(CharmBase):
 
         return env_vars
 
-    def _check_model_name(self):
-        if self.model.name != "kubeflow":
-            # Remove when this bug is resolved:
-            # https://github.com/canonical/kfp-operators/issues/389
-            raise ErrorWithStatus(
-                "kfp-api must be deployed to model named `kubeflow` due to"
-                " https://github.com/canonical/kfp-operators/issues/389",
-                BlockedStatus,
-            )
-
     def _check_status(self):
         """Check status of workload and set status accordingly."""
         self._check_leader()
@@ -836,7 +826,6 @@ class KfpApiOperator(CharmBase):
     def _on_event(self, event, force_conflicts: bool = False) -> None:
         # Set up all relations/fetch required data
         try:
-            self._check_model_name()
             self._check_leader()
             self._check_config()
             self._apply_k8s_resources(force_conflicts=force_conflicts)
