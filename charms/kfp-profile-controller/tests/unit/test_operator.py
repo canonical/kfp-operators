@@ -2,7 +2,6 @@
 # See LICENSE file for licensing details.
 
 import json
-from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -17,14 +16,12 @@ from charm import (
     CONTROLLER_PORT,
     DISABLE_ISTIO_SIDECAR,
     KFP_IMAGES_VERSION,
-    METADATA_GRPC_SERVICE_HOST,
     METADATA_GRPC_SERVICE_PORT,
     KfpProfileControllerOperator,
 )
 
 CONFIG_NAME_FOR_CUSTOM_IMAGES = "custom_images"
 CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = "default_pipeline_root"
-CONFIG_NAME_FOR_KFP_API_PRINCIPAL = "kfp-api-principal"
 
 # Load the custom images from the JSON
 CUSTOM_IMAGES_PATH = Path("./src/default-custom-images.json")
@@ -46,27 +43,29 @@ MOCK_OBJECT_STORAGE_DATA = {
     "secure": True,
 }
 
-EXPECTED_ENVIRONMENT_BY_DEFAULT = {
-    "CONTROLLER_PORT": CONTROLLER_PORT,
-    "DISABLE_ISTIO_SIDECAR": DISABLE_ISTIO_SIDECAR,
-    "KFP_DEFAULT_PIPELINE_ROOT": KFP_DEFAULT_PIPELINE_ROOT,
-    "KFP_VERSION": KFP_IMAGES_VERSION,
-    "METADATA_GRPC_SERVICE_HOST": METADATA_GRPC_SERVICE_HOST,
-    "METADATA_GRPC_SERVICE_PORT": METADATA_GRPC_SERVICE_PORT,
-    "MINIO_ACCESS_KEY": MOCK_OBJECT_STORAGE_DATA["access-key"],
-    "MINIO_HOST": MOCK_OBJECT_STORAGE_DATA["service"],
-    "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
-    "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
-    "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
-    # Using custom image and tag from the JSON file
-    "FRONTEND_IMAGE": custom_images["frontend"].split(":")[0],
-    "FRONTEND_TAG": custom_images["frontend"].split(":")[1],
-    "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
-    "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
-    # ambient
-    "AMBIENT_ENABLED": False,
-    "KFP_API_PRINCIPAL": "cluster.local/ns/kubeflow/sa/kfp-api",
-}
+
+def generate_expected_environment(model_name: str) -> dict:
+    return {
+        "CONTROLLER_PORT": CONTROLLER_PORT,
+        "DISABLE_ISTIO_SIDECAR": DISABLE_ISTIO_SIDECAR,
+        "KFP_DEFAULT_PIPELINE_ROOT": KFP_DEFAULT_PIPELINE_ROOT,
+        "KFP_VERSION": KFP_IMAGES_VERSION,
+        "METADATA_GRPC_SERVICE_HOST": f"metadata-grpc-service.{model_name}",
+        "METADATA_GRPC_SERVICE_PORT": METADATA_GRPC_SERVICE_PORT,
+        "MINIO_ACCESS_KEY": MOCK_OBJECT_STORAGE_DATA["access-key"],
+        "MINIO_HOST": MOCK_OBJECT_STORAGE_DATA["service"],
+        "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
+        "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
+        "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
+        # Using custom image and tag from the JSON file
+        "FRONTEND_IMAGE": custom_images["frontend"].split(":")[0],
+        "FRONTEND_TAG": custom_images["frontend"].split(":")[1],
+        "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
+        "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
+        # ambient
+        "AMBIENT_ENABLED": False,
+        "KFP_API_PRINCIPAL": f"cluster.local/ns/{model_name}/sa/kfp-api",
+    }
 
 
 @pytest.fixture
@@ -208,20 +207,19 @@ def test_kubernetes_created_method(
 
 
 @pytest.mark.parametrize(
-    "do_update_config_for_default_pipeline_root,mesh_relation,kfp_api_principal",
-    [(False, False, "principal1"), (True, True, "principal2")],
+    "do_update_config_for_default_pipeline_root,mesh_relation",
+    [(False, False), (True, True)],
 )
 def test_pebble_services_running(
     do_update_config_for_default_pipeline_root: bool,
     mesh_relation: bool,
-    kfp_api_principal: str,
     harness: Harness,
     mocked_lightkube_client,
     mocked_kubernetes_service_patch,
 ):
     """Test that if the Kubernetes Component is Active, the pebble services successfully start."""
     # Arrange
-    expected_environment = deepcopy(EXPECTED_ENVIRONMENT_BY_DEFAULT)
+    expected_environment = generate_expected_environment(harness.model.name)
     if do_update_config_for_default_pipeline_root:
         updated_default_pipeline_root = "s3://whatever-s3-bucket/whatever/s3/path"
         harness.update_config(
@@ -235,10 +233,6 @@ def test_pebble_services_running(
         relation_id = harness.add_relation("service-mesh", "istio-beacon-k8s")
         harness.add_relation_unit(relation_id, "istio-beacon-k8s/0")
         expected_environment["AMBIENT_ENABLED"] = mesh_relation
-
-    # principal should have changed
-    harness.update_config({CONFIG_NAME_FOR_KFP_API_PRINCIPAL: kfp_api_principal})
-    expected_environment["KFP_API_PRINCIPAL"] = kfp_api_principal
 
     # Mock:
     # * leadership_gate to have get_status=>Active

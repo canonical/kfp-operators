@@ -189,7 +189,7 @@ def server_factory(visualization_server_image,
             providers_yaml = (
                 "s3:\n"
                 "  default:\n"
-                f"    endpoint: {minio_host}.{minio_namespace}:9000\n"
+                f"    endpoint: {minio_host}.{minio_namespace}:{minio_port}\n"
                 "    disableSSL: true\n"
                 "    region: us-east-1\n"
                 "    forcePathStyle: true\n"
