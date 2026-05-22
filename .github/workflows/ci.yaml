@@ -318,7 +318,7 @@ jobs:
 
       - name: Run test
         run: |
-          tox -e bundle-${{ matrix.test-type }} -- --model testing --charms-path=${{ github.workspace }}/charms/ --bundle=${{ matrix.bundle }}
+          tox -e bundle-${{ matrix.test-type }} -- --model=testing --charms-path=${{ github.workspace }}/charms/ --bundle=${{ matrix.bundle }}
 
       - name: Get juju status
         run: juju status --relations
