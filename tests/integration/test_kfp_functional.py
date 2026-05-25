@@ -228,7 +228,7 @@ def test_create_and_monitor_recurring_run(
 
 
 # ---- KFP Viewer and Visualization focused test cases
-def test_apply_sample_viewer(lightkube_client: Client):
+def test_apply_sample_viewer(juju: jubilant.Juju, lightkube_client: Client):
     """Test a Viewer can be applied and its presence is verified."""
     # Create a Viewer namespaced resource
     viewer_class_resource = create_namespaced_resource(
@@ -236,7 +236,9 @@ def test_apply_sample_viewer(lightkube_client: Client):
     )
 
     # Apply viewer
-    viewer_object = apply_manifests(lightkube_client, yaml_file_path=SAMPLE_VIEWER)
+    viewer_object = apply_manifests(
+        lightkube_client, yaml_template_path=SAMPLE_VIEWER, context={"namespace": juju.model}
+    )
 
     viewer = lightkube_client.get(
         res=viewer_class_resource,

@@ -19,7 +19,7 @@ apiVersion: "kubeflow.org/v1beta1"
 kind: Viewer
 metadata:
   name: viewer-mnist
-  namespace: kubeflow
+  namespace: {{ namespace }}
 spec:
   type: tensorboard
   tensorboardSpec:
