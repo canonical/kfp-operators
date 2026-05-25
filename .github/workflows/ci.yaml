@@ -177,10 +177,6 @@ jobs:
           - kfp-viz
     with:
       charm-path: ./charms/${{ matrix.charm }}
-      # The namespace is hardcoded in the upstream project
-      # So the model's name must be kubeflow
-      # See: https://github.com/kubeflow/kubeflow/issues/6136
-      model: kubeflow
       channel: ${{ needs.get-charm-paths-track.outputs.channel }}
 
   integration:
@@ -251,13 +247,10 @@ jobs:
 
       - name: Integration tests
         run: |
-          # Requires the model to be called kubeflow due to
-          # https://github.com/canonical/kfp-operators/issues/389
-          juju add-model kubeflow
           # Pass the path where the charm artefact is downloaded to the tox command
           # FIXME: Right now the complete path is half hardcoded to <charm name>_ubuntu@24.04-amd64.charm
           # We need to find a better way to dynamically get this value
-          tox -e ${{ matrix.charm }}-${{ matrix.test-type }} -- --model kubeflow --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
+          tox -e ${{ matrix.charm }}-${{ matrix.test-type }} -- --model testing --charm-path=${{ github.workspace }}/charms/${{ matrix.charm }}/${{ matrix.charm }}_ubuntu@24.04-amd64.charm
 
       - name: Get juju status
         run: juju status --relations
@@ -325,9 +318,7 @@ jobs:
 
       - name: Run test
         run: |
-          # Requires the model to be called kubeflow due to kfp-viewer
-          juju add-model kubeflow
-          tox -e bundle-${{ matrix.test-type }} -- --model=kubeflow --charms-path=${{ github.workspace }}/charms/ --bundle=${{ matrix.bundle }}
+          tox -e bundle-${{ matrix.test-type }} -- --model=testing --charms-path=${{ github.workspace }}/charms/ --bundle=${{ matrix.bundle }}
 
       - name: Get juju status
         run: juju status --relations

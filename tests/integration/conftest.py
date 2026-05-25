@@ -109,11 +109,11 @@ def juju(request: pytest.FixtureRequest):
                 print_debug_log(juju_instance)
 
 
-@pytest.fixture(scope="session")
-def forward_kfp_ui():
+@pytest.fixture(scope="module")
+def forward_kfp_ui(juju: jubilant.Juju):
     """Port forward the kfp-ui service."""
     kfp_ui_process = subprocess.Popen(
-        ["kubectl", "port-forward", "-n", "kubeflow", "svc/kfp-ui", "8080:3000"]
+        ["kubectl", "port-forward", "-n", juju.model, "svc/kfp-ui", "8080:3000"]
     )
 
     # FIXME: find a better way to do this
@@ -125,14 +125,14 @@ def forward_kfp_ui():
     kfp_ui_process.terminate()
 
 
-@pytest.fixture(scope="session")
-def apply_profile(lightkube_client):
+@pytest.fixture(scope="module")
+def apply_profile(lightkube_client, juju: jubilant.Juju):
     """Apply a Profile simulating a user."""
     # Create a Viewer namespaced resource
     create_global_resource(group="kubeflow.org", version="v1", kind="Profile", plural="profiles")
 
     # Apply Profile first
-    apply_manifests(lightkube_client, PROFILE_FILE_PATH)
+    apply_manifests(lightkube_client, PROFILE_FILE_PATH, context={"namespace": juju.model})
 
     # Ensure "kfp-launcher" configmap has been created on the profile namespace
     wait_for_configmap(lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, KUBEFLOW_PROFILE_NAMESPACE)
@@ -153,11 +153,11 @@ def apply_profile(lightkube_client):
             raise api_error
 
 
-@pytest.fixture(scope="session")
-def kfp_client(apply_profile, forward_kfp_ui) -> kfp.Client:
+@pytest.fixture(scope="module")
+def kfp_client(apply_profile, forward_kfp_ui, juju: jubilant.Juju) -> kfp.Client:
     """Returns a KFP Client that can talk to the KFP API Server."""
     # Instantiate the KFP Client
-    client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=KUBEFLOW_PROFILE_NAMESPACE)
+    client = kfp.Client(host=KUBEFLOW_LOCAL_HOST, namespace=juju.model)
     client.runs.api_client.default_headers.update({"kubeflow-userid": KUBEFLOW_USER_NAME})
     return client
 

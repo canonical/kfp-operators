@@ -27,7 +27,7 @@ SAMPLE_PIPELINE = f"{SAMPLE_PIPELINES_PATH}/pipeline_container_no_input.yaml"
 SAMPLE_PIPELINE_NAME = "sample-pipeline"
 
 # Variables for creating a viewer
-SAMPLE_VIEWER = f"{basedir}/tests/integration/viewer/mnist.yaml"
+SAMPLE_VIEWER = f"{basedir}/tests/integration/viewer/mnist.yaml.j2"
 KUBEFLOW_PROFILE_NAMESPACE = "kubeflow-user-example-com"
 
 # Variables for configuring the KFP Client
