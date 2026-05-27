@@ -217,7 +217,7 @@ class KfpProfileControllerOperator(CharmBase):
                     VISUALIZATION_SERVER_TAG=self.images["visualization_server__version"],
                     FRONTEND_IMAGE=self.images["frontend__image"],
                     FRONTEND_TAG=self.images["frontend__version"],
-                    KFP_API_PRINCIPAL=f"cluster.local/ns/{self.model.name}/sa/kfp-api",
+                    KFP_API_PRINCIPAL=f"cluster.local/ns/{self.model.name}/sa/{self.model.config['kfp_api_service_account']}",
                     AMBIENT_ENABLED=self.service_mesh_component.component.ambient_mesh_enabled,
                     HOOKS_PATH=HOOKS_PATH,
                 ),
