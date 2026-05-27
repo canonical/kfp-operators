@@ -288,7 +288,6 @@ def test_pebble_services_with_custom_kfp_api_service_account(
     assert service.is_running()
     environment = container.get_plan().services["kfp-profile-controller"].environment
     assert environment == expected_environment
-    assert environment["KFP_API_PRINCIPAL"] == f"cluster.local/ns/{harness.model.name}/sa/{custom_sa}"
 
 
 def test_custom_images_config_with_incorrect_config(
