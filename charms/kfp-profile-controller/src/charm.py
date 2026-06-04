@@ -113,7 +113,6 @@ class KfpProfileControllerOperator(CharmBase):
             self.unit.status = e.status
             return
         self.default_pipeline_root = self.model.config["default_pipeline_root"]
-        self.kfp_api_sa = self.model.config["kfp_api_service_account"]
 
         self._container_name = next(iter(self.meta.containers))
         self.metadata_grpc_service_host = f"metadata-grpc-service.{self.model.name}"
@@ -218,7 +217,8 @@ class KfpProfileControllerOperator(CharmBase):
                     VISUALIZATION_SERVER_TAG=self.images["visualization_server__version"],
                     FRONTEND_IMAGE=self.images["frontend__image"],
                     FRONTEND_TAG=self.images["frontend__version"],
-                    KFP_API_PRINCIPAL=f"cluster.local/ns/{self.model.name}/sa/{self.kfp_api_sa}",
+                    KFP_API_PRINCIPAL=f"cluster.local/ns/{self.model.name}/sa/"
+                    f"{self.model.config['kfp_api_service_account_name']}",
                     AMBIENT_ENABLED=self.service_mesh_component.component.ambient_mesh_enabled,
                     HOOKS_PATH=HOOKS_PATH,
                 ),

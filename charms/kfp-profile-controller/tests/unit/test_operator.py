@@ -261,10 +261,10 @@ def test_pebble_services_with_custom_kfp_api_service_account(
     mocked_lightkube_client,
     mocked_kubernetes_service_patch,
 ):
-    """Test that a custom kfp_api_service_account config is used in the KFP_API_PRINCIPAL."""
+    """Test that a custom kfp_api_service_account_name config is used in the KFP_API_PRINCIPAL."""
     # Arrange
     custom_sa = "my-custom-kfp-api"
-    harness.update_config({"kfp_api_service_account": custom_sa})
+    harness.update_config({"kfp_api_service_account_name": custom_sa})
     expected_environment = generate_expected_environment(harness.model.name, kfp_api_sa=custom_sa)
     harness.begin()
     harness.set_can_connect("kfp-profile-controller", True)
@@ -288,6 +288,43 @@ def test_pebble_services_with_custom_kfp_api_service_account(
     assert service.is_running()
     environment = container.get_plan().services["kfp-profile-controller"].environment
     assert environment == expected_environment
+
+
+def test_pebble_services_updated_when_kfp_api_service_account_name_changes(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test that changing the kfp_api_service_account_name config updates the KFP_API_PRINCIPAL."""
+    # Arrange
+    harness.begin()
+    harness.set_can_connect("kfp-profile-controller", True)
+
+    # Mock:
+    # * leadership_gate to have get_status=>Active
+    # * object_storage_relation to return mock data, making the item go active
+    # * kubernetes_resources to have get_status=>Active
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.object_storage_relation.component.get_data = MagicMock(
+        return_value=MOCK_OBJECT_STORAGE_DATA
+    )
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Act: install with the default service account name
+    harness.charm.on.install.emit()
+
+    # Assert: the principal uses the default service account name
+    container = harness.charm.unit.get_container("kfp-profile-controller")
+    environment = container.get_plan().services["kfp-profile-controller"].environment
+    assert environment == generate_expected_environment(harness.model.name)
+
+    # Act: change the service account name config
+    custom_sa = "my-custom-kfp-api"
+    harness.update_config({"kfp_api_service_account_name": custom_sa})
+
+    # Assert: the principal is updated to use the new service account name
+    environment = container.get_plan().services["kfp-profile-controller"].environment
+    assert environment == generate_expected_environment(harness.model.name, kfp_api_sa=custom_sa)
 
 
 def test_custom_images_config_with_incorrect_config(
