@@ -15,7 +15,7 @@ resources:
     type: oci-image
     description: OCI image for KFP Viewer
     # The container's `user` needs to be updated when switching from upstream image to rock
-    upstream-source: docker.io/charmedkubeflow/viewer-crd-controller:2.15.0-4add869
+    upstream-source: docker.io/dariofaccin/viewer-crd-controller:2.15.0-da3eb7e-20260608192233
 requires:
   logging:
     interface: loki_push_api
