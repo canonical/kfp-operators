@@ -52,7 +52,7 @@ options:
   launcher-image:
     type: string
     # Source: https://github.com/kubeflow/pipelines/blob/2.15.0/backend/src/v2/compiler/argocompiler/container.go#L44
-    default: "docker.io/charmedkubeflow/kfp-launcher:2.15.0-a7d4db6"
+    default: "docker.io/dariofaccin/kfp-launcher:2.15.0-da3eb7e-20260608192241"
     description: Launcher image used during a pipeline's steps.
   driver-image:
     type: string
