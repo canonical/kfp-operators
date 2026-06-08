@@ -14,7 +14,7 @@ resources:
     type: oci-image
     description: Backing OCI image
     # The container's `user` needs to be updated when switching from upstream image to rock
-    upstream-source: docker.io/charmedkubeflow/persistenceagent:2.15.0-d64b349
+    upstream-source: docker.io/dariofaccin/persistenceagent:2.15.0-da3eb7e-20260608161305
 requires:
   kfp-api:
     interface: k8s-service
