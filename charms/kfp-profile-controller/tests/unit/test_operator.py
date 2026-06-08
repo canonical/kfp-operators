@@ -42,27 +42,29 @@ MOCK_OBJECT_STORAGE_DATA = {
     "secure": True,
 }
 
-EXPECTED_ENVIRONMENT_BY_DEFAULT = {
-    "CONTROLLER_PORT": CONTROLLER_PORT,
-    "DISABLE_ISTIO_SIDECAR": DISABLE_ISTIO_SIDECAR,
-    "KFP_DEFAULT_PIPELINE_ROOT": KFP_DEFAULT_PIPELINE_ROOT,
-    "KFP_VERSION": KFP_IMAGES_VERSION,
-    "METADATA_GRPC_SERVICE_HOST": METADATA_GRPC_SERVICE_HOST,
-    "METADATA_GRPC_SERVICE_PORT": METADATA_GRPC_SERVICE_PORT,
-    "MINIO_ACCESS_KEY": MOCK_OBJECT_STORAGE_DATA["access-key"],
-    "MINIO_HOST": MOCK_OBJECT_STORAGE_DATA["service"],
-    "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
-    "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
-    "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
-    # Using custom image and tag from the JSON file
-    "FRONTEND_IMAGE": custom_images["frontend"].split(":")[0],
-    "FRONTEND_TAG": custom_images["frontend"].split(":")[1],
-    "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
-    "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
-    # ambient
-    "AMBIENT_ENABLED": False,
-    "KFP_API_PRINCIPAL": "cluster.local/ns/kubeflow/sa/kfp-api",
-}
+
+def generate_expected_environment(model_name: str, kfp_api_sa: str = "kfp-api") -> dict:
+    return {
+        "CONTROLLER_PORT": CONTROLLER_PORT,
+        "DISABLE_ISTIO_SIDECAR": DISABLE_ISTIO_SIDECAR,
+        "KFP_DEFAULT_PIPELINE_ROOT": KFP_DEFAULT_PIPELINE_ROOT,
+        "KFP_VERSION": KFP_IMAGES_VERSION,
+        "METADATA_GRPC_SERVICE_HOST": f"metadata-grpc-service.{model_name}",
+        "METADATA_GRPC_SERVICE_PORT": METADATA_GRPC_SERVICE_PORT,
+        "MINIO_ACCESS_KEY": MOCK_OBJECT_STORAGE_DATA["access-key"],
+        "MINIO_HOST": MOCK_OBJECT_STORAGE_DATA["service"],
+        "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
+        "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
+        "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
+        # Using custom image and tag from the JSON file
+        "FRONTEND_IMAGE": custom_images["frontend"].split(":")[0],
+        "FRONTEND_TAG": custom_images["frontend"].split(":")[1],
+        "VISUALIZATION_SERVER_IMAGE": custom_images["visualization_server"].split(":")[0],
+        "VISUALIZATION_SERVER_TAG": custom_images["visualization_server"].split(":")[1],
+        # ambient
+        "AMBIENT_ENABLED": False,
+        "KFP_API_PRINCIPAL": f"cluster.local/ns/{model_name}/sa/{kfp_api_sa}",
+    }
 
 
 @pytest.fixture
@@ -256,6 +258,77 @@ def test_pebble_services_running(
     # Assert the environment variables that are set from inputs are correctly applied
     environment = container.get_plan().services["kfp-profile-controller"].environment
     assert environment == expected_environment
+
+
+def test_pebble_services_with_custom_kfp_api_service_account(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test that a custom kfp_api_service_account_name config is used in the KFP_API_PRINCIPAL."""
+    # Arrange
+    custom_sa = "my-custom-kfp-api"
+    harness.update_config({"kfp_api_service_account_name": custom_sa})
+    expected_environment = generate_expected_environment(harness.model.name, kfp_api_sa=custom_sa)
+    harness.begin()
+    harness.set_can_connect("kfp-profile-controller", True)
+
+    # Mock:
+    # * leadership_gate to have get_status=>Active
+    # * object_storage_relation to return mock data, making the item go active
+    # * kubernetes_resources to have get_status=>Active
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.object_storage_relation.component.get_data = MagicMock(
+        return_value=MOCK_OBJECT_STORAGE_DATA
+    )
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert
+    container = harness.charm.unit.get_container("kfp-profile-controller")
+    service = container.get_service("kfp-profile-controller")
+    assert service.is_running()
+    environment = container.get_plan().services["kfp-profile-controller"].environment
+    assert environment == expected_environment
+
+
+def test_pebble_services_updated_when_kfp_api_service_account_name_changes(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test that changing the kfp_api_service_account_name config updates the KFP_API_PRINCIPAL."""
+    # Arrange
+    harness.begin()
+    harness.set_can_connect("kfp-profile-controller", True)
+
+    # Mock:
+    # * leadership_gate to have get_status=>Active
+    # * object_storage_relation to return mock data, making the item go active
+    # * kubernetes_resources to have get_status=>Active
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.object_storage_relation.component.get_data = MagicMock(
+        return_value=MOCK_OBJECT_STORAGE_DATA
+    )
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Act: install with the default service account name
+    harness.charm.on.install.emit()
+
+    # Assert: the principal uses the default service account name
+    container = harness.charm.unit.get_container("kfp-profile-controller")
+    environment = container.get_plan().services["kfp-profile-controller"].environment
+    assert environment == generate_expected_environment(harness.model.name)
+
+    # Act: change the service account name config
+    custom_sa = "my-custom-kfp-api"
+    harness.update_config({"kfp_api_service_account_name": custom_sa})
+
+    # Assert: the principal is updated to use the new service account name
+    environment = container.get_plan().services["kfp-profile-controller"].environment
+    assert environment == generate_expected_environment(harness.model.name, kfp_api_sa=custom_sa)
 
 
 def test_custom_images_config_with_incorrect_config(
