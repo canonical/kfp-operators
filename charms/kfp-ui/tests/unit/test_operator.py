@@ -8,6 +8,7 @@ from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
+from charms.istio_ingress_k8s.v0.istio_ingress_route import ProtocolType
 from charm import KfpUiOperator
 
 MOCK_OBJECT_STORAGE_DATA = {
@@ -347,6 +348,25 @@ def test_istio_relations_conflict_detector_both_relations(
     assert "Cannot have both" in status.message
     assert "istio-ingress-route" in status.message
     assert "ingress" in status.message
+
+
+@pytest.mark.parametrize("tls_enabled, expected_port", [(False, 80), (True, 443)])
+def test_ambient_ingress_listener_port(
+    harness: Harness,
+    mocked_kubernetes_service_patch,
+    tls_enabled,
+    expected_port,
+):
+    """Test that the ambient ingress listener uses the correct port based on TLS setting."""
+    harness.begin()
+    component = harness.charm.ambient_ingress_relation.component
+    component.ingress = MagicMock()
+    component.ingress.tls_enabled = tls_enabled
+
+    config = component._get_ingress_config()
+    assert len(config.listeners) == 1
+    assert config.listeners[0].port == expected_port
+    assert config.listeners[0].protocol == ProtocolType.HTTP
 
 
 @pytest.fixture
