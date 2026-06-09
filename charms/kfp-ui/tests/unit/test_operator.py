@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
+from charms.istio_ingress_k8s.v0.istio_ingress_route import ProtocolType
 from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
-from charms.istio_ingress_k8s.v0.istio_ingress_route import ProtocolType
 from charm import KfpUiOperator
 
 MOCK_OBJECT_STORAGE_DATA = {
