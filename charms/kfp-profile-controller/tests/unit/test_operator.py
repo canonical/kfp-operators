@@ -327,6 +327,61 @@ def test_pebble_services_updated_when_kfp_api_service_account_name_changes(
     assert environment == generate_expected_environment(harness.model.name, kfp_api_sa=custom_sa)
 
 
+def test_pebble_services_with_deprecated_kfp_api_principal(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test that the deprecated `kfp-api-principal` config is used directly when set."""
+    # Arrange
+    custom_principal = "cluster.local/ns/some-namespace/sa/some-sa"
+    harness.update_config({"kfp-api-principal": custom_principal})
+    expected_environment = generate_expected_environment(harness.model.name)
+    expected_environment["KFP_API_PRINCIPAL"] = custom_principal
+    harness.begin()
+    harness.set_can_connect("kfp-profile-controller", True)
+
+    # Mock:
+    # * leadership_gate to have get_status=>Active
+    # * object_storage_relation to return mock data, making the item go active
+    # * kubernetes_resources to have get_status=>Active
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.object_storage_relation.component.get_data = MagicMock(
+        return_value=MOCK_OBJECT_STORAGE_DATA
+    )
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert
+    container = harness.charm.unit.get_container("kfp-profile-controller")
+    environment = container.get_plan().services["kfp-profile-controller"].environment
+    assert environment == expected_environment
+
+
+def test_blocked_when_kfp_api_principal_and_service_account_name_both_set(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test that the unit goes to blocked when both principal and service account are set."""
+    # Arrange
+    harness.update_config(
+        {
+            "kfp-api-principal": "cluster.local/ns/some-namespace/sa/some-sa",
+            "kfp_api_service_account_name": "my-custom-kfp-api",
+        }
+    )
+
+    # Act
+    harness.begin()
+
+    # Assert
+    assert isinstance(harness.model.unit.status, BlockedStatus)
+    assert harness.charm.model.unit.status.message.startswith("Cannot set both")
+
+
 def test_custom_images_config_with_incorrect_config(
     harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
 ):

@@ -204,6 +204,25 @@ async def test_insecure_authorization_policy_is_missing(
     assert excinfo.value.response.status_code == 404
 
 
+# Targeted for ambient integration
+@pytest.mark.abort_on_fail
+async def test_kfp_api_principal_changed(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Test that the principal in the AuthorizationPolicy changes on config-change."""
+    new_principal = "test"
+    await ops_test.model.applications[CHARM_NAME].set_config({"kfp-api-principal": new_principal})
+    await ops_test.model.wait_for_idle(apps=[CHARM_NAME], status="active", timeout=600)
+
+    # ensure the AuthorizationPolicy in Profile is updated
+    policy = get_authorization_policy(AMBIENT_AP_NAME, profile, lightkube_client)
+    assert policy["spec"]["rules"][0]["from"][0]["source"]["principals"][0] == new_principal
+
+    # reset the deprecated config option to its default
+    await ops_test.model.applications[CHARM_NAME].set_config({"kfp-api-principal": ""})
+    await ops_test.model.wait_for_idle(apps=[CHARM_NAME], status="active", timeout=600)
+
+
 @tenacity.retry(
     wait=wait_exponential(multiplier=1, min=1, max=5),
     stop=stop_after_delay(60 * 2),

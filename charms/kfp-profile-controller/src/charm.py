@@ -62,6 +62,8 @@ KFP_IMAGES_VERSION = "2.16.0"  # Remember to change this version also in default
 METADATA_GRPC_SERVICE_PORT = "8080"
 NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"
 SYNC_CODE_FILE = Path("files/upstream/sync.py")
+# Default value of the `kfp_api_service_account_name` config option, must match config.yaml
+DEFAULT_KFP_API_SERVICE_ACCOUNT_NAME = "kfp-api"
 
 HOOKS_PATH = Path("/var/lib/pebble/default")
 
@@ -109,6 +111,9 @@ class KfpProfileControllerOperator(CharmBase):
                 DEFAULT_IMAGES,
                 parse_images_config(self.model.config["custom_images"]),
             )
+            # Validate the principal-related config early so the unit goes to BlockedStatus
+            # if both `kfp-api-principal` and `kfp_api_service_account_name` are set.
+            self._get_kfp_api_principal()
         except ErrorWithStatus as e:
             self.unit.status = e.status
             return
@@ -217,8 +222,7 @@ class KfpProfileControllerOperator(CharmBase):
                     VISUALIZATION_SERVER_TAG=self.images["visualization_server__version"],
                     FRONTEND_IMAGE=self.images["frontend__image"],
                     FRONTEND_TAG=self.images["frontend__version"],
-                    KFP_API_PRINCIPAL=f"cluster.local/ns/{self.model.name}/sa/"
-                    f"{self.model.config['kfp_api_service_account_name']}",
+                    KFP_API_PRINCIPAL=self._get_kfp_api_principal(),
                     AMBIENT_ENABLED=self.service_mesh_component.component.ambient_mesh_enabled,
                     HOOKS_PATH=HOOKS_PATH,
                 ),
@@ -233,6 +237,36 @@ class KfpProfileControllerOperator(CharmBase):
 
         self.charm_reconciler.install_default_event_handlers()
         self._logging = LogForwarder(charm=self)
+
+    def _get_kfp_api_principal(self) -> str:
+        """Return the KFP API principal to use in the AuthorizationPolicy.
+
+        If the deprecated `kfp-api-principal` config option is set, it is used directly.
+        Otherwise, the principal is computed from the `kfp_api_service_account_name` config
+        option and the model namespace.
+
+        Raises:
+            ErrorWithStatus: if both `kfp-api-principal` and `kfp_api_service_account_name`
+                are set.
+        """
+        kfp_api_principal = self.model.config["kfp-api-principal"]
+        kfp_api_service_account_name = self.model.config["kfp_api_service_account_name"]
+
+        if kfp_api_principal:
+            if kfp_api_service_account_name != DEFAULT_KFP_API_SERVICE_ACCOUNT_NAME:
+                raise ErrorWithStatus(
+                    "Cannot set both `kfp-api-principal` and `kfp_api_service_account_name`. "
+                    "Use only `kfp_api_service_account_name` as `kfp-api-principal` is "
+                    "deprecated.",
+                    BlockedStatus,
+                )
+            logger.warning(
+                "The `kfp-api-principal` config option is deprecated and will be removed in a "
+                "future release. Use `kfp_api_service_account_name` instead."
+            )
+            return kfp_api_principal
+
+        return f"cluster.local/ns/{self.model.name}/sa/{kfp_api_service_account_name}"
 
     def get_images(
         self, default_images: Dict[str, str], custom_images: Dict[str, str]
