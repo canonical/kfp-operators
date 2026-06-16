@@ -35,4 +35,4 @@ options:
       DEPRECATED: use `kfp_api_service_account_name` instead.
       The principal for the KFP API service account.
       This is used in the AuthorizationPolicy that gets created in the sync.py script.
-      Cannot be set together with `kfp_api_service_account_name`.
+      To use this option, `kfp_api_service_account_name` must be set to an empty string.

@@ -335,8 +335,13 @@ def test_pebble_services_with_deprecated_kfp_api_principal(
     """Test that the deprecated `kfp-api-principal` config is used directly when set."""
     # Arrange
     custom_principal = "cluster.local/ns/some-namespace/sa/some-sa"
-    harness.update_config({"kfp-api-principal": custom_principal})
+    # When `kfp-api-principal` is set, `kfp_api_service_account_name` must be empty.
+    harness.update_config(
+        {"kfp-api-principal": custom_principal, "kfp_api_service_account_name": ""}
+    )
     expected_environment = generate_expected_environment(harness.model.name)
+    # The principal is taken directly from the deprecated config, not computed from the
+    # service account name.
     expected_environment["KFP_API_PRINCIPAL"] = custom_principal
     harness.begin()
     harness.set_can_connect("kfp-profile-controller", True)
@@ -366,7 +371,8 @@ def test_blocked_when_kfp_api_principal_and_service_account_name_both_set(
     mocked_kubernetes_service_patch,
 ):
     """Test that the unit goes to blocked when both principal and service account are set."""
-    # Arrange
+    # Arrange: setting `kfp-api-principal` while `kfp_api_service_account_name` is non-empty
+    # (here, its default value) is not allowed.
     harness.update_config(
         {
             "kfp-api-principal": "cluster.local/ns/some-namespace/sa/some-sa",

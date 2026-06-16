@@ -62,8 +62,6 @@ KFP_IMAGES_VERSION = "2.16.0"  # Remember to change this version also in default
 METADATA_GRPC_SERVICE_PORT = "8080"
 NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"
 SYNC_CODE_FILE = Path("files/upstream/sync.py")
-# Default value of the `kfp_api_service_account_name` config option, must match config.yaml
-DEFAULT_KFP_API_SERVICE_ACCOUNT_NAME = "kfp-api"
 
 HOOKS_PATH = Path("/var/lib/pebble/default")
 
@@ -112,7 +110,7 @@ class KfpProfileControllerOperator(CharmBase):
                 parse_images_config(self.model.config["custom_images"]),
             )
             # Validate the principal-related config early so the unit goes to BlockedStatus
-            # if both `kfp-api-principal` and `kfp_api_service_account_name` are set.
+            # if both `kfp-api-principal` and `kfp_api_service_account_name` are non-empty.
             self._get_kfp_api_principal()
         except ErrorWithStatus as e:
             self.unit.status = e.status
@@ -247,17 +245,17 @@ class KfpProfileControllerOperator(CharmBase):
 
         Raises:
             ErrorWithStatus: if both `kfp-api-principal` and `kfp_api_service_account_name`
-                are set.
+                are non-empty.
         """
         kfp_api_principal = self.model.config["kfp-api-principal"]
         kfp_api_service_account_name = self.model.config["kfp_api_service_account_name"]
 
         if kfp_api_principal:
-            if kfp_api_service_account_name != DEFAULT_KFP_API_SERVICE_ACCOUNT_NAME:
+            if kfp_api_service_account_name:
                 raise ErrorWithStatus(
                     "Cannot set both `kfp-api-principal` and `kfp_api_service_account_name`. "
-                    "Use only `kfp_api_service_account_name` as `kfp-api-principal` is "
-                    "deprecated.",
+                    "The `kfp-api-principal` option is deprecated; to use it, set "
+                    "`kfp_api_service_account_name` to an empty string.",
                     BlockedStatus,
                 )
             logger.warning(
