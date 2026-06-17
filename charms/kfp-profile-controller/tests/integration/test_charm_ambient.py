@@ -405,7 +405,7 @@ async def test_sync_webhook_before_config_changes(
         lightkube_client.get(resource, name=name, namespace=profile)
 
 
-async def test_default_config_for_deafult_pipeline_root(
+async def test_default_config_for_default_pipeline_root(
     lightkube_client: lightkube.Client, profile: str
 ):
     """Test that the default config for the default pipeline root is applied as intended."""
@@ -423,14 +423,14 @@ async def test_default_config_for_deafult_pipeline_root(
     )
 
 
-async def test_first_change_to_config_for_deafult_pipeline_root(
+async def test_first_change_to_config_for_default_pipeline_root(
     ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
 ):
     """Test that a first config change for the default pipeline root results in a ConfigMap."""
-    updated_deafult_pipeline_root = "s3://whatever-minio-bucket/whatever/minio/path"
+    updated_default_pipeline_root = "s3://whatever-minio-bucket/whatever/minio/path"
 
     await ops_test.model.applications[CHARM_NAME].set_config(
-        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_deafult_pipeline_root}
+        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_default_pipeline_root}
     )
     await ops_test.model.wait_for_idle(
         apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
@@ -448,18 +448,18 @@ async def test_first_change_to_config_for_deafult_pipeline_root(
     )
     assert (
         kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
-        == updated_deafult_pipeline_root
+        == updated_default_pipeline_root
     )
 
 
-async def test_yet_another_change_to_config_for_deafult_pipeline_root(
+async def test_yet_another_change_to_config_for_default_pipeline_root(
     ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
 ):
     """Test that another config change for the default pipeline root updates the ConfigMap."""
-    updated_deafult_pipeline_root = "s3://whatever-s3-bucket/whatever/s3/path"
+    updated_default_pipeline_root = "s3://whatever-s3-bucket/whatever/s3/path"
 
     await ops_test.model.applications[CHARM_NAME].set_config(
-        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_deafult_pipeline_root}
+        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_default_pipeline_root}
     )
     await ops_test.model.wait_for_idle(
         apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
@@ -477,7 +477,7 @@ async def test_yet_another_change_to_config_for_deafult_pipeline_root(
     )
     assert (
         kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
-        == updated_deafult_pipeline_root
+        == updated_default_pipeline_root
     )
 
 
