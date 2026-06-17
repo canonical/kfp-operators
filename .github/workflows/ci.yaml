@@ -180,7 +180,7 @@ jobs:
       channel: ${{ needs.get-charm-paths-track.outputs.channel }}
 
   integration:
-    name: Integration tests
+    name: Integration Tests
     needs:
       - build
     runs-on: ubuntu-24.04
