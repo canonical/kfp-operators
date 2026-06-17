@@ -211,12 +211,21 @@ async def test_kfp_api_principal_changed(
 ):
     """Test that the principal in the AuthorizationPolicy changes on config-change."""
     new_principal = "test"
-    await ops_test.model.applications[CHARM_NAME].set_config({"kfp-api-principal": new_principal})
+    await ops_test.model.applications[CHARM_NAME].set_config(
+        {
+            "kfp-api-principal": new_principal,
+            "kfp_api_service_account_name": "",
+        }
+    )
     await ops_test.model.wait_for_idle(apps=[CHARM_NAME], status="active", timeout=600)
 
     # ensure the AuthorizationPolicy in Profile is updated
     policy = get_authorization_policy(AMBIENT_AP_NAME, profile, lightkube_client)
     assert policy["spec"]["rules"][0]["from"][0]["source"]["principals"][0] == new_principal
+
+    # reset the deprecated config option to its default
+    await ops_test.model.applications[CHARM_NAME].set_config({"kfp-api-principal": ""})
+    await ops_test.model.wait_for_idle(apps=[CHARM_NAME], status="active", timeout=600)
 
 
 @tenacity.retry(
@@ -396,7 +405,7 @@ async def test_sync_webhook_before_config_changes(
         lightkube_client.get(resource, name=name, namespace=profile)
 
 
-async def test_default_config_for_deafult_pipeline_root(
+async def test_default_config_for_default_pipeline_root(
     lightkube_client: lightkube.Client, profile: str
 ):
     """Test that the default config for the default pipeline root is applied as intended."""
@@ -404,14 +413,14 @@ async def test_default_config_for_deafult_pipeline_root(
         lightkube_client.get(res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile)
 
 
-async def test_first_change_to_config_for_deafult_pipeline_root(
+async def test_first_change_to_config_for_default_pipeline_root(
     ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
 ):
     """Test that a first config change for the default pipeline root results in a ConfigMap."""
-    updated_deafult_pipeline_root = "minio://whatever-minio-bucket/whatever/minio/path"
+    updated_default_pipeline_root = "s3://whatever-minio-bucket/whatever/minio/path"
 
     await ops_test.model.applications[CHARM_NAME].set_config(
-        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_deafult_pipeline_root}
+        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_default_pipeline_root}
     )
     await ops_test.model.wait_for_idle(
         apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
@@ -422,18 +431,18 @@ async def test_first_change_to_config_for_deafult_pipeline_root(
     )
     assert (
         kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
-        == updated_deafult_pipeline_root
+        == updated_default_pipeline_root
     )
 
 
-async def test_yet_another_change_to_config_for_deafult_pipeline_root(
+async def test_yet_another_change_to_config_for_default_pipeline_root(
     ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
 ):
     """Test that another config change for the default pipeline root updates the ConfigMap."""
-    updated_deafult_pipeline_root = "s3://whatever-s3-bucket/whatever/s3/path"
+    updated_default_pipeline_root = "s3://whatever-s3-bucket/whatever/s3/path"
 
     await ops_test.model.applications[CHARM_NAME].set_config(
-        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_deafult_pipeline_root}
+        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_default_pipeline_root}
     )
     await ops_test.model.wait_for_idle(
         apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
@@ -451,7 +460,7 @@ async def test_yet_another_change_to_config_for_deafult_pipeline_root(
     )
     assert (
         kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
-        == updated_deafult_pipeline_root
+        == updated_default_pipeline_root
     )
 
 
