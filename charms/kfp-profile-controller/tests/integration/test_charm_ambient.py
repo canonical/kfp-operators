@@ -211,7 +211,12 @@ async def test_kfp_api_principal_changed(
 ):
     """Test that the principal in the AuthorizationPolicy changes on config-change."""
     new_principal = "test"
-    await ops_test.model.applications[CHARM_NAME].set_config({"kfp-api-principal": new_principal})
+    await ops_test.model.applications[CHARM_NAME].set_config(
+        {
+            "kfp-api-principal": new_principal,
+            "kfp_api_service_account_name": "",
+        }
+    )
     await ops_test.model.wait_for_idle(apps=[CHARM_NAME], status="active", timeout=600)
 
     # ensure the AuthorizationPolicy in Profile is updated
