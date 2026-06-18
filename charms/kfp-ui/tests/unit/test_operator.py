@@ -350,6 +350,23 @@ def test_istio_relations_conflict_detector_both_relations(
     assert "ingress" in status.message
 
 
+def test_istio_relations_conflict_detector_multiple_ambient_relations(
+    harness: Harness,
+    mocked_kubernetes_service_patch,
+):
+    """Test conflict detector handles multiple istio-ingress-route relations without erroring."""
+    # Arrange
+    harness.begin()
+
+    # Act - Add more than one relation on the ambient ingress endpoint
+    harness.add_relation("istio-ingress-route", "istio-ingress")
+    harness.add_relation("istio-ingress-route", "istio-ingress-2")
+
+    # Assert - inspecting the full list of relations per endpoint must not raise
+    status = harness.charm.istio_relations_conflict_detector.component.get_status()
+    assert isinstance(status, ActiveStatus)
+
+
 @pytest.mark.parametrize("tls_enabled, expected_port", [(False, 80), (True, 443)])
 def test_ambient_ingress_listener_port(
     harness: Harness,
