@@ -25,8 +25,7 @@ CHARM_ROOT = "."
 BUNDLE_PATH = Path(__file__).parent / "bundle.yaml.j2"
 APP_NAME = METADATA["name"]
 CONTAINERS_SECURITY_CONTEXT_MAP = generate_container_securitycontext_map(METADATA)
-# kfp-api (a dependency) keeps using minio for its own object storage; this test exercises
-# kfp-ui's s3 (s3-integrator) path through the s3-credentials relation.
+# TODO: Update test to use kfp-api:s3-credentials instead of kfp-api:object-storage
 charms_dependencies_list = [KFP_API, KFP_VIZ, MINIO, MYSQL_K8S]
 log = logging.getLogger(__name__)
 

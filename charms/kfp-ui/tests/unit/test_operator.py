@@ -101,7 +101,7 @@ def test_object_storage_relation_without_relation(
 
     # Mock:
     # * leadership_gate to be active and executed
-    # * s3_relations_conflict_detector to be active (tested separately)
+    # * s3_relations_conflict_detector to be active
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
     harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
         return_value=ActiveStatus()
@@ -287,15 +287,15 @@ def assert_relation_data_send_as_expected(
         assert yaml.safe_load(relation_data["data"]) == expected_relation_data["data"]
 
 
-def test_pebble_services_running(harness: Harness, mocked_kubernetes_service_patch):
-    """Test that the pebble services successfully start."""
+def test_pebble_services_running_object_storage(harness: Harness, mocked_kubernetes_service_patch):
+    """Test that the pebble services successfully start with an object-storage."""
     # Arrange
     harness.begin()
     harness.set_can_connect("ml-pipeline-ui", True)
 
     # Mock:
     # * leadership_gate to have get_status=>Active
-    # * s3_relations_conflict_detector to be active (tested separately)
+    # * s3_relations_conflict_detector to be active
     # * object_storage_relation to return mock data, making the item go active
     # * kfp_api_relation to return mock data, making the item go active
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
@@ -329,11 +329,11 @@ def test_pebble_services_running(harness: Harness, mocked_kubernetes_service_pat
     assert environment["ML_PIPELINE_SERVICE_PORT"] == MOCK_KFP_API_DATA["service-port"]
 
 
-def test_pebble_services_running_with_s3(harness: Harness, mocked_kubernetes_service_patch):
-    """Test that the pebble services start with an s3-credentials (s3-integrator) relation.
+def test_pebble_services_running_s3(harness: Harness, mocked_kubernetes_service_patch):
+    """Test that the pebble services start with an s3-credentials relation.
 
     The MINIO_* frontend env is derived from the s3 endpoint, with the URL scheme stripped
-    into a separate MINIO_SSL flag and an empty MINIO_NAMESPACE (s3 has no namespace concept).
+    into a separate MINIO_SSL flag and an empty MINIO_NAMESPACE.
     """
     # Arrange
     harness.begin()
@@ -341,7 +341,7 @@ def test_pebble_services_running_with_s3(harness: Harness, mocked_kubernetes_ser
 
     # Mock:
     # * leadership_gate to have get_status=>Active
-    # * s3_relations_conflict_detector to be active (tested separately)
+    # * s3_relations_conflict_detector to be active
     # * s3_relation to return mock data, making the item go active
     # * kfp_api_relation to return mock data, making the item go active
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
@@ -351,7 +351,6 @@ def test_pebble_services_running_with_s3(harness: Harness, mocked_kubernetes_ser
     harness.charm.s3_relation.component.get_data = MagicMock(return_value=[MOCK_S3_DATA])
     harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
 
-    # An actual s3-credentials relation must exist so the active storage component is the s3 one
     harness.add_relation("s3-credentials", "s3-provider")
 
     # Act
@@ -389,9 +388,9 @@ def test_s3_relations_conflict_detector_status(
     """Test the conflict detector blocks unless exactly one storage relation is set.
 
     Exactly one of object-storage or s3-credentials must be present at a time:
-    - none active  → Blocked (too few)
+    - none active  → Blocked
     - one active   → Active
-    - both active  → Blocked (too many)
+    - both active  → Blocked
     """
     harness.begin()
 

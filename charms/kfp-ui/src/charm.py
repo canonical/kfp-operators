@@ -277,8 +277,8 @@ class KfpUiOperator(CharmBase):
         """
         active = self.active_storage_component
         if isinstance(active, S3RequirerComponent):
-            # get_data() returns a list; exactly one S3 relation is expected (enforced by
-            # the conflict detector), so we take the first entry.
+            # get_data() returns a list, only one S3 relation is expected,
+            # so take the first entry
             data = active.get_data()[0]
             host, port, secure = self._parse_s3_endpoint(data["endpoint"])
             return {
@@ -307,8 +307,7 @@ class KfpUiOperator(CharmBase):
 
         The endpoint may be a full URL (e.g. "https://s3.example.com:443") or a bare
         "host[:port]". The MinIO-style frontend expects the host, port and TLS flag as
-        separate values, so the URL scheme (when present) determines the default port and
-        whether TLS is used.
+        separate values, so we use the full URL to determine those values.
         """
         parsed = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
         secure = parsed.scheme == "https"
