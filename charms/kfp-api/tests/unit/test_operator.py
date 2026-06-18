@@ -608,7 +608,8 @@ class TestCharm:
             "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
             "KUBEFLOW_USERID_PREFIX": "",
             "POD_NAMESPACE": harness.charm.model.name,
-            "OBJECTSTORECONFIG_SECURE": "false",
+            # object-storage relation data (see setup_required_relations) has secure=True
+            "OBJECTSTORECONFIG_SECURE": "true",
             "OBJECTSTORECONFIG_BUCKETNAME": harness.charm.config["object-store-bucket-name"],
             "DBCONFIG_CONMAXLIFETIME": "120s",
             "DB_DRIVER_NAME": "mysql",
@@ -1140,3 +1141,100 @@ class TestCharm:
             "Waiting for object storage to become accessible."
             in harness.charm.model.unit.status.message
         )
+
+    @pytest.mark.parametrize(
+        "endpoint,expected",
+        [
+            # full URLs: scheme decides the TLS flag and default port
+            ("http://10.0.0.1", ("10.0.0.1", 80, False)),
+            ("https://s3.example.com", ("s3.example.com", 443, True)),
+            ("http://10.0.0.1:9000", ("10.0.0.1", 9000, False)),
+            ("https://s3.example.com:443", ("s3.example.com", 443, True)),
+            # bare host[:port]: defaults to non-TLS
+            ("10.0.0.1", ("10.0.0.1", 80, False)),
+            ("minio.example:9000", ("minio.example", 9000, False)),
+        ],
+    )
+    def test_parse_s3_endpoint(self, endpoint, expected):
+        """Test that an s3 endpoint is split into (host, port, secure)."""
+        assert KfpApiOperator._parse_s3_endpoint(endpoint) == expected
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    def test_get_object_storage_data_s3(self, harness: Harness, mocked_kubernetes_service_patcher):
+        """Test that s3-credentials data is normalized into the common storage dict."""
+        harness.set_leader(True)
+        harness.begin()
+        harness.add_relation("s3-credentials", "s3-provider")
+
+        s3_data = {
+            "access-key": "s3-access",
+            "secret-key": "s3-secret",
+            "endpoint": "https://s3.example.com:443",
+            "region": "us-east-1",
+        }
+        harness.charm.s3.get_storage_connection_info = MagicMock(return_value=s3_data)
+
+        assert harness.charm._get_object_storage_data() == {
+            "access-key": "s3-access",
+            "secret-key": "s3-secret",
+            "host": "s3.example.com",
+            "port": 443,
+            "secure": True,
+            "region": "us-east-1",
+            "is_s3": True,
+        }
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    def test_get_object_storage_data_conflict(
+        self, harness: Harness, mocked_kubernetes_service_patcher
+    ):
+        """Test that relating both object-storage and s3-credentials blocks the charm."""
+        harness.set_leader(True)
+        harness.begin()
+        harness.add_relation("object-storage", "minio")
+        harness.add_relation("s3-credentials", "s3-provider")
+
+        with pytest.raises(ErrorWithStatus) as err:
+            harness.charm._get_object_storage_data()
+        assert isinstance(err.value.status, BlockedStatus)
+        assert "Too many object storage relations" in str(err.value)
+
+    @pytest.mark.parametrize(
+        "s3_info",
+        [
+            {},  # relation exists but no data posted yet
+            {"access-key": "a", "secret-key": "b"},  # missing endpoint
+            {"access-key": "a", "endpoint": "https://s3:443"},  # missing secret-key
+        ],
+    )
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    def test_get_s3_data_waiting(
+        self, s3_info, harness: Harness, mocked_kubernetes_service_patcher
+    ):
+        """Test that incomplete s3-credentials data results in WaitingStatus."""
+        harness.set_leader(True)
+        harness.begin()
+        harness.add_relation("s3-credentials", "s3-provider")
+        harness.charm.s3.get_storage_connection_info = MagicMock(return_value=s3_info)
+
+        with pytest.raises(ErrorWithStatus) as err:
+            harness.charm._get_object_storage_data()
+        assert isinstance(err.value.status, WaitingStatus)
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    def test_ensure_bucket_exists_skipped_for_s3(
+        self, harness: Harness, mocked_kubernetes_service_patcher, mocker
+    ):
+        """Test that bucket creation is skipped for the s3-integrator backend.
+
+        The s3-integrator manages its own buckets, so the charm must not try to create
+        one (which would require a boto3 client).
+        """
+        harness.set_leader(True)
+        harness.begin()
+        mock_wrapper = mocker.patch("charm.S3BucketWrapper")
+        harness.charm._get_object_storage_data = MagicMock(return_value={"is_s3": True})
+
+        harness.charm._ensure_bucket_exists()
+
+        mock_wrapper.assert_not_called()

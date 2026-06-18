@@ -199,6 +199,7 @@ jobs:
         test-type:
           - integration
           - integration-ambient
+          - integration-s3
         exclude:
           - charm: kfp-schedwf
             test-type: integration-ambient
@@ -206,6 +207,21 @@ jobs:
             test-type: integration-ambient
           - charm: kfp-metadata-writer
             test-type: integration-ambient
+          # integration-s3 is only supported by the charms that integrate with s3-integrator
+          - charm: kfp-persistence
+            test-type: integration-s3
+          - charm: kfp-profile-controller
+            test-type: integration-s3
+          - charm: kfp-schedwf
+            test-type: integration-s3
+          - charm: kfp-viewer
+            test-type: integration-s3
+          - charm: kfp-ui
+            test-type: integration-s3
+          - charm: kfp-metadata-writer
+            test-type: integration-s3
+          - charm: kfp-viz
+            test-type: integration-s3
     steps:
       # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,

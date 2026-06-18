@@ -26,6 +26,8 @@ requires:
   relational-db:
     interface: mysql_client
     limit: 1
+  s3-credentials:
+    interface: s3
   object-storage:
     interface: object-storage
     schema:
