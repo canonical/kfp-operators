@@ -5,7 +5,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
-from charms.istio_ingress_k8s.v0.istio_ingress_route import ProtocolType
+from charms.istio_ingress_k8s.v0.istio_ingress_route import (
+    HTTPPathMatchType,
+    IstioIngressRouteConfig,
+    ProtocolType,
+)
 from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
@@ -365,6 +369,43 @@ def test_istio_relations_conflict_detector_multiple_ambient_relations(
     # Assert - inspecting the full list of relations per endpoint must not raise
     status = harness.charm.istio_relations_conflict_detector.component.get_status()
     assert isinstance(status, ActiveStatus)
+
+
+def test_each_istio_ingress_route_relation_receives_config(
+    harness: Harness,
+    mocked_kubernetes_service_patch,
+):
+    """Test that an HTTPRoute config is submitted to every istio-ingress-route relation."""
+    # Arrange
+    harness.begin()
+
+    rel_id_1 = harness.add_relation("istio-ingress-route", "istio-ingress")
+    rel_id_2 = harness.add_relation("istio-ingress-route", "istio-ingress-2")
+
+    # Use the real submit_config so we can inspect the databags; only force readiness.
+    ingress = harness.charm.ambient_ingress_relation.component.ingress
+    ingress.is_ready = MagicMock(return_value=True)
+
+    # Act - reconcile the charm so the component submits its config.
+    harness.charm.on.install.emit()
+
+    # Assert
+    # Each relation's application databag should contain a valid config that
+    # defines the kfp-ui HTTPRoute, proving the lib handles every ingress.
+    for rel_id in (rel_id_1, rel_id_2):
+        app_data = harness.get_relation_data(rel_id, harness.charm.app.name)
+        assert "config" in app_data
+
+        config = IstioIngressRouteConfig.model_validate_json(app_data["config"])
+        assert len(config.http_routes) == 1
+        http_route = config.http_routes[0]
+        assert http_route.matches[0].path.type == HTTPPathMatchType.PathPrefix
+        assert http_route.matches[0].path.value == "/pipeline"
+        assert http_route.backends[0].service == harness.charm.app.name
+        assert http_route.backends[0].port == int(harness.charm.model.config["http-port"])
+        # The route's parent (the Gateway listener referenced under parentRefs in
+        # the HTTPRouteSpec) should be the expected HTTP listener.
+        assert http_route.listener.name == "http-80"
 
 
 @pytest.mark.parametrize("tls_enabled, expected_port", [(False, 80), (True, 443)])
