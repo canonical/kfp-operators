@@ -19,6 +19,11 @@ MOCK_OBJECT_STORAGE_DATA = {
     "port": 1234,
     "secure": True,
 }
+MOCK_S3_DATA = {
+    "access-key": "s3-access-key",
+    "secret-key": "s3-secret-key",
+    "endpoint": "https://s3.example.com:443",
+}
 MOCK_KFP_API_DATA = {"service-name": "service-name", "service-port": "1234"}
 
 
@@ -61,7 +66,12 @@ def test_object_storage_relation_with_data(harness: Harness, mocked_kubernetes_s
 
 
 def test_object_storage_relation_without_data(harness: Harness, mocked_kubernetes_service_patch):
-    """Test that the object storage relation goes Blocked if no data is available."""
+    """Test that the object storage relation is Active when a relation exists but has no data.
+
+    The object-storage relation has minimum_related_applications=0, making it optional (a
+    relation with s3-credentials is an alternative), so even an empty relation does not block
+    the component.
+    """
     # Arrange
     harness.begin()
 
@@ -73,26 +83,35 @@ def test_object_storage_relation_without_data(harness: Harness, mocked_kubernete
     add_sdi_relation_to_harness(harness, "object-storage", data={})
 
     # Assert
-    assert isinstance(harness.charm.object_storage_relation.status, BlockedStatus)
+    assert isinstance(harness.charm.object_storage_relation.status, ActiveStatus)
 
 
 def test_object_storage_relation_without_relation(
     harness: Harness,
     mocked_kubernetes_service_patch,
 ):
-    """Test that the object storage relation goes Blocked if no relation is established."""
+    """Test that the object storage relation is Active when no relation is established.
+
+    The object-storage relation has minimum_related_applications=0, making it optional (a
+    relation with s3-credentials is an alternative). The s3-relations-conflict-detector is
+    mocked Active here to isolate this component.
+    """
     # Arrange
     harness.begin()
 
     # Mock:
     # * leadership_gate to be active and executed
+    # * s3_relations_conflict_detector to be active (tested separately)
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
 
     # Act
     harness.charm.on.install.emit()
 
     # Assert
-    assert isinstance(harness.charm.object_storage_relation.status, BlockedStatus)
+    assert isinstance(harness.charm.object_storage_relation.status, ActiveStatus)
 
 
 def test_kfp_api_relation_with_data(harness: Harness, mocked_kubernetes_service_patch):
@@ -276,9 +295,13 @@ def test_pebble_services_running(harness: Harness, mocked_kubernetes_service_pat
 
     # Mock:
     # * leadership_gate to have get_status=>Active
+    # * s3_relations_conflict_detector to be active (tested separately)
     # * object_storage_relation to return mock data, making the item go active
     # * kfp_api_relation to return mock data, making the item go active
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
     harness.charm.object_storage_relation.component.get_data = MagicMock(
         return_value=MOCK_OBJECT_STORAGE_DATA
     )
@@ -304,6 +327,99 @@ def test_pebble_services_running(harness: Harness, mocked_kubernetes_service_pat
     assert environment["MINIO_SSL"] == MOCK_OBJECT_STORAGE_DATA["secure"]
     assert environment["ML_PIPELINE_SERVICE_HOST"] == MOCK_KFP_API_DATA["service-name"]
     assert environment["ML_PIPELINE_SERVICE_PORT"] == MOCK_KFP_API_DATA["service-port"]
+
+
+def test_pebble_services_running_with_s3(harness: Harness, mocked_kubernetes_service_patch):
+    """Test that the pebble services start with an s3-credentials (s3-integrator) relation.
+
+    The MINIO_* frontend env is derived from the s3 endpoint, with the URL scheme stripped
+    into a separate MINIO_SSL flag and an empty MINIO_NAMESPACE (s3 has no namespace concept).
+    """
+    # Arrange
+    harness.begin()
+    harness.set_can_connect("ml-pipeline-ui", True)
+
+    # Mock:
+    # * leadership_gate to have get_status=>Active
+    # * s3_relations_conflict_detector to be active (tested separately)
+    # * s3_relation to return mock data, making the item go active
+    # * kfp_api_relation to return mock data, making the item go active
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
+    harness.charm.s3_relation.component.get_data = MagicMock(return_value=[MOCK_S3_DATA])
+    harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
+
+    # An actual s3-credentials relation must exist so the active storage component is the s3 one
+    harness.add_relation("s3-credentials", "s3-provider")
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert
+    container = harness.charm.unit.get_container("ml-pipeline-ui")
+    service = container.get_service("ml-pipeline-ui")
+    assert service.is_running()
+    environment = container.get_plan().services["ml-pipeline-ui"].environment
+    assert environment["MINIO_HOST"] == "s3.example.com"
+    assert environment["MINIO_NAMESPACE"] == ""
+    assert environment["MINIO_PORT"] == 443
+    assert environment["MINIO_SSL"] is True
+    assert environment["ML_PIPELINE_SERVICE_HOST"] == MOCK_KFP_API_DATA["service-name"]
+    assert environment["ML_PIPELINE_SERVICE_PORT"] == MOCK_KFP_API_DATA["service-port"]
+
+
+@pytest.mark.parametrize(
+    "add_s3_credentials, add_object_storage, expected_status",
+    [
+        pytest.param(False, False, BlockedStatus, id="no-relation"),
+        pytest.param(True, False, ActiveStatus, id="s3-credentials-only"),
+        pytest.param(False, True, ActiveStatus, id="object-storage-only"),
+        pytest.param(True, True, BlockedStatus, id="both-relations"),
+    ],
+)
+def test_s3_relations_conflict_detector_status(
+    harness: Harness,
+    mocked_kubernetes_service_patch,
+    add_s3_credentials,
+    add_object_storage,
+    expected_status,
+):
+    """Test the conflict detector blocks unless exactly one storage relation is set.
+
+    Exactly one of object-storage or s3-credentials must be present at a time:
+    - none active  → Blocked (too few)
+    - one active   → Active
+    - both active  → Blocked (too many)
+    """
+    harness.begin()
+
+    if add_s3_credentials:
+        harness.add_relation("s3-credentials", "s3-provider")
+    if add_object_storage:
+        harness.add_relation("object-storage", "object-storage-provider")
+
+    status = harness.charm.s3_relations_conflict_detector.component.get_status()
+    assert isinstance(status, expected_status)
+
+
+@pytest.mark.parametrize(
+    "endpoint,expected",
+    [
+        # full URLs: scheme decides the TLS flag and default port
+        ("http://10.0.0.1", ("10.0.0.1", 80, False)),
+        ("https://s3.example.com", ("s3.example.com", 443, True)),
+        ("http://10.0.0.1:9000", ("10.0.0.1", 9000, False)),
+        ("https://s3.example.com:443", ("s3.example.com", 443, True)),
+        # bare host[:port]: defaults to non-TLS
+        ("10.0.0.1", ("10.0.0.1", 80, False)),
+        ("minio.example:9000", ("minio.example", 9000, False)),
+    ],
+)
+def test_parse_s3_endpoint(endpoint, expected):
+    """Test that an s3 endpoint is split into (host, port, secure)."""
+    assert KfpUiOperator._parse_s3_endpoint(endpoint) == expected
 
 
 @pytest.mark.parametrize(

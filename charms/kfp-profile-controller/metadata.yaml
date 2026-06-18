@@ -20,6 +20,8 @@ provides:
   provide-cmr-mesh:
     interface: cross_model_mesh
 requires:
+  s3-credentials:
+    interface: s3
   object-storage:
     interface: object-storage
     schema:

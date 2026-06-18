@@ -9,6 +9,7 @@ https://github.com/canonical/kfp-operators/
 
 import logging
 from pathlib import Path
+from urllib.parse import urlparse
 
 import botocore.exceptions
 from charmed_kubeflow_chisme.exceptions import ErrorWithStatus, GenericCharmRuntimeError
@@ -44,6 +45,7 @@ from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.core_v1 import Service, ServiceAccount
 from lightkube.resources.rbac_authorization_v1 import ClusterRole, ClusterRoleBinding
 from lightkube_extensions.types import AuthorizationPolicy
+from object_storage import S3Requirer
 from ops import main
 from ops.charm import CharmBase
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, ModelError, WaitingStatus
@@ -122,6 +124,9 @@ class KfpApiOperator(CharmBase):
         self.framework.observe(self.on.apiserver_pebble_ready, self._on_event)
         change_events = [
             self.on["object-storage"].relation_changed,
+            self.on["object-storage"].relation_broken,
+            self.on["s3-credentials"].relation_changed,
+            self.on["s3-credentials"].relation_broken,
             self.on["kfp-viz"].relation_changed,
             self.on["kfp-api"].relation_changed,
             self.on["kfp-api-grpc"].relation_changed,
@@ -158,6 +163,9 @@ class KfpApiOperator(CharmBase):
         )
         self.framework.observe(self.database.on.database_created, self._on_relational_db_relation)
         self.framework.observe(self.database.on.endpoints_changed, self._on_relational_db_relation)
+
+        # setup s3 (s3-integrator) interface, an alternative to the object-storage relation
+        self.s3 = S3Requirer(self, relation_name="s3-credentials")
 
         self.prometheus_provider = MetricsEndpointProvider(
             charm=self,
@@ -200,10 +208,14 @@ class KfpApiOperator(CharmBase):
     @property
     def _context(self):
         """Return the context used for generating kubernetes resources."""
-        interfaces = self._get_interfaces()
-        object_storage = self._get_object_storage(interfaces)
+        object_storage = self._get_object_storage_data()
 
-        minio_url = f"{object_storage['service']}.{object_storage['namespace']}.svc.cluster.local"
+        if object_storage["is_s3"]:
+            # The s3 endpoint is already an externally-resolvable host.
+            minio_url = object_storage["host"]
+        else:
+            # Must include .svc.cluster.local for in-cluster DNS resolution
+            minio_url = f"{object_storage['host']}.svc.cluster.local"
 
         context = {
             "app_name": self._name,
@@ -211,7 +223,6 @@ class KfpApiOperator(CharmBase):
             "service": self._name,
             "grpc_port": self._grcp_port,
             "http_port": self._http_port,
-            # Must include .svc.cluster.local for DNS resolution
             "minio_url": minio_url,
             "minio_port": str(object_storage["port"]),
             "ambient_enabled": self.is_ambient_mesh_enabled,
@@ -360,7 +371,7 @@ class KfpApiOperator(CharmBase):
         try:
             interfaces = self._get_interfaces()
             db_data = self._get_db_data()
-            object_storage = self._get_object_storage(interfaces)
+            object_storage = self._get_object_storage_data(interfaces)
             viz_data = self._get_viz(interfaces)
         except ErrorWithStatus as error:
             self.logger.error("Failed to generate container configuration.")
@@ -375,7 +386,7 @@ class KfpApiOperator(CharmBase):
             "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
             "KUBEFLOW_USERID_PREFIX": "",
             "POD_NAMESPACE": self.model.name,
-            "OBJECTSTORECONFIG_SECURE": "false",
+            "OBJECTSTORECONFIG_SECURE": "true" if object_storage["secure"] else "false",
             "OBJECTSTORECONFIG_BUCKETNAME": self.model.config["object-store-bucket-name"],
             "DBCONFIG_CONMAXLIFETIME": "120s",
             "DB_DRIVER_NAME": "mysql",
@@ -410,9 +421,9 @@ class KfpApiOperator(CharmBase):
             # object stores with arbitrary names.  See
             # https://github.com/kubeflow/pipelines/issues/9689 and
             # https://github.com/canonical/minio-operator/pull/151 for more details.
-            "OBJECTSTORECONFIG_HOST": f"{object_storage['service']}.{object_storage['namespace']}",
+            "OBJECTSTORECONFIG_HOST": object_storage["host"],
             "OBJECTSTORECONFIG_PORT": str(object_storage["port"]),
-            "OBJECTSTORECONFIG_REGION": "",
+            "OBJECTSTORECONFIG_REGION": object_storage["region"],
             # The following 3 configuration options change the behavior for pipeline pods,
             # overriding an SDK-specified values.
             # DEFAULT_SECURITY_CONTEXT_RUN_AS_USER: Change user for pipeline pods
@@ -550,6 +561,81 @@ class KfpApiOperator(CharmBase):
         """Retrieve object-storage relation data."""
         relation_name = "object-storage"
         return self._validate_sdi_interface(interfaces, relation_name)
+
+    def _get_s3_data(self) -> dict:
+        """Retrieve and validate data from the s3-credentials relation.
+
+        Raises:
+            ErrorWithStatus(..., Waiting) if the relation exists but required data
+                (access-key, secret-key, endpoint) is not yet available.
+        """
+        relation = self.model.get_relation("s3-credentials")
+        info = self.s3.get_storage_connection_info(relation)
+        required_fields = ("access-key", "secret-key", "endpoint")
+        if not info or not all(info.get(field) for field in required_fields):
+            raise ErrorWithStatus("Waiting for s3-credentials relation data", WaitingStatus)
+        return info
+
+    def _get_object_storage_data(self, interfaces=None) -> dict:
+        """Return normalized object storage data from the active storage relation.
+
+        Supports both the `object-storage` (in-cluster MinIO) and `s3` (s3-integrator)
+        interfaces, returning a common dict with keys: access-key, secret-key, host, port,
+        secure, region, is_s3.
+
+        Exactly one of the `object-storage` or `s3-credentials` relations is expected.
+
+        Raises:
+            ErrorWithStatus(..., Blocked) if both relations are established at once.
+            ErrorWithStatus(..., Blocked) if neither relation is established (raised by the
+                object-storage SDI validation).
+            ErrorWithStatus(..., Waiting) if the active relation has no data yet.
+        """
+        if self.model.relations["object-storage"] and self.model.relations["s3-credentials"]:
+            raise ErrorWithStatus(
+                "Too many object storage relations. Please relate to only one of "
+                "`object-storage` or `s3-credentials`.",
+                BlockedStatus,
+            )
+
+        if self.model.get_relation("s3-credentials"):
+            data = self._get_s3_data()
+            host, port, secure = self._parse_s3_endpoint(data["endpoint"])
+            return {
+                "access-key": data["access-key"],
+                "secret-key": data["secret-key"],
+                "host": host,
+                "port": port,
+                "secure": secure,
+                "region": data.get("region", ""),
+                "is_s3": True,
+            }
+
+        if interfaces is None:
+            interfaces = self._get_interfaces()
+        obj = self._get_object_storage(interfaces)
+        return {
+            "access-key": obj["access-key"],
+            "secret-key": obj["secret-key"],
+            "host": f"{obj['service']}.{obj['namespace']}",
+            "port": obj["port"],
+            "secure": obj["secure"],
+            "region": "",
+            "is_s3": False,
+        }
+
+    @staticmethod
+    def _parse_s3_endpoint(endpoint: str) -> tuple:
+        """Parse an s3 endpoint into a (host, port, secure) tuple.
+
+        The endpoint may be a full URL (e.g. "https://s3.example.com:443") or a bare
+        "host[:port]". kfp expects the host, port and TLS flag as separate values, so the
+        URL scheme (when present) determines the default port and whether TLS is used.
+        """
+        parsed = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
+        secure = parsed.scheme == "https"
+        port = parsed.port or (443 if secure else 80)
+        return parsed.hostname, port, secure
 
     def _get_viz(self, interfaces):
         """Retrieve kfp-viz relation data, return default, if empty."""
@@ -871,13 +957,17 @@ class KfpApiOperator(CharmBase):
 
     def _ensure_bucket_exists(self) -> None:
         """Ensure bucket on object storage exists by using a boto3 client."""
-        interfaces = self._get_interfaces()
-        obj = self._get_object_storage(interfaces)
+        obj = self._get_object_storage_data()
+
+        # The s3-integrator manages its own bucket(s); the charm only ensures the bucket
+        # exists for the in-cluster MinIO (object-storage) backend.
+        if obj["is_s3"]:
+            return
 
         s3_wrapper = S3BucketWrapper(
             access_key=obj.get("access-key"),
             secret_access_key=obj.get("secret-key"),
-            s3_service=f"{obj['service']}.{obj['namespace']}",
+            s3_service=obj["host"],
             s3_port=obj["port"],
         )
 

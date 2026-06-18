@@ -19,3 +19,8 @@ MINIO = CharmSpec(
 MYSQL = CharmSpec(
     charm="mysql-k8s", channel="8.0/stable", config={"profile": "testing"}, trust=True
 )
+S3_INTEGRATOR = CharmSpec(
+    charm="s3-integrator",
+    channel="2/edge",
+    trust=False,
+)
