@@ -608,7 +608,6 @@ class TestCharm:
             "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
             "KUBEFLOW_USERID_PREFIX": "",
             "POD_NAMESPACE": harness.charm.model.name,
-            # object-storage relation data (see setup_required_relations) has secure=True
             "OBJECTSTORECONFIG_SECURE": "true",
             "OBJECTSTORECONFIG_BUCKETNAME": harness.charm.config["object-store-bucket-name"],
             "DBCONFIG_CONMAXLIFETIME": "120s",

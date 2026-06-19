@@ -164,7 +164,6 @@ class KfpApiOperator(CharmBase):
         self.framework.observe(self.database.on.database_created, self._on_relational_db_relation)
         self.framework.observe(self.database.on.endpoints_changed, self._on_relational_db_relation)
 
-        # setup s3 (s3-integrator) interface, an alternative to the object-storage relation
         self.s3 = S3Requirer(self, relation_name="s3-credentials")
 
         self.prometheus_provider = MetricsEndpointProvider(
@@ -579,8 +578,8 @@ class KfpApiOperator(CharmBase):
     def _get_object_storage_data(self, interfaces=None) -> dict:
         """Return normalized object storage data from the active storage relation.
 
-        Supports both the `object-storage` (in-cluster MinIO) and `s3` (s3-integrator)
-        interfaces, returning a common dict with keys: access-key, secret-key, host, port,
+        Supports both the `object-storage` and `s3` interfaces,
+        returning a common dict with keys: access-key, secret-key, host, port,
         secure, region, is_s3.
 
         Exactly one of the `object-storage` or `s3-credentials` relations is expected.
