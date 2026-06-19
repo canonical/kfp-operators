@@ -15,7 +15,7 @@ options:
     type: string
     # defaulting to the S3 provider that we set in `sync.py`:
     # https://www.kubeflow.org/docs/components/pipelines/operator-guides/configure-object-store/#s3-and-s3-compatible-provider
-    default: "s3://mlpipeline/v2/artifacts"
+    default: "minio://mlpipeline/v2/artifacts"
     description: >
       Default pipeline root for the object storage bucket, refer to:
       https://www.kubeflow.org/docs/components/pipelines/concepts/pipeline-root
