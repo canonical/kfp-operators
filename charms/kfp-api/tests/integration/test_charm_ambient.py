@@ -23,6 +23,7 @@ from charms_dependencies import KFP_SCHEDWF, KFP_VIZ, MINIO, MYSQL
 from lightkube import Client
 from lightkube_extensions.types import AuthorizationPolicy
 from pytest_operator.plugin import OpsTest
+from tenacity import retry, stop_after_delay, wait_exponential
 
 logger = logging.getLogger(__name__)
 
@@ -186,24 +187,35 @@ async def test_authorization_policy_waypoint_accepted(ops_test: OpsTest, lightku
     namespace = ops_test.model.name
     policy_name = f"{APP_NAME}-allow-without-kubeflow-header"
 
-    # Retrieve the authorization policy
-    policy = lightkube_client.get(AuthorizationPolicy, name=policy_name, namespace=namespace)
+    # The Istio waypoint controller reconciles the policy asynchronously and may report a
+    # transient `PartiallyInvalid` reason before it settles on `Accepted`. Retry the fetch and
+    # assertions until the condition reconciles to avoid flakiness.
+    @retry(
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_delay(60),
+        reraise=True,
+    )
+    def assert_waypoint_accepted():
+        # Retrieve the authorization policy
+        policy = lightkube_client.get(AuthorizationPolicy, name=policy_name, namespace=namespace)
 
-    # Verify the policy has the expected status conditions
-    assert policy.status is not None, "Authorization policy status is missing"
-    conditions = policy.status.get("conditions", [])
-    assert len(conditions) > 0, "No status conditions found"
+        # Verify the policy has the expected status conditions
+        assert policy.status is not None, "Authorization policy status is missing"
+        conditions = policy.status.get("conditions", [])
+        assert len(conditions) > 0, "No status conditions found"
 
-    # Find the WaypointAccepted condition
-    waypoint_condition = None
-    for condition in conditions:
-        if condition.get("type") == "WaypointAccepted":
-            waypoint_condition = condition
-            break
+        # Find the WaypointAccepted condition
+        waypoint_condition = None
+        for condition in conditions:
+            if condition.get("type") == "WaypointAccepted":
+                waypoint_condition = condition
+                break
 
-    assert waypoint_condition is not None, "WaypointAccepted condition not found"
-    assert waypoint_condition.get("status") == "True", "WaypointAccepted status is not True"
-    assert waypoint_condition.get("reason") == "Accepted", "Reason is not 'Accepted'"
+        assert waypoint_condition is not None, "WaypointAccepted condition not found"
+        assert waypoint_condition.get("status") == "True", "WaypointAccepted status is not True"
+        assert waypoint_condition.get("reason") == "Accepted", "Reason is not 'Accepted'"
+
+    assert_waypoint_accepted()
 
 
 async def test_remove_application(ops_test: OpsTest):
