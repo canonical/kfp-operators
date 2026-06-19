@@ -9,12 +9,15 @@ https://github.com/canonical/kfp-operators
 
 import logging
 from pathlib import Path
+from urllib.parse import urlparse
 
 import yaml
 from charmed_kubeflow_chisme.components import (
     CharmReconciler,
     ContainerFileTemplate,
     LeadershipGateComponent,
+    RelationCountGateComponent,
+    S3RequirerComponent,
     SdiRelationBroadcasterComponent,
     SdiRelationDataReceiverComponent,
 )
@@ -183,13 +186,36 @@ class KfpUiOperator(CharmBase):
             depends_on=[self.leadership_gate, self.istio_relations_conflict_detector],
         )
 
+        self.s3_relations_conflict_detector = self.charm_reconciler.add(
+            component=RelationCountGateComponent(
+                charm=self,
+                name="s3-relations-conflict-detector",
+                relation_names=["object-storage", "s3-credentials"],
+            ),
+            depends_on=[self.leadership_gate],
+        )
+
+        self.s3_relation = self.charm_reconciler.add(
+            component=S3RequirerComponent(
+                charm=self,
+                name="relation:s3_credentials",
+                relation_name="s3-credentials",
+                is_optional=True,
+                required_relation_fields=frozenset({"access-key", "secret-key", "endpoint"}),
+            ),
+            depends_on=[self.leadership_gate, self.s3_relations_conflict_detector],
+        )
+
         self.object_storage_relation = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
                 charm=self,
                 name="relation:object_storage",
                 relation_name="object-storage",
+                # Make this relation optional, since a relation with s3-credentials is
+                # also sufficient
+                minimum_related_applications=0,
             ),
-            depends_on=[self.leadership_gate],
+            depends_on=[self.leadership_gate, self.s3_relations_conflict_detector],
         )
 
         self.kfp_api_relation = self.charm_reconciler.add(
@@ -219,40 +245,94 @@ class KfpUiOperator(CharmBase):
                         destination_path=VIEWER_CONFIG_PATH / "viewer-pod-template.json",
                     ),
                 ],
-                inputs_getter=lambda: MlPipelineUiInputs(
-                    ALLOW_CUSTOM_VISUALIZATIONS=self.model.config["allow-custom-visualizations"],
-                    ARGO_ARCHIVE_LOGS=self.model.config["argo-archive-logs"],
-                    DISABLE_GKE_METADATA=self.model.config["disable-gke-metadata"],
-                    FRONTEND_SERVER_NAMESPACE=self.model.name,
-                    HIDE_SIDENAV=self.model.config["hide-sidenav"],
-                    MINIO_ACCESS_KEY=self.object_storage_relation.component.get_data()[
-                        "access-key"
-                    ],
-                    MINIO_SECRET_KEY=self.object_storage_relation.component.get_data()[
-                        "secret-key"
-                    ],
-                    MINIO_HOST=self.object_storage_relation.component.get_data()["service"],
-                    MINIO_NAMESPACE=self.object_storage_relation.component.get_data()["namespace"],
-                    MINIO_PORT=self.object_storage_relation.component.get_data()["port"],
-                    MINIO_SSL=self.object_storage_relation.component.get_data()["secure"],
-                    ML_PIPELINE_SERVICE_HOST=self.kfp_api_relation.component.get_data()[
-                        "service-name"
-                    ],
-                    ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation.component.get_data()[
-                        "service-port"
-                    ],
-                    COMMAND=self.command,
-                ),
+                inputs_getter=self._generate_ml_pipeline_ui_inputs,
             ),
             depends_on=[
                 self.leadership_gate,
-                self.object_storage_relation,
+                self.s3_relations_conflict_detector,
                 self.kfp_api_relation,
             ],
         )
 
         self.charm_reconciler.install_default_event_handlers()
         self._logging = LogForwarder(charm=self)
+
+    @property
+    def active_storage_component(self):
+        """Return the active storage component (S3 or object-storage).
+
+        Exactly one of the `s3-credentials` or `object-storage` relations is expected at a
+        time (enforced by the s3-relations-conflict-detector).
+        """
+        if self.model.get_relation("s3-credentials"):
+            return self.s3_relation.component
+        return self.object_storage_relation.component
+
+    def _get_object_storage_data(self) -> dict:
+        """Return normalized object storage connection data from the active storage relation.
+
+        Supports both the `object-storage` (MinIO) and `s3` (s3-integrator) interfaces,
+        returning a common dict with keys: access_key, secret_key, host, namespace, port,
+        secure.
+        """
+        active = self.active_storage_component
+        if isinstance(active, S3RequirerComponent):
+            # get_data() returns a list, only one S3 relation is expected,
+            # so take the first entry
+            data = active.get_data()[0]
+            host, port, secure = self._parse_s3_endpoint(data["endpoint"])
+            return {
+                "access_key": data["access-key"],
+                "secret_key": data["secret-key"],
+                # The s3 interface has no namespace concept. An empty namespace makes the
+                # ml-pipeline-ui frontend use MINIO_HOST as-is (without a `.namespace` suffix).
+                "host": host,
+                "namespace": "",
+                "port": port,
+                "secure": secure,
+            }
+        data = active.get_data()
+        return {
+            "access_key": data["access-key"],
+            "secret_key": data["secret-key"],
+            "host": data["service"],
+            "namespace": data["namespace"],
+            "port": data["port"],
+            "secure": data["secure"],
+        }
+
+    @staticmethod
+    def _parse_s3_endpoint(endpoint: str) -> tuple:
+        """Parse an s3 endpoint into a (host, port, secure) tuple.
+
+        The endpoint may be a full URL (e.g. "https://s3.example.com:443") or a bare
+        "host[:port]". The MinIO-style frontend expects the host, port and TLS flag as
+        separate values, so we use the full URL to determine those values.
+        """
+        parsed = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
+        secure = parsed.scheme == "https"
+        port = parsed.port or (443 if secure else 80)
+        return parsed.hostname, port, secure
+
+    def _generate_ml_pipeline_ui_inputs(self) -> MlPipelineUiInputs:
+        """Generate the inputs for the ml-pipeline-ui Pebble service."""
+        object_storage = self._get_object_storage_data()
+        return MlPipelineUiInputs(
+            ALLOW_CUSTOM_VISUALIZATIONS=self.model.config["allow-custom-visualizations"],
+            ARGO_ARCHIVE_LOGS=self.model.config["argo-archive-logs"],
+            DISABLE_GKE_METADATA=self.model.config["disable-gke-metadata"],
+            FRONTEND_SERVER_NAMESPACE=self.model.name,
+            HIDE_SIDENAV=self.model.config["hide-sidenav"],
+            MINIO_ACCESS_KEY=object_storage["access_key"],
+            MINIO_SECRET_KEY=object_storage["secret_key"],
+            MINIO_HOST=object_storage["host"],
+            MINIO_NAMESPACE=object_storage["namespace"],
+            MINIO_PORT=object_storage["port"],
+            MINIO_SSL=object_storage["secure"],
+            ML_PIPELINE_SERVICE_HOST=self.kfp_api_relation.component.get_data()["service-name"],
+            ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation.component.get_data()["service-port"],
+            COMMAND=self.command,
+        )
 
 
 if __name__ == "__main__":

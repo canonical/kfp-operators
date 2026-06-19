@@ -16,6 +16,8 @@ resources:
     description: OCI image for ml-pipeline-ui
     upstream-source: docker.io/charmedkubeflow/frontend:2.16.0-c9e8334
 requires:
+  s3-credentials:
+    interface: s3
   object-storage:
     interface: object-storage
     schema:

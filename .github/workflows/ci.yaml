@@ -199,6 +199,7 @@ jobs:
         test-type:
           - integration
           - integration-ambient
+          - integration-object-storage
         exclude:
           - charm: kfp-schedwf
             test-type: integration-ambient
@@ -206,6 +207,22 @@ jobs:
             test-type: integration-ambient
           - charm: kfp-metadata-writer
             test-type: integration-ambient
+          # integration-object-storage is only defined for the charms that integrate with
+          # s3-integrator, whose default `integration` env now runs the s3 backend test instead
+          - charm: kfp-persistence
+            test-type: integration-object-storage
+          - charm: kfp-profile-controller
+            test-type: integration-object-storage
+          - charm: kfp-api
+            test-type: integration-object-storage
+          - charm: kfp-schedwf
+            test-type: integration-object-storage
+          - charm: kfp-viewer
+            test-type: integration-object-storage
+          - charm: kfp-metadata-writer
+            test-type: integration-object-storage
+          - charm: kfp-viz
+            test-type: integration-object-storage
     steps:
       # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,
