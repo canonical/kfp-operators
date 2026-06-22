@@ -123,7 +123,7 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"track={track}\n")
               f.write(f"channel={channel}\n")
-          
+
           print(f"Track: {track}")
           print(f"Channel: {channel}")
 
@@ -207,8 +207,7 @@ jobs:
             test-type: integration-ambient
           - charm: kfp-metadata-writer
             test-type: integration-ambient
-          # integration-object-storage is only defined for the charms that integrate with
-          # s3-integrator, whose default `integration` env now runs the s3 backend test instead
+          # TODO: Update with other charms that have an integration via object-storage
           - charm: kfp-persistence
             test-type: integration-object-storage
           - charm: kfp-profile-controller
