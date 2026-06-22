@@ -1180,6 +1180,36 @@ class TestCharm:
             "port": 443,
             "secure": True,
             "region": "us-east-1",
+            "bucket": "",
+            "is_s3": True,
+        }
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    def test_get_object_storage_data_s3_with_bucket(
+        self, harness: Harness, mocked_kubernetes_service_patcher
+    ):
+        """Test that a bucket provided by s3-credentials is included in the normalized dict."""
+        harness.set_leader(True)
+        harness.begin()
+        harness.add_relation("s3-credentials", "s3-provider")
+
+        s3_data = {
+            "access-key": "s3-access",
+            "secret-key": "s3-secret",
+            "endpoint": "https://s3.example.com:443",
+            "region": "us-east-1",
+            "bucket": "relation-bucket",
+        }
+        harness.charm.s3.get_storage_connection_info = MagicMock(return_value=s3_data)
+
+        assert harness.charm._get_object_storage_data() == {
+            "access-key": "s3-access",
+            "secret-key": "s3-secret",
+            "host": "s3.example.com",
+            "port": 443,
+            "secure": True,
+            "region": "us-east-1",
+            "bucket": "relation-bucket",
             "is_s3": True,
         }
 
@@ -1250,6 +1280,7 @@ class TestCharm:
             "port": 443,
             "secure": True,
             "region": "eu-west-1",
+            "bucket": "",
             "is_s3": True,
         }
         harness.charm._get_object_storage_data = MagicMock(return_value=s3_obj)
@@ -1268,5 +1299,48 @@ class TestCharm:
         mock_instance.bucket_exists.assert_called_once_with(bucket_name)
         if expect_create:
             mock_instance.create_bucket.assert_called_once_with(bucket_name)
+        else:
+            mock_instance.create_bucket.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "bucket_exists_return,expect_create",
+        [
+            (True, False),  # bucket already exists — create_bucket must NOT be called
+            (False, True),  # bucket missing — create_bucket must be called
+        ],
+    )
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    def test_ensure_bucket_exists_uses_relation_bucket(
+        self,
+        harness: Harness,
+        mocked_kubernetes_service_patcher,
+        mocker,
+        bucket_exists_return: bool,
+        expect_create: bool,
+    ):
+        """Bucket name from s3-credentials relation takes priority over config."""
+        harness.set_leader(True)
+        harness.begin()
+        mock_wrapper_cls = mocker.patch("charm.S3BucketWrapper")
+        mock_instance = mock_wrapper_cls.return_value
+        mock_instance.bucket_exists.return_value = bucket_exists_return
+
+        s3_obj = {
+            "access-key": "key",
+            "secret-key": "secret",
+            "host": "s3.example.com",
+            "port": 443,
+            "secure": True,
+            "region": "eu-west-1",
+            "bucket": "relation-bucket",
+            "is_s3": True,
+        }
+        harness.charm._get_object_storage_data = MagicMock(return_value=s3_obj)
+
+        harness.charm._ensure_bucket_exists()
+
+        mock_instance.bucket_exists.assert_called_once_with("relation-bucket")
+        if expect_create:
+            mock_instance.create_bucket.assert_called_once_with("relation-bucket")
         else:
             mock_instance.create_bucket.assert_not_called()

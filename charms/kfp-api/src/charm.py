@@ -386,7 +386,8 @@ class KfpApiOperator(CharmBase):
             "KUBEFLOW_USERID_PREFIX": "",
             "POD_NAMESPACE": self.model.name,
             "OBJECTSTORECONFIG_SECURE": "true" if object_storage["secure"] else "false",
-            "OBJECTSTORECONFIG_BUCKETNAME": self.model.config["object-store-bucket-name"],
+            "OBJECTSTORECONFIG_BUCKETNAME": object_storage["bucket"]
+            or self.model.config["object-store-bucket-name"],
             "DBCONFIG_CONMAXLIFETIME": "120s",
             "DB_DRIVER_NAME": "mysql",
             "DBCONFIG_MYSQLCONFIG_USER": db_data["db_username"],
@@ -607,6 +608,7 @@ class KfpApiOperator(CharmBase):
                 "port": port,
                 "secure": secure,
                 "region": data.get("region", ""),
+                "bucket": data.get("bucket", ""),
                 "is_s3": True,
             }
 
@@ -620,6 +622,7 @@ class KfpApiOperator(CharmBase):
             "port": obj["port"],
             "secure": obj["secure"],
             "region": "",
+            "bucket": "",
             "is_s3": False,
         }
 
@@ -968,7 +971,7 @@ class KfpApiOperator(CharmBase):
         )
 
         # Try creating the bucket we need for object storage
-        bucket_name = self.model.config["object-store-bucket-name"]
+        bucket_name = obj["bucket"] or self.model.config["object-store-bucket-name"]
         try:
             self.unit.status = MaintenanceStatus(f"Checking if bucket {bucket_name} exists.")
             # Check if bucket already exists
