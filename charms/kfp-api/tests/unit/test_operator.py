@@ -1220,20 +1220,53 @@ class TestCharm:
             harness.charm._get_object_storage_data()
         assert isinstance(err.value.status, WaitingStatus)
 
+    @pytest.mark.parametrize(
+        "bucket_exists_return,expect_create",
+        [
+            (True, False),  # bucket already exists — create_bucket must NOT be called
+            (False, True),  # bucket missing — create_bucket must be called
+        ],
+    )
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_ensure_bucket_exists_skipped_for_s3(
-        self, harness: Harness, mocked_kubernetes_service_patcher, mocker
+    def test_ensure_bucket_exists_for_s3(
+        self,
+        harness: Harness,
+        mocked_kubernetes_service_patcher,
+        mocker,
+        bucket_exists_return: bool,
+        expect_create: bool,
     ):
-        """Test that bucket creation is skipped for the s3-integrator backend.
-
-        The s3-integrator manages its own buckets, so the charm must not try to create
-        one (which would require a boto3 client).
-        """
+        """Bucket is checked (and created if missing) for the s3-credentials backend."""
         harness.set_leader(True)
         harness.begin()
-        mock_wrapper = mocker.patch("charm.S3BucketWrapper")
-        harness.charm._get_object_storage_data = MagicMock(return_value={"is_s3": True})
+        mock_wrapper_cls = mocker.patch("charm.S3BucketWrapper")
+        mock_instance = mock_wrapper_cls.return_value
+        mock_instance.bucket_exists.return_value = bucket_exists_return
+
+        s3_obj = {
+            "access-key": "key",
+            "secret-key": "secret",
+            "host": "s3.example.com",
+            "port": 443,
+            "secure": True,
+            "region": "eu-west-1",
+            "is_s3": True,
+        }
+        harness.charm._get_object_storage_data = MagicMock(return_value=s3_obj)
+        bucket_name = harness.charm.model.config["object-store-bucket-name"]
 
         harness.charm._ensure_bucket_exists()
 
-        mock_wrapper.assert_not_called()
+        mock_wrapper_cls.assert_called_once_with(
+            access_key="key",
+            secret_access_key="secret",
+            s3_service="s3.example.com",
+            s3_port=443,
+            secure=True,
+            region="eu-west-1",
+        )
+        mock_instance.bucket_exists.assert_called_once_with(bucket_name)
+        if expect_create:
+            mock_instance.create_bucket.assert_called_once_with(bucket_name)
+        else:
+            mock_instance.create_bucket.assert_not_called()

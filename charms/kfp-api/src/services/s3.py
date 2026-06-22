@@ -15,7 +15,13 @@ class S3BucketWrapper:
     """Wrapper for accessing and creating S3 Buckets."""
 
     def __init__(
-        self, access_key: str, secret_access_key: str, s3_service: str, s3_port: Union[str, int]
+        self,
+        access_key: str,
+        secret_access_key: str,
+        s3_service: str,
+        s3_port: Union[str, int],
+        secure: bool = False,
+        region: str = "",
     ):
         """Initialize S3 Bucket Wrapper.
 
@@ -23,12 +29,16 @@ class S3BucketWrapper:
         secret_access_key - S3 secret access key
         s3_service - S3 service URL that can include namespace
         s3_port - S3 service port
+        secure - whether to use HTTPS (default: False)
+        region - S3 region, used for bucket creation location constraint (default: "")
         """
 
         self.access_key: str = access_key
         self.secret_access_key: str = secret_access_key
         self.s3_service: str = s3_service
         self.s3_port: str = str(s3_port)
+        self.secure: bool = secure
+        self.region: str = region
 
         self._client: botocore.client.BaseClient = None
 
@@ -41,8 +51,14 @@ class S3BucketWrapper:
             aws_secret_access_key=self.secret_access_key,
             config=Config(connect_timeout=CONNECT_TIMEOUT, read_timeout=READ_TIMEOUT),
         )
+        kwargs = {"Bucket": bucket_name}
+        # AWS S3 requires CreateBucketConfiguration for all regions except us-east-1, and
+        # rejects it for us-east-1. Use an empty region for non-AWS endpoints. See:
+        # https://docs.aws.amazon.com/boto3/latest/reference/services/s3/client/create_bucket.html#create-bucket
+        if self.region and self.region != "us-east-1":
+            kwargs["CreateBucketConfiguration"] = {"LocationConstraint": self.region}
         try:
-            client.create_bucket(Bucket=bucket_name)
+            client.create_bucket(**kwargs)
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
             # Treat already-existing buckets as success
@@ -94,4 +110,5 @@ class S3BucketWrapper:
     @property
     def s3_url(self):
         """Returns the S3 url."""
-        return f"http://{self.s3_service}:{self.s3_port}"
+        scheme = "https" if self.secure else "http"
+        return f"{scheme}://{self.s3_service}:{self.s3_port}"

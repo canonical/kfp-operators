@@ -958,16 +958,13 @@ class KfpApiOperator(CharmBase):
         """Ensure bucket on object storage exists by using a boto3 client."""
         obj = self._get_object_storage_data()
 
-        # The s3-integrator manages its own bucket(s); the charm only ensures the bucket
-        # exists for the in-cluster MinIO (object-storage) backend.
-        if obj["is_s3"]:
-            return
-
         s3_wrapper = S3BucketWrapper(
             access_key=obj.get("access-key"),
             secret_access_key=obj.get("secret-key"),
             s3_service=obj["host"],
             s3_port=obj["port"],
+            secure=obj["secure"],
+            region=obj["region"],
         )
 
         # Try creating the bucket we need for object storage
