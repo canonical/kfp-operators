@@ -1,6 +1,8 @@
 """Wrapper for accessing and creating S3 Buckets."""
 
-from typing import Union
+import os
+import tempfile
+from typing import List, Optional, Union
 
 import boto3
 import botocore.client
@@ -22,6 +24,7 @@ class S3BucketWrapper:
         s3_port: Union[str, int],
         secure: bool = False,
         region: str = "",
+        tls_ca_chain: Optional[List[str]] = None,
     ):
         """Initialize S3 Bucket Wrapper.
 
@@ -31,6 +34,7 @@ class S3BucketWrapper:
         s3_port - S3 service port
         secure - whether to use HTTPS (default: False)
         region - S3 region, used for bucket creation location constraint (default: "")
+        tls_ca_chain - list of PEM CA certificates for TLS verification (default: None)
         """
 
         self.access_key: str = access_key
@@ -40,7 +44,21 @@ class S3BucketWrapper:
         self.secure: bool = secure
         self.region: str = region
 
+        self._ca_file: Optional[str] = None
+        if tls_ca_chain:
+            ca_chain_pem = "\n".join(tls_ca_chain)
+            tmp = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".pem")
+            tmp.write(ca_chain_pem)
+            tmp.flush()
+            tmp.close()
+            self._ca_file = tmp.name
+
         self._client: botocore.client.BaseClient = None
+
+    def __del__(self):
+        """Clean up the temporary CA file if one was created."""
+        if self._ca_file and os.path.exists(self._ca_file):
+            os.unlink(self._ca_file)
 
     def create_bucket(self, bucket_name):
         """Create a bucket via the client with configured timeouts."""
@@ -50,6 +68,7 @@ class S3BucketWrapper:
             aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_access_key,
             config=Config(connect_timeout=CONNECT_TIMEOUT, read_timeout=READ_TIMEOUT),
+            verify=self._ca_file,
         )
         kwargs = {"Bucket": bucket_name}
         # AWS S3 requires CreateBucketConfiguration for all regions except us-east-1, and
@@ -74,6 +93,7 @@ class S3BucketWrapper:
             aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_access_key,
             config=Config(connect_timeout=CONNECT_TIMEOUT, read_timeout=READ_TIMEOUT),
+            verify=self._ca_file,
         )
         client.delete_bucket(Bucket=bucket_name)
 
@@ -104,6 +124,7 @@ class S3BucketWrapper:
                 endpoint_url=self.s3_url,
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_access_key,
+                verify=self._ca_file,
             )
             return self._client
 

@@ -1181,6 +1181,7 @@ class TestCharm:
             "secure": True,
             "region": "us-east-1",
             "bucket": "",
+            "tls-ca-chain": None,
             "is_s3": True,
         }
 
@@ -1210,6 +1211,7 @@ class TestCharm:
             "secure": True,
             "region": "us-east-1",
             "bucket": "relation-bucket",
+            "tls-ca-chain": None,
             "is_s3": True,
         }
 
@@ -1295,6 +1297,7 @@ class TestCharm:
             s3_port=443,
             secure=True,
             region="eu-west-1",
+            tls_ca_chain=None,
         )
         mock_instance.bucket_exists.assert_called_once_with(bucket_name)
         if expect_create:

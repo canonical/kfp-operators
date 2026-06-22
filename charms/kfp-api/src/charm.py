@@ -609,6 +609,7 @@ class KfpApiOperator(CharmBase):
                 "secure": secure,
                 "region": data.get("region", ""),
                 "bucket": data.get("bucket", ""),
+                "tls-ca-chain": data.get("tls-ca-chain"),
                 "is_s3": True,
             }
 
@@ -968,6 +969,7 @@ class KfpApiOperator(CharmBase):
             s3_port=obj["port"],
             secure=obj["secure"],
             region=obj["region"],
+            tls_ca_chain=obj.get("tls-ca-chain"),
         )
 
         # Try creating the bucket we need for object storage
@@ -983,6 +985,10 @@ class KfpApiOperator(CharmBase):
             s3_wrapper.create_bucket(bucket_name)
             return
 
+        except botocore.exceptions.SSLError as e:
+            msg = "Object storage TLS verification failed. Check CA chain configuration."
+            self.logger.warning(f"{msg}: {e}")
+            raise ErrorWithStatus(msg, WaitingStatus)
         except (
             botocore.exceptions.ClientError,
             botocore.exceptions.ConnectTimeoutError,

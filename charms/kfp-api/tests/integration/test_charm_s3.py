@@ -72,7 +72,9 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
     )
 
     # Deploy s3-integrator and provide it with S3 credentials
-    await deploy_and_assert_s3_integrator(ops_test.model, s3_integrator=S3_INTEGRATOR)
+    await deploy_and_assert_s3_integrator(
+        ops_test.model, s3_integrator=S3_INTEGRATOR, add_ca_chain=True
+    )
 
     await ops_test.model.add_relation(f"{APP_NAME}:mysql", f"{KFP_DB_APPLICATION_NAME}:mysql")
     await ops_test.model.add_relation(
