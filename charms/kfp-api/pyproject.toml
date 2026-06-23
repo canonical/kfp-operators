@@ -47,7 +47,7 @@ optional = true
 
 [tool.poetry.group.charm.dependencies]
 boto3 = ">=1.42.51"
-charmed-kubeflow-chisme = "^0.4.27"
+charmed-kubeflow-chisme = "^0.4.29"
 cosl = ">=0.0.48"
 lightkube = "^0.15.6"
 oci-image = "^1.0.0"
@@ -93,7 +93,7 @@ optional = true
 
 [tool.poetry.group.integration.dependencies]
 juju = "<4.0"
-charmed-kubeflow-chisme = "^0.4.27"
+charmed-kubeflow-chisme = "^0.4.29"
 lightkube = "^0.15.6"
 pytest-operator = "^0.38.0"
 selenium = "^4.27.1"

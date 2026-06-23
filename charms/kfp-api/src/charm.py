@@ -164,7 +164,11 @@ class KfpApiOperator(CharmBase):
         self.framework.observe(self.database.on.database_created, self._on_relational_db_relation)
         self.framework.observe(self.database.on.endpoints_changed, self._on_relational_db_relation)
 
-        self.s3 = S3Requirer(self, relation_name="s3-credentials")
+        self.s3 = S3Requirer(
+            self,
+            relation_name="s3-credentials",
+            bucket=self.model.config["object-store-bucket-name"],
+        )
 
         self.prometheus_provider = MetricsEndpointProvider(
             charm=self,
