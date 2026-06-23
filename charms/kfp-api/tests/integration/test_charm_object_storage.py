@@ -98,33 +98,6 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
     )
 
 
-async def test_remove_object_storage_relation(ops_test: OpsTest):
-    """Test that removing the object-storage relation puts the charm in a blocked state."""
-    await ops_test.juju(
-        "remove-relation",
-        f"{APP_NAME}:object-storage",
-        f"{MINIO.charm}:object-storage",
-    )
-    await ops_test.model.wait_for_idle(apps=[APP_NAME], status="blocked", timeout=60 * 5)
-
-
-async def test_deploy_and_integrate_s3_integrator(ops_test: OpsTest):
-    """Test deploying and integrating with s3-integrator restores the charm to active."""
-    await deploy_and_assert_s3_integrator(
-        ops_test.model, s3_integrator=S3_INTEGRATOR, add_ca_chain=True
-    )
-    await ops_test.model.add_relation(
-        f"{APP_NAME}:s3-credentials", f"{S3_INTEGRATOR.charm}:s3-credentials"
-    )
-    await ops_test.model.wait_for_idle(apps=[APP_NAME], status="active", timeout=60 * 10)
-
-
-async def test_remove_application(ops_test: OpsTest):
-    """Test that the application can be removed successfully."""
-    await ops_test.model.remove_application(app_name=APP_NAME, block_until_done=True)
-    assert APP_NAME not in ops_test.model.applications
-
-
 async def test_alert_rules(ops_test: OpsTest):
     """Test check charm alert rules and rules defined in relation data bag."""
     app = ops_test.model.applications[APP_NAME]
@@ -169,3 +142,30 @@ async def test_container_security_context(
         CONTAINERS_SECURITY_CONTEXT_MAP,
         ops_test.model.name,
     )
+
+
+async def test_remove_object_storage_relation(ops_test: OpsTest):
+    """Test that removing the object-storage relation puts the charm in a blocked state."""
+    await ops_test.juju(
+        "remove-relation",
+        f"{APP_NAME}:object-storage",
+        f"{MINIO.charm}:object-storage",
+    )
+    await ops_test.model.wait_for_idle(apps=[APP_NAME], status="blocked", timeout=60 * 5)
+
+
+async def test_deploy_and_integrate_s3_integrator(ops_test: OpsTest):
+    """Test deploying and integrating with s3-integrator restores the charm to active."""
+    await deploy_and_assert_s3_integrator(
+        ops_test.model, s3_integrator=S3_INTEGRATOR, add_ca_chain=True
+    )
+    await ops_test.model.add_relation(
+        f"{APP_NAME}:s3-credentials", f"{S3_INTEGRATOR.charm}:s3-credentials"
+    )
+    await ops_test.model.wait_for_idle(apps=[APP_NAME], status="active", timeout=60 * 10)
+
+
+async def test_remove_application(ops_test: OpsTest):
+    """Test that the application can be removed successfully."""
+    await ops_test.model.remove_application(app_name=APP_NAME, block_until_done=True)
+    assert APP_NAME not in ops_test.model.applications
