@@ -56,10 +56,16 @@ class S3BucketWrapper:
         self._client: botocore.client.BaseClient = None
 
     def __del__(self):
-        """Clean up the temporary CA file if one was created."""
-        if self._ca_file and os.path.exists(self._ca_file):
-            os.unlink(self._ca_file)
-
+        """Best-effort cleanup of the temporary CA file if one was created."""
+        ca_file = getattr(self, "_ca_file", None)
+        if not ca_file:
+            return
+        try:
+            os.unlink(ca_file)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            pass
     def create_bucket(self, bucket_name):
         """Create a bucket via the client with configured timeouts."""
         client = boto3.client(
