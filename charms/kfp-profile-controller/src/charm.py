@@ -235,7 +235,7 @@ class KfpProfileControllerOperator(CharmBase):
     def _get_object_storage_data(self) -> dict:
         """Return normalized object storage connection data from the active storage relation.
 
-        Supports both the `object-storage` (MinIO) and `s3` (s3-integrator) interfaces,
+        Supports both the `object-storage` and `s3` interfaces,
         returning a common dict with keys: access_key, secret_key, host, namespace, port,
         secure, region.
         """

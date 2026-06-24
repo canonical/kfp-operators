@@ -22,8 +22,12 @@ provides:
 requires:
   s3-credentials:
     interface: s3
+    optional: true
+    limit: 1
   object-storage:
     interface: object-storage
+    optional: true
+    limit: 1
     schema:
       v1:
         provides:
