@@ -237,7 +237,7 @@ class KfpProfileControllerOperator(CharmBase):
 
         Supports both the `object-storage` and `s3` interfaces,
         returning a common dict with keys: access_key, secret_key, host, namespace, port,
-        secure, region.
+        secure, region, endpoint.
         """
         active = self.active_storage_component
         if isinstance(active, S3RequirerComponent):
@@ -260,6 +260,8 @@ class KfpProfileControllerOperator(CharmBase):
                 "port": port,
                 "secure": secure,
                 "region": data.get("region", ""),
+                # The s3 interface has no namespace concept, so the endpoint is just host:port.
+                "endpoint": f"{host}:{port}",
             }
         data = active.get_data()
         # When minimum_related_applications != maximum_related_applications,
@@ -275,6 +277,8 @@ class KfpProfileControllerOperator(CharmBase):
             "port": data["port"],
             "secure": data["secure"],
             "region": "",
+            # The object-storage interface (MinIO) uses a `host.namespace:port` endpoint.
+            "endpoint": f"{data['service']}.{data['namespace']}:{data['port']}",
         }
 
     @staticmethod
@@ -313,6 +317,7 @@ class KfpProfileControllerOperator(CharmBase):
             MINIO_HOST=object_storage["host"],
             MINIO_PORT=object_storage["port"],
             MINIO_NAMESPACE=object_storage["namespace"],
+            MINIO_ENDPOINT=object_storage["endpoint"],
             MINIO_ACCESS_KEY=object_storage["access_key"],
             MINIO_SECRET_KEY=object_storage["secret_key"],
             MINIO_SSL="true" if object_storage["secure"] else "false",

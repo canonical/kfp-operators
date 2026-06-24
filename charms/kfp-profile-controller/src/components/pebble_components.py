@@ -16,6 +16,7 @@ class KfpProfileControllerInputs:
     MINIO_HOST: str
     MINIO_NAMESPACE: str
     MINIO_PORT: str
+    MINIO_ENDPOINT: str
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
     MINIO_SSL: str
@@ -70,6 +71,7 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                             "MINIO_HOST": inputs.MINIO_HOST,
                             "MINIO_PORT": inputs.MINIO_PORT,
                             "MINIO_NAMESPACE": inputs.MINIO_NAMESPACE,
+                            "MINIO_ENDPOINT": inputs.MINIO_ENDPOINT,
                             "MINIO_ACCESS_KEY": f"{inputs.MINIO_ACCESS_KEY}",
                             "MINIO_SECRET_KEY": inputs.MINIO_SECRET_KEY,
                             "MINIO_SSL": inputs.MINIO_SSL,

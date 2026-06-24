@@ -1,44 +1,66 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import json
 import logging
+from base64 import b64decode
 from copy import deepcopy
 from pathlib import Path
 
 import lightkube
 import pytest
+import tenacity
 import yaml
 from charmed_kubeflow_chisme.testing import (
     GRAFANA_AGENT_APP,
     assert_logging,
     assert_security_context,
     deploy_and_assert_grafana_agent,
+    deploy_and_integrate_service_mesh_charms,
     generate_container_securitycontext_map,
     get_pod_names,
 )
 from charmed_kubeflow_chisme.testing.s3_integration import deploy_and_assert_s3_integrator
 from charms_dependencies import (
     ADMISSION_WEBHOOK,
-    ISTIO_PILOT,
     KUBEFLOW_PROFILES,
     METACONTROLLER_OPERATOR,
     S3_INTEGRATOR,
 )
-from lightkube import codecs
-from lightkube.generic_resource import create_global_resource, create_namespaced_resource
+from lightkube import ApiError, codecs
+from lightkube.generic_resource import (
+    GenericNamespacedResource,
+    create_global_resource,
+    create_namespaced_resource,
+)
 from lightkube.resources.apps_v1 import Deployment
 from lightkube.resources.core_v1 import ConfigMap, Namespace, Secret, Service, ServiceAccount
 from pytest_operator.plugin import OpsTest
-from tenacity import retry, stop_after_delay, wait_exponential
+from tenacity import Retrying, retry, stop_after_delay, wait_exponential, wait_fixed
 
 logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_NAME = METADATA["name"]
 CONTAINERS_SECURITY_CONTEXT_MAP = generate_container_securitycontext_map(METADATA)
+AMBIENT_AP_NAME = "ml-pipeline-visualizationserver"
+SIDECAR_AP_NAME = "ns-owner-access-istio-charmed"
+CONFIG_NAME_FOR_CUSTOM_IMAGES = "custom_images"
+CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = "default_pipeline_root"
+CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
+CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
+KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT = "defaultPipelineRoot"
+KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
 
 PodDefault = create_namespaced_resource(
     group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
+)
+
+AuthorizationPolicy = create_namespaced_resource(
+    group="security.istio.io",
+    version="v1beta1",
+    kind="AuthorizationPolicy",
+    plural="authorizationpolicies",
 )
 
 EXPECTED_SYNC_WEBHOOK_RESOURCES_BY_DEFAULT = [
@@ -50,6 +72,20 @@ EXPECTED_SYNC_WEBHOOK_RESOURCES_BY_DEFAULT = [
     (PodDefault, "access-ml-pipeline"),
     (Secret, "mlpipeline-minio-artifact"),
 ]
+
+RETRY_FOR_ONE_MINUTE = Retrying(
+    stop=stop_after_delay(60 * 1),
+    wait=wait_fixed(5),
+    reraise=True,
+)
+
+
+def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> ConfigMap:
+    """Waits until a specified configmap is available, to a maximum of 1 minute"""
+    for attempt in RETRY_FOR_ONE_MINUTE:
+        with attempt:
+            return client.get(res=ConfigMap, name=name, namespace=namespace)
+    raise TimeoutError(f"ConfigMap {name} in namespace {namespace} not present.")
 
 
 @pytest.mark.abort_on_fail
@@ -105,13 +141,14 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
     )
 
     # The profile controller needs AuthorizationPolicies to create Profiles
-    # Deploy istio-pilot to provide the k8s cluster with this CRD
-    await ops_test.model.deploy(
-        entity_url=ISTIO_PILOT.charm,
-        channel=ISTIO_PILOT.channel,
-        trust=ISTIO_PILOT.trust,
-    )
     # Wait for everything to deploy
+    await deploy_and_integrate_service_mesh_charms(
+        CHARM_NAME,
+        ops_test.model,
+        relate_to_beacon=True,
+        relate_to_ingress_gateway_endpoint=False,
+        relate_to_ingress_route_endpoint=False,
+    )
     await ops_test.model.wait_for_idle(status="active", raise_on_blocked=False, timeout=60 * 10)
 
     # Deploying grafana-agent-k8s and add all relations
@@ -125,6 +162,82 @@ async def test_profile_and_resources_creation(lightkube_client: lightkube.Client
     """Create a profile and validate that corresponding resources were created."""
     profile_name = profile
     validate_profile_resources(lightkube_client, profile_name)
+
+
+# Targeted for ambient integration
+@pytest.mark.abort_on_fail
+async def test_ambient_authorization_policy_created(
+    lightkube_client: lightkube.Client, profile: str
+):
+    """Test if the expected Ambient AuthorizationPolicy is created in Profile."""
+    logger.info(
+        'Checking  if AuthorizationPolicy "%s" exists in Profile "%s"',
+        AMBIENT_AP_NAME,
+        profile,
+    )
+    policy = get_authorization_policy(AMBIENT_AP_NAME, profile, lightkube_client)
+    assert policy is not None
+
+
+# Targeted for ambient integration
+@pytest.mark.abort_on_fail
+async def test_insecure_authorization_policy_is_missing(
+    lightkube_client: lightkube.Client, profile: str
+):
+    """Test if the previous sidecar AuthorizationPolicy is not present in Profile."""
+    logger.info(
+        'Checking  if AuthorizationPolicy "%s" is not present in Profile "%s"',
+        SIDECAR_AP_NAME,
+        profile,
+    )
+
+    with pytest.raises(ApiError) as excinfo:
+        lightkube_client.get(
+            AuthorizationPolicy,
+            name=SIDECAR_AP_NAME,
+            namespace=profile,
+        )
+
+    assert excinfo.value.response.status_code == 404
+
+
+# Targeted for ambient integration
+@pytest.mark.abort_on_fail
+async def test_kfp_api_principal_changed(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Test that the principal in the AuthorizationPolicy changes on config-change."""
+    new_principal = "test"
+    await ops_test.model.applications[CHARM_NAME].set_config(
+        {
+            "kfp-api-principal": new_principal,
+            "kfp_api_service_account_name": "",
+        }
+    )
+    await ops_test.model.wait_for_idle(apps=[CHARM_NAME], status="active", timeout=600)
+
+    # ensure the AuthorizationPolicy in Profile is updated
+    policy = get_authorization_policy(AMBIENT_AP_NAME, profile, lightkube_client)
+    assert policy["spec"]["rules"][0]["from"][0]["source"]["principals"][0] == new_principal
+
+    # reset the deprecated config option to its default
+    await ops_test.model.applications[CHARM_NAME].set_config({"kfp-api-principal": ""})
+    await ops_test.model.wait_for_idle(apps=[CHARM_NAME], status="active", timeout=600)
+
+
+@tenacity.retry(
+    wait=wait_exponential(multiplier=1, min=1, max=5),
+    stop=stop_after_delay(60 * 2),
+    reraise=True,
+)
+def get_authorization_policy(
+    name: str, namespace: str, lightkube_client: lightkube.Client
+) -> GenericNamespacedResource:
+    return lightkube_client.get(
+        AuthorizationPolicy,
+        name=name,
+        namespace=namespace,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -208,12 +321,162 @@ def validate_profile_resources(
     assert expected_label_value == namespace.metadata.labels[expected_label]
 
 
-async def test_sync_webhook_resources(lightkube_client: lightkube.Client, profile: str):
+@retry(
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_delay(30),
+    reraise=True,
+)
+def validate_profile_deployments_with_custom_images(
+    lightkube_client: lightkube.Client,
+    profile_name: str,
+    frontend_image: str,
+    visualisation_image: str,
+):
+    """Tests if profile's deployment have correct images"""
+    # Get deployments
+    pipeline_ui_deployment = lightkube_client.get(
+        Deployment, name="ml-pipeline-ui-artifact", namespace=profile_name
+    )
+    visualization_server_deployment = lightkube_client.get(
+        Deployment, name="ml-pipeline-visualizationserver", namespace=profile_name
+    )
+
+    # Assert images
+    assert pipeline_ui_deployment.spec.template.spec.containers[0].image == frontend_image
+    assert (
+        visualization_server_deployment.spec.template.spec.containers[0].image
+        == visualisation_image
+    )
+
+
+async def test_s3_secret_resources(ops_test: OpsTest):
+    """Tests that the s3 credentials Secret was created with non-empty data.
+
+    The credentials provided by the s3-integrator backend (microceph) are randomly
+    generated, so only existence and non-emptiness are validated here.
+    """
+    lightkube_client = lightkube.Client()
+    secret = lightkube_client.get(
+        Secret, f"{CHARM_NAME}-minio-credentials", namespace=ops_test.model_name
+    )
+    assert b64decode(secret.data["MINIO_ACCESS_KEY"]).decode("utf-8")
+    assert b64decode(secret.data["MINIO_SECRET_KEY"]).decode("utf-8")
+
+
+async def test_sync_webhook_before_config_changes(
+    lightkube_client: lightkube.Client, profile: str
+):
     """Test that the sync webhook deploys the desired resources when backed by s3."""
     desired_resources = deepcopy(EXPECTED_SYNC_WEBHOOK_RESOURCES_BY_DEFAULT)
 
     for resource, name in desired_resources:
         lightkube_client.get(resource, name=name, namespace=profile)
+
+
+async def test_default_config_for_default_pipeline_root(
+    lightkube_client: lightkube.Client, profile: str
+):
+    """Test that the default config for the default pipeline root is applied as intended."""
+    with open("config.yaml", "r") as file:
+        config_data = yaml.safe_load(file)
+        kfp_default_pipeline_root = config_data["options"][CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT][
+            "default"
+        ]
+    kfp_launcher_configmap = wait_for_configmap(
+        lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, profile
+    )
+    assert (
+        kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
+        == kfp_default_pipeline_root
+    )
+
+
+async def test_first_change_to_config_for_default_pipeline_root(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Test that a first config change for the default pipeline root results in a ConfigMap."""
+    updated_default_pipeline_root = "s3://whatever-minio-bucket/whatever/minio/path"
+
+    await ops_test.model.applications[CHARM_NAME].set_config(
+        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_default_pipeline_root}
+    )
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
+    )
+
+    # NOTE: simulating the necessary manual deletion of the old ConfigMap by the user:
+    # https://github.com/kubeflow/manifests/blob/v1.11.0/applications/pipeline/upstream/base/installs/generic/pipeline-install-config.yaml#L40-L42  # noqa: E501 # fmt: skip
+    lightkube_client.delete(res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile)
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
+    )
+
+    kfp_launcher_configmap = wait_for_configmap(
+        lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, profile
+    )
+    assert (
+        kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
+        == updated_default_pipeline_root
+    )
+
+
+async def test_yet_another_change_to_config_for_default_pipeline_root(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Test that another config change for the default pipeline root updates the ConfigMap."""
+    updated_default_pipeline_root = "s3://whatever-s3-bucket/whatever/s3/path"
+
+    await ops_test.model.applications[CHARM_NAME].set_config(
+        {CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT: updated_default_pipeline_root}
+    )
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
+    )
+
+    # NOTE: simulating the necessary manual deletion of the old ConfigMap by the user:
+    # https://github.com/kubeflow/manifests/blob/v1.11.0/applications/pipeline/upstream/base/installs/generic/pipeline-install-config.yaml#L40-L42  # noqa: E501 # fmt: skip
+    lightkube_client.delete(res=ConfigMap, name=KFP_LAUNCHER_CONFIGMAP_NAME, namespace=profile)
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
+    )
+
+    kfp_launcher_configmap = wait_for_configmap(
+        lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, profile
+    )
+    assert (
+        kfp_launcher_configmap.data[KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT]
+        == updated_default_pipeline_root
+    )
+
+
+async def test_sync_webhook_after_config_changes(lightkube_client: lightkube.Client, profile: str):
+    """Test that the sync webhook deploys the desired resources."""
+    desired_resources = deepcopy(EXPECTED_SYNC_WEBHOOK_RESOURCES_BY_DEFAULT)
+    desired_resources.append((ConfigMap, "kfp-launcher"))
+
+    for resource, name in desired_resources:
+        lightkube_client.get(resource, name=name, namespace=profile)
+
+
+async def test_change_custom_images(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Tests that updating images deployed to user Namespaces works as expected."""
+    custom_images = {
+        "visualization_server": CUSTOM_VISUALISATION_IMAGE,
+        "frontend": CUSTOM_FRONTEND_IMAGE,
+    }
+    await ops_test.model.applications[CHARM_NAME].set_config(
+        {CONFIG_NAME_FOR_CUSTOM_IMAGES: json.dumps(custom_images)}
+    )
+
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME], status="active", raise_on_blocked=True, timeout=300
+    )
+
+    validate_profile_deployments_with_custom_images(
+        lightkube_client, profile, CUSTOM_FRONTEND_IMAGE, CUSTOM_VISUALISATION_IMAGE
+    )
 
 
 async def test_logging(ops_test: OpsTest):

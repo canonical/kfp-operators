@@ -49,7 +49,7 @@ def get_settings_from_env(controller_port=None,
                           visualization_server_tag=None, frontend_tag=None, disable_istio_sidecar=None,
                           minio_access_key=None, minio_secret_key=None, kfp_default_pipeline_root=None,
                           minio_host=None, minio_port=None, minio_namespace=None,
-                          minio_ssl=None, minio_region=None,
+                          minio_endpoint=None, minio_ssl=None, minio_region=None,
                           metadata_grpc_service_host=None,
                           metadata_grpc_service_port=None):
     """
@@ -123,6 +123,10 @@ def get_settings_from_env(controller_port=None,
         minio_namespace or \
         os.environ.get("MINIO_NAMESPACE", "kubeflow")
 
+    settings["minio_endpoint"] = \
+        minio_endpoint or \
+        os.environ.get("MINIO_ENDPOINT", "minio.kubeflow:9000")
+
     settings["minio_ssl"] = \
         minio_ssl if minio_ssl is not None \
             else os.environ.get("MINIO_SSL", "false") == "true"
@@ -162,6 +166,7 @@ def server_factory(visualization_server_image,
                    visualization_server_tag, frontend_image, frontend_tag,
                    disable_istio_sidecar, minio_access_key,
                    minio_secret_key, minio_host, minio_namespace, minio_port,
+                   minio_endpoint,
                    metadata_grpc_service_host, metadata_grpc_service_port,
                    kfp_api_principal, ambient_mesh_enabled,
                    minio_ssl=False, minio_region="us-east-1",
@@ -196,14 +201,8 @@ def server_factory(visualization_server_image,
             desired_configmap_count = 2
             desired_resources = []
 
-            # The s3 interface (e.g. s3-integrator) has no namespace concept, so an empty
-            # minio_namespace produces a `host:port` endpoint, whereas the object-storage
-            # interface (MinIO) produces a `host.namespace:port` endpoint.
-            minio_endpoint = (
-                f"{minio_host}.{minio_namespace}:{minio_port}"
-                if minio_namespace
-                else f"{minio_host}:{minio_port}"
-            )
+            # The minio endpoint is built by the charm (see `_get_object_storage_data` in
+            # `src/charm.py`), so that this file stays closer to its upstream counterpart.
 
             providers_yaml = (
                 "minio:\n"

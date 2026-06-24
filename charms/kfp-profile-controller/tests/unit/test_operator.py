@@ -62,6 +62,11 @@ def generate_expected_environment(model_name: str, kfp_api_sa: str = "kfp-api") 
         "MINIO_HOST": MOCK_OBJECT_STORAGE_DATA["service"],
         "MINIO_NAMESPACE": MOCK_OBJECT_STORAGE_DATA["namespace"],
         "MINIO_PORT": MOCK_OBJECT_STORAGE_DATA["port"],
+        "MINIO_ENDPOINT": (
+            f"{MOCK_OBJECT_STORAGE_DATA['service']}."
+            f"{MOCK_OBJECT_STORAGE_DATA['namespace']}:"
+            f"{MOCK_OBJECT_STORAGE_DATA['port']}"
+        ),
         "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
         # object-storage (MinIO) data has secure=True and no region concept
         "MINIO_SSL": "true",
@@ -523,6 +528,7 @@ def test_pebble_services_running_with_s3(
             "MINIO_HOST": "s3.example.com",
             "MINIO_NAMESPACE": "",
             "MINIO_PORT": 443,
+            "MINIO_ENDPOINT": "s3.example.com:443",
             "MINIO_SSL": "true",
             "MINIO_REGION": "",
         }
