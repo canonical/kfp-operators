@@ -576,8 +576,14 @@ class KfpApiOperator(CharmBase):
         relation = self.model.get_relation("s3-credentials")
         info = self.s3.get_storage_connection_info(relation)
         required_fields = ("access-key", "secret-key", "endpoint")
-        if not info or not all(info.get(field) for field in required_fields):
+        if not info:
             raise ErrorWithStatus("Waiting for s3-credentials relation data", WaitingStatus)
+        missing = [field for field in required_fields if not info.get(field)]
+        if missing:
+            raise ErrorWithStatus(
+                f"Waiting for s3-credentials relation data, missing fields: {', '.join(missing)}",
+                WaitingStatus,
+            )
         return info
 
     def _get_object_storage_data(self, interfaces=None) -> dict:
