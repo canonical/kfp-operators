@@ -1002,7 +1002,7 @@ class KfpApiOperator(CharmBase):
         except botocore.exceptions.SSLError as e:
             msg = "Object storage TLS verification failed. Check CA chain configuration."
             self.logger.warning(f"{msg}: {e}")
-            raise ErrorWithStatus(msg, WaitingStatus)
+            raise ErrorWithStatus(msg, BlockedStatus)
         except (
             botocore.exceptions.ClientError,
             botocore.exceptions.ConnectTimeoutError,
