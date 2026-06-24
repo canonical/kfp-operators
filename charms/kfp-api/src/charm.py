@@ -649,10 +649,10 @@ class KfpApiOperator(CharmBase):
         "host[:port]". kfp expects the host, port and TLS flag as separate values, so the
         URL scheme (when present) determines the default port and whether TLS is used.
         """
-        parsed = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
-        secure = parsed.scheme == "https"
-        port = parsed.port or (443 if secure else 80)
-        return parsed.hostname, port, secure
+        parsed_endpoint = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
+        secure = parsed_endpoint.scheme == "https"
+        port = parsed_endpoint.port or (443 if secure else 80)
+        return parsed_endpoint.hostname, port, secure
 
     def _get_viz(self, interfaces):
         """Retrieve kfp-viz relation data, return default, if empty."""
