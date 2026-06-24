@@ -131,6 +131,7 @@ class S3BucketWrapper:
                 endpoint_url=self.s3_url,
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_access_key,
+                config=Config(connect_timeout=CONNECT_TIMEOUT, read_timeout=READ_TIMEOUT),
                 verify=self._ca_file,
             )
             return self._client
