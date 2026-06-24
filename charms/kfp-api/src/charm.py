@@ -604,6 +604,11 @@ class KfpApiOperator(CharmBase):
         if self.model.get_relation("s3-credentials"):
             data = self._get_s3_data()
             host, port, secure = self._parse_s3_endpoint(data["endpoint"])
+            if not host:
+                raise ErrorWithStatus(
+                    f"Invalid s3 endpoint: {data['endpoint']!r}",
+                    BlockedStatus,
+                )
             return {
                 "access-key": data["access-key"],
                 "secret-key": data["secret-key"],
