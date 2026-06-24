@@ -66,6 +66,7 @@ class S3BucketWrapper:
             pass
         except OSError:
             pass
+
     def create_bucket(self, bucket_name):
         """Create a bucket via the client with configured timeouts."""
         client = boto3.client(
