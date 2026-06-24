@@ -18,7 +18,7 @@ from charmed_kubeflow_chisme.testing import (
     get_pod_names,
 )
 from charmed_kubeflow_chisme.testing.s3_integration import deploy_and_assert_s3_integrator
-from charms_dependencies import KFP_DB, KFP_VIZ, S3_INTEGRATOR
+from charms_dependencies import KFP_VIZ, MYSQL, S3_INTEGRATOR
 from lightkube import Client
 from pytest_operator.plugin import OpsTest
 
@@ -57,15 +57,12 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
         trust=True,
     )
 
-    # FIXME: we should probably stop deploying mariadb as:
-    # 1) The team has accepted and started using mysql-k8s more extensively
-    # 2) The repository level integration tests use mysql-k8s only
     await ops_test.model.deploy(
-        entity_url=KFP_DB.charm,
+        entity_url=MYSQL.charm,
         application_name=KFP_DB_APPLICATION_NAME,
-        config=KFP_DB.config,
-        channel=KFP_DB.channel,
-        trust=KFP_DB.trust,
+        config=MYSQL.config,
+        channel=MYSQL.channel,
+        trust=MYSQL.trust,
     )
     await ops_test.model.deploy(
         entity_url=KFP_VIZ.charm, channel=KFP_VIZ.channel, trust=KFP_VIZ.trust
@@ -76,7 +73,9 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
         ops_test.model, s3_integrator=S3_INTEGRATOR, add_ca_chain=True
     )
 
-    await ops_test.model.add_relation(f"{APP_NAME}:mysql", f"{KFP_DB_APPLICATION_NAME}:mysql")
+    await ops_test.model.add_relation(
+        f"{APP_NAME}:relational-db", f"{KFP_DB_APPLICATION_NAME}:database"
+    )
     await ops_test.model.add_relation(
         f"{APP_NAME}:s3-credentials", f"{S3_INTEGRATOR.charm}:s3-credentials"
     )
