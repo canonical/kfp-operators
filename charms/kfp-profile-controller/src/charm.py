@@ -245,6 +245,11 @@ class KfpProfileControllerOperator(CharmBase):
             # the conflict detector), so we take the first entry.
             data = active.get_data()[0]
             host, port, secure = self._parse_s3_endpoint(data["endpoint"])
+            if not host:
+                raise ErrorWithStatus(
+                    f"Invalid s3 endpoint: {data['endpoint']!r}",
+                    BlockedStatus,
+                )
             return {
                 "access_key": data["access-key"],
                 "secret_key": data["secret-key"],
@@ -281,10 +286,10 @@ class KfpProfileControllerOperator(CharmBase):
         separate values, so the URL scheme (when present) determines the default port and
         whether TLS is used.
         """
-        parsed = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
-        secure = parsed.scheme == "https"
-        port = parsed.port or (443 if secure else 80)
-        return parsed.hostname, port, secure
+        parsed_endpoint = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
+        secure = parsed_endpoint.scheme == "https"
+        port = parsed_endpoint.port or (443 if secure else 80)
+        return parsed_endpoint.hostname, port, secure
 
     def _generate_context(self) -> dict:
         """Generate the context for the secrets-and-compositecontroller Kubernetes resources."""
