@@ -638,6 +638,7 @@ class KfpApiOperator(CharmBase):
             "secure": obj["secure"],
             "region": "",
             "bucket": "",
+            "tls-ca-chain": None,
             "is_s3": False,
         }
 
