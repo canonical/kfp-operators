@@ -596,18 +596,27 @@ class KfpApiOperator(CharmBase):
 
         Raises:
             ErrorWithStatus(..., Blocked) if both relations are established at once.
-            ErrorWithStatus(..., Blocked) if neither relation is established (raised by the
-                object-storage SDI validation).
+            ErrorWithStatus(..., Blocked) if neither relation is established.
             ErrorWithStatus(..., Waiting) if the active relation has no data yet.
         """
-        if self.model.relations["object-storage"] and self.model.relations["s3-credentials"]:
+        has_object_storage = self.model.relations["object-storage"]
+        has_s3 = self.model.relations["s3-credentials"]
+
+        if has_object_storage and has_s3:
             raise ErrorWithStatus(
                 "Too many object storage relations. Please relate to only one of "
                 "`object-storage` or `s3-credentials`.",
                 BlockedStatus,
             )
 
-        if self.model.get_relation("s3-credentials"):
+        if not has_object_storage and not has_s3:
+            raise ErrorWithStatus(
+                "Missing object storage relation. Please relate to one of "
+                "`object-storage` or `s3-credentials`.",
+                BlockedStatus,
+            )
+
+        if has_s3:
             data = self._get_s3_data()
             host, port, secure = self._parse_s3_endpoint(data["endpoint"])
             if not host:
@@ -996,8 +1005,26 @@ class KfpApiOperator(CharmBase):
             tls_ca_chain=obj.get("tls-ca-chain"),
         )
 
-        # Try creating the bucket we need for object storage
-        bucket_name = obj["bucket"] or self.model.config["object-store-bucket-name"]
+        # The bucket name comes from the active object storage relation:
+        # - For s3-credentials, either through the provider side (s3-integrator) or through the
+        #     `object-store-bucket-name` option. Provider side takes precedence.
+        # - For object-storage, through the `object-store-bucket-name` config option.
+        # Raise an error if no bucket is provided.
+        if obj["bucket"]:
+            bucket_name = obj["bucket"]
+        else:
+            bucket_name = self.model.config["object-store-bucket-name"]
+            if bucket_name:
+                self.logger.info(
+                    "object-storage relation doesn't provide a bucket; using the "
+                    f"'object-store-bucket-name' config option: '{bucket_name}'."
+                )
+        if not bucket_name:
+            raise ErrorWithStatus(
+                "No object storage bucket name available. Set the 'object-store-bucket-name' "
+                "config option or provide a bucket through the s3-credentials relation.",
+                BlockedStatus,
+            )
         try:
             self.unit.status = MaintenanceStatus(f"Checking if bucket {bucket_name} exists.")
             # Check if bucket already exists

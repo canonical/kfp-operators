@@ -843,18 +843,22 @@ class TestCharm:
 
         harness.begin()
 
-        # Mock the object storage data access to keep it from blocking the charm
-        # Cannot mock by adding a relation to the harness because harness.model.get_relation is
-        # mocked above to be specific to the db relation.  This test's mocks could use a refactor.
-        objectstorage_data = {
-            "access-key": "access-key",
-            "namespace": "namespace",
-            "port": 1234,
-            "secret-key": "secret-key",
-            "secure": True,
-            "service": "service",
-        }
-        harness.charm._get_object_storage = MagicMock(return_value=objectstorage_data)
+        # Mock _get_object_storage_data to prevent it blocking the charm on the missing
+        # relation. Cannot add a proper relation because harness.model.get_relation is
+        # mocked above to be specific to the db relation.
+        harness.charm._get_object_storage_data = MagicMock(
+            return_value={
+                "access-key": "access-key",
+                "secret-key": "secret-key",
+                "host": "service.namespace",
+                "port": 1234,
+                "secure": True,
+                "region": "",
+                "bucket": "mlpipeline",
+                "tls-ca-chain": None,
+                "is_s3": False,
+            }
+        )
         harness.set_leader(True)
 
         # Act and Assert
@@ -1231,6 +1235,19 @@ class TestCharm:
         assert isinstance(err.value.status, BlockedStatus)
         assert "Too many object storage relations" in str(err.value)
 
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    def test_get_object_storage_data_no_relation(
+        self, harness: Harness, mocked_kubernetes_service_patcher
+    ):
+        """Test that relating neither object-storage nor s3-credentials blocks the charm."""
+        harness.set_leader(True)
+        harness.begin()
+
+        with pytest.raises(ErrorWithStatus) as err:
+            harness.charm._get_object_storage_data()
+        assert isinstance(err.value.status, BlockedStatus)
+        assert "Missing object storage relation" in str(err.value)
+
     @pytest.mark.parametrize(
         "s3_info",
         [
@@ -1348,3 +1365,37 @@ class TestCharm:
             mock_instance.create_bucket.assert_called_once_with("relation-bucket")
         else:
             mock_instance.create_bucket.assert_not_called()
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    def test_ensure_bucket_exists_raises_when_bucket_name_empty(
+        self,
+        harness: Harness,
+        mocked_kubernetes_service_patcher,
+        mocker,
+    ):
+        """BlockedStatus is raised when neither the relation nor the config provides a bucket."""
+        harness.set_leader(True)
+        harness.begin()
+        harness.update_config({"object-store-bucket-name": ""})
+        mock_wrapper_cls = mocker.patch("charm.S3BucketWrapper")
+        mock_instance = mock_wrapper_cls.return_value
+
+        s3_obj = {
+            "access-key": "key",
+            "secret-key": "secret",
+            "host": "s3.example.com",
+            "port": 443,
+            "secure": True,
+            "region": "",
+            "bucket": "",
+            "tls-ca-chain": None,
+            "is_s3": True,
+        }
+        harness.charm._get_object_storage_data = MagicMock(return_value=s3_obj)
+
+        with pytest.raises(ErrorWithStatus) as exc_info:
+            harness.charm._ensure_bucket_exists()
+
+        assert isinstance(exc_info.value.status, BlockedStatus)
+        mock_instance.bucket_exists.assert_not_called()
+        mock_instance.create_bucket.assert_not_called()
