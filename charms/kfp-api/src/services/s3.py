@@ -47,10 +47,8 @@ class S3BucketWrapper:
         self._ca_file: Optional[str] = None
         if tls_ca_chain:
             ca_chain_pem = "\n".join(tls_ca_chain)
-            tmp = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".pem")
-            tmp.write(ca_chain_pem)
-            tmp.flush()
-            tmp.close()
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".pem") as fd:
+            fd.write(ca_chain_pem)
             self._ca_file = tmp.name
 
         self._client: botocore.client.BaseClient = None
