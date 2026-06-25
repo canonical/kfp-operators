@@ -193,6 +193,8 @@ class KfpProfileControllerOperator(CharmBase):
             depends_on=[
                 self.leadership_gate,
                 self.s3_relations_conflict_detector,
+                self.s3_relation,
+                self.object_storage_relation,
             ],
         )
 
