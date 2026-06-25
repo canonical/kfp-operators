@@ -33,6 +33,20 @@ def mocked_resource_handler(mocker):
 
 
 @pytest.fixture()
+def mocked_lightkube_client_class(mocker):
+    """Prevents lightkube clients from being created, returning a mock instead."""
+    mocked_lightkube_client_class = mocker.patch("charm.Client")
+    mocked_lightkube_client_class.return_value = MagicMock()
+    yield mocked_lightkube_client_class
+
+
+@pytest.fixture()
+def mocked_lightkube_client(mocked_lightkube_client_class):
+    """Prevents lightkube clients from being created, returning a mock instead."""
+    yield mocked_lightkube_client_class()
+
+
+@pytest.fixture()
 def mocked_kubernetes_service_patcher(mocker):
     mocked_service_patcher = mocker.patch("charm.KubernetesServicePatch")
     mocked_service_patcher.return_value = lambda x, y: None
@@ -238,7 +252,12 @@ class TestCharm:
         ],
     )
     def test_config_validation(
-        self, config, expectation, harness: Harness, mocked_resource_handler
+        self,
+        config,
+        expectation,
+        harness: Harness,
+        mocked_resource_handler,
+        mocked_lightkube_client,
     ):
         harness.set_leader(True)
         harness.begin()
@@ -299,6 +318,7 @@ class TestCharm:
         expected_status,
         harness: Harness,
         mocked_resource_handler,
+        mocked_lightkube_client,
     ):
         harness.set_leader(True)
         harness.begin()
@@ -322,7 +342,9 @@ class TestCharm:
             harness.charm._get_db_data()
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_mysql_relation_too_many_relations(self, harness: Harness, mocked_resource_handler):
+    def test_mysql_relation_too_many_relations(
+        self, harness: Harness, mocked_resource_handler, mocked_lightkube_client
+    ):
         harness.set_leader(True)
         harness.begin()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
@@ -340,7 +362,9 @@ class TestCharm:
         )
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_kfp_viz_relation_missing(self, harness: Harness, mocked_resource_handler):
+    def test_kfp_viz_relation_missing(
+        self, harness: Harness, mocked_resource_handler, mocked_lightkube_client
+    ):
         harness.set_leader(True)
         harness.begin()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
@@ -885,6 +909,7 @@ class TestCharm:
         mocked_resource_handler,
         mocked_kubernetes_service_patcher,
         harness: Harness,
+        mocked_lightkube_client,
     ):
         """Test that charm blocks when both mysql and relational-db relations are added."""
         harness.set_leader(True)
@@ -932,6 +957,7 @@ class TestCharm:
         mocked_resource_handler,
         mocked_kubernetes_service_patcher,
         harness: Harness,
+        mocked_lightkube_client,
     ):
         """Test that charm blocks when no database relation is present."""
         harness.set_leader(True)
@@ -1315,6 +1341,7 @@ class TestCharm:
         mocked_kubernetes_service_patcher,
         mocker,
         mocked_resource_handler,
+        mocked_lightkube_client,
     ):
         """BlockedStatus is raised when neither the relation nor the config provides a bucket."""
         harness.set_leader(True)
