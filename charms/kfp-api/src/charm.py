@@ -647,12 +647,21 @@ class KfpApiOperator(CharmBase):
         """Parse an s3 endpoint into a (host, port, secure) tuple.
 
         The endpoint may be a full URL (e.g. "https://s3.example.com:443") or a bare
-        "host[:port]". kfp expects the host, port and TLS flag as separate values, so the
-        URL scheme (when present) determines the default port and whether TLS is used.
+        "host[:port]". kfp expects the host, port and TLS flag as separate values.
+
+        When a URL scheme is present it determines TLS and the default port.
+        When only a bare host[:port] is given, TLS is inferred from the port:
+          - 443 -> HTTPs
+          - Otherwise -> HTTP
         """
         parsed_endpoint = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
-        secure = parsed_endpoint.scheme == "https"
-        port = parsed_endpoint.port or (443 if secure else 80)
+        if parsed_endpoint.scheme:
+            secure = True if parsed_endpoint.scheme == "https" else False
+            port = parsed_endpoint.port or (443 if secure else 80)
+        else:
+            # bare host[:port]: infer TLS from port
+            port = parsed_endpoint.port or 80
+            secure = True if port == 443 else False
         return parsed_endpoint.hostname, port, secure
 
     def _get_viz(self, interfaces):

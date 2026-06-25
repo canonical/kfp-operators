@@ -1149,9 +1149,10 @@ class TestCharm:
             ("https://s3.example.com", ("s3.example.com", 443, True)),
             ("http://10.0.0.1:9000", ("10.0.0.1", 9000, False)),
             ("https://s3.example.com:443", ("s3.example.com", 443, True)),
-            # bare host[:port]: defaults to non-TLS
+            # bare host[:port]: TLS inferred from port (443 → HTTPS, everything else → plain)
             ("10.0.0.1", ("10.0.0.1", 80, False)),
             ("minio.example:9000", ("minio.example", 9000, False)),
+            ("s3.amazon.com:443", ("s3.amazon.com", 443, True)),
         ],
     )
     def test_parse_s3_endpoint(self, endpoint, expected):
