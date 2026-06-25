@@ -34,7 +34,7 @@ from lightkube.models.core_v1 import ServicePort
 from lightkube.resources.core_v1 import Secret
 from ops import main
 from ops.charm import CharmBase
-from ops.model import BlockedStatus
+from ops.model import BlockedStatus, WaitingStatus
 
 from components.pebble_components import (
     KfpProfileControllerInputs,
@@ -242,12 +242,28 @@ class KfpProfileControllerOperator(CharmBase):
         Supports both the `object-storage` and `s3` interfaces,
         returning a common dict with keys: access_key, secret_key, host, namespace, port,
         secure, region, endpoint.
+
+        Raises:
+            ErrorWithStatus(WaitingStatus): if the active relation exists but the
+                provider hasn't yet populated the required databag fields.
+            ErrorWithStatus(BlockedStatus): if the s3 endpoint is malformed.
         """
         active = self.active_storage_component
         if isinstance(active, S3RequirerComponent):
-            # get_data() returns a list; exactly one S3 relation is expected (enforced by
-            # the conflict detector), so we take the first entry.
-            data = active.get_data()[0]
+            # get_data() returns a list of dicts; exactly one S3 relation is expected.
+            # If empty, the provider hasn't populated the databag yet.
+            data_list = active.get_data()
+            if not data_list:
+                raise ErrorWithStatus("Waiting for s3-credentials relation data", WaitingStatus)
+            data = data_list[0]
+            required_fields = ("access-key", "secret-key", "endpoint")
+            missing = [f for f in required_fields if not data.get(f)]
+            if missing:
+                raise ErrorWithStatus(
+                    "Waiting for s3-credentials relation data, missing fields: "
+                    f"{', '.join(missing)}",
+                    WaitingStatus,
+                )
             host, port, secure = self._parse_s3_endpoint(data["endpoint"])
             if not host:
                 raise ErrorWithStatus(
@@ -268,11 +284,13 @@ class KfpProfileControllerOperator(CharmBase):
                 "endpoint": f"{host}:{port}",
             }
         data = active.get_data()
-        # When minimum_related_applications != maximum_related_applications,
-        # SdiRelationDataReceiverComponent.get_data() returns a list of dicts rather than a
-        # single dict. Extract the first (and expected-only) entry.
+        # With minimum_related_applications=0 and maximum=1, SdiRelationDataReceiverComponent
+        # returns {} when no related app is present, otherwise a list of dicts. Extract the
+        # first (and expected-only) entry.
         if isinstance(data, list):
-            data = data[0]
+            data = data[0] if data else {}
+        if not data:
+            raise ErrorWithStatus("Waiting for object-storage relation data", WaitingStatus)
         return {
             "access_key": data["access-key"],
             "secret_key": data["secret-key"],

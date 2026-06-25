@@ -7,9 +7,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
+from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from charms.istio_beacon_k8s.v0.service_mesh import MeshType
-from ops.model import ActiveStatus, BlockedStatus
+from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import Harness
 
 from charm import (
@@ -614,3 +615,52 @@ def test_s3_relations_conflict_detector_status(
 def test_parse_s3_endpoint(endpoint, expected):
     """Test that an s3 endpoint is split into (host, port, secure)."""
     assert KfpProfileControllerOperator._parse_s3_endpoint(endpoint) == expected
+
+
+@pytest.mark.parametrize(
+    "s3_data,expected_message",
+    [
+        pytest.param([], "Waiting for s3-credentials relation data", id="empty-list"),
+        pytest.param(
+            [{"access-key": "k"}],
+            "Waiting for s3-credentials relation data, missing fields: secret-key, endpoint",
+            id="missing-fields",
+        ),
+    ],
+)
+def test_get_object_storage_data_waits_when_s3_data_not_ready(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+    s3_data,
+    expected_message,
+):
+    """Test that an empty/partial s3-credentials databag yields WaitingStatus."""
+    # Arrange
+    harness.begin()
+    harness.charm.s3_relation.component.get_data = MagicMock(return_value=s3_data)
+    # An actual s3-credentials relation must exist so the active storage component is the s3 one
+    harness.add_relation("s3-credentials", "s3-provider")
+
+    # Act / Assert
+    with pytest.raises(ErrorWithStatus) as excinfo:
+        harness.charm._get_object_storage_data()
+    assert excinfo.value.status_type is WaitingStatus
+    assert excinfo.value.msg == expected_message
+
+
+def test_get_object_storage_data_waits_when_object_storage_data_not_ready(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test that an empty object-storage databag yields WaitingStatus."""
+    # Arrange
+    harness.begin()
+    harness.charm.object_storage_relation.component.get_data = MagicMock(return_value={})
+
+    # Act / Assert
+    with pytest.raises(ErrorWithStatus) as excinfo:
+        harness.charm._get_object_storage_data()
+    assert excinfo.value.status_type is WaitingStatus
+    assert excinfo.value.msg == "Waiting for object-storage relation data"
