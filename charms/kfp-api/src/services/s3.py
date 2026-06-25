@@ -66,15 +66,7 @@ class S3BucketWrapper:
             pass
 
     def create_bucket(self, bucket_name):
-        """Create a bucket via the client with configured timeouts."""
-        client = boto3.client(
-            "s3",
-            endpoint_url=self.s3_url,
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_access_key,
-            config=Config(connect_timeout=CONNECT_TIMEOUT, read_timeout=READ_TIMEOUT),
-            verify=self._ca_file,
-        )
+        """Create a bucket."""
         kwargs = {"Bucket": bucket_name}
         # AWS S3 requires CreateBucketConfiguration for all regions except us-east-1, and
         # rejects it for us-east-1. Use an empty region for non-AWS endpoints. See:
@@ -82,7 +74,7 @@ class S3BucketWrapper:
         if self.region and self.region != "us-east-1":
             kwargs["CreateBucketConfiguration"] = {"LocationConstraint": self.region}
         try:
-            client.create_bucket(**kwargs)
+            self.client.create_bucket(**kwargs)
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
             # Treat already-existing buckets as success
@@ -91,16 +83,8 @@ class S3BucketWrapper:
             raise
 
     def delete_bucket(self, bucket_name):
-        """Delete a bucket via the client with configured timeouts."""
-        client = boto3.client(
-            "s3",
-            endpoint_url=self.s3_url,
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_access_key,
-            config=Config(connect_timeout=CONNECT_TIMEOUT, read_timeout=READ_TIMEOUT),
-            verify=self._ca_file,
-        )
-        client.delete_bucket(Bucket=bucket_name)
+        """Delete a bucket."""
+        self.client.delete_bucket(Bucket=bucket_name)
 
     def bucket_exists(self, bucket_name: str) -> bool:
         """Check if a bucket exists and is accessible.
@@ -120,7 +104,7 @@ class S3BucketWrapper:
 
     @property
     def client(self) -> botocore.client.BaseClient:
-        """Returns an open boto3 client, creating and caching one if needed."""
+        """Returns an open boto3 client, creating and caching one if needed. Singleton pattern."""
         if self._client:
             return self._client
         else:
