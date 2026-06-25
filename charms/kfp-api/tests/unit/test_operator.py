@@ -237,7 +237,9 @@ class TestCharm:
             ),
         ],
     )
-    def test_config_validation(self, config, expectation, harness: Harness):
+    def test_config_validation(
+        self, config, expectation, harness: Harness, mocked_resource_handler
+    ):
         harness.set_leader(True)
         harness.begin()
 
@@ -296,6 +298,7 @@ class TestCharm:
         expected_raises,
         expected_status,
         harness: Harness,
+        mocked_resource_handler,
     ):
         harness.set_leader(True)
         harness.begin()
@@ -319,7 +322,7 @@ class TestCharm:
             harness.charm._get_db_data()
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_mysql_relation_too_many_relations(self, harness: Harness):
+    def test_mysql_relation_too_many_relations(self, harness: Harness, mocked_resource_handler):
         harness.set_leader(True)
         harness.begin()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
@@ -337,7 +340,7 @@ class TestCharm:
         )
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_kfp_viz_relation_missing(self, harness: Harness):
+    def test_kfp_viz_relation_missing(self, harness: Harness, mocked_resource_handler):
         harness.set_leader(True)
         harness.begin()
         harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
@@ -634,10 +637,9 @@ class TestCharm:
             "ARCHIVE_CONFIG_LOG_FILE_NAME": harness.charm.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": harness.charm.config["log-archive-prefix"],
             "CLUSTER_DOMAIN": "cluster.local",
-            # OBJECTSTORECONFIG_HOST and _PORT currently have no effect due to
-            # https://github.com/kubeflow/pipelines/issues/9689, described more in
-            # https://github.com/canonical/minio-operator/pull/151
-            # They're included here so that when the upstream issue is fixed we don't break
+            # OBJECTSTORECONFIG_HOST and _PORT set the object storage configuration
+            # that the apiserver connects to, taking precedence over the values in
+            # the config.json.
             "OBJECTSTORECONFIG_HOST": (
                 f"{objectstorage_data['service']}.{objectstorage_data['namespace']}"
             ),
@@ -941,66 +943,6 @@ class TestCharm:
             harness.charm._get_db_data()
         assert err.value.status_type(BlockedStatus)
         assert "required database relation" in str(err).lower()
-
-    def test_minio_service_rendered_as_expected(
-        self,
-        mocker,
-        mocked_kubernetes_service_patcher,
-        harness: Harness,
-    ):
-        # Arrange
-
-        # object storage relation
-        objectstorage_data = {
-            "access-key": "access-key",
-            "namespace": "namespace",
-            "port": 1234,
-            "secret-key": "secret-key",
-            "secure": True,
-            "service": "service",
-        }
-        objectstorage_data_dict = {
-            "_supported_versions": "- v1",
-            "data": yaml.dump(objectstorage_data),
-        }
-        objectstorage_rel_id = harness.add_relation("object-storage", "storage-provider")
-        harness.add_relation_unit(objectstorage_rel_id, "storage-provider/0")
-        harness.update_relation_data(
-            objectstorage_rel_id, "storage-provider", objectstorage_data_dict
-        )
-
-        harness.set_leader(True)
-        model_name = "kubeflow-any"
-        harness.set_model_name(model_name)
-        harness.begin()
-
-        # Mock the KubernetesResourceHandler to always have a mocked Lightkube Client
-        mocked_resource_handler_factory = mocker.patch("charm.KubernetesResourceHandler")
-
-        def return_krh_with_mocked_lightkube(*args, **kwargs):
-            kwargs["lightkube_client"] = MagicMock()
-            return KubernetesResourceHandler(*args, **kwargs)
-
-        mocked_resource_handler_factory.side_effect = return_krh_with_mocked_lightkube
-
-        # Act
-        krh = harness.charm.k8s_resource_handler
-        manifests = krh.render_manifests()
-
-        # Assert that manifests include a Service(name='minio-service'), and that it has the
-        # expected configuration data from object-storage
-        minio_service = next(
-            (m for m in manifests if m.kind == "Service" and m.metadata.name == "minio-service"),
-            None,
-        )
-        assert minio_service.metadata.namespace == harness.charm.model.name
-        assert (
-            minio_service.spec.externalName
-            == f"{objectstorage_data['service']}.{objectstorage_data['namespace']}"
-            f".svc.cluster.local"
-        )
-        assert len(minio_service.spec.ports) == 1
-        assert minio_service.spec.ports[0].targetPort == objectstorage_data["port"]
 
     def setup_required_relations(self, harness: Harness):
         kfpapi_relation_name = "kfp-api"
@@ -1372,6 +1314,7 @@ class TestCharm:
         harness: Harness,
         mocked_kubernetes_service_patcher,
         mocker,
+        mocked_resource_handler,
     ):
         """BlockedStatus is raised when neither the relation nor the config provides a bucket."""
         harness.set_leader(True)

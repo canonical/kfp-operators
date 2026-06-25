@@ -68,7 +68,6 @@ PROBE_PATH = "/apis/v1beta1/healthz"
 K8S_RESOURCE_FILES = [
     "src/templates/auth_manifests.yaml.j2",
     "src/templates/ml-pipeline-service.yaml.j2",
-    "src/templates/minio-service.yaml.j2",
 ]
 MYSQL_WARNING = "Relation mysql is deprecated."
 UNBLOCK_MESSAGE = "Remove deprecated mysql relation to unblock."
@@ -211,23 +210,12 @@ class KfpApiOperator(CharmBase):
     @property
     def _context(self):
         """Return the context used for generating kubernetes resources."""
-        object_storage = self._get_object_storage_data()
-
-        if object_storage["is_s3"]:
-            # The s3 endpoint is already an externally-resolvable host.
-            minio_url = object_storage["host"]
-        else:
-            # Must include .svc.cluster.local for in-cluster DNS resolution
-            minio_url = f"{object_storage['host']}.svc.cluster.local"
-
         context = {
             "app_name": self._name,
             "namespace": self._namespace,
             "service": self._name,
             "grpc_port": self._grcp_port,
             "http_port": self._http_port,
-            "minio_url": minio_url,
-            "minio_port": str(object_storage["port"]),
             "ambient_enabled": self.is_ambient_mesh_enabled,
             # The waypoint name format should match the format set by istio-beacon-k8s
             # See how the label is generated:
@@ -417,14 +405,9 @@ class KfpApiOperator(CharmBase):
             "ARCHIVE_CONFIG_LOG_FILE_NAME": self.model.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": self.model.config["log-archive-prefix"],
             "CLUSTER_DOMAIN": "cluster.local",
-            # OBJECTSTORECONFIG_HOST and _PORT set the object storage configurations,
-            # taking precedence over configuration in the config.json or
-            # MINIO_SERVICE_SERVICE_* environment variables.
-            # NOTE: While OBJECTSTORECONFIG_HOST and _PORT control the object store
-            # that the apiserver connects to, other parts of kfp currently cannot use
-            # object stores with arbitrary names.  See
-            # https://github.com/kubeflow/pipelines/issues/9689 and
-            # https://github.com/canonical/minio-operator/pull/151 for more details.
+            # OBJECTSTORECONFIG_HOST and _PORT set the object storage configuration
+            # that the apiserver connects to, taking precedence over the values in
+            # the config.json.
             "OBJECTSTORECONFIG_HOST": object_storage["host"],
             "OBJECTSTORECONFIG_PORT": str(object_storage["port"]),
             "OBJECTSTORECONFIG_REGION": object_storage["region"],
