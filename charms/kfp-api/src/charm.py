@@ -1015,8 +1015,9 @@ class KfpApiOperator(CharmBase):
         else:
             bucket_name = self.model.config["object-store-bucket-name"]
             if bucket_name:
+                relation_name = "s3-credentials" if obj["is_s3"] else "object-storage"
                 self.logger.info(
-                    "object-storage relation doesn't provide a bucket; using the "
+                    f"{relation_name} relation doesn't provide a bucket; using the "
                     f"'object-store-bucket-name' config option: '{bucket_name}'."
                 )
         if not bucket_name:
