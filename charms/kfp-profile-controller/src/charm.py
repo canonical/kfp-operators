@@ -216,6 +216,8 @@ class KfpProfileControllerOperator(CharmBase):
                 self.leadership_gate,
                 self.kubernetes_resources,
                 self.s3_relations_conflict_detector,
+                self.s3_relation,
+                self.object_storage_relation,
                 self.service_mesh_component,
             ],
         )

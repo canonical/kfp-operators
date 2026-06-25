@@ -545,6 +545,7 @@ def test_pebble_services_running_with_s3(
     harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
         return_value=ActiveStatus()
     )
+    harness.charm.s3_relation.get_status = MagicMock(return_value=ActiveStatus())
     harness.charm.s3_relation.component.get_data = MagicMock(return_value=[MOCK_S3_DATA])
     harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
 
