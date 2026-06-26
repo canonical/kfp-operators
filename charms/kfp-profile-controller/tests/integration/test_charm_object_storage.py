@@ -461,6 +461,40 @@ async def test_s3_secret_resources(ops_test: OpsTest):
     assert secret_key and secret_key != MINIO.config["secret-key"]
 
 
+async def test_block_when_both_storage_relations_related(ops_test: OpsTest):
+    """Relating both storage backends blocks the charm; removing one recovers it.
+
+    `object-storage` and `s3-credentials` are mutually exclusive. Try to
+    relate `object-storage`, expect that the status is Blocked, and remove it, expecting
+    that the status is Active
+    """
+    # Relate `object-storage` as well so both storage relations are present -> Blocked.
+    await ops_test.model.integrate(f"{MINIO.charm}:object-storage", f"{CHARM_NAME}:object-storage")
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME],
+        status="blocked",
+        raise_on_blocked=False,
+        raise_on_error=False,
+        timeout=60 * 5,
+    )
+    unit = ops_test.model.applications[CHARM_NAME].units[0]
+    assert unit.workload_status == "blocked"
+    assert "Too many related applications" in unit.workload_status_message
+
+    # Remove `object-storage` so only `s3-credentials` remains -> Active.
+    await ops_test.model.applications[CHARM_NAME].remove_relation(
+        "object-storage", f"{MINIO.charm}:object-storage"
+    )
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME],
+        status="active",
+        raise_on_blocked=False,
+        raise_on_error=False,
+        timeout=60 * 5,
+    )
+    assert ops_test.model.applications[CHARM_NAME].units[0].workload_status == "active"
+
+
 async def test_logging(ops_test: OpsTest):
     """Test logging is defined in relation data bag."""
     app = ops_test.model.applications[GRAFANA_AGENT_APP]
