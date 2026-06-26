@@ -2,8 +2,8 @@
 
 To manually test this charm, you can:
 
-* deploy kfp-db charm with `juju deploy charmed-osm-mariadb-k8s kfp-db` & configure with `juju config kfp-db database=mlpipeline`
-* deploy kfp-api charm & relate to kfp-db
+* deploy kfp-db charm with `juju deploy mysql-k8s kfp-db --channel 8.0/stable --config profile=testing`
+* deploy kfp-api charm & relate to kfp-db with `juju integrate kfp-api:relational-db kfp-db:database`
 * deploy minio & relate to kfp-api
 * deploy kfp-viz & relate to kfp-api
 
