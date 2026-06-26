@@ -664,3 +664,26 @@ def test_get_object_storage_data_waits_when_object_storage_data_not_ready(
         harness.charm._get_object_storage_data()
     assert excinfo.value.status_type is WaitingStatus
     assert excinfo.value.msg == "Waiting for object-storage relation data"
+
+
+def test_storage_relation_data_not_ready_blocks_unit_status(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test that an s3-credentials relation with no data sets the unit to BlockedStatus."""
+    # Arrange
+    harness.begin()
+    # leadership-gate must be Active so the storage components are reached during reconcile
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    # The relation exists, but the provider hasn't populated the databag yet
+    harness.add_relation("s3-credentials", "s3-provider")
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert
+    assert harness.charm.model.unit.status == BlockedStatus(
+        "[relation:s3_credentials] Relation 's3-credentials' is present but required data "
+        "is not yet available."
+    )
