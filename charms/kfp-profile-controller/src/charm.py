@@ -12,11 +12,14 @@ import logging
 from base64 import b64encode
 from pathlib import Path
 from typing import Dict
+from urllib.parse import urlparse
 
 import lightkube
 import yaml
 from charmed_kubeflow_chisme.components import (
     ContainerFileTemplate,
+    RelationCountGateComponent,
+    S3RequirerComponent,
     SdiRelationDataReceiverComponent,
 )
 from charmed_kubeflow_chisme.components.charm_reconciler import CharmReconciler
@@ -31,7 +34,7 @@ from lightkube.models.core_v1 import ServicePort
 from lightkube.resources.core_v1 import Secret
 from ops import main
 from ops.charm import CharmBase
-from ops.model import BlockedStatus
+from ops.model import BlockedStatus, WaitingStatus
 
 from components.pebble_components import (
     KfpProfileControllerInputs,
@@ -136,13 +139,36 @@ class KfpProfileControllerOperator(CharmBase):
             depends_on=[],
         )
 
+        self.s3_relations_conflict_detector = self.charm_reconciler.add(
+            component=RelationCountGateComponent(
+                charm=self,
+                name="s3-relations-conflict-detector",
+                relation_names=["object-storage", "s3-credentials"],
+            ),
+            depends_on=[self.leadership_gate],
+        )
+
+        self.s3_relation = self.charm_reconciler.add(
+            component=S3RequirerComponent(
+                charm=self,
+                name="relation:s3_credentials",
+                relation_name="s3-credentials",
+                is_optional=True,
+                required_relation_fields=frozenset({"access-key", "secret-key", "endpoint"}),
+            ),
+            depends_on=[self.leadership_gate, self.s3_relations_conflict_detector],
+        )
+
         self.object_storage_relation = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
                 charm=self,
                 name="relation:object_storage",
                 relation_name="object-storage",
+                # Make this relation optional, since a relation with s3-credentials is
+                # also sufficient
+                minimum_related_applications=0,
             ),
-            depends_on=[self.leadership_gate],
+            depends_on=[self.leadership_gate, self.s3_relations_conflict_detector],
         )
 
         self.service_mesh_component = self.charm_reconciler.add(
@@ -161,26 +187,13 @@ class KfpProfileControllerOperator(CharmBase):
                     self.model.name,
                     scope="secrets-and-compositecontroller",
                 ),
-                context_callable=lambda: {
-                    "namespace": self.model.name,
-                    "sync_webhook_url": f"http://{self.model.app.name}.{self.model.name}/sync",
-                    "access_key": b64encode(
-                        self.object_storage_relation.component.get_data()["access-key"].encode(
-                            "utf-8"
-                        )
-                    ).decode("utf-8"),
-                    "secret_key": b64encode(
-                        self.object_storage_relation.component.get_data()["secret-key"].encode(
-                            "utf-8"
-                        )
-                    ).decode("utf-8"),
-                    "minio_secret_name": f"{self.model.app.name}-minio-credentials",
-                    "label": NAMESPACE_LABEL,
-                },
+                context_callable=self._generate_context,
                 lightkube_client=lightkube.Client(),
             ),
             depends_on=[
                 self.leadership_gate,
+                self.s3_relations_conflict_detector,
+                self.s3_relation,
                 self.object_storage_relation,
             ],
         )
@@ -197,37 +210,13 @@ class KfpProfileControllerOperator(CharmBase):
                         destination_path=HOOKS_PATH / "sync.py",
                     )
                 ],
-                inputs_getter=lambda: KfpProfileControllerInputs(
-                    MINIO_SECRET=json.dumps(
-                        {"secret": {"name": f"{self.model.app.name}-minio-credentials"}}
-                    ),
-                    MINIO_HOST=self.object_storage_relation.component.get_data()["service"],
-                    MINIO_PORT=self.object_storage_relation.component.get_data()["port"],
-                    MINIO_NAMESPACE=self.object_storage_relation.component.get_data()["namespace"],
-                    MINIO_ACCESS_KEY=self.object_storage_relation.component.get_data()[
-                        "access-key"
-                    ],
-                    MINIO_SECRET_KEY=self.object_storage_relation.component.get_data()[
-                        "secret-key"
-                    ],
-                    KFP_VERSION=KFP_IMAGES_VERSION,
-                    KFP_DEFAULT_PIPELINE_ROOT=self.default_pipeline_root,
-                    DISABLE_ISTIO_SIDECAR=DISABLE_ISTIO_SIDECAR,
-                    CONTROLLER_PORT=CONTROLLER_PORT,
-                    METADATA_GRPC_SERVICE_HOST=self.metadata_grpc_service_host,
-                    METADATA_GRPC_SERVICE_PORT=METADATA_GRPC_SERVICE_PORT,
-                    VISUALIZATION_SERVER_IMAGE=self.images["visualization_server__image"],
-                    VISUALIZATION_SERVER_TAG=self.images["visualization_server__version"],
-                    FRONTEND_IMAGE=self.images["frontend__image"],
-                    FRONTEND_TAG=self.images["frontend__version"],
-                    KFP_API_PRINCIPAL=self._get_kfp_api_principal(),
-                    AMBIENT_ENABLED=self.service_mesh_component.component.ambient_mesh_enabled,
-                    HOOKS_PATH=HOOKS_PATH,
-                ),
+                inputs_getter=self._generate_kfp_profile_controller_inputs,
             ),
             depends_on=[
                 self.leadership_gate,
                 self.kubernetes_resources,
+                self.s3_relations_conflict_detector,
+                self.s3_relation,
                 self.object_storage_relation,
                 self.service_mesh_component,
             ],
@@ -235,6 +224,140 @@ class KfpProfileControllerOperator(CharmBase):
 
         self.charm_reconciler.install_default_event_handlers()
         self._logging = LogForwarder(charm=self)
+
+    @property
+    def active_storage_component(self):
+        """Return the active storage component (S3 or object-storage).
+
+        Exactly one of the `s3-credentials` or `object-storage` relations is expected at a
+        time (enforced by the s3-relations-conflict-detector).
+        """
+        if self.model.get_relation("s3-credentials"):
+            return self.s3_relation.component
+        return self.object_storage_relation.component
+
+    def _get_object_storage_data(self) -> dict:
+        """Return normalized object storage connection data from the active storage relation.
+
+        Supports both the `object-storage` and `s3` interfaces,
+        returning a common dict with keys: access_key, secret_key, host, namespace, port,
+        secure, region, endpoint.
+
+        Raises:
+            ErrorWithStatus(WaitingStatus): if the active relation exists but the
+                provider hasn't yet populated the required databag fields.
+            ErrorWithStatus(BlockedStatus): if the s3 endpoint is malformed.
+        """
+        active = self.active_storage_component
+        if isinstance(active, S3RequirerComponent):
+            # get_data() returns a list of dicts; exactly one S3 relation is expected.
+            # If empty, the provider hasn't populated the databag yet.
+            data_list = active.get_data()
+            if not data_list:
+                raise ErrorWithStatus("Waiting for s3-credentials relation data", WaitingStatus)
+            data = data_list[0]
+            required_fields = ("access-key", "secret-key", "endpoint")
+            missing = [f for f in required_fields if not data.get(f)]
+            if missing:
+                raise ErrorWithStatus(
+                    "Waiting for s3-credentials relation data, missing fields: "
+                    f"{', '.join(missing)}",
+                    WaitingStatus,
+                )
+            host, port, secure = self._parse_s3_endpoint(data["endpoint"])
+            if not host:
+                raise ErrorWithStatus(
+                    f"Invalid s3 endpoint: {data['endpoint']!r}",
+                    BlockedStatus,
+                )
+            return {
+                "access_key": data["access-key"],
+                "secret_key": data["secret-key"],
+                # The s3 interface has no namespace concept. An empty namespace makes
+                # sync.py build a `host:port` endpoint (without a `.namespace` suffix).
+                "host": host,
+                "namespace": "",
+                "port": port,
+                "secure": secure,
+                "region": data.get("region", ""),
+                # The s3 interface has no namespace concept, so the endpoint is just host:port.
+                "endpoint": f"{host}:{port}",
+            }
+        data = active.get_data()
+        # With minimum_related_applications=0 and maximum=1, SdiRelationDataReceiverComponent
+        # returns {} when no related app is present, otherwise a list of dicts. Extract the
+        # first (and expected-only) entry.
+        if isinstance(data, list):
+            data = data[0] if data else {}
+        if not data:
+            raise ErrorWithStatus("Waiting for object-storage relation data", WaitingStatus)
+        return {
+            "access_key": data["access-key"],
+            "secret_key": data["secret-key"],
+            "host": data["service"],
+            "namespace": data["namespace"],
+            "port": data["port"],
+            "secure": data["secure"],
+            "region": "",
+            # The object-storage interface (MinIO) uses a `host.namespace:port` endpoint.
+            "endpoint": f"{data['service']}.{data['namespace']}:{data['port']}",
+        }
+
+    @staticmethod
+    def _parse_s3_endpoint(endpoint: str) -> tuple:
+        """Parse an s3 endpoint into a (host, port, secure) tuple.
+
+        The endpoint may be a full URL (e.g. "https://s3.example.com:443") or a bare
+        "host[:port]". The MinIO-style sync.py expects the host, port and TLS flag as
+        separate values, so the URL scheme (when present) determines the default port and
+        whether TLS is used.
+        """
+        parsed_endpoint = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
+        secure = parsed_endpoint.scheme == "https"
+        port = parsed_endpoint.port or (443 if secure else 80)
+        return parsed_endpoint.hostname, port, secure
+
+    def _generate_context(self) -> dict:
+        """Generate the context for the secrets-and-compositecontroller Kubernetes resources."""
+        object_storage = self._get_object_storage_data()
+        return {
+            "namespace": self.model.name,
+            "sync_webhook_url": f"http://{self.model.app.name}.{self.model.name}/sync",
+            "access_key": b64encode(object_storage["access_key"].encode("utf-8")).decode("utf-8"),
+            "secret_key": b64encode(object_storage["secret_key"].encode("utf-8")).decode("utf-8"),
+            "minio_secret_name": f"{self.model.app.name}-minio-credentials",
+            "label": NAMESPACE_LABEL,
+        }
+
+    def _generate_kfp_profile_controller_inputs(self) -> KfpProfileControllerInputs:
+        """Generate the inputs for the kfp-profile-controller Pebble service."""
+        object_storage = self._get_object_storage_data()
+        return KfpProfileControllerInputs(
+            MINIO_SECRET=json.dumps(
+                {"secret": {"name": f"{self.model.app.name}-minio-credentials"}}
+            ),
+            MINIO_HOST=object_storage["host"],
+            MINIO_PORT=object_storage["port"],
+            MINIO_NAMESPACE=object_storage["namespace"],
+            MINIO_ENDPOINT=object_storage["endpoint"],
+            MINIO_ACCESS_KEY=object_storage["access_key"],
+            MINIO_SECRET_KEY=object_storage["secret_key"],
+            MINIO_SSL="true" if object_storage["secure"] else "false",
+            MINIO_REGION=object_storage["region"],
+            KFP_VERSION=KFP_IMAGES_VERSION,
+            KFP_DEFAULT_PIPELINE_ROOT=self.default_pipeline_root,
+            DISABLE_ISTIO_SIDECAR=DISABLE_ISTIO_SIDECAR,
+            CONTROLLER_PORT=CONTROLLER_PORT,
+            METADATA_GRPC_SERVICE_HOST=self.metadata_grpc_service_host,
+            METADATA_GRPC_SERVICE_PORT=METADATA_GRPC_SERVICE_PORT,
+            VISUALIZATION_SERVER_IMAGE=self.images["visualization_server__image"],
+            VISUALIZATION_SERVER_TAG=self.images["visualization_server__version"],
+            FRONTEND_IMAGE=self.images["frontend__image"],
+            FRONTEND_TAG=self.images["frontend__version"],
+            KFP_API_PRINCIPAL=self._get_kfp_api_principal(),
+            AMBIENT_ENABLED=self.service_mesh_component.component.ambient_mesh_enabled,
+            HOOKS_PATH=HOOKS_PATH,
+        )
 
     def _get_kfp_api_principal(self) -> str:
         """Return the KFP API principal to use in the AuthorizationPolicy.

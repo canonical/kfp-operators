@@ -207,10 +207,9 @@ jobs:
             test-type: integration-ambient
           - charm: kfp-metadata-writer
             test-type: integration-ambient
-          # TODO: Update with other charms that have an integration via object-storage
+          # integration-object-storage is only defined for the charms that integrate with
+          # s3-integrator, whose default `integration` env now runs the s3 backend test instead
           - charm: kfp-persistence
-            test-type: integration-object-storage
-          - charm: kfp-profile-controller
             test-type: integration-object-storage
           - charm: kfp-schedwf
             test-type: integration-object-storage
