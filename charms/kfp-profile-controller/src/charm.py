@@ -248,11 +248,11 @@ class KfpProfileControllerOperator(CharmBase):
                 provider hasn't yet populated the required databag fields.
             ErrorWithStatus(BlockedStatus): if the s3 endpoint is malformed.
         """
-        active = self.active_storage_component
-        if isinstance(active, S3RequirerComponent):
+        active_storage_component = self.active_storage_component
+        if isinstance(active_storage_component, S3RequirerComponent):
             # get_data() returns a list of dicts; exactly one S3 relation is expected.
             # If empty, the provider hasn't populated the databag yet.
-            data_list = active.get_data()
+            data_list = active_storage_component.get_data()
             if not data_list:
                 raise ErrorWithStatus("Waiting for s3-credentials relation data", WaitingStatus)
             data = data_list[0]
@@ -283,7 +283,7 @@ class KfpProfileControllerOperator(CharmBase):
                 # The s3 interface has no namespace concept, so the endpoint is just host:port.
                 "endpoint": f"{host}:{port}",
             }
-        data = active.get_data()
+        data = active_storage_component.get_data()
         # With minimum_related_applications=0 and maximum=1, SdiRelationDataReceiverComponent
         # returns {} when no related app is present, otherwise a list of dicts. Extract the
         # first (and expected-only) entry.
