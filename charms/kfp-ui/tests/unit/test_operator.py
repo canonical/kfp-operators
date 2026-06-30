@@ -348,6 +348,7 @@ def test_pebble_services_running_s3(harness: Harness, mocked_kubernetes_service_
     harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
         return_value=ActiveStatus()
     )
+    harness.charm.s3_relation.get_status = MagicMock(return_value=ActiveStatus())
     harness.charm.s3_relation.component.get_data = MagicMock(return_value=[MOCK_S3_DATA])
     harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
 
@@ -419,6 +420,125 @@ def test_s3_relations_conflict_detector_status(
 def test_parse_s3_endpoint(endpoint, expected):
     """Test that an s3 endpoint is split into (host, port, secure)."""
     assert KfpUiOperator._parse_s3_endpoint(endpoint) == expected
+
+
+@pytest.mark.parametrize(
+    "s3_data",
+    [
+        pytest.param([], id="empty-list"),
+        pytest.param([{"access-key": "k"}], id="missing-fields"),
+    ],
+)
+def test_get_object_storage_data_waits_when_s3_data_not_ready(
+    harness: Harness,
+    mocked_kubernetes_service_patch,
+    s3_data,
+):
+    """Test that an empty/partial s3-credentials databag causes the unit to be blocked."""
+    # Arrange
+    harness.begin()
+    harness.set_can_connect("ml-pipeline-ui", True)
+
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
+    harness.charm.s3_relation.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.s3_relation.component.get_data = MagicMock(return_value=s3_data)
+    harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
+    # An actual s3-credentials relation must exist so the active storage component is the s3 one
+    harness.add_relation("s3-credentials", "s3-provider")
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert
+    assert isinstance(harness.charm.model.unit.status, BlockedStatus)
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        pytest.param("://", id="scheme-only"),
+        pytest.param("http://", id="http-no-host"),
+    ],
+)
+def test_get_object_storage_data_blocks_when_s3_endpoint_invalid(
+    harness: Harness,
+    mocked_kubernetes_service_patch,
+    endpoint,
+):
+    """Test that a wrong s3 endpoint causes the unit to go to BlockedStatus.
+
+    All required fields are present but the endpoint cannot be parsed to a valid host,
+    so the error should propagate and the unit should end up in BlockedStatus.
+    """
+    # Arrange
+    harness.begin()
+    harness.set_can_connect("ml-pipeline-ui", True)
+
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
+    harness.charm.s3_relation.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.s3_relation.component.get_data = MagicMock(
+        return_value=[{**MOCK_S3_DATA, "endpoint": endpoint}]
+    )
+    harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
+    # An actual s3-credentials relation must exist so the active storage component is the s3 one
+    harness.add_relation("s3-credentials", "s3-provider")
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert
+    assert isinstance(harness.charm.model.unit.status, BlockedStatus)
+
+
+def test_get_object_storage_data_waits_when_object_storage_data_not_ready(
+    harness: Harness,
+    mocked_kubernetes_service_patch,
+):
+    """Test that an empty object-storage databag causes the unit to be blocked."""
+    # Arrange
+    harness.begin()
+    harness.set_can_connect("ml-pipeline-ui", True)
+
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
+    harness.charm.object_storage_relation.component.get_data = MagicMock(return_value={})
+    harness.charm.kfp_api_relation.component.get_data = MagicMock(return_value=MOCK_KFP_API_DATA)
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert
+    assert isinstance(harness.charm.model.unit.status, BlockedStatus)
+
+
+def test_storage_relation_data_not_ready_blocks_unit_status(
+    harness: Harness,
+    mocked_kubernetes_service_patch,
+):
+    """Test that an s3-credentials relation with no data sets the unit to BlockedStatus."""
+    # Arrange
+    harness.begin()
+    # leadership-gate must be Active so the storage components are reached during reconcile
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    # The relation exists, but the provider hasn't populated the databag yet
+    harness.add_relation("s3-credentials", "s3-provider")
+
+    # Act
+    harness.charm.on.install.emit()
+
+    # Assert
+    assert harness.charm.model.unit.status == BlockedStatus(
+        "[relation:s3_credentials] Relation 's3-credentials' is present but required data "
+        "is not yet available."
+    )
 
 
 @pytest.mark.parametrize(

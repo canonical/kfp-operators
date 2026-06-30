@@ -21,6 +21,7 @@ from charmed_kubeflow_chisme.components import (
     SdiRelationBroadcasterComponent,
     SdiRelationDataReceiverComponent,
 )
+from charmed_kubeflow_chisme.exceptions import ErrorWithStatus
 from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
     DashboardLink,
     KubeflowDashboardLinksRequirer,
@@ -29,6 +30,7 @@ from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from lightkube.models.core_v1 import ServicePort
 from ops import CharmBase, main
+from ops.model import BlockedStatus, WaitingStatus
 
 from components.istio_ambient_requirer_component import AmbientIngressRequirerComponent
 from components.istio_relations_conflict_detector import IstioRelationsConflictDetectorComponent
@@ -250,6 +252,8 @@ class KfpUiOperator(CharmBase):
             depends_on=[
                 self.leadership_gate,
                 self.s3_relations_conflict_detector,
+                self.s3_relation,
+                self.object_storage_relation,
                 self.kfp_api_relation,
             ],
         )
@@ -274,16 +278,37 @@ class KfpUiOperator(CharmBase):
         Supports both the `object-storage` (MinIO) and `s3` (s3-integrator) interfaces,
         returning a common dict with keys: access_key, secret_key, host, namespace, port,
         secure.
+
+        Raises:
+            ErrorWithStatus(WaitingStatus): if the active relation exists but the
+                provider hasn't yet populated the required databag fields.
+            ErrorWithStatus(BlockedStatus): if the s3 endpoint is malformed.
         """
-        active = self.active_storage_component
-        if isinstance(active, S3RequirerComponent):
-            # get_data() returns a list, only one S3 relation is expected,
-            # so take the first entry
-            data = active.get_data()[0]
-            host, port, secure = self._parse_s3_endpoint(data["endpoint"])
+        active_storage_component = self.active_storage_component
+        if isinstance(active_storage_component, S3RequirerComponent):
+            # get_data() returns a list of dicts; exactly one S3 relation is expected.
+            # If empty, the provider hasn't populated the databag yet.
+            s3_data_list = active_storage_component.get_data()
+            if not s3_data_list:
+                raise ErrorWithStatus("Waiting for s3-credentials relation data", WaitingStatus)
+            s3_data = s3_data_list[0]
+            required_fields = ("access-key", "secret-key", "endpoint")
+            missing = [f for f in required_fields if not s3_data.get(f)]
+            if missing:
+                raise ErrorWithStatus(
+                    "Waiting for s3-credentials relation data, missing fields: "
+                    f"{', '.join(missing)}",
+                    WaitingStatus,
+                )
+            host, port, secure = self._parse_s3_endpoint(s3_data["endpoint"])
+            if not host:
+                raise ErrorWithStatus(
+                    f"Invalid s3 endpoint: {s3_data['endpoint']!r}",
+                    BlockedStatus,
+                )
             return {
-                "access_key": data["access-key"],
-                "secret_key": data["secret-key"],
+                "access_key": s3_data["access-key"],
+                "secret_key": s3_data["secret-key"],
                 # The s3 interface has no namespace concept. An empty namespace makes the
                 # ml-pipeline-ui frontend use MINIO_HOST as-is (without a `.namespace` suffix).
                 "host": host,
@@ -291,14 +316,21 @@ class KfpUiOperator(CharmBase):
                 "port": port,
                 "secure": secure,
             }
-        data = active.get_data()
+        object_storage_data = active_storage_component.get_data()
+        # With minimum_related_applications=0 and maximum=1, SdiRelationDataReceiverComponent
+        # returns {} when no related app is present, otherwise a list of dicts. Extract the
+        # first (and expected-only) entry.
+        if isinstance(object_storage_data, list):
+            object_storage_data = object_storage_data[0] if object_storage_data else {}
+        if not object_storage_data:
+            raise ErrorWithStatus("Waiting for object-storage relation data", WaitingStatus)
         return {
-            "access_key": data["access-key"],
-            "secret_key": data["secret-key"],
-            "host": data["service"],
-            "namespace": data["namespace"],
-            "port": data["port"],
-            "secure": data["secure"],
+            "access_key": object_storage_data["access-key"],
+            "secret_key": object_storage_data["secret-key"],
+            "host": object_storage_data["service"],
+            "namespace": object_storage_data["namespace"],
+            "port": object_storage_data["port"],
+            "secure": object_storage_data["secure"],
         }
 
     @staticmethod
@@ -309,10 +341,10 @@ class KfpUiOperator(CharmBase):
         "host[:port]". The MinIO-style frontend expects the host, port and TLS flag as
         separate values, so we use the full URL to determine those values.
         """
-        parsed = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
-        secure = parsed.scheme == "https"
-        port = parsed.port or (443 if secure else 80)
-        return parsed.hostname, port, secure
+        parsed_endpoint = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
+        secure = parsed_endpoint.scheme == "https"
+        port = parsed_endpoint.port or (443 if secure else 80)
+        return parsed_endpoint.hostname, port, secure
 
     def _generate_ml_pipeline_ui_inputs(self) -> MlPipelineUiInputs:
         """Generate the inputs for the ml-pipeline-ui Pebble service."""
