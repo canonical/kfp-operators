@@ -262,7 +262,7 @@ class KfpProfileControllerOperator(CharmBase):
                 {"secret": {"name": f"{self.model.app.name}-minio-credentials"}}
             ),
             MINIO_HOST=object_storage["host"],
-            MINIO_PORT=object_storage["port"],
+            MINIO_PORT=str(object_storage["port"]),
             MINIO_NAMESPACE=object_storage["namespace"],
             MINIO_ENDPOINT=object_storage["endpoint"],
             MINIO_ACCESS_KEY=object_storage["access_key"],
