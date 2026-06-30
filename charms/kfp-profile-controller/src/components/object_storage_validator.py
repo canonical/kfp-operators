@@ -123,7 +123,7 @@ class ObjectStorageValidatorComponent(Component):
                 # sync.py build a `host:port` endpoint (without a `.namespace` suffix).
                 "host": host,
                 "namespace": "",
-                "port": port,
+                "port": str(port),
                 "secure": secure,
                 "region": data.get("region", ""),
                 # The s3 interface has no namespace concept, so the endpoint is just host:port.
@@ -154,7 +154,7 @@ class ObjectStorageValidatorComponent(Component):
             "secret_key": data["secret-key"],
             "host": data["service"],
             "namespace": data["namespace"],
-            "port": data["port"],
+            "port": str(data["port"]),
             "secure": data["secure"],
             "region": "",
             # The object-storage interface (minio-operator) uses a `host.namespace:port` endpoint.
