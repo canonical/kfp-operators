@@ -74,8 +74,12 @@ class ObjectStorageValidatorComponent(Component):
         whether TLS is used.
         """
         parsed_endpoint = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
-        secure = parsed_endpoint.scheme == "https"
-        port = parsed_endpoint.port or (443 if secure else 80)
+        if parsed_endpoint.scheme:
+            secure = parsed_endpoint.scheme == "https"
+            port = parsed_endpoint.port or (443 if secure else 80)
+        else:
+            port = parsed_endpoint.port or 80
+            secure = port == 443
         return parsed_endpoint.hostname, port, secure
 
     def get_normalized_data(self) -> dict:
