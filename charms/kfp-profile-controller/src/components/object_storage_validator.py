@@ -133,6 +133,18 @@ class ObjectStorageValidatorComponent(Component):
             data = data[0] if data else {}
         if not data:
             raise ErrorWithStatus("Missing object-storage relation data", BlockedStatus)
+
+        required_fields = ("access-key", "secret-key", "service", "namespace", "port")
+        missing = [f for f in required_fields if not data.get(f)]
+        if "secure" not in data:
+            missing.append("secure")
+        if missing:
+            raise ErrorWithStatus(
+                "Incomplete object-storage relation data, missing fields: "
+                f"{', '.join(missing)}",
+                BlockedStatus,
+            )
+
         return {
             "access_key": data["access-key"],
             "secret_key": data["secret-key"],
