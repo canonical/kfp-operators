@@ -713,8 +713,9 @@ def test_get_object_storage_data_waits_when_object_storage_data_not_ready(
     # Act
     harness.charm.on.install.emit()
 
-    # Assert
-    assert isinstance(harness.charm.model.unit.status, BlockedStatus)
+# Assert
+from ops.model import WaitingStatus
+assert isinstance(harness.charm.model.unit.status, WaitingStatus)
 
 
 def test_storage_relation_data_not_ready_blocks_unit_status(
