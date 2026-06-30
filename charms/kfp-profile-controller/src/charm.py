@@ -12,7 +12,6 @@ import logging
 from base64 import b64encode
 from pathlib import Path
 from typing import Dict
-from urllib.parse import urlparse
 
 import lightkube
 import yaml
@@ -34,8 +33,9 @@ from lightkube.models.core_v1 import ServicePort
 from lightkube.resources.core_v1 import Secret
 from ops import main
 from ops.charm import CharmBase
-from ops.model import BlockedStatus, WaitingStatus
+from ops.model import BlockedStatus
 
+from components.object_storage_validator import ObjectStorageValidatorComponent
 from components.pebble_components import (
     KfpProfileControllerInputs,
     KfpProfileControllerPebbleService,
@@ -171,6 +171,21 @@ class KfpProfileControllerOperator(CharmBase):
             depends_on=[self.leadership_gate, self.s3_relations_conflict_detector],
         )
 
+        self.object_storage_validator = self.charm_reconciler.add(
+            component=ObjectStorageValidatorComponent(
+                charm=self,
+                name="object-storage-validator",
+                s3_component=self.s3_relation.component,
+                object_storage_component=self.object_storage_relation.component,
+            ),
+            depends_on=[
+                self.leadership_gate,
+                self.s3_relations_conflict_detector,
+                self.s3_relation,
+                self.object_storage_relation,
+            ],
+        )
+
         self.service_mesh_component = self.charm_reconciler.add(
             component=ServiceMeshComponent(charm=self, name="service-mesh-component"),
             depends_on=[self.leadership_gate],
@@ -195,6 +210,7 @@ class KfpProfileControllerOperator(CharmBase):
                 self.s3_relations_conflict_detector,
                 self.s3_relation,
                 self.object_storage_relation,
+                self.object_storage_validator,
             ],
         )
 
@@ -218,6 +234,7 @@ class KfpProfileControllerOperator(CharmBase):
                 self.s3_relations_conflict_detector,
                 self.s3_relation,
                 self.object_storage_relation,
+                self.object_storage_validator,
                 self.service_mesh_component,
             ],
         )
@@ -225,101 +242,9 @@ class KfpProfileControllerOperator(CharmBase):
         self.charm_reconciler.install_default_event_handlers()
         self._logging = LogForwarder(charm=self)
 
-    @property
-    def active_storage_component(self):
-        """Return the active storage component (S3 or object-storage).
-
-        Exactly one of the `s3-credentials` or `object-storage` relations is expected at a
-        time (enforced by the s3-relations-conflict-detector).
-        """
-        if self.model.get_relation("s3-credentials"):
-            return self.s3_relation.component
-        return self.object_storage_relation.component
-
-    def _get_object_storage_data(self) -> dict:
-        """Return normalized object storage connection data from the active storage relation.
-
-        Supports both the `object-storage` and `s3` interfaces,
-        returning a common dict with keys: access_key, secret_key, host, namespace, port,
-        secure, region, endpoint.
-
-        Raises:
-            ErrorWithStatus(WaitingStatus): if the active relation exists but the
-                provider hasn't yet populated the required databag fields.
-            ErrorWithStatus(BlockedStatus): if the s3 endpoint is malformed.
-        """
-        active_storage_component = self.active_storage_component
-        if isinstance(active_storage_component, S3RequirerComponent):
-            # get_data() returns a list of dicts; exactly one S3 relation is expected.
-            # If empty, the provider hasn't populated the databag yet.
-            data_list = active_storage_component.get_data()
-            if not data_list:
-                raise ErrorWithStatus("Waiting for s3-credentials relation data", WaitingStatus)
-            data = data_list[0]
-            required_fields = ("access-key", "secret-key", "endpoint")
-            missing = [f for f in required_fields if not data.get(f)]
-            if missing:
-                raise ErrorWithStatus(
-                    "Waiting for s3-credentials relation data, missing fields: "
-                    f"{', '.join(missing)}",
-                    WaitingStatus,
-                )
-            host, port, secure = self._parse_s3_endpoint(data["endpoint"])
-            if not host:
-                raise ErrorWithStatus(
-                    f"Invalid s3 endpoint: {data['endpoint']!r}",
-                    BlockedStatus,
-                )
-            return {
-                "access_key": data["access-key"],
-                "secret_key": data["secret-key"],
-                # The s3 interface has no namespace concept. An empty namespace makes
-                # sync.py build a `host:port` endpoint (without a `.namespace` suffix).
-                "host": host,
-                "namespace": "",
-                "port": port,
-                "secure": secure,
-                "region": data.get("region", ""),
-                # The s3 interface has no namespace concept, so the endpoint is just host:port.
-                "endpoint": f"{host}:{port}",
-            }
-        data = active_storage_component.get_data()
-        # With minimum_related_applications=0 and maximum=1, SdiRelationDataReceiverComponent
-        # returns {} when no related app is present, otherwise a list of dicts. Extract the
-        # first (and expected-only) entry.
-        if isinstance(data, list):
-            data = data[0] if data else {}
-        if not data:
-            raise ErrorWithStatus("Waiting for object-storage relation data", WaitingStatus)
-        return {
-            "access_key": data["access-key"],
-            "secret_key": data["secret-key"],
-            "host": data["service"],
-            "namespace": data["namespace"],
-            "port": data["port"],
-            "secure": data["secure"],
-            "region": "",
-            # The object-storage interface (MinIO) uses a `host.namespace:port` endpoint.
-            "endpoint": f"{data['service']}.{data['namespace']}:{data['port']}",
-        }
-
-    @staticmethod
-    def _parse_s3_endpoint(endpoint: str) -> tuple:
-        """Parse an s3 endpoint into a (host, port, secure) tuple.
-
-        The endpoint may be a full URL (e.g. "https://s3.example.com:443") or a bare
-        "host[:port]". The MinIO-style sync.py expects the host, port and TLS flag as
-        separate values, so the URL scheme (when present) determines the default port and
-        whether TLS is used.
-        """
-        parsed_endpoint = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
-        secure = parsed_endpoint.scheme == "https"
-        port = parsed_endpoint.port or (443 if secure else 80)
-        return parsed_endpoint.hostname, port, secure
-
     def _generate_context(self) -> dict:
         """Generate the context for the secrets-and-compositecontroller Kubernetes resources."""
-        object_storage = self._get_object_storage_data()
+        object_storage = self.object_storage_validator.component.get_normalized_data()
         return {
             "namespace": self.model.name,
             "sync_webhook_url": f"http://{self.model.app.name}.{self.model.name}/sync",
@@ -331,7 +256,7 @@ class KfpProfileControllerOperator(CharmBase):
 
     def _generate_kfp_profile_controller_inputs(self) -> KfpProfileControllerInputs:
         """Generate the inputs for the kfp-profile-controller Pebble service."""
-        object_storage = self._get_object_storage_data()
+        object_storage = self.object_storage_validator.component.get_normalized_data()
         return KfpProfileControllerInputs(
             MINIO_SECRET=json.dumps(
                 {"secret": {"name": f"{self.model.app.name}-minio-credentials"}}

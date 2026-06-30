@@ -19,6 +19,7 @@ from charm import (
     METADATA_GRPC_SERVICE_PORT,
     KfpProfileControllerOperator,
 )
+from components.object_storage_validator import ObjectStorageValidatorComponent
 
 CONFIG_NAME_FOR_CUSTOM_IMAGES = "custom_images"
 CONFIG_NAME_FOR_DEFAULT_PIPELINE_ROOT = "default_pipeline_root"
@@ -613,7 +614,7 @@ def test_s3_relations_conflict_detector_status(
 )
 def test_parse_s3_endpoint(endpoint, expected):
     """Test that an s3 endpoint is split into (host, port, secure)."""
-    assert KfpProfileControllerOperator._parse_s3_endpoint(endpoint) == expected
+    assert ObjectStorageValidatorComponent._parse_s3_endpoint(endpoint) == expected
 
 
 @pytest.mark.parametrize(
@@ -623,13 +624,13 @@ def test_parse_s3_endpoint(endpoint, expected):
         pytest.param([{"access-key": "k"}], id="missing-fields"),
     ],
 )
-def test_get_object_storage_data_waits_when_s3_data_not_ready(
+def test_get_object_storage_data_blocks_when_s3_data_not_ready(
     harness: Harness,
     mocked_lightkube_client,
     mocked_kubernetes_service_patch,
     s3_data,
 ):
-    """Test that an empty/partial s3-credentials databag causes the unit to be blocked."""
+    """Test that an empty/partial s3-credentials databag blocks the unit."""
     # Arrange
     harness.begin()
     harness.set_can_connect("kfp-profile-controller", True)
@@ -692,12 +693,12 @@ def test_get_object_storage_data_blocks_when_s3_endpoint_invalid(
     assert isinstance(harness.charm.model.unit.status, BlockedStatus)
 
 
-def test_get_object_storage_data_waits_when_object_storage_data_not_ready(
+def test_get_object_storage_data_blocks_when_object_storage_data_not_ready(
     harness: Harness,
     mocked_lightkube_client,
     mocked_kubernetes_service_patch,
 ):
-    """Test that an empty object-storage databag causes the unit to be blocked."""
+    """Test that an empty object-storage databag blocks the unit."""
     # Arrange
     harness.begin()
     harness.set_can_connect("kfp-profile-controller", True)
@@ -737,3 +738,92 @@ def test_storage_relation_data_not_ready_blocks_unit_status(
         "[relation:s3_credentials] Relation 's3-credentials' is present but required data "
         "is not yet available."
     )
+
+
+def test_object_storage_validator_active_with_object_storage_data(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test the validator goes Active when object-storage publishes a complete databag."""
+    harness.begin()
+
+    harness.charm.object_storage_relation.component.get_data = MagicMock(
+        return_value=MOCK_OBJECT_STORAGE_DATA
+    )
+
+    assert isinstance(harness.charm.object_storage_validator.component.get_status(), ActiveStatus)
+
+
+def test_object_storage_validator_blocks_with_no_object_storage_data(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test the validator blocks when the object-storage relation has no published data."""
+    harness.begin()
+
+    harness.charm.object_storage_relation.component.get_data = MagicMock(return_value={})
+
+    assert isinstance(harness.charm.object_storage_validator.component.get_status(), BlockedStatus)
+
+
+def test_object_storage_validator_active_with_s3_data(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test the validator goes Active when s3-credentials publishes a complete databag."""
+    harness.begin()
+
+    # An actual s3-credentials relation must exist so the validator picks the s3 component
+    harness.add_relation("s3-credentials", "s3-provider")
+    harness.charm.s3_relation.component.get_data = MagicMock(return_value=[MOCK_S3_DATA])
+
+    assert isinstance(harness.charm.object_storage_validator.component.get_status(), ActiveStatus)
+
+
+@pytest.mark.parametrize(
+    "s3_data",
+    [
+        pytest.param([], id="empty-list"),
+        pytest.param([{"access-key": "k"}], id="missing-fields"),
+    ],
+)
+def test_object_storage_validator_blocks_with_incomplete_s3_data(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+    s3_data,
+):
+    """Test the validator blocks when s3-credentials has no/partial data."""
+    harness.begin()
+
+    harness.add_relation("s3-credentials", "s3-provider")
+    harness.charm.s3_relation.component.get_data = MagicMock(return_value=s3_data)
+
+    assert isinstance(harness.charm.object_storage_validator.component.get_status(), BlockedStatus)
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        pytest.param("://", id="scheme-only"),
+        pytest.param("http://", id="http-no-host"),
+    ],
+)
+def test_object_storage_validator_blocks_with_invalid_s3_endpoint(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+    endpoint,
+):
+    """Test the validator blocks when the s3 endpoint cannot be parsed to a valid host."""
+    harness.begin()
+
+    harness.add_relation("s3-credentials", "s3-provider")
+    harness.charm.s3_relation.component.get_data = MagicMock(
+        return_value=[{**MOCK_S3_DATA, "endpoint": endpoint}]
+    )
+
+    assert isinstance(harness.charm.object_storage_validator.component.get_status(), BlockedStatus)
