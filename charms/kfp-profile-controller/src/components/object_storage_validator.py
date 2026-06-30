@@ -27,7 +27,6 @@ class ObjectStorageValidatorComponent(Component):
       * exposes a unified ``get_normalized_data()`` dict for downstream consumers
         (e.g. ``KubernetesComponent`` context callables and ``PebbleServiceComponent``
         inputs getters),
-      * reports the validation outcome via ``get_status()``.
     """
 
     def __init__(
@@ -142,7 +141,7 @@ class ObjectStorageValidatorComponent(Component):
             "port": data["port"],
             "secure": data["secure"],
             "region": "",
-            # The object-storage interface (MinIO) uses a `host.namespace:port` endpoint.
+            # The object-storage interface (minio-operator) uses a `host.namespace:port` endpoint.
             "endpoint": f"{data['service']}.{data['namespace']}:{data['port']}",
         }
 
@@ -150,8 +149,7 @@ class ObjectStorageValidatorComponent(Component):
         """Return the validation status for the active storage relation.
 
         Returns `ActiveStatus` when the active relation's data parses cleanly into the
-        normalized form, otherwise returns the `BlockedStatus` carried by the underlying
-        `ErrorWithStatus` (raised for missing/incomplete data or an invalid s3 endpoint).
+        normalized form, otherwise returns `BlockedStatus`.
         """
         try:
             self.get_normalized_data()
