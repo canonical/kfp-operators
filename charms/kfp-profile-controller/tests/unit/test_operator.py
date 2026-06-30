@@ -647,8 +647,9 @@ def test_get_object_storage_data_waits_when_s3_data_not_ready(
     # Act
     harness.charm.on.install.emit()
 
-    # Assert
-    assert isinstance(harness.charm.model.unit.status, BlockedStatus)
+# Assert
+from ops.model import WaitingStatus
+assert isinstance(harness.charm.model.unit.status, WaitingStatus)
 
 
 @pytest.mark.parametrize(
