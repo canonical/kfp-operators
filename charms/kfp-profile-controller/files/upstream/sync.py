@@ -201,9 +201,9 @@ def server_factory(visualization_server_image,
             desired_configmap_count = 2
             desired_resources = []
 
-            # The minio endpoint is built by the charm (see `_get_object_storage_data` in
-            # `src/charm.py`), so that this file stays closer to its upstream counterpart.
-
+            # The MinIO/S3 endpoint is built by the charm (see ObjectStorageValidatorComponent and
+            # `_generate_kfp_profile_controller_inputs` in `src/charm.py`), so that this file stays
+            # closer to its upstream counterpart.
             providers_yaml = (
                 "minio:\n"
                 "  default:\n"
