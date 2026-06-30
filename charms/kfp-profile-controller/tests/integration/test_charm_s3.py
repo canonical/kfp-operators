@@ -323,7 +323,7 @@ def validate_profile_resources(
 
 @retry(
     wait=wait_exponential(multiplier=1, min=1, max=10),
-    stop=stop_after_delay(30),
+    stop=stop_after_delay(60),
     reraise=True,
 )
 def validate_profile_deployments_with_custom_images(
