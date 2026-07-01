@@ -164,7 +164,7 @@ class ObjectStorageValidatorComponent(Component):
                 "port": str(data["port"]),
                 "secure": data["secure"],
                 "region": "",
-                # The object-storage interface (minio-operator) uses a `host.namespace:port` endpoint.
+                # The object-storage interface uses a `host.namespace:port` endpoint.
                 "endpoint": f"{data['service']}.{data['namespace']}:{data['port']}",
             }
 
