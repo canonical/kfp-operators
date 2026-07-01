@@ -129,35 +129,44 @@ class ObjectStorageValidatorComponent(Component):
                 # The s3 interface has no namespace concept, so the endpoint is just host:port.
                 "endpoint": f"{host}:{port}",
             }
-        data = active_storage_component.get_data()
-        # With minimum_related_applications=0 and maximum=1, SdiRelationDataReceiverComponent
-        # returns {} when no related app is present, otherwise a list of dicts. Extract the
-        # first (and expected-only) entry.
-        if isinstance(data, list):
-            data = data[0] if data else {}
-        if not data:
-            raise ErrorWithStatus("Missing object-storage relation data", BlockedStatus)
+        else:
+            # active_storage_component = SdiRelationDataReceiverComponent here
+            data = active_storage_component.get_data()
+            # With minimum_related_applications=0 and maximum=1, SdiRelationDataReceiverComponent
+            # returns {} when no related app is present, otherwise a list of dicts. Extract the
+            # first (and expected-only) entry.
+            if isinstance(data, list):
+                data = data[0] if data else {}
+            if not data:
+                raise ErrorWithStatus("Missing object-storage relation data", BlockedStatus)
 
-        required_fields = ("access-key", "secret-key", "service", "namespace", "secure", "port")
-        missing = [f for f in required_fields if not data.get(f)]
-        if missing:
-            raise ErrorWithStatus(
-                "Incomplete object-storage relation data, missing fields: "
-                f"{', '.join(missing)}",
-                BlockedStatus,
+            required_fields = (
+                "access-key",
+                "secret-key",
+                "service",
+                "namespace",
+                "secure",
+                "port",
             )
+            missing = [f for f in required_fields if not data.get(f)]
+            if missing:
+                raise ErrorWithStatus(
+                    "Incomplete object-storage relation data, missing fields: "
+                    f"{', '.join(missing)}",
+                    BlockedStatus,
+                )
 
-        return {
-            "access_key": data["access-key"],
-            "secret_key": data["secret-key"],
-            "host": data["service"],
-            "namespace": data["namespace"],
-            "port": str(data["port"]),
-            "secure": data["secure"],
-            "region": "",
-            # The object-storage interface (minio-operator) uses a `host.namespace:port` endpoint.
-            "endpoint": f"{data['service']}.{data['namespace']}:{data['port']}",
-        }
+            return {
+                "access_key": data["access-key"],
+                "secret_key": data["secret-key"],
+                "host": data["service"],
+                "namespace": data["namespace"],
+                "port": str(data["port"]),
+                "secure": data["secure"],
+                "region": "",
+                # The object-storage interface (minio-operator) uses a `host.namespace:port` endpoint.
+                "endpoint": f"{data['service']}.{data['namespace']}:{data['port']}",
+            }
 
     def get_status(self) -> StatusBase:
         """Return the validation status for the active storage relation.
