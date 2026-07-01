@@ -326,9 +326,15 @@ def validate_profile_resources(
     assert expected_label_value == namespace.metadata.labels[expected_label]
 
 
+# Retry for 90 seconds since the metacontroller's `resyncPeriodSeconds` is
+# currently 60s, so at worst it will take 60s for the resync to be triggered.
 @retry(
     wait=wait_exponential(multiplier=1, min=1, max=10),
+<<<<<<< HEAD
     stop=stop_after_delay(30),
+=======
+    stop=stop_after_delay(90),
+>>>>>>> eedf043 (fix: increase retry period for validate_profile_deployments_with_custom_images (#970))
     reraise=True,
 )
 def validate_profile_deployments_with_custom_images(
