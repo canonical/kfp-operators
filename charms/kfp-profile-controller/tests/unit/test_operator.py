@@ -755,6 +755,25 @@ def test_object_storage_validator_active_with_object_storage_data(
     assert isinstance(harness.charm.object_storage_validator.component.get_status(), ActiveStatus)
 
 
+def test_object_storage_validator_active_with_secure_false(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+):
+    """Test the validator goes Active when object-storage sends secure=False.
+
+    Regression test: the previous `not data.get("secure")` check incorrectly
+    treated the falsy boolean False as a missing field.
+    """
+    harness.begin()
+
+    harness.charm.object_storage_relation.component.get_data = MagicMock(
+        return_value={**MOCK_OBJECT_STORAGE_DATA, "secure": False}
+    )
+
+    assert isinstance(harness.charm.object_storage_validator.component.get_status(), ActiveStatus)
+
+
 def test_object_storage_validator_blocks_with_no_object_storage_data(
     harness: Harness,
     mocked_lightkube_client,

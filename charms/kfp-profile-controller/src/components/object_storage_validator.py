@@ -148,7 +148,7 @@ class ObjectStorageValidatorComponent(Component):
                 "secure",
                 "port",
             )
-            missing = [f for f in required_fields if not data.get(f)]
+            missing = [f for f in required_fields if data.get(f) is None]
             if missing:
                 raise ErrorWithStatus(
                     "Incomplete object-storage relation data, missing fields: "
