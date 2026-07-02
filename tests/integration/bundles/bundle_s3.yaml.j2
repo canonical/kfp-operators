@@ -118,7 +118,7 @@ applications:
     scale: 1
     trust: true
 relations:
-- [argo-controller:object-storage, minio:object-storage]
+- [argo-controller:s3-credentials, s3-integrator:s3-credentials]
 - [kfp-api:relational-db, kfp-db:database]
 - [kfp-api:kfp-api, kfp-persistence:kfp-api]
 - [kfp-api:kfp-api, kfp-ui:kfp-api]
