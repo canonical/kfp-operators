@@ -334,7 +334,7 @@ jobs:
           sudo concierge prepare --trace
 
       - name: Configure Cilium for Canonical K8s
-        if: matrix.test-type == 'integration-ambient'
+        if: matrix.test-type == 'integration-ambient' || matrix.test-type == 'integration-s3'
         run: |
           # Configure Cilium for Canonical K8s to work with Charmed Istio (Ambient mode)
           # See https://canonical-service-mesh-documentation.readthedocs-hosted.com/en/latest/how-to/use-charmed-istio-with-canonical-kubernetes/
