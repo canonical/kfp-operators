@@ -1,0 +1,132 @@
+bundle: kubernetes
+name: kubeflow-pipelines
+applications:
+  argo-controller:
+    charm: {{ argo_controller_charm }}
+    channel: {{ argo_controller_channel }}
+    scale: 1
+    trust: {{ argo_controller_trust }}
+  metacontroller-operator:
+    charm: {{ metacontroller_operator_charm }}
+    channel: {{ metacontroller_operator_channel }}
+    scale: 1
+    trust: {{ metacontroller_operator_trust }}
+  minio:
+    charm: {{ minio_charm }}
+    channel: {{ minio_channel }}
+    scale: 1
+    trust: {{ minio_trust }}
+    options:
+      access-key: minio
+      secret-key: minio-secret-key
+  s3-integrator:
+    charm: {{ s3_integrator_charm }}
+    channel: {{ s3_integrator_channel }}
+    scale: 1
+    trust: {{ s3_integrator_trust }}
+  mlmd:
+    charm: {{ mlmd_charm }}
+    channel: {{ mlmd_channel }}
+    scale: 1
+    trust: {{ mlmd_trust }}
+  envoy:
+    charm: {{ envoy_charm }}
+    channel: {{ envoy_channel }}
+    scale: 1
+    trust: {{ envoy_trust }}
+  kubeflow-profiles:
+    charm: {{ kubeflow_profiles_charm }}
+    channel: {{ kubeflow_profiles_channel }}
+    scale: 1
+    trust: {{ kubeflow_profiles_trust }}
+  istio-ingressgateway:
+    charm: {{ istio_gateway_charm }}
+    channel: {{ istio_gateway_channel }}
+    scale: 1
+    {% if istio_gateway_config %}
+    options:
+      {% for key, val in istio_gateway_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ istio_gateway_trust }}
+  istio-pilot:
+    charm: {{ istio_pilot_charm }}
+    channel: {{ istio_pilot_channel }}
+    scale: 1
+    {% if istio_pilot_config %}
+    options:
+      {% for key, val in istio_pilot_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ istio_pilot_trust }}
+  kfp-db:
+    charm: {{ mysql_k8s_charm }}
+    channel: {{ mysql_k8s_channel }}
+    scale: 1
+    {% if mysql_k8s_config %}
+    options:
+      {% for key, val in mysql_k8s_config.items() %}
+      {{ key }}: {{ val }}
+      {% endfor %}
+    {% endif %}
+    trust: {{ mysql_k8s_trust }}
+  kubeflow-roles:
+    charm: {{ kubeflow_roles_charm }}
+    channel: {{ kubeflow_roles_channel }}
+    scale: 1
+    trust: {{ kubeflow_roles_trust }}
+  kfp-api:
+    charm: {{ kfp_api }}
+    resources: {{ kfp_api_resources }}
+    scale: 1
+    trust: true
+  kfp-metadata-writer:
+    charm: {{ kfp_metadata_writer }}
+    resources: {{ kfp_metadata_writer_resources }}
+    scale: 1
+    trust: true
+  kfp-persistence:
+    charm: {{ kfp_persistence }}
+    resources: {{ kfp_persistence_resources }}
+    scale: 1
+    trust: true
+  kfp-profile-controller:
+    charm: {{ kfp_profile_controller }}
+    resources: {{ kfp_profile_controller_resources }}
+    scale: 1
+    trust: true
+  kfp-schedwf:
+    charm: {{ kfp_schedwf }}
+    resources: {{ kfp_schedwf_resources }}
+    scale: 1
+    trust: true
+  kfp-ui:
+    charm: {{ kfp_ui }}
+    resources: {{ kfp_ui_resources }}
+    scale: 1
+    trust: true
+  kfp-viewer:
+    charm: {{ kfp_viewer }}
+    resources: {{ kfp_viewer_resources }}
+    scale: 1
+    trust: true
+  kfp-viz:
+    charm: {{ kfp_viz }}
+    resources: {{ kfp_viz_resources }}
+    scale: 1
+    trust: true
+relations:
+- [argo-controller:object-storage, minio:object-storage]
+- [kfp-api:relational-db, kfp-db:database]
+- [kfp-api:kfp-api, kfp-persistence:kfp-api]
+- [kfp-api:kfp-api, kfp-ui:kfp-api]
+- [kfp-api:kfp-viz, kfp-viz:kfp-viz]
+- [kfp-api:s3-credentials, s3-integrator:s3-credentials]
+- [kfp-ui:s3-credentials, s3-integrator:s3-credentials]
+- [kfp-profile-controller:s3-credentials, s3-integrator:s3-credentials]
+- [envoy:grpc, mlmd:grpc]
+- [kfp-metadata-writer:grpc, mlmd:grpc]
+- [envoy:ingress, istio-pilot:ingress]
+- [istio-ingressgateway:istio-pilot, istio-pilot:istio-pilot]

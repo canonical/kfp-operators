@@ -306,6 +306,8 @@ jobs:
             bundle: ./tests/integration/bundles/bundle.yaml.j2
           - test-type: integration-ambient
             bundle: ./tests/integration/bundles/bundle_ambient.yaml.j2
+          - test-type: integration-s3
+            bundle: ./tests/integration/bundles/bundle_s3.yaml.j2
     steps:
       # This is a workaround for https://github.com/canonical/kfp-operators/issues/250
       # Ideally we'd use self-hosted runners, but this effort is still not stable
