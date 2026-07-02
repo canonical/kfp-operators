@@ -11,19 +11,6 @@ applications:
     channel: {{ metacontroller_operator_channel }}
     scale: 1
     trust: {{ metacontroller_operator_trust }}
-  minio:
-    charm: {{ minio_charm }}
-    channel: {{ minio_channel }}
-    scale: 1
-    trust: {{ minio_trust }}
-    options:
-      access-key: minio
-      secret-key: minio-secret-key
-  s3-integrator:
-    charm: {{ s3_integrator_charm }}
-    channel: {{ s3_integrator_channel }}
-    scale: 1
-    trust: {{ s3_integrator_trust }}
   mlmd:
     charm: {{ mlmd_charm }}
     channel: {{ mlmd_channel }}
@@ -132,14 +119,10 @@ applications:
     scale: 1
     trust: true
 relations:
-- [argo-controller:s3-credentials, s3-integrator:s3-credentials]
 - [kfp-api:relational-db, kfp-db:database]
 - [kfp-api:kfp-api, kfp-persistence:kfp-api]
 - [kfp-api:kfp-api, kfp-ui:kfp-api]
 - [kfp-api:kfp-viz, kfp-viz:kfp-viz]
-- [kfp-api:s3-credentials, s3-integrator:s3-credentials]
-- [kfp-ui:s3-credentials, s3-integrator:s3-credentials]
-- [kfp-profile-controller:s3-credentials, s3-integrator:s3-credentials]
 - [mlmd:grpc, envoy:grpc]
 - [kfp-metadata-writer:grpc, mlmd:grpc]
 - [kfp-api:kfp-api-grpc, kfp-persistence:kfp-api-grpc]

@@ -2,6 +2,7 @@
 # Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 """Functional tests for kfp-operators with s3-integrator as the object storage backend."""
+import asyncio
 import logging
 import time
 from pathlib import Path
@@ -11,6 +12,7 @@ import kfp
 import pytest
 import requests
 from charmed_kubeflow_chisme.testing import generate_context_from_charm_spec_list
+from charmed_kubeflow_chisme.testing.s3_integration import deploy_and_assert_s3_integrator
 from charms_dependencies import (
     ARGO_CONTROLLER,
     ENVOY,
@@ -20,7 +22,6 @@ from charms_dependencies import (
     KUBEFLOW_PROFILES,
     KUBEFLOW_ROLES,
     METACONTROLLER_OPERATOR,
-    MINIO,
     MLMD,
     MYSQL_K8S,
     S3_INTEGRATOR,
@@ -28,6 +29,7 @@ from charms_dependencies import (
 from helpers.bundle_mgmt import render_bundle
 from helpers.k8s_resources import apply_manifests
 from helpers.localize_bundle import update_charm_context
+from juju.model import Model as JujuModel
 from kfp_globals import (
     DATA_PASSING_PIPELINE,
     KFP_CHARMS,
@@ -48,17 +50,12 @@ charms_dependencies_list = [
     KUBEFLOW_PROFILES,
     KUBEFLOW_ROLES,
     METACONTROLLER_OPERATOR,
-    MINIO,
     MLMD,
     MYSQL_K8S,
-    S3_INTEGRATOR,
 ]
 log = logging.getLogger(__name__)
 
-# Known credentials set in bundle_s3.yaml.j2 for minio
-_MINIO_ACCESS_KEY = "minio"
-_MINIO_SECRET_KEY = "minio-secret-key"
-_MINIO_BUCKET = "mlpipeline"
+_S3_BUCKET = "mlpipeline"
 
 
 # ---- KFP SDK V2 fixtures
@@ -98,7 +95,7 @@ def create_and_clean_experiment_v2(kfp_client: kfp.Client):
 @pytest.mark.deploy
 @pytest.mark.abort_on_fail
 def test_deploy(juju: jubilant.Juju, request: pytest.FixtureRequest, lightkube_client: Client):
-    """Deploy kfp-operators charms with s3-integrator as the object storage backend."""
+    """Deploy kfp-operators charms with s3-integrator backed by microceph."""
 
     # Get/load template bundle from command line args
     bundlefile_path = Path(request.config.getoption("bundle"))
@@ -124,16 +121,25 @@ def test_deploy(juju: jubilant.Juju, request: pytest.FixtureRequest, lightkube_c
     log.info("Waiting on model applications and units to be idle")
     juju.wait(jubilant.all_agents_idle, delay=5.0)
 
-    # Configure s3-integrator to use the in-bundle minio instance as the S3 backend.
-    # The minio credentials (access-key, secret-key) are set via options in bundle_s3.yaml.j2.
-    minio_endpoint = f"http://minio.{juju.model}.svc.cluster.local:9000"
-    log.info("Configuring s3-integrator with minio endpoint %s", minio_endpoint)
-    juju.config("s3-integrator", {"endpoint": minio_endpoint, "bucket": _MINIO_BUCKET})
-    juju.run(
-        "s3-integrator/leader",
-        "sync-s3-credentials",
-        params={"access-key": _MINIO_ACCESS_KEY, "secret-key": _MINIO_SECRET_KEY},
-    )
+    # Deploy s3-integrator backed by microceph and configure it with generated credentials.
+    log.info("Deploying s3-integrator with microceph backend")
+
+    async def _setup_s3_integrator():
+        model = JujuModel()
+        await model.connect(model_name=juju.model)
+        try:
+            await deploy_and_assert_s3_integrator(model, s3_integrator=S3_INTEGRATOR)
+        finally:
+            await model.disconnect()
+
+    asyncio.run(_setup_s3_integrator())
+
+    # Configure the S3 bucket and wire up s3-credentials relations.
+    juju.config("s3-integrator", {"bucket": _S3_BUCKET})
+    juju.integrate("argo-controller:s3-credentials", "s3-integrator:s3-credentials")
+    juju.integrate("kfp-api:s3-credentials", "s3-integrator:s3-credentials")
+    juju.integrate("kfp-ui:s3-credentials", "s3-integrator:s3-credentials")
+    juju.integrate("kfp-profile-controller:s3-credentials", "s3-integrator:s3-credentials")
 
     log.info("Waiting on model applications and units to be active and idle")
     juju.wait(jubilant.all_active)
@@ -195,8 +201,9 @@ def test_create_and_monitor_run_with_artifacts(
     """Create a run that passes an artifact between steps and monitor it to completion.
 
     This exercises the s3-integrator object-store data path: the producer step uploads an
-    output artifact to minio (via s3-integrator credentials) and the consumer step downloads
-    it. A SUCCEEDED run guards against regressions in the kfp-api s3-credentials configuration.
+    output artifact to the object store (via s3-integrator credentials) and the consumer step
+    downloads it. A SUCCEEDED run guards against regressions in the kfp-api s3-credentials
+    configuration.
     """
     # Create an experiment for this run
     experiment_response = create_and_clean_experiment_v2
@@ -212,7 +219,7 @@ def test_create_and_monitor_run_with_artifacts(
     )
 
     # Monitor the run to completion. Passing an artifact between steps requires uploading
-    # to and downloading from the object store (minio, via s3-integrator), so a SUCCEEDED
+    # to and downloading from the object store (via s3-integrator), so a SUCCEEDED
     # state confirms that path works.
     monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=600)
 
