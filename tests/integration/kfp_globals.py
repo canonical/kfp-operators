@@ -23,6 +23,9 @@ KFP_CHARMS = [
 # Variables for uploading/creating pipelines/experiments/runs
 SAMPLE_PIPELINES_PATH = f"{basedir}/tests/integration/pipelines"
 SAMPLE_PIPELINE = f"{SAMPLE_PIPELINES_PATH}/pipeline_container_no_input.yaml"
+# A pipeline that passes an artifact between steps, exercising the object-store
+# (MinIO/S3) data path used by the KFP launcher to upload/download artifacts.
+DATA_PASSING_PIPELINE = f"{SAMPLE_PIPELINES_PATH}/pipeline_data_passing.yaml"
 
 SAMPLE_PIPELINE_NAME = "sample-pipeline"
 

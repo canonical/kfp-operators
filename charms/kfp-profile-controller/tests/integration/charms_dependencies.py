@@ -14,3 +14,8 @@ MINIO = CharmSpec(
     trust=True,
     config={"access-key": "minio", "secret-key": "minio-secret-key"},
 )
+S3_INTEGRATOR = CharmSpec(
+    charm="s3-integrator",
+    channel="2/edge",
+    trust=False,
+)

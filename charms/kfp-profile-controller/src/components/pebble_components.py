@@ -16,8 +16,11 @@ class KfpProfileControllerInputs:
     MINIO_HOST: str
     MINIO_NAMESPACE: str
     MINIO_PORT: str
+    MINIO_ENDPOINT: str
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
+    MINIO_SSL: str
+    MINIO_REGION: str
     KFP_VERSION: str
     KFP_DEFAULT_PIPELINE_ROOT: str
     DISABLE_ISTIO_SIDECAR: str
@@ -50,7 +53,6 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
             len(inputs.MINIO_SECRET_KEY) == 0
             or len(inputs.MINIO_ACCESS_KEY) == 0
             or len(inputs.MINIO_HOST) == 0
-            or len(inputs.MINIO_NAMESPACE) == 0
         ):
             raise ValueError(f"{self.name}: inputs are not correctly provided")
 
@@ -69,8 +71,11 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                             "MINIO_HOST": inputs.MINIO_HOST,
                             "MINIO_PORT": inputs.MINIO_PORT,
                             "MINIO_NAMESPACE": inputs.MINIO_NAMESPACE,
+                            "MINIO_ENDPOINT": inputs.MINIO_ENDPOINT,
                             "MINIO_ACCESS_KEY": f"{inputs.MINIO_ACCESS_KEY}",
                             "MINIO_SECRET_KEY": inputs.MINIO_SECRET_KEY,
+                            "MINIO_SSL": inputs.MINIO_SSL,
+                            "MINIO_REGION": inputs.MINIO_REGION,
                             "KFP_VERSION": inputs.KFP_VERSION,
                             "KFP_DEFAULT_PIPELINE_ROOT": inputs.KFP_DEFAULT_PIPELINE_ROOT,
                             "DISABLE_ISTIO_SIDECAR": inputs.DISABLE_ISTIO_SIDECAR,

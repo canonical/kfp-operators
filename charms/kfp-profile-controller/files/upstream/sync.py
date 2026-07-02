@@ -49,6 +49,7 @@ def get_settings_from_env(controller_port=None,
                           visualization_server_tag=None, frontend_tag=None, disable_istio_sidecar=None,
                           minio_access_key=None, minio_secret_key=None, kfp_default_pipeline_root=None,
                           minio_host=None, minio_port=None, minio_namespace=None,
+                          minio_endpoint=None, minio_ssl=None, minio_region=None,
                           metadata_grpc_service_host=None,
                           metadata_grpc_service_port=None):
     """
@@ -122,6 +123,18 @@ def get_settings_from_env(controller_port=None,
         minio_namespace or \
         os.environ.get("MINIO_NAMESPACE", "kubeflow")
 
+    settings["minio_endpoint"] = \
+        minio_endpoint or \
+        os.environ.get("MINIO_ENDPOINT", "minio.kubeflow:9000")
+
+    settings["minio_ssl"] = \
+        minio_ssl if minio_ssl is not None \
+            else os.environ.get("MINIO_SSL", "false") == "true"
+
+    settings["minio_region"] = \
+        minio_region or \
+        os.environ.get("MINIO_REGION") or "us-east-1"
+
     # KFP_DEFAULT_PIPELINE_ROOT is optional
     settings["kfp_default_pipeline_root"] = \
         kfp_default_pipeline_root or \
@@ -153,8 +166,10 @@ def server_factory(visualization_server_image,
                    visualization_server_tag, frontend_image, frontend_tag,
                    disable_istio_sidecar, minio_access_key,
                    minio_secret_key, minio_host, minio_namespace, minio_port,
+                   minio_endpoint,
                    metadata_grpc_service_host, metadata_grpc_service_port,
                    kfp_api_principal, ambient_mesh_enabled,
+                   minio_ssl=False, minio_region="us-east-1",
                    kfp_default_pipeline_root=None, url="", controller_port=8080):
     """
     Returns an HTTPServer populated with Handler with customized settings
@@ -186,12 +201,15 @@ def server_factory(visualization_server_image,
             desired_configmap_count = 2
             desired_resources = []
 
+            # The MinIO/S3 endpoint is built by the charm (see ObjectStorageValidatorComponent and
+            # `_generate_kfp_profile_controller_inputs` in `src/charm.py`), so that this file stays
+            # closer to its upstream counterpart.
             providers_yaml = (
                 "minio:\n"
                 "  default:\n"
-                f"    endpoint: {minio_host}.{minio_namespace}:{minio_port}\n"
-                "    disableSSL: true\n"
-                "    region: us-east-1\n"
+                f"    endpoint: {minio_endpoint}\n"
+                f"    disableSSL: {'false' if minio_ssl else 'true'}\n"
+                f"    region: {minio_region}\n"
                 "    forcePathStyle: true\n"
                 "    credentials:\n"
                 "      fromEnv: false\n"

@@ -28,6 +28,7 @@ from helpers.bundle_mgmt import render_bundle
 from helpers.k8s_resources import apply_manifests
 from helpers.localize_bundle import update_charm_context
 from kfp_globals import (
+    DATA_PASSING_PIPELINE,
     KFP_CHARMS,
     KUBEFLOW_PROFILE_NAMESPACE,
     SAMPLE_PIPELINE,
@@ -163,6 +164,35 @@ def test_create_and_monitor_run(kfp_client: kfp.Client, create_and_clean_experim
 
     # Monitor the run to completion, the pipeline should not be executed in
     # more than 300 seconds as it is a very simple operation
+    monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=600)
+
+    assert monitor_response.state == "SUCCEEDED"
+
+
+def test_create_and_monitor_run_with_artifacts(
+    kfp_client: kfp.Client, create_and_clean_experiment_v2
+):
+    """Create a run that passes an artifact between steps and monitor it to completion.
+
+    This exercises the object-store (MinIO/S3) data path: the producer step uploads an
+    output artifact to the object store and the consumer step downloads it. A SUCCEEDED
+    run guards against regressions in the kfp-api object-storage configuration.
+    """
+    # Create an experiment for this run
+    experiment_response = create_and_clean_experiment_v2
+
+    # Create a run from the data-passing pipeline (DATA_PASSING_PIPELINE) and the experiment.
+    # This call uses the 'default' kubeflow service account to be able to edit Workflows
+    create_run_response = kfp_client.create_run_from_pipeline_package(
+        pipeline_file=DATA_PASSING_PIPELINE,
+        arguments={},
+        run_name="test-run-artifacts",
+        experiment_name=experiment_response.display_name,
+        namespace=KUBEFLOW_PROFILE_NAMESPACE,
+    )
+
+    # Monitor the run to completion. Passing an artifact between steps requires uploading
+    # to and downloading from the object store, so a SUCCEEDED state confirms that path works.
     monitor_response = kfp_client.wait_for_run_completion(create_run_response.run_id, timeout=600)
 
     assert monitor_response.state == "SUCCEEDED"

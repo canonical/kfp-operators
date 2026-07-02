@@ -1,0 +1,114 @@
+# PIPELINE DEFINITION
+# Name: v2-data-passing
+components:
+  comp-read-data:
+    executorLabel: exec-read-data
+    inputDefinitions:
+      artifacts:
+        input_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-write-data:
+    executorLabel: exec-write-data
+    outputDefinitions:
+      artifacts:
+        output_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+deploymentSpec:
+  executors:
+    exec-read-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - read_data
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef read_data(input_data: Input[Dataset]):\n    \"\"\"Read the message\
+          \ from an input artifact (downloaded from the object store).\"\"\"\n   \
+          \ with open(input_data.path, \"r\") as f:\n        content = f.read()\n\
+          \    print(f\"Read content from artifact: {content}\")\n    assert content\
+          \ == \"hello from the producer\", f\"Unexpected artifact content: {content}\"\
+          \n\n"
+        image: python:3.9
+    exec-write-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - write_data
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef write_data(output_data: Output[Dataset]):\n    \"\"\"Write a\
+          \ message to an output artifact (uploaded to the object store).\"\"\"\n\
+          \    message = \"hello from the producer\"\n    with open(output_data.path,\
+          \ \"w\") as f:\n        f.write(message)\n\n"
+        image: python:3.9
+pipelineInfo:
+  name: v2-data-passing
+root:
+  dag:
+    tasks:
+      read-data:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-read-data
+        dependentTasks:
+        - write-data
+        inputs:
+          artifacts:
+            input_data:
+              taskOutputArtifact:
+                outputArtifactKey: output_data
+                producerTask: write-data
+        taskInfo:
+          name: read-data
+      write-data:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-write-data
+        taskInfo:
+          name: write-data
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.1

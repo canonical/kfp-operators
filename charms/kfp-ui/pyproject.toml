@@ -94,6 +94,7 @@ juju = "<4.0"
 charmed-kubeflow-chisme = "^0.4.27"
 lightkube = "^0.15.6"
 pytest-operator = "^0.38.0"
+tenacity = "^9.0.0"
 
 [project]
 name = "kfp-operators"
