@@ -14,6 +14,7 @@ from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
 from charm import KfpUiOperator
+from components.object_storage_validator import ObjectStorageValidatorComponent
 
 MOCK_OBJECT_STORAGE_DATA = {
     "access-key": "access-key",
@@ -300,7 +301,7 @@ def test_pebble_services_running_object_storage(harness: Harness, mocked_kuberne
     # Mock:
     # * leadership_gate to have get_status=>Active
     # * s3_relations_conflict_detector to be active
-    # * object_storage_relation to return mock data, making the item go active
+    # * object_storage_validator to return mock normalized data
     # * kfp_api_relation to return mock data, making the item go active
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
     harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
@@ -327,7 +328,7 @@ def test_pebble_services_running_object_storage(harness: Harness, mocked_kuberne
     assert environment["HIDE_SIDENAV"] == str(harness.charm.config.get("hide-sidenav")).lower()
     assert environment["MINIO_HOST"] == MOCK_OBJECT_STORAGE_DATA["service"]
     assert environment["MINIO_NAMESPACE"] == MOCK_OBJECT_STORAGE_DATA["namespace"]
-    assert environment["MINIO_PORT"] == MOCK_OBJECT_STORAGE_DATA["port"]
+    assert environment["MINIO_PORT"] == str(MOCK_OBJECT_STORAGE_DATA["port"])
     assert environment["MINIO_SSL"] == MOCK_OBJECT_STORAGE_DATA["secure"]
     assert environment["ML_PIPELINE_SERVICE_HOST"] == MOCK_KFP_API_DATA["service-name"]
     assert environment["ML_PIPELINE_SERVICE_PORT"] == MOCK_KFP_API_DATA["service-port"]
@@ -368,7 +369,7 @@ def test_pebble_services_running_s3(harness: Harness, mocked_kubernetes_service_
     environment = container.get_plan().services["ml-pipeline-ui"].environment
     assert environment["MINIO_HOST"] == "s3.example.com"
     assert environment["MINIO_NAMESPACE"] == ""
-    assert environment["MINIO_PORT"] == 443
+    assert environment["MINIO_PORT"] == "443"
     assert environment["MINIO_SSL"] is True
     assert environment["ML_PIPELINE_SERVICE_HOST"] == MOCK_KFP_API_DATA["service-name"]
     assert environment["ML_PIPELINE_SERVICE_PORT"] == MOCK_KFP_API_DATA["service-port"]
@@ -423,7 +424,7 @@ def test_s3_relations_conflict_detector_status(
 )
 def test_parse_s3_endpoint(endpoint, expected):
     """Test that an s3 endpoint is split into (host, port, secure)."""
-    assert KfpUiOperator._parse_s3_endpoint(endpoint) == expected
+    assert ObjectStorageValidatorComponent._parse_s3_endpoint(endpoint) == expected
 
 
 @pytest.mark.parametrize(
@@ -433,7 +434,7 @@ def test_parse_s3_endpoint(endpoint, expected):
         pytest.param([{"access-key": "k"}], id="missing-fields"),
     ],
 )
-def test_get_object_storage_data_waits_when_s3_data_not_ready(
+def test_get_object_storage_data_blocks_when_s3_data_not_ready(
     harness: Harness,
     mocked_kubernetes_service_patch,
     s3_data,
@@ -500,7 +501,7 @@ def test_get_object_storage_data_blocks_when_s3_endpoint_invalid(
     assert isinstance(harness.charm.model.unit.status, BlockedStatus)
 
 
-def test_get_object_storage_data_waits_when_object_storage_data_not_ready(
+def test_get_object_storage_data_blocks_when_object_storage_data_not_ready(
     harness: Harness,
     mocked_kubernetes_service_patch,
 ):
