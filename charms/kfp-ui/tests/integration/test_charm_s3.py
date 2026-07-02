@@ -16,17 +16,16 @@ from charmed_kubeflow_chisme.testing import (
     get_pod_names,
 )
 from charmed_kubeflow_chisme.testing.s3_integration import deploy_and_assert_s3_integrator
-from charms_dependencies import KFP_API, KFP_VIZ, MINIO, MYSQL_K8S, S3_INTEGRATOR
+from charms_dependencies import KFP_API, KFP_VIZ, MYSQL_K8S, S3_INTEGRATOR
 from lightkube import Client
 from pytest_operator.plugin import OpsTest
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 CHARM_ROOT = "."
-BUNDLE_PATH = Path(__file__).parent / "bundle.yaml.j2"
+BUNDLE_PATH = Path(__file__).parent / "bundle_s3.yaml.j2"
 APP_NAME = METADATA["name"]
 CONTAINERS_SECURITY_CONTEXT_MAP = generate_container_securitycontext_map(METADATA)
-# TODO: Update test to use kfp-api:s3-credentials instead of kfp-api:object-storage
-charms_dependencies_list = [KFP_API, KFP_VIZ, MINIO, MYSQL_K8S]
+charms_dependencies_list = [KFP_API, KFP_VIZ, MYSQL_K8S]
 log = logging.getLogger(__name__)
 
 
@@ -64,6 +63,9 @@ async def test_build_and_deploy_with_relations(ops_test: OpsTest, request: pytes
     await ops_test.model.integrate(f"{APP_NAME}:kfp-api", "kfp-api:kfp-api")
     await ops_test.model.integrate(
         f"{APP_NAME}:s3-credentials", f"{S3_INTEGRATOR.charm}:s3-credentials"
+    )
+    await ops_test.model.integrate(
+        "kfp-api:s3-credentials", f"{S3_INTEGRATOR.charm}:s3-credentials"
     )
 
     await ops_test.model.wait_for_idle(
