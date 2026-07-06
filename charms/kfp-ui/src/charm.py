@@ -15,6 +15,8 @@ from charmed_kubeflow_chisme.components import (
     CharmReconciler,
     ContainerFileTemplate,
     LeadershipGateComponent,
+    RelationCountGateComponent,
+    S3RequirerComponent,
     SdiRelationBroadcasterComponent,
     SdiRelationDataReceiverComponent,
 )
@@ -29,6 +31,7 @@ from ops import CharmBase, main
 
 from components.istio_ambient_requirer_component import AmbientIngressRequirerComponent
 from components.istio_relations_conflict_detector import IstioRelationsConflictDetectorComponent
+from components.object_storage_validator import ObjectStorageValidatorComponent
 from components.pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleService
 
 logger = logging.getLogger(__name__)
@@ -183,13 +186,51 @@ class KfpUiOperator(CharmBase):
             depends_on=[self.leadership_gate, self.istio_relations_conflict_detector],
         )
 
+        self.s3_relations_conflict_detector = self.charm_reconciler.add(
+            component=RelationCountGateComponent(
+                charm=self,
+                name="s3-relations-conflict-detector",
+                relation_names=["object-storage", "s3-credentials"],
+            ),
+            depends_on=[self.leadership_gate],
+        )
+
+        self.s3_relation = self.charm_reconciler.add(
+            component=S3RequirerComponent(
+                charm=self,
+                name="relation:s3_credentials",
+                relation_name="s3-credentials",
+                is_optional=True,
+                required_relation_fields=frozenset({"access-key", "secret-key", "endpoint"}),
+            ),
+            depends_on=[self.leadership_gate, self.s3_relations_conflict_detector],
+        )
+
         self.object_storage_relation = self.charm_reconciler.add(
             component=SdiRelationDataReceiverComponent(
                 charm=self,
                 name="relation:object_storage",
                 relation_name="object-storage",
+                # Make this relation optional, since a relation with s3-credentials is
+                # also sufficient
+                minimum_related_applications=0,
             ),
-            depends_on=[self.leadership_gate],
+            depends_on=[self.leadership_gate, self.s3_relations_conflict_detector],
+        )
+
+        self.object_storage_validator = self.charm_reconciler.add(
+            component=ObjectStorageValidatorComponent(
+                charm=self,
+                name="object-storage-validator",
+                s3_component=self.s3_relation.component,
+                object_storage_component=self.object_storage_relation.component,
+            ),
+            depends_on=[
+                self.leadership_gate,
+                self.s3_relations_conflict_detector,
+                self.s3_relation,
+                self.object_storage_relation,
+            ],
         )
 
         self.kfp_api_relation = self.charm_reconciler.add(
@@ -219,40 +260,40 @@ class KfpUiOperator(CharmBase):
                         destination_path=VIEWER_CONFIG_PATH / "viewer-pod-template.json",
                     ),
                 ],
-                inputs_getter=lambda: MlPipelineUiInputs(
-                    ALLOW_CUSTOM_VISUALIZATIONS=self.model.config["allow-custom-visualizations"],
-                    ARGO_ARCHIVE_LOGS=self.model.config["argo-archive-logs"],
-                    DISABLE_GKE_METADATA=self.model.config["disable-gke-metadata"],
-                    FRONTEND_SERVER_NAMESPACE=self.model.name,
-                    HIDE_SIDENAV=self.model.config["hide-sidenav"],
-                    MINIO_ACCESS_KEY=self.object_storage_relation.component.get_data()[
-                        "access-key"
-                    ],
-                    MINIO_SECRET_KEY=self.object_storage_relation.component.get_data()[
-                        "secret-key"
-                    ],
-                    MINIO_HOST=self.object_storage_relation.component.get_data()["service"],
-                    MINIO_NAMESPACE=self.object_storage_relation.component.get_data()["namespace"],
-                    MINIO_PORT=self.object_storage_relation.component.get_data()["port"],
-                    MINIO_SSL=self.object_storage_relation.component.get_data()["secure"],
-                    ML_PIPELINE_SERVICE_HOST=self.kfp_api_relation.component.get_data()[
-                        "service-name"
-                    ],
-                    ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation.component.get_data()[
-                        "service-port"
-                    ],
-                    COMMAND=self.command,
-                ),
+                inputs_getter=self._generate_ml_pipeline_ui_inputs,
             ),
             depends_on=[
                 self.leadership_gate,
+                self.s3_relations_conflict_detector,
+                self.s3_relation,
                 self.object_storage_relation,
+                self.object_storage_validator,
                 self.kfp_api_relation,
             ],
         )
 
         self.charm_reconciler.install_default_event_handlers()
         self._logging = LogForwarder(charm=self)
+
+    def _generate_ml_pipeline_ui_inputs(self) -> MlPipelineUiInputs:
+        """Generate the inputs for the ml-pipeline-ui Pebble service."""
+        object_storage = self.object_storage_validator.component.get_normalized_data()
+        return MlPipelineUiInputs(
+            ALLOW_CUSTOM_VISUALIZATIONS=self.model.config["allow-custom-visualizations"],
+            ARGO_ARCHIVE_LOGS=self.model.config["argo-archive-logs"],
+            DISABLE_GKE_METADATA=self.model.config["disable-gke-metadata"],
+            FRONTEND_SERVER_NAMESPACE=self.model.name,
+            HIDE_SIDENAV=self.model.config["hide-sidenav"],
+            MINIO_ACCESS_KEY=object_storage["access_key"],
+            MINIO_SECRET_KEY=object_storage["secret_key"],
+            MINIO_HOST=object_storage["host"],
+            MINIO_NAMESPACE=object_storage["namespace"],
+            MINIO_PORT=object_storage["port"],
+            MINIO_SSL=object_storage["secure"],
+            ML_PIPELINE_SERVICE_HOST=self.kfp_api_relation.component.get_data()["service-name"],
+            ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation.component.get_data()["service-port"],
+            COMMAND=self.command,
+        )
 
 
 if __name__ == "__main__":
