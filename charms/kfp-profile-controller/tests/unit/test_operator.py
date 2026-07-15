@@ -898,7 +898,7 @@ def test_manage_flags_track_resource_dispatcher_relations(
     if add_secrets:
         harness.add_relation("secrets", "resource-dispatcher")
     if add_configmaps:
-        harness.add_relation("configmaps", "resource-dispatcher")
+        harness.add_relation("config-maps", "resource-dispatcher")
 
     harness.charm.on.install.emit()
 
@@ -970,7 +970,7 @@ def test_configmap_manifest_sent_when_configmaps_related(
     component._secrets_wrapper.send_data = MagicMock()
     component._configmaps_wrapper.send_data = MagicMock()
 
-    harness.add_relation("configmaps", "resource-dispatcher")
+    harness.add_relation("config-maps", "resource-dispatcher")
     harness.charm.on.install.emit()
 
     component._secrets_wrapper.send_data.assert_not_called()
