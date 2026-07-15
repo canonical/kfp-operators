@@ -546,7 +546,7 @@ async def test_integrate_with_resource_dispatcher(
 ):
     """Integrate with resource-dispatcher and assert the resources are still created.
 
-    When integrated with resource-dispatcher over the `secrets` and `configmaps` relations,
+    When integrated with resource-dispatcher over the `secrets` and `config-maps` relations,
     the `mlpipeline-minio-artifact` Secret and `kfp-launcher` ConfigMap are created by
     resource-dispatcher (as global manifests dispatched to every Profile namespace) instead
     of by the profile-controller's sync webhook. This test asserts they remain present.
@@ -559,7 +559,7 @@ async def test_integrate_with_resource_dispatcher(
 
     await ops_test.model.integrate(f"{CHARM_NAME}:secrets", f"{RESOURCE_DISPATCHER.charm}:secrets")
     await ops_test.model.integrate(
-        f"{CHARM_NAME}:configmaps", f"{RESOURCE_DISPATCHER.charm}:configmaps"
+        f"{CHARM_NAME}:config-maps", f"{RESOURCE_DISPATCHER.charm}:config-maps"
     )
 
     await ops_test.model.wait_for_idle(

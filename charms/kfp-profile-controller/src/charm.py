@@ -67,10 +67,10 @@ METADATA_GRPC_SERVICE_PORT = "8080"
 NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"
 SYNC_CODE_FILE = Path("files/upstream/sync.py")
 
-# resource-dispatcher (kubernetes_manifest) relation endpoints. When related, the
+# Endpoints for integration with resource-dispatcher. When related, the
 # corresponding resource is created by resource-dispatcher instead of by sync.py.
 SECRETS_RELATION_NAME = "secrets"
-CONFIGMAPS_RELATION_NAME = "configmaps"
+CONFIGMAPS_RELATION_NAME = "config-maps"
 
 HOOKS_PATH = Path("/var/lib/pebble/default")
 

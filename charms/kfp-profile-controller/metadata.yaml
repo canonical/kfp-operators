@@ -63,11 +63,11 @@ requires:
     interface: service_mesh
   require-cmr-mesh:
     interface: cross_model_mesh
-  secrets:
+  config-maps:
     interface: kubernetes_manifest
     optional: true
     limit: 1
-  configmaps:
+  secrets:
     interface: kubernetes_manifest
     optional: true
     limit: 1
