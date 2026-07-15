@@ -90,6 +90,48 @@ def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> C
 
 
 @retry(stop=stop_after_delay(60 * 3), wait=wait_fixed(5), reraise=True)
+def ensure_decorator_controller_annotation(
+    resource, name: str, namespace: str, client: lightkube.Client, expected_controller: str
+):
+    """Check that a resource's decorator-controller annotation matches the expected value.
+
+    Retries for up to 3 minutes to allow metacontroller's reconciliation loop to update
+    the annotation after a relation change.
+
+    Args:
+        resource: The lightkube resource type to get (e.g. Secret, ConfigMap).
+        name: The name of the resource to check.
+        namespace: The namespace the resource is expected in.
+        client: The lightkube client to use for talking to K8s.
+        expected_controller: The expected value of the
+            `metacontroller.k8s.io/decorator-controller` annotation.
+    """
+    annotation_key = "metacontroller.k8s.io/decorator-controller"
+    logger.info(
+        "Checking annotation %s=%s on %s %s in namespace %s",
+        annotation_key,
+        expected_controller,
+        resource.__name__,
+        name,
+        namespace,
+    )
+    obj = client.get(res=resource, name=name, namespace=namespace)
+    annotations = obj.metadata.annotations or {}
+    actual = annotations.get(annotation_key)
+    assert actual == expected_controller, (
+        f"{resource.__name__} {name}: expected annotation {annotation_key}={expected_controller!r}"
+        f", got {actual!r}"
+    )
+    logger.info(
+        "%s %s has correct annotation %s=%s",
+        resource.__name__,
+        name,
+        annotation_key,
+        expected_controller,
+    )
+
+
+@retry(stop=stop_after_delay(60 * 3), wait=wait_fixed(5), reraise=True)
 def ensure_resource_exists(resource, name: str, namespace: str, client: lightkube.Client):
     """Check that a namespaced resource exists, with retries.
 
@@ -576,3 +618,46 @@ async def test_integrate_with_resource_dispatcher(
         (ConfigMap, KFP_LAUNCHER_CONFIGMAP_NAME),
     ]:
         ensure_resource_exists(resource, name, profile, lightkube_client)
+
+    # Assert that both resources are now managed by resource-dispatcher's decorator controller.
+    for resource, name in [
+        (Secret, "mlpipeline-minio-artifact"),
+        (ConfigMap, KFP_LAUNCHER_CONFIGMAP_NAME),
+    ]:
+        ensure_decorator_controller_annotation(
+            resource, name, profile, lightkube_client, "kubeflow-resource-dispatcher-controller"
+        )
+
+
+@pytest.mark.abort_on_fail
+async def test_remove_resource_dispatcher_integration(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Remove resource-dispatcher relations and assert resources revert to profile-controller.
+
+    After removing the `secrets` and `config-maps` relations, the `mlpipeline-minio-artifact`
+    Secret and `kfp-launcher` ConfigMap should once again be managed by the profile-controller's
+    sync webhook (decorator controller: kubeflow-pipelines-profile-controller).
+    """
+    await ops_test.model.applications[CHARM_NAME].destroy_relation(
+        "secrets", f"{RESOURCE_DISPATCHER.charm}:secrets"
+    )
+    await ops_test.model.applications[CHARM_NAME].destroy_relation(
+        "config-maps", f"{RESOURCE_DISPATCHER.charm}:config-maps"
+    )
+
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME, RESOURCE_DISPATCHER.charm],
+        status="active",
+        raise_on_blocked=False,
+        timeout=60 * 10,
+    )
+
+    # Assert that both resources are once again handled by the kfp decorator controller.
+    for resource, name in [
+        (Secret, "mlpipeline-minio-artifact"),
+        (ConfigMap, KFP_LAUNCHER_CONFIGMAP_NAME),
+    ]:
+        ensure_decorator_controller_annotation(
+            resource, name, profile, lightkube_client, "kubeflow-pipelines-profile-controller"
+        )
