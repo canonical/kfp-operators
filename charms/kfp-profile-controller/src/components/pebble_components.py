@@ -34,6 +34,8 @@ class KfpProfileControllerInputs:
     KFP_API_PRINCIPAL: str
     AMBIENT_ENABLED: str
     HOOKS_PATH: Path
+    MANAGE_MINIO_SECRET: str
+    MANAGE_KFP_LAUNCHER_CONFIGMAP: str
 
 
 class KfpProfileControllerPebbleService(PebbleServiceComponent):
@@ -88,6 +90,11 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                             "FRONTEND_TAG": inputs.FRONTEND_TAG,
                             "AMBIENT_ENABLED": inputs.AMBIENT_ENABLED,
                             "KFP_API_PRINCIPAL": inputs.KFP_API_PRINCIPAL,
+                            # When integrated with resource-dispatcher over the secrets /
+                            # configmaps relations, the corresponding resources are created by
+                            # resource-dispatcher, so sync.py must not create them.
+                            "MANAGE_MINIO_SECRET": inputs.MANAGE_MINIO_SECRET,
+                            "MANAGE_KFP_LAUNCHER_CONFIGMAP": inputs.MANAGE_KFP_LAUNCHER_CONFIGMAP,
                         },
                     }
                 }

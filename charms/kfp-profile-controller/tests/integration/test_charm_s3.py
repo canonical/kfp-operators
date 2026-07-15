@@ -25,6 +25,7 @@ from charms_dependencies import (
     ADMISSION_WEBHOOK,
     KUBEFLOW_PROFILES,
     METACONTROLLER_OPERATOR,
+    RESOURCE_DISPATCHER,
     S3_INTEGRATOR,
 )
 from lightkube import ApiError, codecs
@@ -86,6 +87,37 @@ def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> C
         with attempt:
             return client.get(res=ConfigMap, name=name, namespace=namespace)
     raise TimeoutError(f"ConfigMap {name} in namespace {namespace} not present.")
+
+
+@retry(stop=stop_after_delay(60 * 3), wait=wait_fixed(5), reraise=True)
+def ensure_resource_exists(resource, name: str, namespace: str, client: lightkube.Client):
+    """Check that a namespaced resource exists, with retries.
+
+    The retries will catch the 404 errors if the resource doesn't exist yet (e.g. while
+    resource-dispatcher is still reconciling and creating it in the Profile namespace).
+
+    Args:
+        resource: The lightkube resource type to get (e.g. Secret, ConfigMap).
+        name: The name of the resource to check for.
+        namespace: The namespace the resource is expected in.
+        client: The lightkube client to use for talking to K8s.
+
+    Raises:
+        ApiError: From lightkube, if there was an error aside from 404.
+    """
+    logger.info("Checking if %s %s exists in namespace %s", resource.__name__, name, namespace)
+    try:
+        client.get(res=resource, name=name, namespace=namespace)
+        logger.info("%s %s exists in namespace %s!", resource.__name__, name, namespace)
+    except ApiError as e:
+        if e.status.code == 404:
+            logger.info(
+                "%s %s doesn't exist in namespace %s, retrying...",
+                resource.__name__,
+                name,
+                namespace,
+            )
+        raise
 
 
 @pytest.mark.abort_on_fail
@@ -506,3 +538,41 @@ async def test_container_security_context(
         CONTAINERS_SECURITY_CONTEXT_MAP,
         ops_test.model.name,
     )
+
+
+@pytest.mark.abort_on_fail
+async def test_integrate_with_resource_dispatcher(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Integrate with resource-dispatcher and assert the resources are still created.
+
+    When integrated with resource-dispatcher over the `secrets` and `configmaps` relations,
+    the `mlpipeline-minio-artifact` Secret and `kfp-launcher` ConfigMap are created by
+    resource-dispatcher (as global manifests dispatched to every Profile namespace) instead
+    of by the profile-controller's sync webhook. This test asserts they remain present.
+    """
+    await ops_test.model.deploy(
+        RESOURCE_DISPATCHER.charm,
+        channel=RESOURCE_DISPATCHER.channel,
+        trust=RESOURCE_DISPATCHER.trust,
+    )
+
+    await ops_test.model.integrate(f"{CHARM_NAME}:secrets", f"{RESOURCE_DISPATCHER.charm}:secrets")
+    await ops_test.model.integrate(
+        f"{CHARM_NAME}:configmaps", f"{RESOURCE_DISPATCHER.charm}:configmaps"
+    )
+
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME, RESOURCE_DISPATCHER.charm],
+        status="active",
+        raise_on_blocked=False,
+        timeout=60 * 20,
+    )
+
+    # The resources are dispatched asynchronously to the Profile namespace; retry to allow
+    # resource-dispatcher's reconciliation loop to create them.
+    for resource, name in [
+        (Secret, "mlpipeline-minio-artifact"),
+        (ConfigMap, KFP_LAUNCHER_CONFIGMAP_NAME),
+    ]:
+        ensure_resource_exists(resource, name, profile, lightkube_client)

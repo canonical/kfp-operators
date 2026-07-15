@@ -63,4 +63,12 @@ requires:
     interface: service_mesh
   require-cmr-mesh:
     interface: cross_model_mesh
+  secrets:
+    interface: kubernetes_manifest
+    optional: true
+    limit: 1
+  configmaps:
+    interface: kubernetes_manifest
+    optional: true
+    limit: 1
 charm-user: non-root
