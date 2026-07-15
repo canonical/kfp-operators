@@ -160,8 +160,7 @@ def get_settings_from_env(controller_port=None,
 
     # When integrated with resource-dispatcher (over the `secrets` / `configmaps` relations),
     # the `mlpipeline-minio-artifact` Secret and/or the `kfp-launcher` ConfigMap are created by
-    # resource-dispatcher instead of by this webhook.  These flags default to "true" (i.e. this
-    # webhook creates the resources) to preserve the standalone behaviour.
+    # resource-dispatcher instead of by this webhook.
     settings["manage_minio_secret"] = os.environ.get("MANAGE_MINIO_SECRET", "true") == "true"
     settings["manage_kfp_launcher_configmap"] = \
         os.environ.get("MANAGE_KFP_LAUNCHER_CONFIGMAP", "true") == "true"
@@ -207,9 +206,9 @@ def server_factory(visualization_server_image,
             # This means that we have to always update the provider to use our wanted endpoint
             # We set this by using the `kfp-launcher` configmap, as specified in:
             # https://www.kubeflow.org/docs/components/pipelines/operator-guides/configure-object-store/#s3-and-s3-compatible-provider
+            
             # When integrated with resource-dispatcher over the `configmaps` relation, the
-            # `kfp-launcher` ConfigMap is created by resource-dispatcher instead, so it is not
-            # included here (and is excluded from the expected ConfigMap count).
+            # `kfp-launcher` ConfigMap is created by resource-dispatcher instead.
             desired_configmap_count = 2 if manage_kfp_launcher_configmap else 1
             desired_resources = []
 

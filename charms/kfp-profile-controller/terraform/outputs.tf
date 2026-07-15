@@ -15,6 +15,6 @@ output "requires" {
     require_cmr_mesh = "require-cmr-mesh",
     service_mesh     = "service-mesh",
     secrets          = "secrets",
-    configmaps       = "configmaps"
+    configmaps       = "config-maps"
   }
 }

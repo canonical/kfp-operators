@@ -549,7 +549,7 @@ async def test_integrate_with_resource_dispatcher(
     When integrated with resource-dispatcher over the `secrets` and `config-maps` relations,
     the `mlpipeline-minio-artifact` Secret and `kfp-launcher` ConfigMap are created by
     resource-dispatcher (as global manifests dispatched to every Profile namespace) instead
-    of by the profile-controller's sync webhook. This test asserts they remain present.
+    of by the profile-controller's sync webhook.
     """
     await ops_test.model.deploy(
         RESOURCE_DISPATCHER.charm,

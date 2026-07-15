@@ -1,15 +1,15 @@
 """Chisme component that sends resources to resource-dispatcher for multi-tenancy.
 
-When ``kfp-profile-controller`` is integrated with ``resource-dispatcher`` over the
-``secrets`` and/or ``configmaps`` (``kubernetes_manifest``) relations, the resources that
-are otherwise created per user-namespace by ``files/upstream/sync.py`` are instead sent to
-``resource-dispatcher`` so that it can create (and compose) them in every Profile namespace.
+When `kfp-profile-controller` is integrated with `resource-dispatcher` over the
+`secrets` and `config-maps` relations, the resources that are otherwise created per
+user-namespace by `files/upstream/sync.py` are instead sent to `resource-dispatcher`
+so that it can create them in every Profile namespace.
 
 The two relations are independent:
-  * ``secrets``    -> the ``mlpipeline-minio-artifact`` Secret
-  * ``configmaps`` -> the ``kfp-launcher`` ConfigMap
+  * `secrets`    -> the `mlpipeline-minio-artifact` Secret
+  * `config-maps`` -> handles the `kfp-launcher` ConfigMap
 
-Manifests are sent without a ``metadata.namespace`` so that ``resource-dispatcher`` treats
+Manifests are sent without a `metadata.namespace` so that `resource-dispatcher` treats
 them as global manifests and applies them to every Profile namespace.
 """
 
@@ -37,8 +37,7 @@ class ResourceDispatcherManifestsComponent(Component):
     """Sends the minio Secret and kfp-launcher ConfigMap to resource-dispatcher.
 
     This component renders and sends the manifests only for the relations that are present,
-    keeping the ``secrets`` and ``configmaps`` integrations independent. When neither relation
-    exists, the component is a no-op (the resources are created by ``sync.py`` instead).
+    keeping the `secrets` and `configmaps` integrations independent.
     """
 
     def __init__(
@@ -48,7 +47,7 @@ class ResourceDispatcherManifestsComponent(Component):
         object_storage_validator: ObjectStorageValidatorComponent,
         default_pipeline_root: str,
         secrets_relation_name: str = "secrets",
-        configmaps_relation_name: str = "configmaps",
+        configmaps_relation_name: str = "config-maps",
     ):
         """Initialise the component.
 
@@ -56,9 +55,9 @@ class ResourceDispatcherManifestsComponent(Component):
             charm: the parent charm.
             name: unique component name.
             object_storage_validator: component providing the normalized object storage data.
-            default_pipeline_root: the ``default_pipeline_root`` config value.
-            secrets_relation_name: name of the secrets endpoint. Defaults to "secrets".
-            configmaps_relation_name: name of the configmaps endpoint. Defaults to "configmaps".
+            default_pipeline_root: the `default_pipeline_root` config value.
+            secrets_relation_name: name of the secrets endpoint.
+            configmaps_relation_name: name of the configmaps endpoint.
         """
         super().__init__(charm=charm, name=name)
         self._charm = charm
@@ -109,7 +108,7 @@ class ResourceDispatcherManifestsComponent(Component):
     def _kfp_launcher_configmap_manifest(self, object_storage: dict) -> str:
         """Return the kfp-launcher ConfigMap manifest (without a namespace).
 
-        This mirrors the ``providers`` configuration built in ``files/upstream/sync.py`` so
+        This mirrors the `providers` configuration built in `files/upstream/sync.py` so
         that resource-dispatcher creates the same ConfigMap it would otherwise create.
         """
         providers_yaml = (

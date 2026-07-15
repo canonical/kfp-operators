@@ -1,6 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import base64
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -80,7 +81,7 @@ def generate_expected_environment(model_name: str, kfp_api_sa: str = "kfp-api") 
         # ambient
         "AMBIENT_ENABLED": False,
         "KFP_API_PRINCIPAL": f"cluster.local/ns/{model_name}/sa/{kfp_api_sa}",
-        # By default (no resource-dispatcher relations) sync.py manages these resources.
+        # Values for multi-tenancy resources (based on active relations with resource-dispatcher)
         "MANAGE_MINIO_SECRET": "true",
         "MANAGE_KFP_LAUNCHER_CONFIGMAP": "true",
     }
@@ -851,14 +852,6 @@ def test_object_storage_validator_blocks_with_invalid_s3_endpoint(
     assert isinstance(harness.charm.object_storage_validator.component.get_status(), BlockedStatus)
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# resource-dispatcher (multi-tenancy) integration tests
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-import base64  # noqa: E402
-
-import yaml as _yaml  # noqa: E402
-
-
 def _mock_object_storage_data(harness: Harness) -> None:
     """Make the object-storage validator return usable, complete data."""
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
@@ -880,7 +873,7 @@ def _mock_object_storage_data(harness: Harness) -> None:
         pytest.param(True, True, "false", "false", id="both"),
     ],
 )
-def test_manage_flags_track_resource_dispatcher_relations(
+def test_manage_flags_follow_resource_dispatcher_relations(
     harness: Harness,
     mocked_lightkube_client,
     mocked_kubernetes_service_patch,
@@ -933,7 +926,7 @@ def test_no_manifests_sent_without_resource_dispatcher_relations(
 def test_secret_manifest_sent_when_secrets_related(
     harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
 ):
-    """When the secrets relation exists, the minio Secret manifest is sent (no namespace)."""
+    """When the secrets relation exists, the minio Secret manifest is sent."""
     harness.set_leader(True)
     harness.begin()
     _mock_object_storage_data(harness)
@@ -948,7 +941,7 @@ def test_secret_manifest_sent_when_secrets_related(
     component._configmaps_wrapper.send_data.assert_not_called()
     component._secrets_wrapper.send_data.assert_called()
     sent_manifests = component._secrets_wrapper.send_data.call_args.args[0]
-    manifest = _yaml.safe_load(sent_manifests[0].manifest_content)
+    manifest = yaml.safe_load(sent_manifests[0].manifest_content)
     assert manifest["kind"] == "Secret"
     assert manifest["metadata"]["name"] == "mlpipeline-minio-artifact"
     # Global manifest: no namespace so resource-dispatcher applies it to all Profiles
@@ -976,7 +969,7 @@ def test_configmap_manifest_sent_when_configmaps_related(
     component._secrets_wrapper.send_data.assert_not_called()
     component._configmaps_wrapper.send_data.assert_called()
     sent_manifests = component._configmaps_wrapper.send_data.call_args.args[0]
-    manifest = _yaml.safe_load(sent_manifests[0].manifest_content)
+    manifest = yaml.safe_load(sent_manifests[0].manifest_content)
     assert manifest["kind"] == "ConfigMap"
     assert manifest["metadata"]["name"] == "kfp-launcher"
     assert "namespace" not in manifest["metadata"]
