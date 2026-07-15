@@ -16,6 +16,6 @@ MINIO = CharmSpec(
 )
 S3_INTEGRATOR = CharmSpec(
     charm="s3-integrator",
-    channel="2/edge",
+    channel="2/stable",
     trust=False,
 )

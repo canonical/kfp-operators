@@ -29,4 +29,4 @@ ISTIO_PILOT = CharmSpec(
 ISTIO_K8S = CharmSpec(charm="istio-k8s", channel="2/edge", config={"platform": ""}, trust=True)
 ISTIO_INGRESS_K8S = CharmSpec(charm="istio-ingress-k8s", channel="2/edge", trust=True)
 ISTIO_BEACON_K8S = CharmSpec(charm="istio-beacon-k8s", channel="2/edge", trust=True)
-S3_INTEGRATOR = CharmSpec(charm="s3-integrator", channel="2/edge", trust=False)
+S3_INTEGRATOR = CharmSpec(charm="s3-integrator", channel="2/stable", trust=False)
