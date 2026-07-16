@@ -7,7 +7,7 @@ so that it can create them in every Profile namespace.
 
 The two relations are independent:
   * `secrets`    -> the `mlpipeline-minio-artifact` Secret
-  * `config-maps`` -> handles the `kfp-launcher` ConfigMap
+  * `config-maps` -> handles the `kfp-launcher` ConfigMap
 
 Manifests are sent without a `metadata.namespace` so that `resource-dispatcher` treats
 them as global manifests and applies them to every Profile namespace.
