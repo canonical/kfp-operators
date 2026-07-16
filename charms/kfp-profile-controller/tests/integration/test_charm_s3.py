@@ -145,8 +145,8 @@ def ensure_resource_exists(resource, name: str, namespace: str, client: lightkub
         client: The lightkube client to use for talking to K8s.
 
     Raises:
-        ApiError: From lightkube, if there was an error aside from 404.
-    """
+        ApiError: From lightkube (including 404 while waiting for the resource to appear).
+
     logger.info("Checking if %s %s exists in namespace %s", resource.__name__, name, namespace)
     try:
         client.get(res=resource, name=name, namespace=namespace)
