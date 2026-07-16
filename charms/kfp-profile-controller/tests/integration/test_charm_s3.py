@@ -604,8 +604,15 @@ async def test_integrate_with_resource_dispatcher(
         f"{CHARM_NAME}:config-maps", f"{RESOURCE_DISPATCHER.charm}:config-maps"
     )
 
+    # Without this integration the beacon's waypoint proxy resets the metacontroller's
+    # POST request to resource-dispatcher (no AuthorizationPolicy exists),
+    # and the dispatched resources are never created.
+    await ops_test.model.integrate(
+        "istio-beacon-k8s:service-mesh", f"{RESOURCE_DISPATCHER.charm}:service-mesh"
+    )
+
     await ops_test.model.wait_for_idle(
-        apps=[CHARM_NAME, RESOURCE_DISPATCHER.charm],
+        apps=[CHARM_NAME, RESOURCE_DISPATCHER.charm, "istio-beacon-k8s"],
         status="active",
         raise_on_blocked=False,
         timeout=60 * 20,
