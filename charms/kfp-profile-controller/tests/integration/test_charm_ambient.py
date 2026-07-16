@@ -96,11 +96,6 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
         trust=ADMISSION_WEBHOOK.trust,
     )
 
-    # TODO: The webhook charm must be active before the metacontroller is deployed, due to the bug
-    # described here: https://github.com/canonical/metacontroller-operator/issues/86
-    # Drop this wait_for_idle once the above issue is closed
-    await ops_test.model.wait_for_idle(apps=[ADMISSION_WEBHOOK.charm], status="active")
-
     await ops_test.model.deploy(
         entity_url=METACONTROLLER_OPERATOR.charm,
         channel=METACONTROLLER_OPERATOR.channel,
