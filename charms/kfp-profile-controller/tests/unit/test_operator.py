@@ -1005,10 +1005,12 @@ def test_resource_dispatcher_component_status(
     storage_ok,
     expected_status,
 ):
-    """The component is Active unless its relation is present but object storage is unreadable.
+    """Verify the status returned by each ResourceDispatcherManifestsComponent instance.
 
-    When the relation is absent, sync.py owns the resource and the component stays Active
-    regardless of the object storage data.
+    For both the `secrets` and `config-maps` relations, covers the three cases:
+      * relation absent -> ActiveStatus (sync.py owns the resource; object storage is not needed)
+      * relation present and object storage readable -> ActiveStatus
+      * relation present but object storage unreadable -> BlockedStatus
     """
     harness.begin()
     harness.charm.object_storage_relation.component.get_data = MagicMock(
