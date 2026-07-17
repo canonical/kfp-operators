@@ -52,6 +52,9 @@ CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
 CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
 KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT = "defaultPipelineRoot"
 KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
+# The key used by metacontroller to specify the decoratorController that targets
+# a resource
+METACONTROLLER_ANNOTATION_KEY = "metacontroller.k8s.io/decorator-controller"
 
 PodDefault = create_namespaced_resource(
     group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
@@ -106,10 +109,9 @@ def ensure_decorator_controller_annotation(
         expected_controller: The expected value of the
             `metacontroller.k8s.io/decorator-controller` annotation.
     """
-    annotation_key = "metacontroller.k8s.io/decorator-controller"
     logger.info(
         "Checking annotation %s=%s on %s %s in namespace %s",
-        annotation_key,
+        METACONTROLLER_ANNOTATION_KEY,
         expected_controller,
         resource.__name__,
         name,
@@ -117,16 +119,16 @@ def ensure_decorator_controller_annotation(
     )
     obj = client.get(res=resource, name=name, namespace=namespace)
     annotations = obj.metadata.annotations or {}
-    actual = annotations.get(annotation_key)
+    actual = annotations.get(METACONTROLLER_ANNOTATION_KEY)
     assert actual == expected_controller, (
-        f"{resource.__name__} {name}: expected annotation {annotation_key}={expected_controller!r}"
+        f"{resource.__name__} {name}: expected annotation {METACONTROLLER_ANNOTATION_KEY}={expected_controller!r}"
         f", got {actual!r}"
     )
     logger.info(
         "%s %s has correct annotation %s=%s",
         resource.__name__,
         name,
-        annotation_key,
+        METACONTROLLER_ANNOTATION_KEY,
         expected_controller,
     )
 
