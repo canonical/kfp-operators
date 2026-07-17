@@ -978,3 +978,44 @@ def test_configmap_manifest_sent_when_configmaps_related(
     assert "namespace" not in manifest["metadata"]
     assert "providers" in manifest["data"]
     assert manifest["data"]["defaultPipelineRoot"] == KFP_DEFAULT_PIPELINE_ROOT
+
+
+@pytest.mark.parametrize(
+    "component_attr, relation_name",
+    [
+        pytest.param("resource_dispatcher_secrets", "secrets", id="secrets"),
+        pytest.param("resource_dispatcher_configmaps", "config-maps", id="config-maps"),
+    ],
+)
+@pytest.mark.parametrize(
+    "related, storage_ok, expected_status",
+    [
+        pytest.param(False, False, ActiveStatus, id="not-related-active"),
+        pytest.param(True, True, ActiveStatus, id="related-storage-ok-active"),
+        pytest.param(True, False, BlockedStatus, id="related-storage-broken-blocked"),
+    ],
+)
+def test_resource_dispatcher_component_status(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+    component_attr,
+    relation_name,
+    related,
+    storage_ok,
+    expected_status,
+):
+    """The component is Active unless its relation is present but object storage is unreadable.
+
+    When the relation is absent, sync.py owns the resource and the component stays Active
+    regardless of the object storage data.
+    """
+    harness.begin()
+    harness.charm.object_storage_relation.component.get_data = MagicMock(
+        return_value=MOCK_OBJECT_STORAGE_DATA if storage_ok else {}
+    )
+    if related:
+        harness.add_relation(relation_name, "resource-dispatcher")
+
+    component = getattr(harness.charm, component_attr).component
+    assert isinstance(component.get_status(), expected_status)
