@@ -10,7 +10,6 @@ https://github.com/canonical/kfp-operators
 import json
 import logging
 from base64 import b64encode
-from functools import partial
 from pathlib import Path
 from typing import Dict
 
@@ -41,11 +40,7 @@ from components.pebble_components import (
     KfpProfileControllerInputs,
     KfpProfileControllerPebbleService,
 )
-from components.resource_dispatcher_manifests import (
-    ResourceDispatcherManifestsComponent,
-    kfp_launcher_configmap_manifest,
-    minio_secret_manifest,
-)
+from components.resource_dispatcher_manifests import ResourceDispatcherManifestsComponent
 from components.service_mesh_component import ServiceMeshComponent
 
 DEFAULT_IMAGES_FILE = "src/default-custom-images.json"
@@ -76,6 +71,10 @@ SYNC_CODE_FILE = Path("files/upstream/sync.py")
 # corresponding resource is created by resource-dispatcher instead of by sync.py.
 SECRETS_RELATION_NAME = "secrets"
 CONFIGMAPS_RELATION_NAME = "config-maps"
+
+# Templates defining the manifests sent to resource-dispatcher
+MINIO_SECRET_TEMPLATE = "src/templates/minio_secret.yaml.j2"
+KFP_LAUNCHER_CONFIGMAP_TEMPLATE = "src/templates/kfp_launcher_configmap.yaml.j2"
 
 HOOKS_PATH = Path("/var/lib/pebble/default")
 
@@ -214,8 +213,9 @@ class KfpProfileControllerOperator(CharmBase):
                 charm=self,
                 name="resource-dispatcher-secrets",
                 object_storage_validator=self.object_storage_validator.component,
+                default_pipeline_root=self.default_pipeline_root,
                 relation_name=SECRETS_RELATION_NAME,
-                manifest_builder=minio_secret_manifest,
+                template_path=MINIO_SECRET_TEMPLATE,
             ),
             depends_on=resource_dispatcher_depends_on,
         )
@@ -224,11 +224,9 @@ class KfpProfileControllerOperator(CharmBase):
                 charm=self,
                 name="resource-dispatcher-configmaps",
                 object_storage_validator=self.object_storage_validator.component,
+                default_pipeline_root=self.default_pipeline_root,
                 relation_name=CONFIGMAPS_RELATION_NAME,
-                manifest_builder=partial(
-                    kfp_launcher_configmap_manifest,
-                    default_pipeline_root=self.default_pipeline_root,
-                ),
+                template_path=KFP_LAUNCHER_CONFIGMAP_TEMPLATE,
             ),
             depends_on=resource_dispatcher_depends_on,
         )

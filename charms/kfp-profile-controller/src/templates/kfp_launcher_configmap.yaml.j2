@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ kfp_launcher_configmap_name }}
+data:
+  providers: |
+    minio:
+      default:
+        endpoint: {{ endpoint }}
+        disableSSL: {{ "false" if secure else "true" }}
+        region: {{ region }}
+        forcePathStyle: true
+        credentials:
+          fromEnv: false
+          secretRef:
+            secretName: {{ minio_secret_name }}
+            accessKeyKey: accesskey
+            secretKeyKey: secretkey
+{% if default_pipeline_root %}  defaultPipelineRoot: {{ default_pipeline_root }}
+{% endif %}
