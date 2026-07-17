@@ -10,6 +10,7 @@ https://github.com/canonical/kfp-operators
 import json
 import logging
 from base64 import b64encode
+from functools import partial
 from pathlib import Path
 from typing import Dict
 
@@ -40,7 +41,11 @@ from components.pebble_components import (
     KfpProfileControllerInputs,
     KfpProfileControllerPebbleService,
 )
-from components.resource_dispatcher_manifests import ResourceDispatcherManifestsComponent
+from components.resource_dispatcher_manifests import (
+    ResourceDispatcherManifestsComponent,
+    kfp_launcher_configmap_manifest,
+    minio_secret_manifest,
+)
 from components.service_mesh_component import ServiceMeshComponent
 
 DEFAULT_IMAGES_FILE = "src/default-custom-images.json"
@@ -197,22 +202,35 @@ class KfpProfileControllerOperator(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
-        self.resource_dispatcher_manifests = self.charm_reconciler.add(
+        resource_dispatcher_depends_on = [
+            self.leadership_gate,
+            self.s3_relations_conflict_detector,
+            self.s3_relation,
+            self.object_storage_relation,
+            self.object_storage_validator,
+        ]
+        self.resource_dispatcher_secrets = self.charm_reconciler.add(
             component=ResourceDispatcherManifestsComponent(
                 charm=self,
-                name="resource-dispatcher-manifests",
+                name="resource-dispatcher-secrets",
                 object_storage_validator=self.object_storage_validator.component,
-                default_pipeline_root=self.default_pipeline_root,
-                secrets_relation_name=SECRETS_RELATION_NAME,
-                configmaps_relation_name=CONFIGMAPS_RELATION_NAME,
+                relation_name=SECRETS_RELATION_NAME,
+                manifest_builder=minio_secret_manifest,
             ),
-            depends_on=[
-                self.leadership_gate,
-                self.s3_relations_conflict_detector,
-                self.s3_relation,
-                self.object_storage_relation,
-                self.object_storage_validator,
-            ],
+            depends_on=resource_dispatcher_depends_on,
+        )
+        self.resource_dispatcher_configmaps = self.charm_reconciler.add(
+            component=ResourceDispatcherManifestsComponent(
+                charm=self,
+                name="resource-dispatcher-configmaps",
+                object_storage_validator=self.object_storage_validator.component,
+                relation_name=CONFIGMAPS_RELATION_NAME,
+                manifest_builder=partial(
+                    kfp_launcher_configmap_manifest,
+                    default_pipeline_root=self.default_pipeline_root,
+                ),
+            ),
+            depends_on=resource_dispatcher_depends_on,
         )
 
         self.kubernetes_resources = self.charm_reconciler.add(

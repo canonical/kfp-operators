@@ -913,14 +913,15 @@ def test_no_manifests_sent_without_resource_dispatcher_relations(
     harness.begin()
     _mock_object_storage_data(harness)
 
-    component = harness.charm.resource_dispatcher_manifests.component
-    component._secrets_wrapper.send_data = MagicMock()
-    component._configmaps_wrapper.send_data = MagicMock()
+    secrets_component = harness.charm.resource_dispatcher_secrets.component
+    configmaps_component = harness.charm.resource_dispatcher_configmaps.component
+    secrets_component._wrapper.send_data = MagicMock()
+    configmaps_component._wrapper.send_data = MagicMock()
 
     harness.charm.on.install.emit()
 
-    component._secrets_wrapper.send_data.assert_not_called()
-    component._configmaps_wrapper.send_data.assert_not_called()
+    secrets_component._wrapper.send_data.assert_not_called()
+    configmaps_component._wrapper.send_data.assert_not_called()
 
 
 def test_secret_manifest_sent_when_secrets_related(
@@ -931,16 +932,17 @@ def test_secret_manifest_sent_when_secrets_related(
     harness.begin()
     _mock_object_storage_data(harness)
 
-    component = harness.charm.resource_dispatcher_manifests.component
-    component._secrets_wrapper.send_data = MagicMock()
-    component._configmaps_wrapper.send_data = MagicMock()
+    secrets_component = harness.charm.resource_dispatcher_secrets.component
+    configmaps_component = harness.charm.resource_dispatcher_configmaps.component
+    secrets_component._wrapper.send_data = MagicMock()
+    configmaps_component._wrapper.send_data = MagicMock()
 
     harness.add_relation("secrets", "resource-dispatcher")
     harness.charm.on.install.emit()
 
-    component._configmaps_wrapper.send_data.assert_not_called()
-    component._secrets_wrapper.send_data.assert_called()
-    sent_manifests = component._secrets_wrapper.send_data.call_args.args[0]
+    configmaps_component._wrapper.send_data.assert_not_called()
+    secrets_component._wrapper.send_data.assert_called()
+    sent_manifests = secrets_component._wrapper.send_data.call_args.args[0]
     manifest = yaml.safe_load(sent_manifests[0].manifest_content)
     assert manifest["kind"] == "Secret"
     assert manifest["metadata"]["name"] == "mlpipeline-minio-artifact"
@@ -959,16 +961,17 @@ def test_configmap_manifest_sent_when_configmaps_related(
     harness.begin()
     _mock_object_storage_data(harness)
 
-    component = harness.charm.resource_dispatcher_manifests.component
-    component._secrets_wrapper.send_data = MagicMock()
-    component._configmaps_wrapper.send_data = MagicMock()
+    secrets_component = harness.charm.resource_dispatcher_secrets.component
+    configmaps_component = harness.charm.resource_dispatcher_configmaps.component
+    secrets_component._wrapper.send_data = MagicMock()
+    configmaps_component._wrapper.send_data = MagicMock()
 
     harness.add_relation("config-maps", "resource-dispatcher")
     harness.charm.on.install.emit()
 
-    component._secrets_wrapper.send_data.assert_not_called()
-    component._configmaps_wrapper.send_data.assert_called()
-    sent_manifests = component._configmaps_wrapper.send_data.call_args.args[0]
+    secrets_component._wrapper.send_data.assert_not_called()
+    configmaps_component._wrapper.send_data.assert_called()
+    sent_manifests = configmaps_component._wrapper.send_data.call_args.args[0]
     manifest = yaml.safe_load(sent_manifests[0].manifest_content)
     assert manifest["kind"] == "ConfigMap"
     assert manifest["metadata"]["name"] == "kfp-launcher"

@@ -52,6 +52,7 @@ CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
 CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
 KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT = "defaultPipelineRoot"
 KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
+MLPIPELINE_SECRET_NAME = "mlpipeline-minio-artifact"
 # The key used by metacontroller to specify the decoratorController that targets
 # a resource
 METACONTROLLER_ANNOTATION_KEY = "metacontroller.k8s.io/decorator-controller"
@@ -615,14 +616,14 @@ async def test_integrate_with_resource_dispatcher(
     # The resources are dispatched asynchronously to the Profile namespace; retry to allow
     # resource-dispatcher's reconciliation loop to create them.
     for resource, name in [
-        (Secret, "mlpipeline-minio-artifact"),
+        (Secret, MLPIPELINE_SECRET_NAME),
         (ConfigMap, KFP_LAUNCHER_CONFIGMAP_NAME),
     ]:
         ensure_resource_exists(resource, name, profile, lightkube_client)
 
     # Assert that both resources are now managed by resource-dispatcher's decorator controller.
     for resource, name in [
-        (Secret, "mlpipeline-minio-artifact"),
+        (Secret, MLPIPELINE_SECRET_NAME),
         (ConfigMap, KFP_LAUNCHER_CONFIGMAP_NAME),
     ]:
         ensure_decorator_controller_annotation(
@@ -656,7 +657,7 @@ async def test_remove_resource_dispatcher_integration(
 
     # Assert that both resources are once again handled by the kfp decorator controller.
     for resource, name in [
-        (Secret, "mlpipeline-minio-artifact"),
+        (Secret, MLPIPELINE_SECRET_NAME),
         (ConfigMap, KFP_LAUNCHER_CONFIGMAP_NAME),
     ]:
         ensure_decorator_controller_annotation(
