@@ -122,7 +122,8 @@ def ensure_decorator_controller_annotation(
     annotations = obj.metadata.annotations or {}
     actual = annotations.get(METACONTROLLER_ANNOTATION_KEY)
     assert actual == expected_controller, (
-        f"{resource.__name__} {name}: expected annotation {METACONTROLLER_ANNOTATION_KEY}={expected_controller!r}"
+        f"{resource.__name__} {name}: expected annotation"
+        f" {METACONTROLLER_ANNOTATION_KEY}={expected_controller!r}"
         f", got {actual!r}"
     )
     logger.info(
