@@ -158,9 +158,10 @@ def get_settings_from_env(controller_port=None,
 
     settings["ambient_mesh_enabled"] = os.environ.get("AMBIENT_ENABLED", "false") == "true"
 
-    # When integrated with resource-dispatcher (over the `secrets` / `configmaps` relations),
-    # the `mlpipeline-minio-artifact` Secret and/or the `kfp-launcher` ConfigMap are created by
-    # resource-dispatcher instead of by this webhook.
+    # If integrated with resource-dispatcher over certain endpoints, the following resources
+    # should be created by resource-dispatcher instead of this webhook:
+    # - `secrets` endpoint -> `mlpipeline-minio-artifact` Secret
+    # - `config-maps` endpoint -> `kfp-launcher` ConfigMap
     settings["manage_minio_secret"] = os.environ.get("MANAGE_MINIO_SECRET", "true") == "true"
     settings["manage_kfp_launcher_configmap"] = \
         os.environ.get("MANAGE_KFP_LAUNCHER_CONFIGMAP", "true") == "true"

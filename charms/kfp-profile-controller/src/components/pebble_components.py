@@ -92,6 +92,8 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                             "KFP_API_PRINCIPAL": inputs.KFP_API_PRINCIPAL,
                             # These inputs determine whether the resources should be
                             # created by sync.py or by resource-dispatcher.
+                            # MANAGE_MINIO_SECRET -> `mlpipieline-minio-artifact` Secret
+                            # MANAGE_KFP_LAUNCHER_CONFIMAP -> `kfp-launcher` ConfigMap
                             "MANAGE_MINIO_SECRET": inputs.MANAGE_MINIO_SECRET,
                             "MANAGE_KFP_LAUNCHER_CONFIGMAP": inputs.MANAGE_KFP_LAUNCHER_CONFIGMAP,
                         },
