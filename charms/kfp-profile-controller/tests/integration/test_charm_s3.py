@@ -25,6 +25,7 @@ from charms_dependencies import (
     ADMISSION_WEBHOOK,
     KUBEFLOW_PROFILES,
     METACONTROLLER_OPERATOR,
+    RESOURCE_DISPATCHER,
     S3_INTEGRATOR,
 )
 from lightkube import ApiError, codecs
@@ -51,6 +52,10 @@ CUSTOM_FRONTEND_IMAGE = "gcr.io/ml-pipeline/frontend:latest"
 CUSTOM_VISUALISATION_IMAGE = "gcr.io/ml-pipeline/visualization-server:latest"
 KFP_LAUNCHER_CONFIGMAP_KEY_FOR_DEFAULT_PIPELINE_ROOT = "defaultPipelineRoot"
 KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
+MLPIPELINE_SECRET_NAME = "mlpipeline-minio-artifact"
+# The key used by metacontroller to specify the decoratorController that targets
+# a resource
+METACONTROLLER_ANNOTATION_KEY = "metacontroller.k8s.io/decorator-controller"
 
 PodDefault = create_namespaced_resource(
     group="kubeflow.org", version="v1alpha1", kind="PodDefault", plural="poddefaults"
@@ -88,6 +93,80 @@ def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> C
     raise TimeoutError(f"ConfigMap {name} in namespace {namespace} not present.")
 
 
+@retry(stop=stop_after_delay(60 * 3), wait=wait_fixed(5), reraise=True)
+def ensure_decorator_controller_annotation(
+    resource, name: str, namespace: str, client: lightkube.Client, expected_controller: str
+):
+    """Check that a resource's decorator-controller annotation matches the expected value.
+
+    Retries for up to 3 minutes to allow metacontroller's reconciliation loop to update
+    the annotation after a relation change.
+
+    Args:
+        resource: The lightkube resource type to get (e.g. Secret, ConfigMap).
+        name: The name of the resource to check.
+        namespace: The namespace the resource is expected in.
+        client: The lightkube client to use for talking to K8s.
+        expected_controller: The expected value of the
+            `metacontroller.k8s.io/decorator-controller` annotation.
+    """
+    logger.info(
+        "Checking annotation %s=%s on %s %s in namespace %s",
+        METACONTROLLER_ANNOTATION_KEY,
+        expected_controller,
+        resource.__name__,
+        name,
+        namespace,
+    )
+    obj = client.get(res=resource, name=name, namespace=namespace)
+    annotations = obj.metadata.annotations or {}
+    actual = annotations.get(METACONTROLLER_ANNOTATION_KEY)
+    assert actual == expected_controller, (
+        f"{resource.__name__} {name}: expected annotation"
+        f" {METACONTROLLER_ANNOTATION_KEY}={expected_controller!r}"
+        f", got {actual!r}"
+    )
+    logger.info(
+        "%s %s has correct annotation %s=%s",
+        resource.__name__,
+        name,
+        METACONTROLLER_ANNOTATION_KEY,
+        expected_controller,
+    )
+
+
+@retry(stop=stop_after_delay(60 * 3), wait=wait_fixed(5), reraise=True)
+def ensure_resource_exists(resource, name: str, namespace: str, client: lightkube.Client):
+    """Check that a namespaced resource exists, with retries.
+
+    The retries will catch the 404 errors if the resource doesn't exist yet (e.g. while
+    resource-dispatcher is still reconciling and creating it in the Profile namespace).
+
+    Args:
+        resource: The lightkube resource type to get (e.g. Secret, ConfigMap).
+        name: The name of the resource to check for.
+        namespace: The namespace the resource is expected in.
+        client: The lightkube client to use for talking to K8s.
+
+    Raises:
+        ApiError: From lightkube (including 404 while waiting for the resource to appear).
+    """
+
+    logger.info("Checking if %s %s exists in namespace %s", resource.__name__, name, namespace)
+    try:
+        client.get(res=resource, name=name, namespace=namespace)
+        logger.info("%s %s exists in namespace %s!", resource.__name__, name, namespace)
+    except ApiError as e:
+        if e.status.code == 404:
+            logger.info(
+                "%s %s doesn't exist in namespace %s, retrying...",
+                resource.__name__,
+                name,
+                namespace,
+            )
+        raise
+
+
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureRequest):
     # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
@@ -96,11 +175,6 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
         channel=ADMISSION_WEBHOOK.channel,
         trust=ADMISSION_WEBHOOK.trust,
     )
-
-    # TODO: The webhook charm must be active before the metacontroller is deployed, due to the bug
-    # described here: https://github.com/canonical/metacontroller-operator/issues/86
-    # Drop this wait_for_idle once the above issue is closed
-    await ops_test.model.wait_for_idle(apps=[ADMISSION_WEBHOOK.charm], status="active")
 
     await ops_test.model.deploy(
         entity_url=METACONTROLLER_OPERATOR.charm,
@@ -506,3 +580,87 @@ async def test_container_security_context(
         CONTAINERS_SECURITY_CONTEXT_MAP,
         ops_test.model.name,
     )
+
+
+@pytest.mark.abort_on_fail
+async def test_integrate_with_resource_dispatcher(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Integrate with resource-dispatcher and assert the resources are still created.
+
+    When integrated with resource-dispatcher over the `secrets` and `config-maps` relations,
+    the `mlpipeline-minio-artifact` Secret and `kfp-launcher` ConfigMap are created by
+    resource-dispatcher (as global manifests dispatched to every Profile namespace) instead
+    of by the profile-controller's sync webhook.
+    """
+    await ops_test.model.deploy(
+        RESOURCE_DISPATCHER.charm,
+        channel=RESOURCE_DISPATCHER.channel,
+        trust=RESOURCE_DISPATCHER.trust,
+    )
+
+    await ops_test.model.integrate(
+        "istio-beacon-k8s:service-mesh", f"{RESOURCE_DISPATCHER.charm}:service-mesh"
+    )
+    await ops_test.model.integrate(f"{CHARM_NAME}:secrets", f"{RESOURCE_DISPATCHER.charm}:secrets")
+    await ops_test.model.integrate(
+        f"{CHARM_NAME}:config-maps", f"{RESOURCE_DISPATCHER.charm}:config-maps"
+    )
+
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME, RESOURCE_DISPATCHER.charm, "istio-beacon-k8s"],
+        status="active",
+        raise_on_blocked=False,
+        timeout=60 * 20,
+    )
+
+    # The resources are dispatched asynchronously to the Profile namespace; retry to allow
+    # resource-dispatcher's reconciliation loop to create them.
+    for resource, name in [
+        (Secret, MLPIPELINE_SECRET_NAME),
+        (ConfigMap, KFP_LAUNCHER_CONFIGMAP_NAME),
+    ]:
+        ensure_resource_exists(resource, name, profile, lightkube_client)
+
+    # Assert that both resources are now managed by resource-dispatcher's decorator controller.
+    for resource, name in [
+        (Secret, MLPIPELINE_SECRET_NAME),
+        (ConfigMap, KFP_LAUNCHER_CONFIGMAP_NAME),
+    ]:
+        ensure_decorator_controller_annotation(
+            resource, name, profile, lightkube_client, "kubeflow-resource-dispatcher-controller"
+        )
+
+
+@pytest.mark.abort_on_fail
+async def test_remove_resource_dispatcher_integration(
+    ops_test: OpsTest, lightkube_client: lightkube.Client, profile: str
+):
+    """Remove resource-dispatcher relations and assert resources revert to profile-controller.
+
+    After removing the `secrets` and `config-maps` relations, the `mlpipeline-minio-artifact`
+    Secret and `kfp-launcher` ConfigMap should once again be managed by the profile-controller's
+    sync webhook (decorator controller: kubeflow-pipelines-profile-controller).
+    """
+    await ops_test.model.applications[CHARM_NAME].destroy_relation(
+        "secrets", f"{RESOURCE_DISPATCHER.charm}:secrets"
+    )
+    await ops_test.model.applications[CHARM_NAME].destroy_relation(
+        "config-maps", f"{RESOURCE_DISPATCHER.charm}:config-maps"
+    )
+
+    await ops_test.model.wait_for_idle(
+        apps=[CHARM_NAME, RESOURCE_DISPATCHER.charm],
+        status="active",
+        raise_on_blocked=False,
+        timeout=60 * 10,
+    )
+
+    # Assert that both resources are once again handled by the kfp decorator controller.
+    for resource, name in [
+        (Secret, MLPIPELINE_SECRET_NAME),
+        (ConfigMap, KFP_LAUNCHER_CONFIGMAP_NAME),
+    ]:
+        ensure_decorator_controller_annotation(
+            resource, name, profile, lightkube_client, "kubeflow-pipelines-profile-controller"
+        )

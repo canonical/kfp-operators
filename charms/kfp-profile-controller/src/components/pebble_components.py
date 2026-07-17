@@ -34,6 +34,8 @@ class KfpProfileControllerInputs:
     KFP_API_PRINCIPAL: str
     AMBIENT_ENABLED: str
     HOOKS_PATH: Path
+    MANAGE_MINIO_SECRET: str
+    MANAGE_KFP_LAUNCHER_CONFIGMAP: str
 
 
 class KfpProfileControllerPebbleService(PebbleServiceComponent):
@@ -88,6 +90,12 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                             "FRONTEND_TAG": inputs.FRONTEND_TAG,
                             "AMBIENT_ENABLED": inputs.AMBIENT_ENABLED,
                             "KFP_API_PRINCIPAL": inputs.KFP_API_PRINCIPAL,
+                            # These inputs determine whether the resources should be
+                            # created by sync.py or by resource-dispatcher.
+                            # MANAGE_MINIO_SECRET -> `mlpipieline-minio-artifact` Secret
+                            # MANAGE_KFP_LAUNCHER_CONFIMAP -> `kfp-launcher` ConfigMap
+                            "MANAGE_MINIO_SECRET": inputs.MANAGE_MINIO_SECRET,
+                            "MANAGE_KFP_LAUNCHER_CONFIGMAP": inputs.MANAGE_KFP_LAUNCHER_CONFIGMAP,
                         },
                     }
                 }

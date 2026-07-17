@@ -1,6 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import base64
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -80,6 +81,9 @@ def generate_expected_environment(model_name: str, kfp_api_sa: str = "kfp-api") 
         # ambient
         "AMBIENT_ENABLED": False,
         "KFP_API_PRINCIPAL": f"cluster.local/ns/{model_name}/sa/{kfp_api_sa}",
+        # Values for multi-tenancy resources (based on active relations with resource-dispatcher)
+        "MANAGE_MINIO_SECRET": "true",
+        "MANAGE_KFP_LAUNCHER_CONFIGMAP": "true",
     }
 
 
@@ -846,3 +850,174 @@ def test_object_storage_validator_blocks_with_invalid_s3_endpoint(
     )
 
     assert isinstance(harness.charm.object_storage_validator.component.get_status(), BlockedStatus)
+
+
+def _mock_object_storage_data(harness: Harness) -> None:
+    """Make the object-storage validator return usable, complete data."""
+    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.s3_relations_conflict_detector.get_status = MagicMock(
+        return_value=ActiveStatus()
+    )
+    harness.charm.object_storage_relation.component.get_data = MagicMock(
+        return_value=MOCK_OBJECT_STORAGE_DATA
+    )
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+
+
+@pytest.mark.parametrize(
+    "add_secrets, add_configmaps, expected_manage_secret, expected_manage_configmap",
+    [
+        pytest.param(False, False, "true", "true", id="no-relations"),
+        pytest.param(True, False, "false", "true", id="secrets-only"),
+        pytest.param(False, True, "true", "false", id="configmaps-only"),
+        pytest.param(True, True, "false", "false", id="both"),
+    ],
+)
+def test_manage_flags_follow_resource_dispatcher_relations(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+    add_secrets,
+    add_configmaps,
+    expected_manage_secret,
+    expected_manage_configmap,
+):
+    """The MANAGE_* env flags flip to 'false' when the matching relation exists."""
+    harness.set_leader(True)
+    harness.begin()
+    harness.set_can_connect("kfp-profile-controller", True)
+    _mock_object_storage_data(harness)
+
+    if add_secrets:
+        harness.add_relation("secrets", "resource-dispatcher")
+    if add_configmaps:
+        harness.add_relation("config-maps", "resource-dispatcher")
+
+    harness.charm.on.install.emit()
+
+    environment = (
+        harness.charm.unit.get_container("kfp-profile-controller")
+        .get_plan()
+        .services["kfp-profile-controller"]
+        .environment
+    )
+    assert environment["MANAGE_MINIO_SECRET"] == expected_manage_secret
+    assert environment["MANAGE_KFP_LAUNCHER_CONFIGMAP"] == expected_manage_configmap
+
+
+def test_no_manifests_sent_without_resource_dispatcher_relations(
+    harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
+    """When neither relation exists, no manifests are sent to resource-dispatcher."""
+    harness.set_leader(True)
+    harness.begin()
+    _mock_object_storage_data(harness)
+
+    secrets_component = harness.charm.resource_dispatcher_secrets.component
+    configmaps_component = harness.charm.resource_dispatcher_configmaps.component
+    secrets_component._wrapper.send_data = MagicMock()
+    configmaps_component._wrapper.send_data = MagicMock()
+
+    harness.charm.on.install.emit()
+
+    secrets_component._wrapper.send_data.assert_not_called()
+    configmaps_component._wrapper.send_data.assert_not_called()
+
+
+def test_secret_manifest_sent_when_secrets_related(
+    harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
+    """When the secrets relation exists, the minio Secret manifest is sent."""
+    harness.set_leader(True)
+    harness.begin()
+    _mock_object_storage_data(harness)
+
+    secrets_component = harness.charm.resource_dispatcher_secrets.component
+    configmaps_component = harness.charm.resource_dispatcher_configmaps.component
+    secrets_component._wrapper.send_data = MagicMock()
+    configmaps_component._wrapper.send_data = MagicMock()
+
+    harness.add_relation("secrets", "resource-dispatcher")
+    harness.charm.on.install.emit()
+
+    configmaps_component._wrapper.send_data.assert_not_called()
+    secrets_component._wrapper.send_data.assert_called()
+    sent_manifests = secrets_component._wrapper.send_data.call_args.args[0]
+    manifest = yaml.safe_load(sent_manifests[0].manifest_content)
+    assert manifest["kind"] == "Secret"
+    assert manifest["metadata"]["name"] == "mlpipeline-minio-artifact"
+    # Global manifest: no namespace so resource-dispatcher applies it to all Profiles
+    assert "namespace" not in manifest["metadata"]
+    assert manifest["data"]["accesskey"] == base64.b64encode(
+        MOCK_OBJECT_STORAGE_DATA["access-key"].encode("utf-8")
+    ).decode("utf-8")
+
+
+def test_configmap_manifest_sent_when_configmaps_related(
+    harness: Harness, mocked_lightkube_client, mocked_kubernetes_service_patch
+):
+    """When the configmaps relation exists, the kfp-launcher ConfigMap manifest is sent."""
+    harness.set_leader(True)
+    harness.begin()
+    _mock_object_storage_data(harness)
+
+    secrets_component = harness.charm.resource_dispatcher_secrets.component
+    configmaps_component = harness.charm.resource_dispatcher_configmaps.component
+    secrets_component._wrapper.send_data = MagicMock()
+    configmaps_component._wrapper.send_data = MagicMock()
+
+    harness.add_relation("config-maps", "resource-dispatcher")
+    harness.charm.on.install.emit()
+
+    secrets_component._wrapper.send_data.assert_not_called()
+    configmaps_component._wrapper.send_data.assert_called()
+    sent_manifests = configmaps_component._wrapper.send_data.call_args.args[0]
+    manifest = yaml.safe_load(sent_manifests[0].manifest_content)
+    assert manifest["kind"] == "ConfigMap"
+    assert manifest["metadata"]["name"] == "kfp-launcher"
+    assert "namespace" not in manifest["metadata"]
+    assert "providers" in manifest["data"]
+    assert manifest["data"]["defaultPipelineRoot"] == KFP_DEFAULT_PIPELINE_ROOT
+
+
+@pytest.mark.parametrize(
+    "component_attr, relation_name",
+    [
+        pytest.param("resource_dispatcher_secrets", "secrets", id="secrets"),
+        pytest.param("resource_dispatcher_configmaps", "config-maps", id="config-maps"),
+    ],
+)
+@pytest.mark.parametrize(
+    "related, storage_ok, expected_status",
+    [
+        pytest.param(False, False, ActiveStatus, id="not-related-active"),
+        pytest.param(True, True, ActiveStatus, id="related-storage-ok-active"),
+        pytest.param(True, False, BlockedStatus, id="related-storage-broken-blocked"),
+    ],
+)
+def test_resource_dispatcher_component_status(
+    harness: Harness,
+    mocked_lightkube_client,
+    mocked_kubernetes_service_patch,
+    component_attr,
+    relation_name,
+    related,
+    storage_ok,
+    expected_status,
+):
+    """Verify the status returned by each ResourceDispatcherManifestsComponent instance.
+
+    For both the `secrets` and `config-maps` relations, covers the three cases:
+      * relation absent -> ActiveStatus (sync.py owns the resource; object storage is not needed)
+      * relation present and object storage readable -> ActiveStatus
+      * relation present but object storage unreadable -> BlockedStatus
+    """
+    harness.begin()
+    harness.charm.object_storage_relation.component.get_data = MagicMock(
+        return_value=MOCK_OBJECT_STORAGE_DATA if storage_ok else {}
+    )
+    if related:
+        harness.add_relation(relation_name, "resource-dispatcher")
+
+    component = getattr(harness.charm, component_attr).component
+    assert isinstance(component.get_status(), expected_status)

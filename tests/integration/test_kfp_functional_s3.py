@@ -118,9 +118,6 @@ def test_deploy(juju: jubilant.Juju, request: pytest.FixtureRequest, lightkube_c
     # Deploy the kfp-operators bundle from the rendered bundle file
     juju.deploy(rendered_bundle, trust=True)
 
-    log.info("Waiting on model applications and units to be idle")
-    juju.wait(jubilant.all_agents_idle, delay=5.0)
-
     # Deploy s3-integrator backed by microceph and configure it with generated credentials.
     log.info("Deploying s3-integrator with microceph backend")
 

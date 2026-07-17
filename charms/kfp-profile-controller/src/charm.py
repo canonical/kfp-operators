@@ -40,6 +40,7 @@ from components.pebble_components import (
     KfpProfileControllerInputs,
     KfpProfileControllerPebbleService,
 )
+from components.resource_dispatcher_manifests import ResourceDispatcherManifestsComponent
 from components.service_mesh_component import ServiceMeshComponent
 
 DEFAULT_IMAGES_FILE = "src/default-custom-images.json"
@@ -65,6 +66,15 @@ KFP_IMAGES_VERSION = "2.16.0"  # Remember to change this version also in default
 METADATA_GRPC_SERVICE_PORT = "8080"
 NAMESPACE_LABEL = "pipelines.kubeflow.org/enabled"
 SYNC_CODE_FILE = Path("files/upstream/sync.py")
+
+# Endpoints for integration with resource-dispatcher. When related, the
+# corresponding resource is created by resource-dispatcher instead of by sync.py.
+SECRETS_RELATION_NAME = "secrets"
+CONFIGMAPS_RELATION_NAME = "config-maps"
+
+# Templates defining the manifests sent to resource-dispatcher
+MINIO_SECRET_TEMPLATE = "src/templates/minio_secret.yaml.j2"
+KFP_LAUNCHER_CONFIGMAP_TEMPLATE = "src/templates/kfp_launcher_configmap.yaml.j2"
 
 HOOKS_PATH = Path("/var/lib/pebble/default")
 
@@ -191,6 +201,36 @@ class KfpProfileControllerOperator(CharmBase):
             depends_on=[self.leadership_gate],
         )
 
+        resource_dispatcher_depends_on = [
+            self.leadership_gate,
+            self.s3_relations_conflict_detector,
+            self.s3_relation,
+            self.object_storage_relation,
+            self.object_storage_validator,
+        ]
+        self.resource_dispatcher_secrets = self.charm_reconciler.add(
+            component=ResourceDispatcherManifestsComponent(
+                charm=self,
+                name="resource-dispatcher-secrets",
+                object_storage_validator=self.object_storage_validator.component,
+                default_pipeline_root=self.default_pipeline_root,
+                relation_name=SECRETS_RELATION_NAME,
+                template_path=MINIO_SECRET_TEMPLATE,
+            ),
+            depends_on=resource_dispatcher_depends_on,
+        )
+        self.resource_dispatcher_configmaps = self.charm_reconciler.add(
+            component=ResourceDispatcherManifestsComponent(
+                charm=self,
+                name="resource-dispatcher-configmaps",
+                object_storage_validator=self.object_storage_validator.component,
+                default_pipeline_root=self.default_pipeline_root,
+                relation_name=CONFIGMAPS_RELATION_NAME,
+                template_path=KFP_LAUNCHER_CONFIGMAP_TEMPLATE,
+            ),
+            depends_on=resource_dispatcher_depends_on,
+        )
+
         self.kubernetes_resources = self.charm_reconciler.add(
             component=KubernetesComponent(
                 charm=self,
@@ -282,6 +322,14 @@ class KfpProfileControllerOperator(CharmBase):
             KFP_API_PRINCIPAL=self._get_kfp_api_principal(),
             AMBIENT_ENABLED=self.service_mesh_component.component.ambient_mesh_enabled,
             HOOKS_PATH=HOOKS_PATH,
+            # If the corresponding resource-dispatcher relation exists, the resource is created
+            # by resource-dispatcher, so sync.py should not manage (create) it.
+            MANAGE_MINIO_SECRET=str(
+                self.model.get_relation(SECRETS_RELATION_NAME) is None
+            ).lower(),
+            MANAGE_KFP_LAUNCHER_CONFIGMAP=str(
+                self.model.get_relation(CONFIGMAPS_RELATION_NAME) is None
+            ).lower(),
         )
 
     def _get_kfp_api_principal(self) -> str:

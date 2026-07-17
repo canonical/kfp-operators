@@ -157,6 +157,14 @@ def get_settings_from_env(controller_port=None,
     )
 
     settings["ambient_mesh_enabled"] = os.environ.get("AMBIENT_ENABLED", "false") == "true"
+
+    # If integrated with resource-dispatcher over certain endpoints, the following resources
+    # should be created by resource-dispatcher instead of this webhook:
+    # - `secrets` endpoint -> `mlpipeline-minio-artifact` Secret
+    # - `config-maps` endpoint -> `kfp-launcher` ConfigMap
+    settings["manage_minio_secret"] = os.environ.get("MANAGE_MINIO_SECRET", "true") == "true"
+    settings["manage_kfp_launcher_configmap"] = \
+        os.environ.get("MANAGE_KFP_LAUNCHER_CONFIGMAP", "true") == "true"
     # - - - - - - - - - - - - - - - - - -
 
     return settings
@@ -170,7 +178,8 @@ def server_factory(visualization_server_image,
                    metadata_grpc_service_host, metadata_grpc_service_port,
                    kfp_api_principal, ambient_mesh_enabled,
                    minio_ssl=False, minio_region="us-east-1",
-                   kfp_default_pipeline_root=None, url="", controller_port=8080):
+                   kfp_default_pipeline_root=None, url="", controller_port=8080,
+                   manage_minio_secret=True, manage_kfp_launcher_configmap=True):
     """
     Returns an HTTPServer populated with Handler with customized settings
     """
@@ -198,7 +207,10 @@ def server_factory(visualization_server_image,
             # This means that we have to always update the provider to use our wanted endpoint
             # We set this by using the `kfp-launcher` configmap, as specified in:
             # https://www.kubeflow.org/docs/components/pipelines/operator-guides/configure-object-store/#s3-and-s3-compatible-provider
-            desired_configmap_count = 2
+            
+            # When integrated with resource-dispatcher over the `configmaps` relation, the
+            # `kfp-launcher` ConfigMap is created by resource-dispatcher instead.
+            desired_configmap_count = 2 if manage_kfp_launcher_configmap else 1
             desired_resources = []
 
             # The MinIO/S3 endpoint is built by the charm (see ObjectStorageValidatorComponent and
@@ -226,21 +238,23 @@ def server_factory(visualization_server_image,
             if kfp_default_pipeline_root:
                 configmap_data["defaultPipelineRoot"] = kfp_default_pipeline_root
 
-            desired_resources += [{
-                "apiVersion": "v1",
-                "kind": "ConfigMap",
-                "metadata": {
-                    "name": "kfp-launcher",
-                    "namespace": namespace,
-                },
-                "data": configmap_data,
-            }]
+            if manage_kfp_launcher_configmap:
+                desired_resources += [{
+                    "apiVersion": "v1",
+                    "kind": "ConfigMap",
+                    "metadata": {
+                        "name": "kfp-launcher",
+                        "namespace": namespace,
+                    },
+                    "data": configmap_data,
+                }]
 
 
             # Compute status based on observed state.
+            desired_secret_count = 1 if manage_minio_secret else 0
             desired_status = {
                 "kubeflow-pipelines-ready":
-                    len(attachments["Secret.v1"]) == 1 and
+                    len(attachments["Secret.v1"]) == desired_secret_count and
                     len(attachments["ConfigMap.v1"]) == desired_configmap_count and
                     len(attachments["Deployment.apps/v1"]) == 2 and
                     len(attachments["Service.v1"]) == 2 and
@@ -567,18 +581,21 @@ def server_factory(visualization_server_image,
             print('Received request:\n', json.dumps(parent, indent=2, sort_keys=True))
             print('Desired resources except secrets:\n', json.dumps(desired_resources, indent=2, sort_keys=True))
             # Moved after the print argument because this is sensitive data.
-            desired_resources.append({
-                "apiVersion": "v1",
-                "kind": "Secret",
-                "metadata": {
-                    "name": "mlpipeline-minio-artifact",
-                    "namespace": namespace,
-                },
-                "data": {
-                    "accesskey": minio_access_key,
-                    "secretkey": minio_secret_key,
-                },
-            })
+            # When integrated with resource-dispatcher over the `secrets` relation, the
+            # `mlpipeline-minio-artifact` Secret is created by resource-dispatcher instead.
+            if manage_minio_secret:
+                desired_resources.append({
+                    "apiVersion": "v1",
+                    "kind": "Secret",
+                    "metadata": {
+                        "name": "mlpipeline-minio-artifact",
+                        "namespace": namespace,
+                    },
+                    "data": {
+                        "accesskey": minio_access_key,
+                        "secretkey": minio_secret_key,
+                    },
+                })
 
             return {"status": desired_status, "attachments": desired_resources}
 

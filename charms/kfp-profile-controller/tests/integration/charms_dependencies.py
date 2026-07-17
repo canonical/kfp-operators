@@ -8,6 +8,7 @@ KUBEFLOW_PROFILES = CharmSpec(charm="kubeflow-profiles", channel="latest/edge", 
 METACONTROLLER_OPERATOR = CharmSpec(
     charm="metacontroller-operator", channel="latest/edge", trust=True
 )
+RESOURCE_DISPATCHER = CharmSpec(charm="resource-dispatcher", channel="latest/edge", trust=True)
 MINIO = CharmSpec(
     charm="minio",
     channel="latest/edge",
