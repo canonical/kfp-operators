@@ -729,9 +729,9 @@ class KfpApiOperator(CharmBase):
         db_data = {}
         try:
             db_data = self._get_relational_db_data()
-        except ErrorWithStatus as err:
-            # relation-db relation is established, but data could not be retrieved
-            raise err
+        except ErrorWithStatus:
+            # relational-db relation is established, but data could not be retrieved
+            raise
         except GenericCharmRuntimeError:
             # relational-db relation is not established, raise error
             raise ErrorWithStatus(
