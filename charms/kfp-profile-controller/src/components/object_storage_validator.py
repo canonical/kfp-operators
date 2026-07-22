@@ -14,6 +14,11 @@ from ops import ActiveStatus, BlockedStatus, CharmBase, StatusBase
 
 logger = logging.getLogger(__name__)
 
+# The AWS S3 SDK used by the kfp-launcher requires a non-empty region, even when talking to a
+# local storage that has no region concept. Use the same default as used in
+# `files/upstream/sync.py`
+DEFAULT_REGION = "us-east-1"
+
 
 class ObjectStorageValidatorComponent(Component):
     """Component that validates and normalizes data from the active object-storage relation.
@@ -125,7 +130,7 @@ class ObjectStorageValidatorComponent(Component):
                 "namespace": "",
                 "port": str(port),
                 "secure": secure,
-                "region": data.get("region", ""),
+                "region": data.get("region") or DEFAULT_REGION,
                 # The s3 interface has no namespace concept, so the endpoint is just host:port.
                 "endpoint": f"{host}:{port}",
             }
@@ -163,7 +168,7 @@ class ObjectStorageValidatorComponent(Component):
                 "namespace": data["namespace"],
                 "port": str(data["port"]),
                 "secure": data["secure"],
-                "region": "",
+                "region": DEFAULT_REGION,
                 # The object-storage interface uses a `host.namespace:port` endpoint.
                 "endpoint": f"{data['service']}.{data['namespace']}:{data['port']}",
             }
