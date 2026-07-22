@@ -266,101 +266,6 @@ class TestCharm:
             harness.update_config(config)
             harness.charm._check_config()
 
-    @pytest.mark.parametrize(
-        "relation_data,expected_returned_data,expected_raises,expected_status",
-        (
-            (
-                # No relation established.  Raises ErrorWithStatus
-                None,
-                None,
-                pytest.raises(ErrorWithStatus),
-                BlockedStatus("Please add required relation relation mysql"),
-            ),
-            (
-                # Relation exists but no data posted yet
-                {},
-                None,
-                pytest.raises(ErrorWithStatus),
-                WaitingStatus("Waiting for mysql relation data"),
-            ),
-            (
-                # Relation exists with only partial data
-                {"database": "database"},
-                None,
-                pytest.raises(ErrorWithStatus),
-                BlockedStatus("Received incomplete data from mysql relation. See logs"),
-            ),
-            (
-                # Relation complete
-                {
-                    "database": "database",
-                    "host": "host",
-                    "root_password": "root_password",
-                    "port": "port",
-                },
-                {
-                    "database": "database",
-                    "host": "host",
-                    "root_password": "root_password",
-                    "port": "port",
-                },
-                does_not_raise(),
-                None,
-            ),
-        ),
-    )
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_mysql_relation(
-        self,
-        relation_data,
-        expected_returned_data,
-        expected_raises,
-        expected_status,
-        harness: Harness,
-        mocked_resource_handler,
-        mocked_lightkube_client,
-    ):
-        harness.set_leader(True)
-        harness.begin()
-        harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
-
-        mysql_app = "mysql_app"
-        mysql_unit = f"{mysql_app}/0"
-
-        rel_id = harness.add_relation("mysql", mysql_app)
-        harness.add_relation_unit(rel_id, mysql_unit)
-
-        # Test complete relation
-        data = {
-            "database": "database",
-            "host": "host",
-            "root_password": "root_password",
-            "port": "port",
-        }
-        harness.update_relation_data(rel_id, mysql_unit, data)
-        with does_not_raise():
-            harness.charm._get_db_data()
-
-    @patch("charm.KubernetesServicePatch", lambda x, y: None)
-    def test_mysql_relation_too_many_relations(
-        self, harness: Harness, mocked_resource_handler, mocked_lightkube_client
-    ):
-        harness.set_leader(True)
-        harness.begin()
-        harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
-
-        mysql_app = "mysql_app"
-        mysql_unit = f"{mysql_app}/0"
-
-        rel_id = harness.add_relation("mysql", mysql_app)
-        harness.add_relation_unit(rel_id, mysql_unit)
-        rel_id_2 = harness.add_relation("mysql", "extra_sql")
-        with pytest.raises(ErrorWithStatus) as too_many_relations:
-            harness.add_relation_unit(rel_id_2, "extra_sql/0")
-        assert too_many_relations.value.status == BlockedStatus(
-            "Too many mysql relations. Relation mysql is deprecated."
-        )
-
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     def test_kfp_viz_relation_missing(
         self, harness: Harness, mocked_resource_handler, mocked_lightkube_client
@@ -568,7 +473,7 @@ class TestCharm:
 
         # Set up required relations
         (
-            mysql_data,
+            relational_db_data,
             objectstorage_data,
             kfp_viz_data,
             kfpapi_rel_id,
@@ -639,11 +544,11 @@ class TestCharm:
             "OBJECTSTORECONFIG_BUCKETNAME": harness.charm.config["object-store-bucket-name"],
             "DBCONFIG_CONMAXLIFETIME": "120s",
             "DB_DRIVER_NAME": "mysql",
-            "DBCONFIG_MYSQLCONFIG_USER": "root",
-            "DBCONFIG_MYSQLCONFIG_PASSWORD": mysql_data["root_password"],
-            "DBCONFIG_MYSQLCONFIG_DBNAME": mysql_data["database"],
-            "DBCONFIG_MYSQLCONFIG_HOST": mysql_data["host"],
-            "DBCONFIG_MYSQLCONFIG_PORT": mysql_data["port"],
+            "DBCONFIG_MYSQLCONFIG_USER": relational_db_data["username"],
+            "DBCONFIG_MYSQLCONFIG_PASSWORD": relational_db_data["password"],
+            "DBCONFIG_MYSQLCONFIG_DBNAME": relational_db_data["database"],
+            "DBCONFIG_MYSQLCONFIG_HOST": relational_db_data["endpoints"].split(":")[0],
+            "DBCONFIG_MYSQLCONFIG_PORT": relational_db_data["endpoints"].split(":")[1],
             "OBJECTSTORECONFIG_ACCESSKEY": objectstorage_data["access-key"],
             "OBJECTSTORECONFIG_SECRETACCESSKEY": objectstorage_data["secret-key"],
             "DEFAULTPIPELINERUNNERSERVICEACCOUNT": "default-editor",
@@ -743,8 +648,6 @@ class TestCharm:
 
     def _get_relation_db_only_side_effect_func(self, relation):
         """Returns relational-db relation with some data."""
-        if relation == "mysql":
-            return None
         if relation == "relational-db":
             return {"some-data": True}
 
@@ -898,59 +801,11 @@ class TestCharm:
         harness._emit_relation_broken(rel_name, rel_id, "kfp-api")
 
         assert harness.model.unit.status == BlockedStatus(
-            "Please add required database relation: eg. relational-db"
+            "Please add required `relational-db` database relation."
         )
 
         harness.charm.on.remove.emit()
         assert harness.model.unit.status == MaintenanceStatus("K8S resources removed")
-
-    def test_mysql_and_relational_db_both_present(
-        self,
-        mocked_resource_handler,
-        mocked_kubernetes_service_patcher,
-        harness: Harness,
-        mocked_lightkube_client,
-    ):
-        """Test that charm blocks when both mysql and relational-db relations are added."""
-        harness.set_leader(True)
-        harness.begin()
-
-        # Add mysql relation first
-        mysql_data = {
-            "database": "database",
-            "host": "host",
-            "root_password": "root_password",
-            "port": "port",
-        }
-        mysql_rel_id = harness.add_relation("mysql", "mysql-provider")
-        harness.add_relation_unit(mysql_rel_id, "mysql-provider/0")
-        harness.update_relation_data(mysql_rel_id, "mysql-provider/0", mysql_data)
-
-        # Mock the database library
-        database = MagicMock()
-        fetch_relation_data = MagicMock()
-        fetch_relation_data.return_value = {
-            "relational-db-data": {
-                "endpoints": "host:1234",
-                "username": "username",
-                "password": "password",
-            }
-        }
-        database.fetch_relation_data = fetch_relation_data
-        harness.charm.database = database
-
-        # Add relational-db relation - this should cause the charm status to be blocked
-        # due to the event handler detecting conflicting relations
-        relational_db_rel_id = harness.add_relation("relational-db", "relational-db-provider")
-        harness.add_relation_unit(relational_db_rel_id, "relational-db-provider/0")
-
-        # Verify charm is blocked due to conflicting database relations
-        # The blocking happens at the event handler level
-        assert isinstance(harness.charm.model.unit.status, BlockedStatus)
-        assert (
-            "remove deprecated mysql relation to unblock"
-            in harness.charm.model.unit.status.message.lower()
-        )
 
     def test_no_database_relation(
         self,
@@ -968,22 +823,22 @@ class TestCharm:
         with pytest.raises(ErrorWithStatus) as err:
             harness.charm._get_db_data()
         assert err.value.status_type(BlockedStatus)
-        assert "required database relation" in str(err).lower()
+        assert "please add required `relational-db` database" in str(err).lower()
 
     def setup_required_relations(self, harness: Harness):
         kfpapi_relation_name = "kfp-api"
         kfpapi_grpc_relation_name = "kfp-api-grpc"
 
-        # mysql relation
-        mysql_data = {
-            "database": "database",
-            "host": "host",
-            "root_password": "root_password",
-            "port": "port",
+        # relational-db relation
+        relational_db_data = {
+            "database": "mlpipeline",
+            "username": "root",
+            "password": "root_password",
+            "endpoints": "host:1234",
         }
-        mysql_rel_id = harness.add_relation("mysql", "mysql-provider")
-        harness.add_relation_unit(mysql_rel_id, "mysql-provider/0")
-        harness.update_relation_data(mysql_rel_id, "mysql-provider/0", mysql_data)
+        relational_db_rel_id = harness.add_relation("relational-db", "db-provider")
+        harness.add_relation_unit(relational_db_rel_id, "db-provider/0")
+        harness.update_relation_data(relational_db_rel_id, "db-provider", relational_db_data)
 
         # object storage relation
         objectstorage_data = {
@@ -1034,7 +889,13 @@ class TestCharm:
             kfpapi_grpc_rel_id, "kfp-api-grpc-subscriber", kfpapi_grpc_data
         )
 
-        return mysql_data, objectstorage_data, kfp_viz_data, kfpapi_rel_id, kfpapi_grpc_rel_id
+        return (
+            relational_db_data,
+            objectstorage_data,
+            kfp_viz_data,
+            kfpapi_rel_id,
+            kfpapi_grpc_rel_id,
+        )
 
     @pytest.mark.parametrize(
         "add_mesh_relation",
