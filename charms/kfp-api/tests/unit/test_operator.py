@@ -201,6 +201,7 @@ class TestCharm:
         assert isinstance(harness.charm.model.unit.status, BlockedStatus)
         assert harness.charm.model.unit.status.message.startswith("kfp-api must be deployed to")
 
+<<<<<<< HEAD
     @pytest.mark.parametrize(
         "relation_data,expected_returned_data,expected_raises,expected_status",
         (
@@ -292,6 +293,8 @@ class TestCharm:
             "Too many mysql relations. Relation mysql is deprecated."
         )
 
+=======
+>>>>>>> dd3b8d1 (feat: Remove deprecated 'mysql' endpoint (#975))
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     def test_kfp_viz_relation_missing(self, harness: Harness):
         harness.set_leader(True)
@@ -495,7 +498,7 @@ class TestCharm:
 
         # Set up required relations
         (
-            mysql_data,
+            relational_db_data,
             objectstorage_data,
             kfp_viz_data,
             kfpapi_rel_id,
@@ -566,11 +569,11 @@ class TestCharm:
             "OBJECTSTORECONFIG_BUCKETNAME": harness.charm.config["object-store-bucket-name"],
             "DBCONFIG_CONMAXLIFETIME": "120s",
             "DB_DRIVER_NAME": "mysql",
-            "DBCONFIG_MYSQLCONFIG_USER": "root",
-            "DBCONFIG_MYSQLCONFIG_PASSWORD": mysql_data["root_password"],
-            "DBCONFIG_MYSQLCONFIG_DBNAME": mysql_data["database"],
-            "DBCONFIG_MYSQLCONFIG_HOST": mysql_data["host"],
-            "DBCONFIG_MYSQLCONFIG_PORT": mysql_data["port"],
+            "DBCONFIG_MYSQLCONFIG_USER": relational_db_data["username"],
+            "DBCONFIG_MYSQLCONFIG_PASSWORD": relational_db_data["password"],
+            "DBCONFIG_MYSQLCONFIG_DBNAME": relational_db_data["database"],
+            "DBCONFIG_MYSQLCONFIG_HOST": relational_db_data["endpoints"].split(":")[0],
+            "DBCONFIG_MYSQLCONFIG_PORT": relational_db_data["endpoints"].split(":")[1],
             "OBJECTSTORECONFIG_ACCESSKEY": objectstorage_data["access-key"],
             "OBJECTSTORECONFIG_SECRETACCESSKEY": objectstorage_data["secret-key"],
             "DEFAULTPIPELINERUNNERSERVICEACCOUNT": "default-editor",
@@ -663,8 +666,6 @@ class TestCharm:
 
     def _get_relation_db_only_side_effect_func(self, relation):
         """Returns relational-db relation with some data."""
-        if relation == "mysql":
-            return None
         if relation == "relational-db":
             return {"some-data": True}
 
@@ -813,12 +814,13 @@ class TestCharm:
         harness._emit_relation_broken(rel_name, rel_id, "kfp-api")
 
         assert harness.model.unit.status == BlockedStatus(
-            "Please add required database relation: eg. relational-db"
+            "Please add required `relational-db` database relation."
         )
 
         harness.charm.on.remove.emit()
         assert harness.model.unit.status == MaintenanceStatus("K8S resources removed")
 
+<<<<<<< HEAD
     def test_mysql_and_relational_db_both_present(
         self,
         mocked_resource_handler,
@@ -866,6 +868,8 @@ class TestCharm:
             in harness.charm.model.unit.status.message.lower()
         )
 
+=======
+>>>>>>> dd3b8d1 (feat: Remove deprecated 'mysql' endpoint (#975))
     def test_no_database_relation(
         self,
         mocked_resource_handler,
@@ -881,7 +885,7 @@ class TestCharm:
         with pytest.raises(ErrorWithStatus) as err:
             harness.charm._get_db_data()
         assert err.value.status_type(BlockedStatus)
-        assert "required database relation" in str(err).lower()
+        assert "please add required `relational-db` database" in str(err).lower()
 
     def test_minio_service_rendered_as_expected(
         self,
@@ -947,16 +951,16 @@ class TestCharm:
         kfpapi_relation_name = "kfp-api"
         kfpapi_grpc_relation_name = "kfp-api-grpc"
 
-        # mysql relation
-        mysql_data = {
-            "database": "database",
-            "host": "host",
-            "root_password": "root_password",
-            "port": "port",
+        # relational-db relation
+        relational_db_data = {
+            "database": "mlpipeline",
+            "username": "root",
+            "password": "root_password",
+            "endpoints": "host:1234",
         }
-        mysql_rel_id = harness.add_relation("mysql", "mysql-provider")
-        harness.add_relation_unit(mysql_rel_id, "mysql-provider/0")
-        harness.update_relation_data(mysql_rel_id, "mysql-provider/0", mysql_data)
+        relational_db_rel_id = harness.add_relation("relational-db", "db-provider")
+        harness.add_relation_unit(relational_db_rel_id, "db-provider/0")
+        harness.update_relation_data(relational_db_rel_id, "db-provider", relational_db_data)
 
         # object storage relation
         objectstorage_data = {
@@ -1007,7 +1011,13 @@ class TestCharm:
             kfpapi_grpc_rel_id, "kfp-api-grpc-subscriber", kfpapi_grpc_data
         )
 
-        return mysql_data, objectstorage_data, kfp_viz_data, kfpapi_rel_id, kfpapi_grpc_rel_id
+        return (
+            relational_db_data,
+            objectstorage_data,
+            kfp_viz_data,
+            kfpapi_rel_id,
+            kfpapi_grpc_rel_id,
+        )
 
     @pytest.mark.parametrize(
         "add_mesh_relation",
