@@ -70,9 +70,10 @@ def generate_expected_environment(model_name: str, kfp_api_sa: str = "kfp-api") 
             f"{MOCK_OBJECT_STORAGE_DATA['port']}"
         ),
         "MINIO_SECRET_KEY": MOCK_OBJECT_STORAGE_DATA["secret-key"],
-        # object-storage (MinIO) data has secure=True and no region concept
+        # object-storage data has secure=True and no region concept, so the validator
+        # falls back to the default region set in the charm
         "MINIO_SSL": "true",
-        "MINIO_REGION": "",
+        "MINIO_REGION": "us-east-1",
         # Using custom image and tag from the JSON file
         "FRONTEND_IMAGE": custom_images["frontend"].split(":")[0],
         "FRONTEND_TAG": custom_images["frontend"].split(":")[1],
@@ -535,7 +536,8 @@ def test_pebble_services_running_with_s3(
             "MINIO_PORT": "443",
             "MINIO_ENDPOINT": "s3.example.com:443",
             "MINIO_SSL": "true",
-            "MINIO_REGION": "",
+            # Default region in the charm
+            "MINIO_REGION": "us-east-1",
         }
     )
     harness.begin()
@@ -977,6 +979,8 @@ def test_configmap_manifest_sent_when_configmaps_related(
     assert manifest["metadata"]["name"] == "kfp-launcher"
     assert "namespace" not in manifest["metadata"]
     assert "providers" in manifest["data"]
+    # Even if the region is non-required, expect the default one
+    assert "region: us-east-1" in manifest["data"]["providers"]
     assert manifest["data"]["defaultPipelineRoot"] == KFP_DEFAULT_PIPELINE_ROOT
 
 
