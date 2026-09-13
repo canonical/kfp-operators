@@ -20,9 +20,6 @@ resources:
     description: Backing OCI image
     upstream-source: docker.io/charmedkubeflow/api-server:2.16.0-4d8c239
 requires:
-  mysql:
-    interface: mysql
-    limit: 1
   relational-db:
     interface: mysql_client
     limit: 1

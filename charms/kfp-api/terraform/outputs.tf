@@ -16,7 +16,6 @@ output "requires" {
   value = {
     kfp_viz          = "kfp-viz",
     logging          = "logging",
-    mysql            = "mysql",
     object_storage   = "object-storage",
     relational_db    = "relational-db",
     require_cmr_mesh = "require-cmr-mesh",
