@@ -18,9 +18,6 @@ resources:
     # The container's `user` needs to be updated when switching from upstream image to rock
     upstream-source: docker.io/charmedkubeflow/api-server:2.5.0-d7e9bcb
 requires:
-  mysql:
-    interface: mysql
-    limit: 1
   relational-db:
     interface: mysql_client
     limit: 1
