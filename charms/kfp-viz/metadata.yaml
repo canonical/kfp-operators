@@ -13,7 +13,7 @@ resources:
   oci-image:
     type: oci-image
     description: OCI image for ml-pipeline-visualizationserver
-    upstream-source: docker.io/charmedkubeflow/visualization-server:2.16.0-9756a03
+    upstream-source: docker.io/charmedkubeflow/visualization-server:2.16.0-a46e562-20260901041240
 provides:
   kfp-viz:
     interface: k8s-service
