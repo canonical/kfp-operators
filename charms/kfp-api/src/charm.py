@@ -393,6 +393,7 @@ class KfpApiOperator(CharmBase):
             "PIPELINE_LOG_LEVEL": "1",
             "PUBLISH_LOGS": "true",
             "CACHE_IMAGE": self.model.config["cache-image"],
+            "CACHEENABLED": "true" if self.model.config["cache-enabled"] else "false",
             "V2_DRIVER_IMAGE": self.model.config["driver-image"],
             "V2_LAUNCHER_IMAGE": self.model.config["launcher-image"],
             # Configurations charmed-kubeflow adds to those of upstream
