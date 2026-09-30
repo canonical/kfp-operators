@@ -561,6 +561,7 @@ class TestCharm:
             "PIPELINE_LOG_LEVEL": "1",
             "PUBLISH_LOGS": "true",
             "CACHE_IMAGE": harness.charm.config["cache-image"],
+            "CACHEENABLED": "true",
             "V2_DRIVER_IMAGE": harness.charm.config["driver-image"],
             "V2_LAUNCHER_IMAGE": harness.charm.config["launcher-image"],
             "ARCHIVE_CONFIG_LOG_FILE_NAME": harness.charm.config["log-archive-filename"],
@@ -616,6 +617,49 @@ class TestCharm:
         assert test_env["V2_LAUNCHER_IMAGE"] == "fake-launcher-image"
         assert test_env["V2_DRIVER_IMAGE"] == "fake-driver-image"
         assert model_name == test_env["POD_NAMESPACE"]
+
+    @patch("charm.KubernetesServicePatch", lambda x, y: None)
+    @patch("charm.Client")
+    @patch("charm.KfpApiOperator.k8s_resource_handler")
+    def test_cache_enabled_config(
+        self,
+        k8s_resource_handler: MagicMock,
+        mock_client: MagicMock,
+        harness: Harness,
+        mock_s3_client,
+    ):
+        """Test that the cache-enabled config option is passed through to the apiserver.
+
+        Regression test for https://github.com/canonical/kfp-operators/issues/915: the
+        cache-enabled config option was defined but never translated into the CACHEENABLED
+        environment variable the apiserver actually reads (see
+        https://github.com/kubeflow/pipelines/blob/289267879edc94c7a61ce91cb875ff2acbe28329/
+        backend/src/apiserver/common/config.go#L29 and
+        https://github.com/kubeflow/pipelines/blob/289267879edc94c7a61ce91cb875ff2acbe28329/
+        backend/src/apiserver/main.go#L225), so toggling it never had any effect.
+        """
+        harness.set_leader(True)
+        harness.set_model_name("kubeflow-any")
+
+        # Set up required relations
+        self.setup_required_relations(harness)
+
+        harness.begin_with_initial_hooks()
+        harness.container_pebble_ready(KFP_API_CONTAINER_NAME)
+
+        pebble_plan = harness.get_container_pebble_plan(KFP_API_CONTAINER_NAME)
+        pebble_plan_info = pebble_plan.to_dict()
+        test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
+
+        # cache-enabled defaults to True
+        assert test_env["CACHEENABLED"] == "true"
+
+        harness.update_config({"cache-enabled": False})
+        pebble_plan = harness.get_container_pebble_plan(KFP_API_CONTAINER_NAME)
+        pebble_plan_info = pebble_plan.to_dict()
+        test_env = pebble_plan_info["services"][KFP_API_SERVICE_NAME]["environment"]
+
+        assert test_env["CACHEENABLED"] == "false"
 
     @patch("charm.KubernetesServicePatch", lambda x, y: None)
     @patch("charm.Client")
