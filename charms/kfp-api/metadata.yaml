@@ -18,7 +18,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: docker.io/charmedkubeflow/api-server:2.16.0-4d8c239
+    upstream-source: docker.io/charmedkubeflow/api-server:2.16.0-fa1a9fe-20261001041331
 requires:
   mysql:
     interface: mysql
