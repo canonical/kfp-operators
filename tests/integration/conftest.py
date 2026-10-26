@@ -7,6 +7,7 @@ import subprocess
 import time
 from pathlib import Path
 
+import jinja2
 import jubilant
 import kfp
 import lightkube
@@ -28,6 +29,9 @@ KUBEFLOW_PROFILE_NAMESPACE = "kubeflow-user-example-com"
 PROFILE_FILE_PATH = f"{basedir}/tests/integration/profile/profile.yaml"
 PROFILE_FILE = yaml.safe_load(Path(PROFILE_FILE_PATH).read_text())
 KUBEFLOW_USER_NAME = PROFILE_FILE["spec"]["owner"]["name"]
+SHARED_PIPELINE_RBAC_FILE_PATH = (
+    f"{basedir}/tests/integration/profile/shared-pipeline-rbac.yaml.j2"
+)
 
 KFP_LAUNCHER_CONFIGMAP_NAME = "kfp-launcher"
 WAIT_TIMEOUT = 20 * 60
@@ -137,7 +141,19 @@ def apply_profile(lightkube_client, juju: jubilant.Juju):
     # Ensure "kfp-launcher" configmap has been created on the profile namespace
     wait_for_configmap(lightkube_client, KFP_LAUNCHER_CONFIGMAP_NAME, KUBEFLOW_PROFILE_NAMESPACE)
 
+    # Allow the test user to create/update/delete shared pipelines (required since KFP 2.16.1)
+    rbac_context = {"namespace": juju.model, "user": KUBEFLOW_USER_NAME}
+    apply_manifests(lightkube_client, SHARED_PIPELINE_RBAC_FILE_PATH, context=rbac_context)
+
     yield
+
+    rendered_rbac = jinja2.Template(Path(SHARED_PIPELINE_RBAC_FILE_PATH).read_text()).render(
+        **rbac_context
+    )
+    for obj in codecs.load_all_yaml(rendered_rbac):
+        lightkube_client.delete(
+            res=type(obj), name=obj.metadata.name, namespace=obj.metadata.namespace
+        )
 
     # Remove profile
     read_yaml = Path(PROFILE_FILE_PATH).read_text()
