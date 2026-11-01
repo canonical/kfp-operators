@@ -14,7 +14,7 @@ resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: docker.io/charmedkubeflow/scheduledworkflow:2.16.0-38af823
+    upstream-source: docker.io/charmedkubeflow/scheduledworkflow:2.16.0-99d5205-20261101040824
 requires:
   logging:
     interface: loki_push_api
