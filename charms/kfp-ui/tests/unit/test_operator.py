@@ -332,6 +332,15 @@ def test_pebble_services_running_object_storage(harness: Harness, mocked_kuberne
     assert environment["MINIO_SSL"] == MOCK_OBJECT_STORAGE_DATA["secure"]
     assert environment["ML_PIPELINE_SERVICE_HOST"] == MOCK_KFP_API_DATA["service-name"]
     assert environment["ML_PIPELINE_SERVICE_PORT"] == MOCK_KFP_API_DATA["service-port"]
+    assert environment["CLUSTER_DOMAIN"] == ".svc.cluster.local"
+    signing_secret = environment["TENSORBOARD_PROXY_SIGNING_SECRET"]
+    assert len(signing_secret.encode("utf-8")) >= 32
+    assert signing_secret != MOCK_OBJECT_STORAGE_DATA["secret-key"]
+
+    # The signing secret must be stable across reconciliations
+    harness.charm.on.config_changed.emit()
+    environment = container.get_plan().services["ml-pipeline-ui"].environment
+    assert environment["TENSORBOARD_PROXY_SIGNING_SECRET"] == signing_secret
 
 
 def test_pebble_services_running_s3(harness: Harness, mocked_kubernetes_service_patch):

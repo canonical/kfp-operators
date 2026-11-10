@@ -3,7 +3,6 @@
 from charmed_kubeflow_chisme.testing import CharmSpec
 
 ADMISSION_WEBHOOK = CharmSpec(charm="admission-webhook", channel="latest/edge", trust=True)
-ISTIO_PILOT = CharmSpec(charm="istio-pilot", channel="latest/edge", trust=True)
 KUBEFLOW_PROFILES = CharmSpec(charm="kubeflow-profiles", channel="latest/edge", trust=True)
 METACONTROLLER_OPERATOR = CharmSpec(
     charm="metacontroller-operator", channel="latest/edge", trust=True

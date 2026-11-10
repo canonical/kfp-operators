@@ -11,7 +11,8 @@ This directory has the following structure:
 ├── README.md
 └── integration
     ├── bundles
-    │   └── bundle.yaml.j2
+    │   ├── bundle_ambient.yaml.j2
+    │   └── bundle_s3.yaml.j2
     ├── conftest.py
     ├── helpers
     │   ├── bundle_mgmt.py
@@ -23,7 +24,8 @@ This directory has the following structure:
     │   └── ... # Sample pipelines
     ├── profile
     │   └── profile.yaml
-    ├── test_kfp_functional.py
+    ├── test_kfp_functional_ambient.py
+    ├── test_kfp_functional_s3.py
     └── viewer
         └── mnist.yaml
 ```
@@ -48,7 +50,7 @@ This directory has the following structure:
 
 #### Functional tests
 
-The test suite for functional tests will deploy the `bundle.yaml.j2` bundle, upload a pipeline, create an experiment, create a run and a recurring run, and run health checks on the visualisation and viewer servers.
+The test suite for functional tests will deploy the `bundle_ambient.yaml.j2` bundle (or `bundle_s3.yaml.j2` for the s3-integrator backend), upload a pipeline, create an experiment, create a run and a recurring run, and run health checks on the visualisation and viewer servers. Only ambient mesh deployments are supported.
 Communication with the KFP API happens using the KFP Python SDK. A `kfp.client` is configured using a test profile (`Profile`) to be able to execute pipeline operations (create runs, experiments, upload pipelines, etc.).
 
 > NOTE: This test suite does not deploy the `kfp-profile-controller` as the tests for that component are already covered in the charm's directory.
@@ -61,7 +63,7 @@ Communication with the KFP API happens using the KFP Python SDK. A `kfp.client` 
     * Install charmcraft
     * Run the tests with the command:
     ```
-    tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> <--charmcraft-clean>
+    tox -e bundle-integration-ambient -- --model kubeflow <--charmcraft-clean>
     ```
     This builds the charms sequentially with `charmcraft` through `ops_test.build_charm`, then deploys them.
 
@@ -74,7 +76,7 @@ Communication with the KFP API happens using the KFP Python SDK. A `kfp.client` 
     ```
     * Run the tests with the command:
     ```
-    tox -e bundle-integration -- --model kubeflow --bundle=./tests/integration/bundles/<bundle_template> --charms-path /charms/
+    tox -e bundle-integration-ambient -- --model kubeflow --charms-path /charms/
     ```
     This immediately deploys the charms packed with `ccc` before running the tests.
 
