@@ -574,6 +574,7 @@ class TestCharm:
             "ARCHIVED_RUNS_RETENTION_TIME": "",
             "RUNS_GC_INTERVAL": "6h",
             "RUNS_GC_BATCH_SIZE": "100",
+            "KFP_DISABLE_SCHEDULE_WRITER_HANDOFF": "true",
             "ARCHIVE_CONFIG_LOG_FILE_NAME": harness.charm.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": harness.charm.config["log-archive-prefix"],
             "CLUSTER_DOMAIN": "cluster.local",

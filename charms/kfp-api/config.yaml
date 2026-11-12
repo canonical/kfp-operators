@@ -53,12 +53,12 @@ options:
   launcher-image:
     type: string
     # Source: https://github.com/kubeflow/pipelines/blob/2.18.0/manifests/kustomize/base/pipeline/ml-pipeline-apiserver-deployment.yaml
-    default: "ghcr.io/kubeflow/kfp-launcher:2.18.0"
+    default: "docker.io/misohu/kfp-launcher:2.18.0"
     description: Launcher image used during a pipeline's steps.
   driver-image:
     type: string
     # Source: https://github.com/kubeflow/pipelines/blob/2.18.0/manifests/kustomize/base/pipeline/ml-pipeline-apiserver-deployment.yaml
-    default: "ghcr.io/kubeflow/kfp-driver:2.18.0"
+    default: "docker.io/misohu/kfp-driver:2.18.0"
     description: Driver image used during a pipeline's steps.
   log-level:
     type: string

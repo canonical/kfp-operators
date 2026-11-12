@@ -407,6 +407,8 @@ class KfpApiOperator(CharmBase):
             "RUNS_GC_INTERVAL": "6h",
             "RUNS_GC_BATCH_SIZE": "100",
             # Configurations charmed-kubeflow adds to those of upstream
+            # The upstream handoff requires Deployment-owned pods; Juju uses StatefulSets
+            "KFP_DISABLE_SCHEDULE_WRITER_HANDOFF": "true",
             "ARCHIVE_CONFIG_LOG_FILE_NAME": self.model.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": self.model.config["log-archive-prefix"],
             "CLUSTER_DOMAIN": "cluster.local",

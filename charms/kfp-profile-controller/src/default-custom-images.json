@@ -1,4 +1,4 @@
 {
-	"visualization_server": "ghcr.io/kubeflow/kfp-visualization-server:2.18.0",
-	"frontend": "ghcr.io/kubeflow/kfp-frontend:2.18.0"
+	"visualization_server": "docker.io/misohu/visualization-server:2.18.0",
+	"frontend": "docker.io/misohu/frontend:2.18.0"
 }

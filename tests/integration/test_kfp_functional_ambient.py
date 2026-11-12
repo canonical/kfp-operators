@@ -205,9 +205,6 @@ def test_create_and_monitor_run_with_artifacts(
 
 
 # ---- ScheduledWorfklows and Argo focused test case
-# TODO: remove once the rocks patch the KFP 2.18 schedule-writer handoff, which requires
-# Deployment-owned pods and does not work with Juju StatefulSets.
-@pytest.mark.xfail(reason="KFP 2.18 schedule-writer handoff is unsupported with upstream images")
 def test_create_and_monitor_recurring_run(
     kfp_client: kfp.Client, upload_and_clean_pipeline_v2, create_and_clean_experiment_v2
 ):
