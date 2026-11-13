@@ -370,6 +370,7 @@ class KfpApiOperator(CharmBase):
             "KFP_API_SERVICE_NAME": KFP_API_SERVICE_NAME,
             "KUBEFLOW_USERID_HEADER": "kubeflow-userid",
             "KUBEFLOW_USERID_PREFIX": "",
+            "POD_NAME": self.unit.name.replace("/", "-"),
             "POD_NAMESPACE": self.model.name,
             "OBJECTSTORECONFIG_SECURE": "true" if object_storage["secure"] else "false",
             "OBJECTSTORECONFIG_BUCKETNAME": object_storage["bucket"]
@@ -395,7 +396,19 @@ class KfpApiOperator(CharmBase):
             "CACHE_IMAGE": self.model.config["cache-image"],
             "V2_DRIVER_IMAGE": self.model.config["driver-image"],
             "V2_LAUNCHER_IMAGE": self.model.config["launcher-image"],
+            "CRON_SCHEDULE_TIMEZONE": "UTC",
+            "DEFAULT_SECURITY_CONTEXT_HOST_USERS": "",
+            "BLOCK_V1_PIPELINES": "false",
+            "V1_ALLOWED_NAMESPACES": "",
+            "DRIVER_POD_LABELS": "",
+            "DRIVER_POD_ANNOTATIONS": "",
+            "RUNS_RETENTION_TIME": "",
+            "ARCHIVED_RUNS_RETENTION_TIME": "",
+            "RUNS_GC_INTERVAL": "6h",
+            "RUNS_GC_BATCH_SIZE": "100",
             # Configurations charmed-kubeflow adds to those of upstream
+            # The upstream handoff requires Deployment-owned pods; Juju uses StatefulSets
+            "KFP_DISABLE_SCHEDULE_WRITER_HANDOFF": "true",
             "ARCHIVE_CONFIG_LOG_FILE_NAME": self.model.config["log-archive-filename"],
             "ARCHIVE_CONFIG_LOG_PATH_PREFIX": self.model.config["log-archive-prefix"],
             "CLUSTER_DOMAIN": "cluster.local",

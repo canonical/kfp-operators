@@ -14,15 +14,6 @@ MLMD = CharmSpec(charm="mlmd", channel="latest/edge", trust=True)
 MYSQL_K8S = CharmSpec(
     charm="mysql-k8s", channel="8.0/stable", config={"profile": "testing"}, trust=True
 )
-ISTIO_GATEWAY = CharmSpec(
-    charm="istio-gateway", channel="latest/edge", config={"kind": "ingress"}, trust=True
-)
-ISTIO_PILOT = CharmSpec(
-    charm="istio-pilot",
-    channel="latest/edge",
-    config={"default-gateway": "kubeflow-gateway"},
-    trust=True,
-)
 # For Charmed Istio to work together with Cilium,
 # the `platform` configuration of the istio-k8s charm must be unset
 # because by default the platform is set to "microk8s".

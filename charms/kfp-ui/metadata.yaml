@@ -7,14 +7,13 @@ docs: https://discourse.charmhub.io/t/8228
 containers:
   ml-pipeline-ui:
     resource: ml-pipeline-ui
-    # Set these to 584792 when using the rock
     uid: 584792
     gid: 584792
 resources:
   ml-pipeline-ui:
     type: oci-image
     description: OCI image for ml-pipeline-ui
-    upstream-source: docker.io/charmedkubeflow/frontend:2.16.0-c9e8334
+    upstream-source: docker.io/misohu/frontend:2.18.0
 requires:
   s3-credentials:
     interface: s3
@@ -67,46 +66,6 @@ requires:
           - service-port
     versions: [v1]
     __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
-  ingress:
-    interface: ingress
-    schema:
-      v2:
-        requires:
-          type: object
-          properties:
-            service:
-              type: string
-            port:
-              type: integer
-            namespace:
-              type: string
-            prefix:
-              type: string
-            rewrite:
-              type: string
-          required:
-          - service
-          - port
-          - namespace
-          - prefix
-      v1:
-        requires:
-          type: object
-          properties:
-            service:
-              type: string
-            port:
-              type: integer
-            prefix:
-              type: string
-            rewrite:
-              type: string
-          required:
-          - service
-          - port
-          - prefix
-    versions: [v1]
-    __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/ingress.yaml
   dashboard-links:
     interface: kubeflow_dashboard_links
   logging:

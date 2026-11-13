@@ -125,6 +125,7 @@ class KfpSchedwf(CharmBase):
                 ],
                 timezone=self.model.config["timezone"],
                 log_level=self.model.config["log-level"],
+                user_identity=f"system:serviceaccount:{self.model.name}:{SA_NAME}",
             ),
             depends_on=[
                 self.kubernetes_resources,

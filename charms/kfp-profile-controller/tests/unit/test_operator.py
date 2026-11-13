@@ -471,7 +471,7 @@ def test_custom_images_config_with_incorrect_images_names(
 @pytest.mark.parametrize(
     "has_relation,expected_ambient",
     [
-        (False, False),  # sidecar mode
+        (False, False),  # no service-mesh relation
         (True, True),  # ambient mode
     ],
 )

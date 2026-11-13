@@ -19,7 +19,8 @@ from charmed_kubeflow_chisme.testing import (
     get_pod_names,
     integrate_with_service_mesh,
 )
-from charms_dependencies import KFP_SCHEDWF, KFP_VIZ, MINIO, MYSQL
+from charmed_kubeflow_chisme.testing.s3_integration import deploy_and_assert_s3_integrator
+from charms_dependencies import KFP_SCHEDWF, KFP_VIZ, MINIO, MYSQL, S3_INTEGRATOR
 from lightkube import Client
 from lightkube_extensions.types import AuthorizationPolicy
 from pytest_operator.plugin import OpsTest
@@ -216,6 +217,27 @@ async def test_authorization_policy_waypoint_accepted(ops_test: OpsTest, lightku
         assert waypoint_condition.get("reason") == "Accepted", "Reason is not 'Accepted'"
 
     assert_waypoint_accepted()
+
+
+async def test_remove_object_storage_relation(ops_test: OpsTest):
+    """Test that removing the object-storage relation puts the charm in a blocked state."""
+    await ops_test.juju(
+        "remove-relation",
+        f"{APP_NAME}:object-storage",
+        f"{MINIO.charm}:object-storage",
+    )
+    await ops_test.model.wait_for_idle(apps=[APP_NAME], status="blocked", timeout=60 * 5)
+
+
+async def test_deploy_and_integrate_s3_integrator(ops_test: OpsTest):
+    """Test deploying and integrating with s3-integrator restores the charm to active."""
+    await deploy_and_assert_s3_integrator(
+        ops_test.model, s3_integrator=S3_INTEGRATOR, add_ca_chain=True
+    )
+    await ops_test.model.add_relation(
+        f"{APP_NAME}:s3-credentials", f"{S3_INTEGRATOR.charm}:s3-credentials"
+    )
+    await ops_test.model.wait_for_idle(apps=[APP_NAME], status="active", timeout=60 * 10)
 
 
 async def test_remove_application(ops_test: OpsTest):

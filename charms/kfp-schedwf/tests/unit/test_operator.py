@@ -106,6 +106,17 @@ def test_pebble_service_container_running(harness: Harness, mocked_lightkube_cli
     # Assert the environment variables that are set from defaults in the service plan
     environment = container.get_plan().services["controller"].environment
     assert environment["CRON_SCHEDULE_TIMEZONE"] == harness.charm.config.get("timezone")
+    assert environment["POD_NAME"] == harness.charm.unit.name.replace("/", "-")
+    assert environment["POD_NAMESPACE"] == harness.charm.model.name
+    assert environment["KFP_DISABLE_SCHEDULE_WRITER_HANDOFF"] == "true"
+
+    command = container.get_plan().services["controller"].command
+    assert "--multiUser=true" in command
+    assert "--userIdentityHeader=kubeflow-userid" in command
+    assert (
+        f"--userIdentityValue=system:serviceaccount:{harness.charm.model.name}:kfp-schedwf"
+        in command
+    )
 
 
 @patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")

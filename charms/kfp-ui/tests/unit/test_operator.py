@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-import yaml
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from charms.istio_ingress_k8s.v0.istio_ingress_route import (
     HTTPPathMatchType,
@@ -251,47 +250,6 @@ def test_ambient_ingress_configure_app_leader_generic_error(
     assert "Test error" in str(exc_info.value)
 
 
-def test_ingress_relation_with_related_app(harness: Harness, mocked_kubernetes_service_patch):
-    """Test that the kfp-api relation sends data to related apps and goes Active."""
-    # Arrange
-    harness.begin()
-
-    # Mock:
-    # * leadership_gate to be active and executed
-    harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
-
-    expected_relation_data = {
-        "_supported_versions": ["v1"],
-        "data": render_ingress_data(
-            service=harness.model.app.name, port=harness.model.config["http-port"]
-        ),
-    }
-
-    # Act
-    # Add one relation with data.  This should trigger a charm reconciliation due to
-    # relation-changed.
-    relation_metadata = add_sdi_relation_to_harness(harness, "ingress", other_app="o1", data={})
-    relation_ids_to_assert = [relation_metadata.rel_id]
-
-    # Assert
-    assert isinstance(harness.charm.sidecar_ingress_relation.status, ActiveStatus)
-    assert_relation_data_send_as_expected(harness, expected_relation_data, relation_ids_to_assert)
-
-
-def assert_relation_data_send_as_expected(
-    harness: Harness, expected_relation_data: dict, rel_ids_to_assert: list
-):
-    """Asserts that we have sent the expected data to the given relations."""
-    # Assert on the data we sent out to the other app for each relation.
-    for rel_id in rel_ids_to_assert:
-        relation_data = harness.get_relation_data(rel_id, harness.model.app)
-        assert (
-            yaml.safe_load(relation_data["_supported_versions"])
-            == expected_relation_data["_supported_versions"]
-        )
-        assert yaml.safe_load(relation_data["data"]) == expected_relation_data["data"]
-
-
 def test_pebble_services_running_object_storage(harness: Harness, mocked_kubernetes_service_patch):
     """Test that the pebble services successfully start with an object-storage."""
     # Arrange
@@ -332,6 +290,15 @@ def test_pebble_services_running_object_storage(harness: Harness, mocked_kuberne
     assert environment["MINIO_SSL"] == MOCK_OBJECT_STORAGE_DATA["secure"]
     assert environment["ML_PIPELINE_SERVICE_HOST"] == MOCK_KFP_API_DATA["service-name"]
     assert environment["ML_PIPELINE_SERVICE_PORT"] == MOCK_KFP_API_DATA["service-port"]
+    assert environment["CLUSTER_DOMAIN"] == ".svc.cluster.local"
+    signing_secret = environment["TENSORBOARD_PROXY_SIGNING_SECRET"]
+    assert len(signing_secret.encode("utf-8")) >= 32
+    assert signing_secret != MOCK_OBJECT_STORAGE_DATA["secret-key"]
+
+    # The signing secret must be stable across reconciliations
+    harness.charm.on.config_changed.emit()
+    environment = container.get_plan().services["ml-pipeline-ui"].environment
+    assert environment["TENSORBOARD_PROXY_SIGNING_SECRET"] == signing_secret
 
 
 def test_pebble_services_running_s3(harness: Harness, mocked_kubernetes_service_patch):
@@ -546,67 +513,6 @@ def test_storage_relation_data_not_ready_blocks_unit_status(
     )
 
 
-@pytest.mark.parametrize(
-    "add_ambient,add_sidecar",
-    [
-        (False, False),  # no relations
-        (True, False),  # only ambient
-        (False, True),  # only sidecar
-    ],
-)
-def test_istio_relations_conflict_detector_active(
-    harness: Harness,
-    mocked_kubernetes_service_patch,
-    add_ambient,
-    add_sidecar,
-):
-    """Test conflict detector returns ActiveStatus when no conflict exists."""
-    harness.begin()
-    if add_ambient:
-        harness.add_relation("istio-ingress-route", "istio-ingress")
-    if add_sidecar:
-        harness.add_relation("ingress", "istio-pilot")
-    status = harness.charm.istio_relations_conflict_detector.component.get_status()
-    assert isinstance(status, ActiveStatus)
-
-
-def test_istio_relations_conflict_detector_both_relations(
-    harness: Harness,
-    mocked_kubernetes_service_patch,
-):
-    """Test conflict detector when both relations are present - should be blocked."""
-    # Arrange
-    harness.begin()
-
-    # Act - Add both relations
-    harness.add_relation("istio-ingress-route", "istio-ingress")
-    harness.add_relation("ingress", "istio-pilot")
-
-    # Assert
-    status = harness.charm.istio_relations_conflict_detector.component.get_status()
-    assert isinstance(status, BlockedStatus)
-    assert "Cannot have both" in status.message
-    assert "istio-ingress-route" in status.message
-    assert "ingress" in status.message
-
-
-def test_istio_relations_conflict_detector_multiple_ambient_relations(
-    harness: Harness,
-    mocked_kubernetes_service_patch,
-):
-    """Test conflict detector handles multiple istio-ingress-route relations without erroring."""
-    # Arrange
-    harness.begin()
-
-    # Act - Add more than one relation on the ambient ingress endpoint
-    harness.add_relation("istio-ingress-route", "istio-ingress")
-    harness.add_relation("istio-ingress-route", "istio-ingress-2")
-
-    # Assert - inspecting the full list of relations per endpoint must not raise
-    status = harness.charm.istio_relations_conflict_detector.component.get_status()
-    assert isinstance(status, ActiveStatus)
-
-
 def test_each_istio_ingress_route_relation_receives_config(
     harness: Harness,
     mocked_kubernetes_service_patch,
@@ -686,16 +592,6 @@ def mocked_kubernetes_service_patch(mocker):
         "charm.KubernetesServicePatch", lambda x, y, service_name: None
     )
     yield mocked_kubernetes_service_patch
-
-
-def render_ingress_data(service: str, port: str) -> dict:
-    """Returns typical data for the ingress relation."""
-    return {
-        "prefix": "/pipeline",
-        "rewrite": "/pipeline",
-        "service": service,
-        "port": int(port),
-    }
 
 
 def render_kfp_ui_data(app_name: str, model_name: str, port: int) -> dict:
