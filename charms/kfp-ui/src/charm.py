@@ -18,7 +18,6 @@ from charmed_kubeflow_chisme.components import (
     LeadershipGateComponent,
     RelationCountGateComponent,
     S3RequirerComponent,
-    SdiRelationBroadcasterComponent,
     SdiRelationDataReceiverComponent,
 )
 from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
@@ -31,7 +30,6 @@ from lightkube.models.core_v1 import ServicePort
 from ops import CharmBase, SecretNotFoundError, main
 
 from components.istio_ambient_requirer_component import AmbientIngressRequirerComponent
-from components.istio_relations_conflict_detector import IstioRelationsConflictDetectorComponent
 from components.object_storage_validator import ObjectStorageValidatorComponent
 from components.pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleService
 
@@ -153,16 +151,6 @@ class KfpUiOperator(CharmBase):
             depends_on=[],
         )
 
-        self.istio_relations_conflict_detector = self.charm_reconciler.add(
-            component=IstioRelationsConflictDetectorComponent(
-                charm=self,
-                name="istio-relations-conflict-detector",
-                sidecar_relation_name="ingress",
-                ambient_relation_name="istio-ingress-route",
-            ),
-            depends_on=[self.leadership_gate],
-        )
-
         self.ambient_ingress_relation = self.charm_reconciler.add(
             component=AmbientIngressRequirerComponent(
                 charm=self,
@@ -172,22 +160,7 @@ class KfpUiOperator(CharmBase):
                 path_prefix="/pipeline",
                 url_rewrite="/pipeline",
             ),
-            depends_on=[self.leadership_gate, self.istio_relations_conflict_detector],
-        )
-
-        self.sidecar_ingress_relation = self.charm_reconciler.add(
-            SdiRelationBroadcasterComponent(
-                charm=self,
-                name="sidecar_relation:ingress",
-                relation_name="ingress",
-                data_to_send={
-                    "prefix": "/pipeline",
-                    "rewrite": "/pipeline",
-                    "service": self.model.app.name,
-                    "port": int(self.model.config["http-port"]),
-                },
-            ),
-            depends_on=[self.leadership_gate, self.istio_relations_conflict_detector],
+            depends_on=[self.leadership_gate],
         )
 
         self.s3_relations_conflict_detector = self.charm_reconciler.add(

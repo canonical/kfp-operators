@@ -266,13 +266,14 @@ def server_factory(visualization_server_image,
 
             # Compute status based on observed state.
             desired_secret_count = 1 if manage_minio_secret else 0
+            desired_authorization_policy_count = 1 if ambient_mesh_enabled else 0
             desired_status = {
                 "kubeflow-pipelines-ready":
                     len(attachments["Secret.v1"]) == desired_secret_count and
                     len(attachments["ConfigMap.v1"]) == desired_configmap_count and
                     len(attachments["Deployment.apps/v1"]) == 2 and
                     len(attachments["Service.v1"]) == 2 and
-                    len(attachments["AuthorizationPolicy.security.istio.io/v1beta1"]) == 1 and
+                    len(attachments["AuthorizationPolicy.security.istio.io/v1beta1"]) == desired_authorization_policy_count and
                     "True" or "False"
             }
 
@@ -542,7 +543,7 @@ def server_factory(visualization_server_image,
             # - - - - - - - - - - - - - - - - - -
             # CUSTOM CODE BY CANONICAL
             # - - - - - - - - - - - - - - - - - -
-            # dynamically handle ambient / sidecar authorization policies
+            # restrict the visualization server to kfp-api when on the ambient mesh
             if ambient_mesh_enabled:
                 desired_resources.append(
                     {
@@ -571,44 +572,6 @@ def server_factory(visualization_server_image,
                                     ]
                                 }
                             ],
-                        },
-                    }
-                )
-
-            # if no ambient mesh, then create the allow-all AuthorizationPolicy in user namespaces
-            # This AuthorizationPolicy was added from https://github.com/canonical/kfp-operators/pull/356
-            # to fix https://github.com/canonical/notebook-operators/issues/311
-            # and https://github.com/canonical/kfp-operators/issues/355.
-            if not ambient_mesh_enabled:
-                desired_resources.append(
-                    {
-                        "apiVersion": "security.istio.io/v1beta1",
-                        "kind": "AuthorizationPolicy",
-                        "metadata": {
-                            "name": "ns-owner-access-istio-charmed",
-                            "namespace": namespace,
-                        },
-                        "spec": {
-                            "rules": [
-                                {
-                                    "when": [
-                                        {
-                                            "key": "request.headers[kubeflow-userid]",
-                                            "values": ["*"],
-                                        }
-                                    ]
-                                },
-                                {
-                                    "to": [
-                                        {
-                                            "operation": {
-                                                "methods": ["GET"],
-                                                "paths": ["*/api/kernels"],
-                                            }
-                                        }
-                                    ]
-                                },
-                            ]
                         },
                     }
                 )

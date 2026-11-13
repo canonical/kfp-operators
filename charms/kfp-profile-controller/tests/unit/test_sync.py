@@ -61,10 +61,10 @@ def start_server():
         server.server_close()
 
 
-def post_sync(url, labels):
+def post_sync(url, labels, attachments=EMPTY_ATTACHMENTS):
     body = {
         "object": {"metadata": {"name": NAMESPACE, "labels": labels}},
-        "attachments": EMPTY_ATTACHMENTS,
+        "attachments": attachments,
     }
     request = urllib.request.Request(
         url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"}
@@ -133,6 +133,31 @@ def test_sync_artifact_server_env(start_server, minio_ssl, expected):
     assert env["HTTP_BASE_URL"] == "https://kubeflow.example.com"
     assert env["ALLOWED_ARTIFACT_ENDPOINTS"] == "https://s3.example.com"
     assert env["ARTIFACTS_RATE_LIMIT_DISABLED"] == "true"
+
+
+@pytest.mark.parametrize(
+    "ambient_mesh_enabled, expected_policies",
+    [(True, ["ml-pipeline-visualizationserver"]), (False, [])],
+)
+def test_sync_authorization_policies_and_readiness(
+    start_server, ambient_mesh_enabled, expected_policies
+):
+    _, url = start_server(ambient_mesh_enabled=ambient_mesh_enabled)
+    labels = {"pipelines.kubeflow.org/enabled": "true"}
+
+    desired = post_sync(url, labels=labels)
+    policies = [a for a in desired["attachments"] if a["kind"] == "AuthorizationPolicy"]
+    assert [p["metadata"]["name"] for p in policies] == expected_policies
+    assert desired["status"] == {"kubeflow-pipelines-ready": "False"}
+
+    # Once metacontroller observes the desired children, the namespace is ready
+    observed = {
+        key: [a for a in desired["attachments"] if f"{a['kind']}.{a['apiVersion']}" == key]
+        for key in EMPTY_ATTACHMENTS
+    }
+    assert post_sync(url, labels=labels, attachments=observed)["status"] == {
+        "kubeflow-pipelines-ready": "True"
+    }
 
 
 def test_settings_from_env(monkeypatch):
