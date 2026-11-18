@@ -11,6 +11,7 @@ from charmed_kubeflow_chisme.testing import (
     assert_logging,
     assert_security_context,
     deploy_and_assert_grafana_agent,
+    deploy_and_integrate_service_mesh_charms,
     generate_container_securitycontext_map,
     generate_context_from_charm_spec_list,
     get_pod_names,
@@ -66,6 +67,11 @@ async def test_build_and_deploy_with_relations(ops_test: OpsTest, request: pytes
     )
     await ops_test.model.integrate(
         "kfp-api:s3-credentials", f"{S3_INTEGRATOR.charm}:s3-credentials"
+    )
+
+    # kfp-ui is Blocked without an istio-ingress-route relation
+    await deploy_and_integrate_service_mesh_charms(
+        APP_NAME, ops_test.model, relate_to_beacon=False, model_on_mesh=False
     )
 
     await ops_test.model.wait_for_idle(

@@ -166,19 +166,30 @@ def test_kfp_api_relation_without_relation(harness: Harness, mocked_kubernetes_s
     assert isinstance(harness.charm.kfp_api_relation.status, BlockedStatus)
 
 
+@pytest.mark.parametrize(
+    "related, expected_status",
+    [
+        pytest.param(False, BlockedStatus, id="no-relation"),
+        pytest.param(True, ActiveStatus, id="related"),
+    ],
+)
 def test_ambient_ingress_component_get_status(
+    related: bool,
+    expected_status: type,
     harness: Harness,
     mocked_kubernetes_service_patch,
 ):
-    """Test that ambient ingress component get_status always returns ActiveStatus."""
+    """Test that ambient ingress component blocks without an istio-ingress-route relation."""
     # Arrange
     harness.begin()
+    if related:
+        harness.add_relation("istio-ingress-route", "istio-ingress")
 
     # Act
     status = harness.charm.ambient_ingress_relation.component.get_status()
 
     # Assert
-    assert isinstance(status, ActiveStatus)
+    assert isinstance(status, expected_status)
 
 
 def test_ambient_ingress_configure_app_leader_success(
@@ -500,6 +511,7 @@ def test_storage_relation_data_not_ready_blocks_unit_status(
     harness.begin()
     # leadership-gate must be Active so the storage components are reached during reconcile
     harness.charm.leadership_gate.get_status = MagicMock(return_value=ActiveStatus())
+    harness.add_relation("istio-ingress-route", "istio-ingress")
     # The relation exists, but the provider hasn't populated the databag yet
     harness.add_relation("s3-credentials", "s3-provider")
 

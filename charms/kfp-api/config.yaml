@@ -27,8 +27,9 @@ options:
       when uploading a new version of a pipeline
   cache-image:
     type: string
-    # Source: https://github.com/kubeflow/pipelines/blob/2.18.0/manifests/kustomize/base/installs/generic/pipeline-install-config.yaml
-    default: "mirror.gcr.io/library/alpine:3.23.7@sha256:ff7f0c727dd796aa36787bfcd9a64bf35a6ce72a73451b3359fde849b6703d63"
+    # Upstream: https://github.com/kubeflow/pipelines/blob/2.18.0/manifests/kustomize/base/installs/generic/pipeline-install-config.yaml#L65
+    # Rock: https://github.com/canonical/busybox-rock/blob/2ad01f3fb9b6303c1edbf6ddbaa3e45dcdb7856c/rockcraft.yaml
+    default: "docker.io/ubuntu/busybox:1.37-26.04_stable@sha256:02dc68fe30f9e820fc89f9a0f0e6b3f39bf25bd42977e05575c0db340b155d5a"
     description: Which image to list as the backing image for a pipeline run step pulled from cache
   cache-enabled:
     type: boolean
@@ -52,12 +53,12 @@ options:
     description: Default name of object storage bucket.
   launcher-image:
     type: string
-    # Source: https://github.com/kubeflow/pipelines/blob/2.18.0/manifests/kustomize/base/pipeline/ml-pipeline-apiserver-deployment.yaml
+    # Source: https://github.com/kubeflow/pipelines/blob/2.18.0/manifests/kustomize/base/pipeline/ml-pipeline-apiserver-deployment.yaml#L229-L230
     default: "docker.io/misohu/kfp-launcher:2.18.0"
     description: Launcher image used during a pipeline's steps.
   driver-image:
     type: string
-    # Source: https://github.com/kubeflow/pipelines/blob/2.18.0/manifests/kustomize/base/pipeline/ml-pipeline-apiserver-deployment.yaml
+    # Source: https://github.com/kubeflow/pipelines/blob/2.18.0/manifests/kustomize/base/pipeline/ml-pipeline-apiserver-deployment.yaml#L227-L228
     default: "docker.io/misohu/kfp-driver:2.18.0"
     description: Driver image used during a pipeline's steps.
   log-level:

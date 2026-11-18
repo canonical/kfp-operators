@@ -225,11 +225,6 @@ jobs:
             test-type: integration
           - charm: kfp-ui
             test-type: integration
-          # Only ambient deployments are supported; these charms have an integration-ambient test
-          - charm: kfp-persistence
-            test-type: integration
-          - charm: kfp-viz
-            test-type: integration
     steps:
       # Ideally we'd use self-hosted runners, but this effort is still not stable
       # This action will remove unused software (dotnet, haskell, android libs, codeql,

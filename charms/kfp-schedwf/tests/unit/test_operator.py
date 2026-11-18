@@ -1,9 +1,11 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import yaml
 from charmed_kubeflow_chisme.exceptions import GenericCharmRuntimeError
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
@@ -197,6 +199,27 @@ def test_kfp_api_relation_updates_pebble_service(harness: Harness, mocked_lightk
     updated_command = updated_plan.services["controller"].command
     assert "--mlPipelineAPIServerName=custom-ml-pipeline" in updated_command
     assert "--mlPipelineServiceGRPCPort=1234" in updated_command
+
+
+@patch("charm.SA_TOKEN_FULL_PATH", "tests/unit/data/schedwf-sa-token")
+def test_service_account_follows_app_name(mocked_lightkube_client):
+    """Test that the SA token and user identity use the app name, not a hardcoded one."""
+    metadata = yaml.safe_load(Path("metadata.yaml").read_text())
+    metadata["name"] = "custom-schedwf"
+    harness = Harness(KfpSchedwf, meta=yaml.safe_dump(metadata))
+    harness.set_model_name("custom-model")
+    harness.set_leader(True)
+    harness.begin()
+    harness.set_can_connect("ml-pipeline-scheduledworkflow", True)
+    harness.charm.kubernetes_resources.get_status = MagicMock(return_value=ActiveStatus())
+    harness.charm.sa_token.get_status = MagicMock(return_value=ActiveStatus())
+
+    harness.charm.on.install.emit()
+
+    assert harness.charm.sa_token.component._sa_name == "custom-schedwf"
+    container = harness.charm.unit.get_container("ml-pipeline-scheduledworkflow")
+    command = container.get_plan().services["controller"].command
+    assert "--userIdentityValue=system:serviceaccount:custom-model:custom-schedwf" in command
 
 
 @pytest.fixture

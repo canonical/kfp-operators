@@ -39,6 +39,8 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
             "POD_NAME": self._charm.unit.name.replace("/", "-"),
             "POD_NAMESPACE": self._charm.model.name,
             # The upstream handoff requires Deployment-owned pods; Juju uses StatefulSets
+            # https://github.com/canonical/kfp-operators/issues/1106
+            # https://github.com/canonical/pipelines-rocks/blob/main/scheduledworkflow/patches/0001-schedule-writer-handoff-opt-out.patch
             "KFP_DISABLE_SCHEDULE_WRITER_HANDOFF": "true",
         }
         self.log_level = log_level
