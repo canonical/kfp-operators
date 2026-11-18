@@ -7,14 +7,13 @@ docs: https://discourse.charmhub.io/t/11185
 containers:
   persistenceagent:
     resource: oci-image
-    # Set these to 584792 when using the rock
     uid: 584792
     gid: 584792
 resources:
   oci-image:
     type: oci-image
     description: Backing OCI image
-    upstream-source: docker.io/charmedkubeflow/persistenceagent:2.16.0-7d20b0c
+    upstream-source: docker.io/misohu/persistenceagent:2.18.0
 requires:
   kfp-api:
     interface: k8s-service

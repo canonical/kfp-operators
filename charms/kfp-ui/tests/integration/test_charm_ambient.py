@@ -9,19 +9,20 @@ import tenacity
 import yaml
 from charmed_kubeflow_chisme.testing import (
     GRAFANA_AGENT_APP,
+    ISTIO_BEACON_K8S_APP,
     ISTIO_INGRESS_K8S_APP,
     ISTIO_INGRESS_ROUTE_ENDPOINT,
+    ISTIO_K8S_APP,
     assert_logging,
     assert_path_reachable_through_ingress,
     assert_security_context,
     deploy_and_assert_grafana_agent,
-    deploy_and_integrate_service_mesh_charms,
     generate_container_securitycontext_map,
     generate_context_from_charm_spec_list,
     get_pod_names,
     integrate_with_service_mesh,
 )
-from charms_dependencies import KFP_API, KFP_VIZ, MINIO, MYSQL_K8S
+from charms_dependencies import ISTIO_CHANNEL, KFP_API, KFP_VIZ, MINIO, MYSQL_K8S
 from lightkube import Client
 from lightkube.generic_resource import create_namespaced_resource
 from pytest_operator.plugin import OpsTest
@@ -37,7 +38,6 @@ log = logging.getLogger(__name__)
 
 # A second istio-ingress-k8s instance used to verify multiple-ingress support.
 SECOND_INGRESS_APP = "istio-ingress-k8s-alt"
-INGRESS_CHANNEL = "2/stable"
 # Name of the HTTPRoute submitted by kfp-ui (see AmbientIngressRequirerComponent).
 INGRESS_ROUTE_NAME = "http-route"
 # Gateway listener section for cleartext HTTP on port 80.
@@ -64,6 +64,21 @@ def lightkube_client() -> Client:
     return client
 
 
+async def deploy_istio_charms(ops_test: OpsTest, model_on_mesh: bool = True):
+    """Deploy the Istio charms with the Juju CLI; python-libjuju can't deploy Ubuntu 26.04."""
+    for charm, options in (
+        (ISTIO_K8S_APP, ("--config", "platform=")),
+        (ISTIO_INGRESS_K8S_APP, ()),
+        (ISTIO_BEACON_K8S_APP, ("--config", f"model-on-mesh={str(model_on_mesh).lower()}")),
+    ):
+        await ops_test.juju(
+            "deploy", charm, "--channel", ISTIO_CHANNEL, "--trust", *options, check=True
+        )
+        await ops_test.model.wait_for_idle(
+            apps=[charm], status="active", raise_on_error=False, timeout=60 * 15
+        )
+
+
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy_with_relations(ops_test: OpsTest, request: pytest.FixtureRequest):
     image_path = METADATA["resources"]["ml-pipeline-ui"]["upstream-source"]
@@ -85,7 +100,8 @@ async def test_build_and_deploy_with_relations(ops_test: OpsTest, request: pytes
     )
 
     # Deploy istio ambient charms and add relations
-    await deploy_and_integrate_service_mesh_charms(APP_NAME, ops_test.model)
+    await deploy_istio_charms(ops_test)
+    await integrate_with_service_mesh(APP_NAME, ops_test.model)
 
     context = generate_context_from_charm_spec_list(charms_dependencies_list)
     rendered_bundle = ops_test.render_bundle(BUNDLE_PATH, context)
@@ -164,11 +180,14 @@ async def test_deploy_and_relate_second_ingress(ops_test: OpsTest):
     kfp-ui must accept more than one istio-ingress-route relation without
     erroring, so it should remain active after the second ingress is related.
     """
-    await ops_test.model.deploy(
+    await ops_test.juju(
+        "deploy",
         ISTIO_INGRESS_K8S_APP,
-        application_name=SECOND_INGRESS_APP,
-        channel=INGRESS_CHANNEL,
-        trust=True,
+        SECOND_INGRESS_APP,
+        "--channel",
+        ISTIO_CHANNEL,
+        "--trust",
+        check=True,
     )
     await ops_test.model.wait_for_idle(
         [SECOND_INGRESS_APP],

@@ -17,13 +17,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer
 import json
 import os
 import base64
 import logging
 
 logger = logging.getLogger(__name__)
+
+HEALTHZ_PATH = '/healthz'
 
 
 def main():
@@ -51,7 +54,9 @@ def get_settings_from_env(controller_port=None,
                           minio_host=None, minio_port=None, minio_namespace=None,
                           minio_endpoint=None, minio_ssl=None, minio_region=None,
                           metadata_grpc_service_host=None,
-                          metadata_grpc_service_port=None):
+                          metadata_grpc_service_port=None,
+                          allowed_artifact_endpoints=None,
+                          http_base_url=None):
     """
     Returns a dict of settings from environment variables relevant to the controller
 
@@ -148,6 +153,14 @@ def get_settings_from_env(controller_port=None,
         metadata_grpc_service_port or \
         os.environ.get("METADATA_GRPC_SERVICE_PORT", "8080")
 
+    settings[
+        "http_base_url"] = http_base_url if http_base_url is not None else os.environ.get(
+            "HTTP_BASE_URL", "")
+
+    settings["allowed_artifact_endpoints"] = \
+        allowed_artifact_endpoints if allowed_artifact_endpoints is not None \
+            else os.environ.get("ALLOWED_ARTIFACT_ENDPOINTS", "")
+
     # - - - - - - - - - - - - - - - - - -
     # CUSTOM CODE BY CANONICAL
     # - - - - - - - - - - - - - - - - - -
@@ -179,9 +192,10 @@ def server_factory(visualization_server_image,
                    kfp_api_principal, ambient_mesh_enabled,
                    minio_ssl=False, minio_region="us-east-1",
                    kfp_default_pipeline_root=None, url="", controller_port=8080,
-                   manage_minio_secret=True, manage_kfp_launcher_configmap=True):
+                   manage_minio_secret=True, manage_kfp_launcher_configmap=True,
+                   allowed_artifact_endpoints="", http_base_url=""):
     """
-    Returns an HTTPServer populated with Handler with customized settings
+    Returns a ThreadingHTTPServer populated with Handler with customized settings
     """
     class Controller(BaseHTTPRequestHandler):
         def sync(self, parent, attachments):
@@ -252,13 +266,14 @@ def server_factory(visualization_server_image,
 
             # Compute status based on observed state.
             desired_secret_count = 1 if manage_minio_secret else 0
+            desired_authorization_policy_count = 1 if ambient_mesh_enabled else 0
             desired_status = {
                 "kubeflow-pipelines-ready":
                     len(attachments["Secret.v1"]) == desired_secret_count and
                     len(attachments["ConfigMap.v1"]) == desired_configmap_count and
                     len(attachments["Deployment.apps/v1"]) == 2 and
                     len(attachments["Service.v1"]) == 2 and
-                    len(attachments["AuthorizationPolicy.security.istio.io/v1beta1"]) == 1 and
+                    len(attachments["AuthorizationPolicy.security.istio.io/v1beta1"]) == desired_authorization_policy_count and
                     "True" or "False"
             }
 
@@ -405,7 +420,29 @@ def server_factory(visualization_server_image,
                                                     "name": "mlpipeline-minio-artifact"
                                                 }
                                             }
-                                        }
+                                        },
+                                        # - - - - - - - - - - - - - - - - - -
+                                        # CUSTOM CODE BY CANONICAL
+                                        # - - - - - - - - - - - - - - - - - -
+                                        # Since 2.18 the frontend only trusts provider endpoints
+                                        # matching its configured object store origin, which
+                                        # includes the scheme derived from MINIO_SSL.
+                                        {'name': "MINIO_SSL", 'value': "true" if minio_ssl else "false"},
+                                        # - - - - - - - - - - - - - - - - - -
+                                        {
+                                            "name": "HTTP_BASE_URL",
+                                            "value": http_base_url,
+                                        },
+                                        {
+                                            "name": "ALLOWED_ARTIFACT_ENDPOINTS",
+                                            "value": allowed_artifact_endpoints,
+                                        },
+                                        # The shared UI server limits each user before proxying. With auth
+                                        # disabled here, a second limit would key every user by its address.
+                                        {
+                                            "name": "ARTIFACTS_RATE_LIMIT_DISABLED",
+                                            "value": "true",
+                                        },
                                     ],
                                     "resources": {
                                         "requests": {
@@ -506,7 +543,7 @@ def server_factory(visualization_server_image,
             # - - - - - - - - - - - - - - - - - -
             # CUSTOM CODE BY CANONICAL
             # - - - - - - - - - - - - - - - - - -
-            # dynamically handle ambient / sidecar authorization policies
+            # restrict the visualization server to kfp-api when on the ambient mesh
             if ambient_mesh_enabled:
                 desired_resources.append(
                     {
@@ -538,44 +575,6 @@ def server_factory(visualization_server_image,
                         },
                     }
                 )
-
-            # if no ambient mesh, then create the allow-all AuthorizationPolicy in user namespaces
-            # This AuthorizationPolicy was added from https://github.com/canonical/kfp-operators/pull/356
-            # to fix https://github.com/canonical/notebook-operators/issues/311
-            # and https://github.com/canonical/kfp-operators/issues/355.
-            if not ambient_mesh_enabled:
-                desired_resources.append(
-                    {
-                        "apiVersion": "security.istio.io/v1beta1",
-                        "kind": "AuthorizationPolicy",
-                        "metadata": {
-                            "name": "ns-owner-access-istio-charmed",
-                            "namespace": namespace,
-                        },
-                        "spec": {
-                            "rules": [
-                                {
-                                    "when": [
-                                        {
-                                            "key": "request.headers[kubeflow-userid]",
-                                            "values": ["*"],
-                                        }
-                                    ]
-                                },
-                                {
-                                    "to": [
-                                        {
-                                            "operation": {
-                                                "methods": ["GET"],
-                                                "paths": ["*/api/kernels"],
-                                            }
-                                        }
-                                    ]
-                                },
-                            ]
-                        },
-                    }
-                )
             # - - - - - - - - - - - - - - - - - -
 
             print('Received request:\n', json.dumps(parent, indent=2, sort_keys=True))
@@ -599,6 +598,25 @@ def server_factory(visualization_server_image,
 
             return {"status": desired_status, "attachments": desired_resources}
 
+        def do_GET(self):
+            # Liveness/readiness endpoint; must not call external services.
+            if self.path.split("?", 1)[0] == HEALTHZ_PATH:
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"ok")
+            else:
+                self.send_error(404)
+
+        def log_request(self, code="-", size="-"):
+            # Skip probe requests so they don't flood the controller logs.
+            # Malformed requests are logged before `command`/`path` are set.
+            is_probe = (
+                getattr(self, "command", None) == "GET" and
+                getattr(self, "path", "").split("?", 1)[0] == HEALTHZ_PATH)
+            if not is_probe:
+                super().log_request(code, size)
+
         def do_POST(self):
             # Serve the sync() function as a JSON webhook.
             observed = json.loads(
@@ -611,7 +629,7 @@ def server_factory(visualization_server_image,
             self.end_headers()
             self.wfile.write(bytes(json.dumps(desired), 'utf-8'))
 
-    return HTTPServer((url, int(controller_port)), Controller)
+    return ThreadingHTTPServer((url, int(controller_port)), Controller)
 
 
 if __name__ == "__main__":

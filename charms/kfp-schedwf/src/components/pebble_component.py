@@ -23,6 +23,7 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         *args,
         timezone: str,
         log_level: str,
+        user_identity: str,
         **kwargs,
     ):
         """Pebble service container component in order to configure Pebble layer"""
@@ -30,13 +31,20 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
         self.environment = {
             "CRON_SCHEDULE_TIMEZONE": timezone,
             "LOG_LEVEL": log_level,
-            "NAMESPACE:": "",
+            "NAMESPACE": "",
             "METRICS_PORT": "9090",
             "CLIENT_QPS": "10",
-            "RESYNCT_INTERVAL_SECONDS": "30",
+            "RESYNC_INTERVAL_SECONDS": "30",
             "CLIENT_BURST": "20",
+            "POD_NAME": self._charm.unit.name.replace("/", "-"),
+            "POD_NAMESPACE": self._charm.model.name,
+            # The upstream handoff requires Deployment-owned pods; Juju uses StatefulSets
+            # https://github.com/canonical/kfp-operators/issues/1106
+            # https://github.com/canonical/pipelines-rocks/blob/main/scheduledworkflow/patches/0001-schedule-writer-handoff-opt-out.patch
+            "KFP_DISABLE_SCHEDULE_WRITER_HANDOFF": "true",
         }
         self.log_level = log_level
+        self.user_identity = user_identity
 
     def get_layer(self) -> Layer:
         """Defines and returns Pebble layer configuration
@@ -67,7 +75,10 @@ class KfpSchedwfPebbleService(PebbleServiceComponent):
                     '--namespace="" '
                     f"--logLevel={self.log_level} "
                     f"--mlPipelineAPIServerName={inputs.KFP_API_SERVICE} "
-                    f"--mlPipelineServiceGRPCPort={inputs.KFP_API_GRPC_PORT}",
+                    f"--mlPipelineServiceGRPCPort={inputs.KFP_API_GRPC_PORT} "
+                    "--multiUser=true "
+                    "--userIdentityHeader=kubeflow-userid "
+                    f"--userIdentityValue={self.user_identity}",
                     "environment": self.environment,
                 }
             },

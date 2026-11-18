@@ -8,6 +8,7 @@ https://github.com/canonical/kfp-operators
 """
 
 import logging
+import secrets
 from pathlib import Path
 
 import yaml
@@ -17,7 +18,6 @@ from charmed_kubeflow_chisme.components import (
     LeadershipGateComponent,
     RelationCountGateComponent,
     S3RequirerComponent,
-    SdiRelationBroadcasterComponent,
     SdiRelationDataReceiverComponent,
 )
 from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
@@ -27,10 +27,9 @@ from charms.kubeflow_dashboard.v0.kubeflow_dashboard_links import (
 from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from charms.observability_libs.v1.kubernetes_service_patch import KubernetesServicePatch
 from lightkube.models.core_v1 import ServicePort
-from ops import CharmBase, main
+from ops import CharmBase, SecretNotFoundError, main
 
 from components.istio_ambient_requirer_component import AmbientIngressRequirerComponent
-from components.istio_relations_conflict_detector import IstioRelationsConflictDetectorComponent
 from components.object_storage_validator import ObjectStorageValidatorComponent
 from components.pebble_components import MlPipelineUiInputs, MlPipelineUiPebbleService
 
@@ -44,6 +43,9 @@ VIEWER_POD_TEMPLATE_FILE = TEMPLATES_PATH / "viewer-pod-template.json"
 
 CONFIG_PATH = Path("/config")
 VIEWER_CONFIG_PATH = Path("/etc/config")
+
+TENSORBOARD_PROXY_SECRET_LABEL = "tensorboard-proxy-signing-secret"
+TENSORBOARD_PROXY_SECRET_KEY = "signing-secret"
 
 DASHBOARD_LINKS = [
     DashboardLink(
@@ -149,16 +151,6 @@ class KfpUiOperator(CharmBase):
             depends_on=[],
         )
 
-        self.istio_relations_conflict_detector = self.charm_reconciler.add(
-            component=IstioRelationsConflictDetectorComponent(
-                charm=self,
-                name="istio-relations-conflict-detector",
-                sidecar_relation_name="ingress",
-                ambient_relation_name="istio-ingress-route",
-            ),
-            depends_on=[self.leadership_gate],
-        )
-
         self.ambient_ingress_relation = self.charm_reconciler.add(
             component=AmbientIngressRequirerComponent(
                 charm=self,
@@ -168,22 +160,7 @@ class KfpUiOperator(CharmBase):
                 path_prefix="/pipeline",
                 url_rewrite="/pipeline",
             ),
-            depends_on=[self.leadership_gate, self.istio_relations_conflict_detector],
-        )
-
-        self.sidecar_ingress_relation = self.charm_reconciler.add(
-            SdiRelationBroadcasterComponent(
-                charm=self,
-                name="sidecar_relation:ingress",
-                relation_name="ingress",
-                data_to_send={
-                    "prefix": "/pipeline",
-                    "rewrite": "/pipeline",
-                    "service": self.model.app.name,
-                    "port": int(self.model.config["http-port"]),
-                },
-            ),
-            depends_on=[self.leadership_gate, self.istio_relations_conflict_detector],
+            depends_on=[self.leadership_gate],
         )
 
         self.s3_relations_conflict_detector = self.charm_reconciler.add(
@@ -292,8 +269,24 @@ class KfpUiOperator(CharmBase):
             MINIO_SSL=object_storage["secure"],
             ML_PIPELINE_SERVICE_HOST=self.kfp_api_relation.component.get_data()["service-name"],
             ML_PIPELINE_SERVICE_PORT=self.kfp_api_relation.component.get_data()["service-port"],
+            TENSORBOARD_PROXY_SIGNING_SECRET=self._get_tensorboard_proxy_signing_secret(),
             COMMAND=self.command,
         )
+
+    def _get_tensorboard_proxy_signing_secret(self) -> str:
+        """Return the TensorBoard proxy signing secret, creating it on first use.
+
+        Persisted in an app-owned Juju secret so that signed TensorBoard proxy URLs survive
+        workload restarts. Upstream requires at least 32 bytes.
+        """
+        try:
+            secret = self.model.get_secret(label=TENSORBOARD_PROXY_SECRET_LABEL)
+        except SecretNotFoundError:
+            secret = self.app.add_secret(
+                {TENSORBOARD_PROXY_SECRET_KEY: secrets.token_urlsafe(32)},
+                label=TENSORBOARD_PROXY_SECRET_LABEL,
+            )
+        return secret.get_content()[TENSORBOARD_PROXY_SECRET_KEY]
 
 
 if __name__ == "__main__":

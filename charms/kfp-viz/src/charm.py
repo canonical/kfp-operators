@@ -51,6 +51,14 @@ class KfpVizOperator(CharmBase):
             depends_on=[],
         )
 
+        self.service_mesh = self.charm_reconciler.add(
+            component=ServiceMeshComponent(
+                charm=self,
+                name="service-mesh-component",
+            ),
+            depends_on=[self.leadership_gate],
+        )
+
         self.kfp_viz_relation = self.charm_reconciler.add(
             SdiRelationBroadcasterComponent(
                 charm=self,
@@ -61,16 +69,7 @@ class KfpVizOperator(CharmBase):
                     "service-port": self.model.config["http-port"],
                 },
             ),
-            # TODO: add dependency on service mesh component when sidecar support is dropped
-            depends_on=[self.leadership_gate],
-        )
-
-        self.service_mesh = self.charm_reconciler.add(
-            component=ServiceMeshComponent(
-                charm=self,
-                name="service-mesh-component",
-            ),
-            depends_on=[self.leadership_gate],
+            depends_on=[self.leadership_gate, self.service_mesh],
         )
 
         # The service_name should be consistent with the rock predefined

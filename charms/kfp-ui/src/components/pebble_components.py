@@ -24,6 +24,7 @@ class MlPipelineUiInputs:
     MINIO_SSL: str
     ML_PIPELINE_SERVICE_HOST: str
     ML_PIPELINE_SERVICE_PORT: str
+    TENSORBOARD_PROXY_SIGNING_SECRET: str
     COMMAND: str
 
 
@@ -74,8 +75,11 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                         "ARTIFACTS_SERVICE_PROXY_ENABLED": "true",
                         "AWS_ACCESS_KEY_ID": "",
                         "AWS_SECRET_ACCESS_KEY": "",
+                        "ALLOWED_ARTIFACT_ENDPOINTS": "",
                         "DISABLE_GKE_METADATA": inputs.DISABLE_GKE_METADATA,
-                        "CLUSTER_DOMAIN": "cluster.local",
+                        # Must include the `.svc` label, it is appended to
+                        # `<viewer>-service.<namespace>` for the TensorBoard proxy
+                        "CLUSTER_DOMAIN": ".svc.cluster.local",
                         "ENABLE_AUTHZ": "true",
                         "DEPLOYMENT": "KUBEFLOW",
                         "FRONTEND_SERVER_NAMESPACE": inputs.FRONTEND_SERVER_NAMESPACE,
@@ -96,6 +100,7 @@ class MlPipelineUiPebbleService(PebbleServiceComponent):
                         "ML_PIPELINE_SERVICE_HOST": inputs.ML_PIPELINE_SERVICE_HOST,
                         "ML_PIPELINE_SERVICE_PORT": inputs.ML_PIPELINE_SERVICE_PORT,
                         "STREAM_LOGS_FROM_SERVER_API": "false",
+                        "TENSORBOARD_PROXY_SIGNING_SECRET": inputs.TENSORBOARD_PROXY_SIGNING_SECRET,
                         # TODO: Think there's a file here we should copy in.  Workload's logs
                         #  show an error on start for this
                         "VIEWER_TENSORBOARD_POD_TEMPLATE_SPEC_PATH": (

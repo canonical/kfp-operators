@@ -13,3 +13,4 @@ MINIO = CharmSpec(
     trust=True,
     config={"access-key": "minio", "secret-key": "minio-secret-key"},
 )
+ISTIO_CHANNEL = "1.31/stable"

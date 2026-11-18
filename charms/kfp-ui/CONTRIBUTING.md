@@ -40,10 +40,10 @@ source .tox/unit/bin/activate
 
 ### Testing
 
-Use tox for testing. For example to test the `integration` environment, run:
+Use tox for testing. For example to test the `integration-ambient` environment, run:
 
 ```shell
-tox -e integration
+tox -e integration-ambient
 ```
 
 See `tox.ini` for all available environments.

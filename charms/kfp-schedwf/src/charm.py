@@ -34,7 +34,6 @@ from components.pebble_component import (
 logger = logging.getLogger(__name__)
 
 K8S_RESOURCE_FILES = ["src/templates/crds.yaml"]
-SA_NAME = "kfp-schedwf"
 SA_TOKEN_PATH = "src/"
 SA_TOKEN_FILENAME = "scheduledworkflow-sa-token"
 SA_TOKEN_FULL_PATH = str(Path(SA_TOKEN_PATH, SA_TOKEN_FILENAME))
@@ -70,7 +69,7 @@ class KfpSchedwf(CharmBase):
                 context_callable=lambda: {
                     "app_name": self.app.name,
                     "namespace": self.model.name,
-                    "sa_name": SA_NAME,
+                    "sa_name": self.app.name,
                 },
                 lightkube_client=lightkube.Client(),
             ),
@@ -95,7 +94,7 @@ class KfpSchedwf(CharmBase):
                 charm=self,
                 name="sa-token:scheduledworkflow",
                 audiences=["pipelines.kubeflow.org"],
-                sa_name=SA_NAME,
+                sa_name=self.app.name,
                 sa_namespace=self.model.name,
                 filename=SA_TOKEN_FILENAME,
                 path=SA_TOKEN_PATH,
@@ -125,6 +124,7 @@ class KfpSchedwf(CharmBase):
                 ],
                 timezone=self.model.config["timezone"],
                 log_level=self.model.config["log-level"],
+                user_identity=f"system:serviceaccount:{self.model.name}:{self.app.name}",
             ),
             depends_on=[
                 self.kubernetes_resources,
