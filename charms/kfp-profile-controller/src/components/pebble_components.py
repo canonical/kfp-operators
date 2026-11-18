@@ -97,8 +97,20 @@ class KfpProfileControllerPebbleService(PebbleServiceComponent):
                             "MANAGE_MINIO_SECRET": inputs.MANAGE_MINIO_SECRET,
                             "MANAGE_KFP_LAUNCHER_CONFIGMAP": inputs.MANAGE_KFP_LAUNCHER_CONFIGMAP,
                         },
+                        "on-check-failure": {f"{self.service_name}-up": "restart"},
                     }
-                }
+                },
+                # Mirrors the upstream livenessProbe on /healthz
+                "checks": {
+                    f"{self.service_name}-up": {
+                        "override": "replace",
+                        "level": "alive",
+                        "period": "5s",
+                        "timeout": "2s",
+                        "threshold": 3,
+                        "http": {"url": f"http://localhost:{inputs.CONTROLLER_PORT}/healthz"},
+                    }
+                },
             }
         )
 

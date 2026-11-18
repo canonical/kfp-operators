@@ -11,6 +11,7 @@ import yaml
 from charmed_kubeflow_chisme.testing import add_sdi_relation_to_harness
 from charms.istio_beacon_k8s.v0.service_mesh import MeshType
 from ops.model import ActiveStatus, BlockedStatus
+from ops.pebble import CheckLevel
 from ops.testing import Harness
 
 from charm import (
@@ -298,6 +299,14 @@ def test_pebble_services_running(
     # Assert the environment variables that are set from inputs are correctly applied
     environment = container.get_plan().services["kfp-profile-controller"].environment
     assert environment == expected_environment
+    # Assert the /healthz check restarts the service on failure
+    plan = container.get_plan()
+    check = plan.checks["kfp-profile-controller-up"]
+    assert check.level == CheckLevel.ALIVE
+    assert check.http == {"url": f"http://localhost:{CONTROLLER_PORT}/healthz"}
+    assert plan.services["kfp-profile-controller"].on_check_failure == {
+        "kfp-profile-controller-up": "restart"
+    }
 
 
 def test_pebble_services_with_custom_kfp_api_service_account(
