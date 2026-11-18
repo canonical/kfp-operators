@@ -18,3 +18,4 @@ S3_INTEGRATOR = CharmSpec(
     channel="2/stable",
     trust=False,
 )
+ISTIO_CHANNEL = "1.31/stable"

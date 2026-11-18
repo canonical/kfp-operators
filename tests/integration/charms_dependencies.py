@@ -17,7 +17,9 @@ MYSQL_K8S = CharmSpec(
 # For Charmed Istio to work together with Cilium,
 # the `platform` configuration of the istio-k8s charm must be unset
 # because by default the platform is set to "microk8s".
-ISTIO_K8S = CharmSpec(charm="istio-k8s", channel="2/edge", config={"platform": ""}, trust=True)
-ISTIO_INGRESS_K8S = CharmSpec(charm="istio-ingress-k8s", channel="2/edge", trust=True)
-ISTIO_BEACON_K8S = CharmSpec(charm="istio-beacon-k8s", channel="2/edge", trust=True)
+ISTIO_K8S = CharmSpec(
+    charm="istio-k8s", channel="1.31/stable", config={"platform": ""}, trust=True
+)
+ISTIO_INGRESS_K8S = CharmSpec(charm="istio-ingress-k8s", channel="1.31/stable", trust=True)
+ISTIO_BEACON_K8S = CharmSpec(charm="istio-beacon-k8s", channel="1.31/stable", trust=True)
 S3_INTEGRATOR = CharmSpec(charm="s3-integrator", channel="2/stable", trust=False)

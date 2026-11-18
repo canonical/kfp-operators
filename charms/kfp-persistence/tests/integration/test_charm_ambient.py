@@ -8,15 +8,17 @@ import pytest
 import yaml
 from charmed_kubeflow_chisme.testing import (
     GRAFANA_AGENT_APP,
+    ISTIO_BEACON_K8S_APP,
+    ISTIO_INGRESS_K8S_APP,
+    ISTIO_K8S_APP,
     assert_logging,
     assert_security_context,
     deploy_and_assert_grafana_agent,
-    deploy_and_integrate_service_mesh_charms,
     generate_container_securitycontext_map,
     get_pod_names,
     integrate_with_service_mesh,
 )
-from charms_dependencies import KFP_API, KFP_DB, KFP_VIZ, MINIO
+from charms_dependencies import ISTIO_CHANNEL, KFP_API, KFP_DB, KFP_VIZ, MINIO
 from lightkube import Client
 from pytest_operator.plugin import OpsTest
 
@@ -32,6 +34,21 @@ KFP_DB_APPLICATION_NAME = "kfp-db"
 def lightkube_client() -> Client:
     client = Client(field_manager=APP_NAME)
     return client
+
+
+async def deploy_istio_charms(ops_test: OpsTest, model_on_mesh: bool = True):
+    """Deploy the Istio charms with the Juju CLI; python-libjuju can't deploy Ubuntu 26.04."""
+    for charm, options in (
+        (ISTIO_K8S_APP, ("--config", "platform=")),
+        (ISTIO_INGRESS_K8S_APP, ()),
+        (ISTIO_BEACON_K8S_APP, ("--config", f"model-on-mesh={str(model_on_mesh).lower()}")),
+    ):
+        await ops_test.juju(
+            "deploy", charm, "--channel", ISTIO_CHANNEL, "--trust", *options, check=True
+        )
+        await ops_test.model.wait_for_idle(
+            apps=[charm], status="active", raise_on_error=False, timeout=60 * 15
+        )
 
 
 @pytest.mark.abort_on_fail
@@ -54,7 +71,8 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
         trust=True,
     )
 
-    await deploy_and_integrate_service_mesh_charms(
+    await deploy_istio_charms(ops_test)
+    await integrate_with_service_mesh(
         APP_NAME, ops_test.model, relate_to_ingress_route_endpoint=False
     )
 

@@ -13,16 +13,20 @@ import tenacity
 import yaml
 from charmed_kubeflow_chisme.testing import (
     GRAFANA_AGENT_APP,
+    ISTIO_BEACON_K8S_APP,
+    ISTIO_INGRESS_K8S_APP,
+    ISTIO_K8S_APP,
     assert_logging,
     assert_security_context,
     deploy_and_assert_grafana_agent,
-    deploy_and_integrate_service_mesh_charms,
     generate_container_securitycontext_map,
     get_pod_names,
+    integrate_with_service_mesh,
 )
 from charmed_kubeflow_chisme.testing.s3_integration import deploy_and_assert_s3_integrator
 from charms_dependencies import (
     ADMISSION_WEBHOOK,
+    ISTIO_CHANNEL,
     KUBEFLOW_PROFILES,
     METACONTROLLER_OPERATOR,
     MINIO,
@@ -89,6 +93,21 @@ def wait_for_configmap(client: lightkube.Client, name: str, namespace: str) -> C
     raise TimeoutError(f"ConfigMap {name} in namespace {namespace} not present.")
 
 
+async def deploy_istio_charms(ops_test: OpsTest, model_on_mesh: bool = True):
+    """Deploy the Istio charms with the Juju CLI; python-libjuju can't deploy Ubuntu 26.04."""
+    for charm, options in (
+        (ISTIO_K8S_APP, ("--config", "platform=")),
+        (ISTIO_INGRESS_K8S_APP, ()),
+        (ISTIO_BEACON_K8S_APP, ("--config", f"model-on-mesh={str(model_on_mesh).lower()}")),
+    ):
+        await ops_test.juju(
+            "deploy", charm, "--channel", ISTIO_CHANNEL, "--trust", *options, check=True
+        )
+        await ops_test.model.wait_for_idle(
+            apps=[charm], status="active", raise_on_error=False, timeout=60 * 15
+        )
+
+
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureRequest):
     # Deploy the admission webhook to apply the PodDefault CRD required by the charm workload
@@ -142,7 +161,8 @@ async def test_build_and_deploy(ops_test: OpsTest, request: pytest.FixtureReques
 
     # The profile controller needs AuthorizationPolicies to create Profiles
     # Wait for everything to deploy
-    await deploy_and_integrate_service_mesh_charms(
+    await deploy_istio_charms(ops_test)
+    await integrate_with_service_mesh(
         CHARM_NAME,
         ops_test.model,
         relate_to_beacon=True,
