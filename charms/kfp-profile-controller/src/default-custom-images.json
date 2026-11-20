@@ -1,4 +1,4 @@
 {
-	"visualization_server": "docker.io/misohu/visualization-server:2.18.0",
-	"frontend": "docker.io/misohu/frontend:2.18.0"
+    "visualization_server": "docker.io/charmedkubeflow/visualization-server:2.18.0-a81e35c-20261119220903",
+    "frontend": "docker.io/misohu/frontend:2.18.0"
 }
